@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
@@ -32,12 +34,11 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ==============================
-// 🛡️ Middleware: pegar admin do token (JWT no cookie)
+// 🛡️ Middleware: autenticação admin via JWT no cookie
 // ==============================
 async function setAdminFromToken(req, res, next) {
   try {
     const token = req.cookies?.adminToken;
-
     if (!token) {
       req.admin = null;
       res.locals.admin = null;
@@ -45,18 +46,13 @@ async function setAdminFromToken(req, res, next) {
     }
 
     const payload = verifyToken(token);
-
-    if (!payload || !payload.id) {
+    if (!payload?.id) {
       req.admin = null;
       res.locals.admin = null;
       return next();
     }
 
-    // Busca admin no banco
-    const admin = await prisma.admin.findUnique({
-      where: { id: payload.id },
-    });
-
+    const admin = await prisma.admin.findUnique({ where: { id: payload.id } });
     if (!admin) {
       req.admin = null;
       res.locals.admin = null;
@@ -65,26 +61,24 @@ async function setAdminFromToken(req, res, next) {
 
     req.admin = admin;
     res.locals.admin = admin;
-
-    return next();
+    next();
   } catch (err) {
-    console.error("Erro ao verificar token de admin:", err);
+    console.error("⚠️ Erro ao verificar token de admin:", err);
     req.admin = null;
     res.locals.admin = null;
-    return next();
+    next();
   }
 }
 
 app.use(setAdminFromToken);
 
-// 🔥 Disponibiliza o admin logado para as views EJS
+// 🔥 Disponibiliza o admin logado para as views
 app.use((req, res, next) => {
   res.locals.admin = req.admin || null;
   next();
 });
 
-
-// Deixa disponível a rota atual nas views (pra marcar menu ativo, etc.)
+// Deixa disponível a rota atual (pra menus ativos, etc.)
 app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   next();
@@ -93,31 +87,23 @@ app.use((req, res, next) => {
 // ==============================
 // 🚏 Rotas
 // ==============================
-
-// Login / Logout (GET /login, POST /login, POST /logout)
 app.use("/", loginRouter);
-
-// Home
 app.use("/", indexRouter);
-
-// Páginas públicas
 app.use("/rankings", rankingsRouter);
 app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
-
-// Painel admin e rotas protegidas
 app.use("/admin", adminRouter);
 
 // ==============================
 // 404 – sempre por último
 // ==============================
 app.use((req, res) => {
-  res.status(404).render("404");
+  res.status(404).render("404", { title: "404" });
 });
 
-// (Opcional) handler genérico de erro
+// Handler genérico de erro
 app.use((err, req, res, next) => {
-  console.error("Erro inesperado:", err);
+  console.error("💥 Erro inesperado:", err);
   res.status(500).send("Erro interno do servidor");
 });
 
@@ -125,5 +111,6 @@ app.use((err, req, res, next) => {
 // 🚀 Start
 // ==============================
 app.listen(PORT, () => {
-  console.log(`🔥 Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🔥 Servidor rodando na porta ${PORT}`);
+  console.log(`🌍 http://localhost:${PORT}`);
 });
