@@ -1,0 +1,762 @@
+<%
+  // Helpers
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+
+  const limit = (arr, n) => (arr && arr.length ? arr.slice(0, n) : []);
+
+  const fmtRating = (val) => {
+    if (!val || Number.isNaN(val)) return "0.00";
+    return Number(val).toFixed(2).replace(".", ",");
+  };
+
+  // Tenta achar objetos de stats tanto pelos nomes novos quanto por possíveis campos anexados
+  const mStats =
+    (typeof monthlyStats !== "undefined" && monthlyStats) ||
+    (monthlyCraque && monthlyCraque.stats) ||
+    null;
+
+  const wStats =
+    (typeof weeklyStats !== "undefined" && weeklyStats) ||
+    (weeklyAward && weeklyAward.stats) ||
+    null;
+
+  const monthNames = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
+%>
+
+<section class="space-y-10 animate-fadeIn">
+
+  <!-- ======================================================
+       CRAQUE DO MÊS - CARD SOZINHO EM CIMA (FULL WIDTH)
+  ======================================================= -->
+  <header>
+    <div
+      class="relative w-full bg-gradient-to-br from-black via-horriver-dark to-black
+             border border-horriver-red/60 rounded-3xl px-6 py-8 md:px-10 md:py-10
+             overflow-hidden"
+    >
+      <div class="absolute -right-24 -bottom-28 opacity-10 pointer-events-none">
+        <img
+          src="/img/logo.jpg"
+          alt="Horriver Plate"
+          class="w-80 h-80 object-contain"
+        />
+      </div>
+
+      <div class="relative z-10 flex flex-col items-center gap-6">
+        <!-- Etiqueta -->
+        <span
+          class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red/30
+                 border border-horriver-red/70 text-[11px] text-horriver-gray"
+        >
+          Craque do mês
+        </span>
+
+        <% if (!monthlyCraque) { %>
+          <p class="text-sm text-horriver-light/80 text-center max-w-xl">
+            Nenhum craque do mês cadastrado ainda. Defina um no painel do administrador.
+          </p>
+        <% } else { %>
+          <!-- Avatar + nome + mês -->
+          <div class="flex flex-col items-center gap-4">
+            <div
+              class="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden
+                     border-[4px] border-horriver-orange
+                     shadow-[0_0_25px_rgba(255,140,0,0.45)]
+                     bg-black/70 flex items-center justify-center"
+            >
+              <% if (monthlyCraque.craque && monthlyCraque.craque.photoUrl) { %>
+                <img
+                  src="<%= monthlyCraque.craque.photoUrl %>"
+                  alt="<%= monthlyCraque.craque.name %>"
+                  class="w-full h-full object-cover"
+                />
+              <% } else if (monthlyCraque.craque) { %>
+                <span class="text-3xl font-semibold text-horriver-light">
+                  <%= monthlyCraque.craque.name.charAt(0).toUpperCase() %>
+                </span>
+              <% } %>
+            </div>
+
+            <div class="text-center space-y-1">
+              <p class="text-xs tracking-[0.2em] text-horriver-gray uppercase">
+                <%= monthNames[monthlyCraque.month - 1] %> / <%= monthlyCraque.year %>
+              </p>
+              <% if (monthlyCraque.craque) { %>
+                <h1 class="font-title text-2xl md:text-3xl text-horriver-light">
+                  <%= monthlyCraque.craque.name %>
+                </h1>
+                <% if (monthlyCraque.craque.nickname) { %>
+                  <p class="text-[13px] text-horriver-gray">
+                    "<%= monthlyCraque.craque.nickname %>"
+                  </p>
+                <% } %>
+                <% if (monthlyCraque.craque.position) { %>
+                  <p class="text-[11px] text-horriver-orange uppercase mt-1">
+                    <%= monthlyCraque.craque.position %>
+                  </p>
+                <% } %>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Chips de stats do mês -->
+          <div class="mt-6 space-y-2 text-center">
+            <p class="text-[11px] text-horriver-gray tracking-wide uppercase">
+              Estatísticas do mês
+            </p>
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-w-4xl mx-auto text-[11px]"
+            >
+              <div
+                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
+                       flex flex-col items-center"
+              >
+                <p class="text-horriver-gray">Gols no mês</p>
+                <p class="text-horriver-light font-semibold text-sm">
+                  <%= mStats ? mStats.goals : 0 %>
+                </p>
+              </div>
+              <div
+                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
+                       flex flex-col items-center"
+              >
+                <p class="text-horriver-gray">Assistências no mês</p>
+                <p class="text-horriver-light font-semibold text-sm">
+                  <%= mStats ? mStats.assists : 0 %>
+                </p>
+              </div>
+              <div
+                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
+                       flex flex-col items-center"
+              >
+                <p class="text-horriver-gray">Presenças no mês</p>
+                <p class="text-horriver-light font-semibold text-sm">
+                  <%= mStats ? mStats.matches : 0 %>
+                </p>
+              </div>
+              <div
+                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
+                       flex flex-col items-center"
+              >
+                <p class="text-horriver-gray">Fotos no mês</p>
+                <p class="text-horriver-light font-semibold text-sm">
+                  <%= mStats ? mStats.photos : 0 %>
+                </p>
+              </div>
+              <div
+                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
+                       flex flex-col items-center"
+              >
+                <p class="text-horriver-gray">Nota média do mês</p>
+                <p class="text-horriver-light font-semibold text-sm">
+                  <%= mStats ? fmtRating(mStats.avgRating) : "0,00" %>
+                </p>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================
+       SEGUNDA LINHA: CRAQUE DA SEMANA + TIME DA SEMANA
+  ======================================================= -->
+  <section class="grid lg:grid-cols-2 gap-6">
+
+    <!-- Craque da semana -->
+    <div
+      class="relative bg-gradient-to-br from-horriver-red/70 via-black/90 to-horriver-orange/70
+             rounded-3xl border border-horriver-red/80 px-6 py-7 md:px-8 md:py-8
+             shadow-xl overflow-hidden flex flex-col"
+    >
+      <div class="absolute -right-16 -bottom-20 opacity-10 pointer-events-none">
+        <img
+          src="/img/logo.jpg"
+          alt="Horriver Plate"
+          class="w-56 h-56 object-contain"
+        />
+      </div>
+
+      <div class="relative z-10 flex flex-col gap-5">
+        <div class="flex flex-col items-center gap-3">
+          <span
+            class="inline-flex items-center px-3 py-1 rounded-full bg-black/40
+                   text-[11px] text-horriver-light"
+          >
+            Craque da semana
+          </span>
+
+          <% if (!weeklyAward || !weeklyAward.bestPlayer) { %>
+            <p class="text-[13px] text-horriver-light/80 text-center">
+              Nenhum jogador definido como craque da semana.
+            </p>
+          <% } else { %>
+            <!-- Avatar + infos -->
+            <div class="flex flex-col items-center gap-3">
+              <div
+                class="w-24 h-24 rounded-full overflow-hidden border-[3px]
+                       border-horriver-orange bg-black/70 flex items-center justify-center"
+              >
+                <% if (weeklyAward.bestPlayer.photoUrl) { %>
+                  <img
+                    src="<%= weeklyAward.bestPlayer.photoUrl %>"
+                    alt="<%= weeklyAward.bestPlayer.name %>"
+                    class="w-full h-full object-cover"
+                  />
+                <% } else { %>
+                  <span class="text-2xl font-semibold text-horriver-light">
+                    <%= weeklyAward.bestPlayer.name.charAt(0).toUpperCase() %>
+                  </span>
+                <% } %>
+              </div>
+
+              <div class="text-center space-y-1 text-[12px]">
+                <p class="text-[11px] text-horriver-gray">
+                  Semana de
+                  <span class="text-horriver-light">
+                    <%= fmtDate(weeklyAward.weekStart) %>
+                  </span>
+                  <% if (weeklyAward.winningMatch) { %>
+                    · Pelada em
+                    <span class="text-horriver-light">
+                      <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
+                    </span>
+                  <% } %>
+                </p>
+                <p class="text-horriver-light font-semibold text-base">
+                  <%= weeklyAward.bestPlayer.name %>
+                  <% if (weeklyAward.bestPlayer.nickname) { %>
+                    (<%= weeklyAward.bestPlayer.nickname %>)
+                  <% } %>
+                </p>
+                <% if (weeklyAward.bestPlayer.position) { %>
+                  <p class="text-[11px] text-horriver-orange uppercase">
+                    <%= weeklyAward.bestPlayer.position %>
+                  </p>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Stats da semana -->
+            <div class="mt-3 space-y-2 text-center">
+              <p class="text-[11px] text-horriver-gray tracking-wide uppercase">
+                Estatísticas da semana
+              </p>
+              <div
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 max-w-md mx-auto text-[11px]"
+              >
+                <div
+                  class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70
+                         flex flex-col items-center"
+                >
+                  <p class="text-horriver-gray">Gols na semana</p>
+                  <p class="text-horriver-light font-semibold text-sm">
+                    <%= wStats ? wStats.goals : 0 %>
+                  </p>
+                </div>
+                <div
+                  class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70
+                         flex flex-col items-center"
+                >
+                  <p class="text-horriver-gray">Assistências na semana</p>
+                  <p class="text-horriver-light font-semibold text-sm">
+                    <%= wStats ? wStats.assists : 0 %>
+                  </p>
+                </div>
+                <div
+                  class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70
+                         flex flex-col items-center"
+                >
+                  <p class="text-horriver-gray">Nota da semana</p>
+                  <p class="text-horriver-light font-semibold text-sm">
+                    <%= wStats ? fmtRating(wStats.avgRating) : "0,00" %>
+                  </p>
+                </div>
+              </div>
+
+              <% if (weeklyAward.winningMatch) { %>
+                <div class="mt-2 text-[11px] text-horriver-light/90">
+                  <p class="font-medium">
+                    Pelada destaque da semana:
+                    <span>
+                      <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
+                    </span>
+                  </p>
+                  <% if (weeklyAward.winningMatch.description) { %>
+                    <p class="text-horriver-gray">
+                      <%= weeklyAward.winningMatch.description %>
+                    </p>
+                  <% } %>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time da semana -->
+    <div
+      class="relative bg-gradient-to-br from-horriver-red/70 via-black/90 to-horriver-orange/70
+             rounded-3xl border border-horriver-red/80 px-6 py-7 md:px-8 md:py-8
+             shadow-xl overflow-hidden flex flex-col"
+    >
+      <div class="absolute -right-16 -bottom-20 opacity-10 pointer-events-none">
+        <img
+          src="/img/logo.jpg"
+          alt="Horriver Plate"
+          class="w-56 h-56 object-contain"
+        />
+      </div>
+
+      <div class="relative z-10 flex flex-col gap-4">
+        <div class="flex flex-col items-center gap-3">
+          <span
+            class="inline-flex items-center px-3 py-1 rounded-full bg-black/40
+                   text-[11px] text-horriver-light"
+          >
+            Time da semana
+          </span>
+        </div>
+
+        <% if (!weeklyAward || (!weeklyAward.teamPhotoUrl && !weeklyAward.winningMatch)) { %>
+          <p class="text-[13px] text-horriver-light/80 text-center">
+            Nenhuma foto ou pelada destaque definida para a semana.
+          </p>
+        <% } else { %>
+          <% if (weeklyAward.winningMatch) { %>
+            <p class="text-[11px] text-horriver-gray text-center">
+              Semana de
+              <span class="text-horriver-light">
+                <%= fmtDate(weeklyAward.weekStart) %>
+              </span>
+              · Pelada em
+              <span class="text-horriver-light">
+                <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
+              </span>
+            </p>
+          <% } %>
+
+          <% if (weeklyAward.teamPhotoUrl) { %>
+            <div
+              class="mt-2 rounded-2xl overflow-hidden bg-black/80 border border-horriver-orange/60 flex-1 flex flex-col"
+            >
+              <div
+                class="flex-1 flex items-center justify-center max-h-72 bg-black"
+              >
+                <img
+                  src="<%= weeklyAward.teamPhotoUrl %>"
+                  alt="Time da semana"
+                  class="w-full h-auto object-contain"
+                />
+              </div>
+
+              <div
+                class="px-4 py-2 bg-black/80 text-[11px] border-t border-horriver-orange/40"
+              >
+                <% if (weeklyAward.winningMatch) { %>
+                  <p class="text-horriver-gray">
+                    Pelada destaque:
+                    <span class="text-horriver-light font-medium">
+                      <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
+                    </span>
+                  </p>
+                  <% if (weeklyAward.winningMatch.description) { %>
+                    <p class="text-horriver-gray">
+                      <%= weeklyAward.winningMatch.description %>
+                    </p>
+                  <% } %>
+                <% } else { %>
+                  <p class="text-horriver-gray">
+                    Foto oficial do time da semana.
+                  </p>
+                <% } %>
+              </div>
+            </div>
+          <% } else if (weeklyAward.winningMatch) { %>
+            <div class="mt-2 text-[12px] text-horriver-light">
+              <p class="text-center">
+                Pelada destaque:
+                <span class="font-medium">
+                  <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
+                </span>
+                <% if (weeklyAward.winningMatch.description) { %>
+                  — <%= weeklyAward.winningMatch.description %>
+                <% } %>
+              </p>
+            </div>
+          <% } %>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       RANKINGS RÁPIDOS
+  ======================================================= -->
+  <section class="space-y-4">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="font-title text-2xl text-horriver-light">
+        Rankings rápidos
+      </h2>
+      <a
+        href="/rankings"
+        class="text-[11px] text-horriver-gray underline hover:text-horriver-orange"
+      >
+        Ver rankings completos
+      </a>
+    </div>
+
+    <div
+      class="inline-flex bg-horriver-dark/80 rounded-full p-1 text-[11px] mb-2"
+    >
+      <button
+        class="rk-home-btn px-3 py-1 rounded-full bg-horriver-red text-horriver-light"
+        data-target="rk-gols-home"
+      >
+        Artilheiros
+      </button>
+      <button
+        class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light"
+        data-target="rk-assist-home"
+      >
+        Assistências
+      </button>
+      <button
+        class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light"
+        data-target="rk-notas-home"
+      >
+        Notas
+      </button>
+      <button
+        class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light"
+        data-target="rk-fotos-home"
+      >
+        Fotos
+      </button>
+    </div>
+
+    <div class="bg-black/40 border border-horriver-red/40 rounded-2xl p-4">
+      <!-- Artilheiros -->
+      <div id="rk-gols-home" class="rk-home-tab">
+        <% const gols = limit(topScorers, 5); %>
+        <% if (!gols.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum dado de gols ainda.
+          </p>
+        <% } else { %>
+          <table class="min-w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1">Gols</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% gols.forEach((p, idx) => { %>
+                <tr class="border-t border-horriver-red/30">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= p.name %>
+                    <% if (p.nickname) { %> (<%= p.nickname %>) <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= p.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold">
+                    <%= p.totalGoals || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+
+      <!-- Assistências -->
+      <div id="rk-assist-home" class="rk-home-tab hidden">
+        <% const ass = limit(topAssists, 5); %>
+        <% if (!ass.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum dado de assistências ainda.
+          </p>
+        <% } else { %>
+          <table class="min-w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1">Assist.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% ass.forEach((p, idx) => { %>
+                <tr class="border-t border-horriver-red/30">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= p.name %>
+                    <% if (p.nickname) { %> (<%= p.nickname %>) <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= p.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold">
+                    <%= p.totalAssists || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+
+      <!-- Notas -->
+      <div id="rk-notas-home" class="rk-home-tab hidden">
+        <% const notas = limit(topRatings, 5); %>
+        <% if (!notas.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum dado de notas ainda.
+          </p>
+        <% } else { %>
+          <table class="min-w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1">Média</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% notas.forEach((p, idx) => { %>
+                <tr class="border-t border-horriver-red/30">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= p.name %>
+                    <% if (p.nickname) { %> (<%= p.nickname %>) <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= p.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold">
+                    <%= p.totalRating ? fmtRating(p.totalRating) : "0,00" %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+
+      <!-- Fotos -->
+      <div id="rk-fotos-home" class="rk-home-tab hidden">
+        <% const fotos = limit(photoKings, 5); %>
+        <% if (!fotos.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum dado de fotos ainda.
+          </p>
+        <% } else { %>
+          <table class="min-w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1">Fotos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% fotos.forEach((p, idx) => { %>
+                <tr class="border-t border-horriver-red/30">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= p.name %>
+                    <% if (p.nickname) { %> (<%= p.nickname %>) <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= p.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold">
+                    <%= p.totalPhotos || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- ELENCO PREVIEW -->
+  <section class="space-y-4">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="font-title text-2xl text-horriver-light">
+        Elenco em destaque
+      </h2>
+      <a
+        href="/elenco"
+        class="text-[11px] text-horriver-gray underline hover:text-horriver-orange"
+      >
+        Ver elenco completo
+      </a>
+    </div>
+
+    <% if (!players || !players.length) { %>
+      <p class="text-sm text-horriver-gray">
+        Nenhum jogador cadastrado ainda.
+      </p>
+    <% } else { %>
+      <div
+        id="players-preview"
+        class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-xs"
+      >
+        <% players.forEach((p) => { %>
+          <div
+            class="bg-horriver-dark/70 border border-horriver-red/40 rounded-2xl p-3
+                   flex flex-col gap-2"
+            data-player-card
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="h-10 w-10 rounded-full bg-horriver-red/30 flex items-center justify-center
+                       overflow-hidden"
+              >
+                <% if (p.photoUrl) { %>
+                  <img
+                    src="<%= p.photoUrl %>"
+                    alt="<%= p.name %>"
+                    class="h-full w-full object-cover"
+                  />
+                <% } else { %>
+                  <span class="text-sm font-semibold text-horriver-light">
+                    <%= p.name.charAt(0).toUpperCase() %>
+                  </span>
+                <% } %>
+              </div>
+              <div>
+                <p class="font-semibold text-horriver-light">
+                  <%= p.name %>
+                </p>
+                <% if (p.nickname) { %>
+                  <p class="text-[11px] text-horriver-gray">
+                    "<%= p.nickname %>"
+                  </p>
+                <% } %>
+                <p class="text-[10px] text-horriver-orange uppercase">
+                  <%= p.position %>
+                </p>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- ÚLTIMAS PELADAS -->
+  <section class="space-y-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Últimas peladas
+    </h2>
+
+    <% if (!recentMatches || !recentMatches.length) { %>
+      <p class="text-sm text-horriver-gray">
+        Nenhuma pelada cadastrada ainda.
+      </p>
+    <% } else { %>
+      <div class="space-y-2 text-xs">
+        <% recentMatches.forEach((m) => { %>
+          <div
+            class="flex items-center justify-between bg-horriver-dark/60 border
+                   border-horriver-red/40 rounded-xl px-3 py-2"
+          >
+            <div>
+              <p class="text-horriver-light font-medium">
+                <%= fmtDate(m.playedAt) %>
+              </p>
+              <p class="text-[11px] text-horriver-gray">
+                <%= m.description || "Sem descrição" %>
+              </p>
+            </div>
+            <div class="text-right text-[11px]">
+              <p class="text-horriver-orange">
+                <%= m.winnerTeam || "Sem time vencedor" %>
+              </p>
+              <a
+                href="/matches/<%= m.id %>"
+                class="text-horriver-gray underline hover:text-horriver-orange"
+              >
+                Ver stats
+              </a>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- TEXTO FINAL -->
+  <section class="mt-10 pt-6 border-t border-horriver-border">
+    <div class="max-w-xl space-y-3">
+      <div
+        class="inline-flex items-center gap-2 px-3 py-1 rounded-full
+               bg-horriver-red/20 border border-horriver-red/60 text-[11px]
+               text-horriver-gray"
+      >
+        Desde 2024 • Pelada e resenha
+      </div>
+
+      <h2 class="font-title text-3xl text-horriver-orange">
+        Horriver Plate
+      </h2>
+      <p class="text-sm text-horriver-gray">
+        Estatísticas de pelada com cara de time profissional. Acompanhe gols,
+        assistências, notas, presenças e destaques da nossa resenha. Tudo
+        organizado como se fosse clube grande — mas sempre com o espírito da
+        pelada entre amigos.
+      </p>
+    </div>
+  </section>
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Tabs de ranking na home
+    const rkBtns = document.querySelectorAll(".rk-home-btn");
+    const rkTabs = document.querySelectorAll(".rk-home-tab");
+
+    rkBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.target;
+
+        rkBtns.forEach((b) => {
+          b.classList.remove("bg-horriver-red", "text-horriver-light");
+          b.classList.add("text-horriver-gray");
+        });
+        rkTabs.forEach((t) => t.classList.add("hidden"));
+
+        btn.classList.add("bg-horriver-red", "text-horriver-light");
+        const tab = document.getElementById(target);
+        if (tab) tab.classList.remove("hidden");
+      });
+    });
+
+    // Elenco em destaque: sorteia 8 jogadores aleatórios para mostrar
+    const playerCards = Array.from(document.querySelectorAll("[data-player-card]"));
+    if (playerCards.length > 8) {
+      const shuffled = [...playerCards].sort(() => Math.random() - 0.5);
+      shuffled.forEach((card, index) => {
+        card.style.display = index < 8 ? "" : "none";
+      });
+    }
+  });
+</script>

@@ -1,0 +1,129 @@
+const express = require("express");
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const expressLayouts = require("express-ejs-layouts");
+
+const prisma = require("./utils/db");
+const { verifyToken } = require("./utils/auth");
+
+const indexRouter = require("./routes/index");
+const adminRouter = require("./routes/admin");
+const loginRouter = require("./routes/login");
+const rankingsRouter = require("./routes/rankings");
+const elencoRouter = require("./routes/elenco");
+const sobreRouter = require("./routes/sobre");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ==============================
+// 🔧 View engine (EJS + layouts)
+// ==============================
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+app.use(expressLayouts);
+app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
+
+// ==============================
+// 🌐 Middlewares básicos
+// ==============================
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
+
+// ==============================
+// 🛡️ Middleware: pegar admin do token (JWT no cookie)
+// ==============================
+async function setAdminFromToken(req, res, next) {
+  try {
+    const token = req.cookies?.adminToken;
+
+    if (!token) {
+      req.admin = null;
+      res.locals.admin = null;
+      return next();
+    }
+
+    const payload = verifyToken(token);
+
+    if (!payload || !payload.id) {
+      req.admin = null;
+      res.locals.admin = null;
+      return next();
+    }
+
+    // Busca admin no banco
+    const admin = await prisma.admin.findUnique({
+      where: { id: payload.id },
+    });
+
+    if (!admin) {
+      req.admin = null;
+      res.locals.admin = null;
+      return next();
+    }
+
+    req.admin = admin;
+    res.locals.admin = admin;
+
+    return next();
+  } catch (err) {
+    console.error("Erro ao verificar token de admin:", err);
+    req.admin = null;
+    res.locals.admin = null;
+    return next();
+  }
+}
+
+app.use(setAdminFromToken);
+
+// 🔥 Disponibiliza o admin logado para as views EJS
+app.use((req, res, next) => {
+  res.locals.admin = req.admin || null;
+  next();
+});
+
+
+// Deixa disponível a rota atual nas views (pra marcar menu ativo, etc.)
+app.use((req, res, next) => {
+  res.locals.currentPath = req.path;
+  next();
+});
+
+// ==============================
+// 🚏 Rotas
+// ==============================
+
+// Login / Logout (GET /login, POST /login, POST /logout)
+app.use("/", loginRouter);
+
+// Home
+app.use("/", indexRouter);
+
+// Páginas públicas
+app.use("/rankings", rankingsRouter);
+app.use("/elenco", elencoRouter);
+app.use("/sobre", sobreRouter);
+
+// Painel admin e rotas protegidas
+app.use("/admin", adminRouter);
+
+// ==============================
+// 404 – sempre por último
+// ==============================
+app.use((req, res) => {
+  res.status(404).render("404");
+});
+
+// (Opcional) handler genérico de erro
+app.use((err, req, res, next) => {
+  console.error("Erro inesperado:", err);
+  res.status(500).send("Erro interno do servidor");
+});
+
+// ==============================
+// 🚀 Start
+// ==============================
+app.listen(PORT, () => {
+  console.log(`🔥 Servidor rodando em http://localhost:${PORT}`);
+});

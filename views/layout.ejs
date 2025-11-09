@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>
+      <%= typeof title !== 'undefined' ? title : 'Home' %> | Horriver Plate
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "horriver-dark": "#050509",
+              "horriver-bg": "#050509",
+              "horriver-light": "#f5f5f5",
+              "horriver-red": "#8b1320",
+              "horriver-red-soft": "#f97373",
+              "horriver-orange": "#ff7a1a",
+              "horriver-orange-soft": "#fed7aa",
+              "horriver-gray": "#9ca3af",
+              "horriver-border": "rgba(148, 163, 184, 0.35)",
+            },
+            fontFamily: {
+              sans: ["system-ui", "ui-sans-serif", "sans-serif"],
+              title: ["Oswald", "system-ui", "sans-serif"],
+            },
+            backgroundImage: {
+              "gradient-horriver":
+                "linear-gradient(90deg, #8b1320, #ff7a1a)",
+            },
+            animation: {
+              fadeIn: "fadeIn 0.4s ease-out",
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: 0, transform: "translateY(4px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
+            },
+            boxShadow: {
+              card: "0 18px 45px rgba(0, 0, 0, 0.9)",
+              "card-soft": "0 18px 35px rgba(0, 0, 0, 0.75)",
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background-color: #050509;
+        color: #f5f5f5;
+      }
+
+      /* 🔥 Fundo nas cores do Horriver (preto + vinho + laranja), sem azul */
+      .layout-bg {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(255, 122, 26, 0.18) 0,
+            transparent 55%
+          ),
+          radial-gradient(
+            circle at bottom,
+            rgba(139, 19, 32, 0.7) 0,
+            #050509 70%
+          );
+      }
+
+      .card-highlight {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-highlight::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+            circle at top left,
+            rgba(255, 122, 26, 0.18) 0,
+            transparent 55%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(255, 122, 26, 0.3) 0,
+            transparent 65%
+          );
+        opacity: 0.9;
+        pointer-events: none;
+      }
+
+      .card-highlight::after {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: 1.5rem;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 122, 26, 0.8),
+          rgba(139, 19, 32, 0.8)
+        );
+        opacity: 0.16;
+        pointer-events: none;
+      }
+
+      /* 💳 Card interno sem azul, mais vinho/preto */
+      .card-inner {
+        position: relative;
+        border-radius: 1.4rem;
+        border: 1px solid rgba(248, 250, 252, 0.06);
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(255, 122, 26, 0.16),
+            transparent 55%
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(139, 19, 32, 0.6),
+            rgba(5, 5, 9, 0.95)
+          );
+        box-shadow: 0 24px 55px rgba(0, 0, 0, 0.95);
+      }
+
+      .avatar-glow {
+        box-shadow:
+          0 0 0 2px rgba(5, 5, 9, 1),
+          0 0 0 5px rgba(255, 122, 26, 0.7),
+          0 0 25px rgba(255, 122, 26, 0.9);
+      }
+
+      .badge-pulse {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .badge-pulse::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 122, 26, 0.3),
+          transparent
+        );
+        transform: translateX(-100%);
+        animation: shimmer 2.6s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%);
+        }
+        60% {
+          transform: translateX(100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
+      .logo-watermark {
+        position: absolute;
+        inset: auto -60px -60px auto;
+        opacity: 0.07;
+        transform: rotate(-8deg);
+        pointer-events: none;
+      }
+    </style>
+  </head>
+
+  <body class="bg-horriver-bg text-horriver-light">
+    <%
+      const currentPage = typeof activePage !== 'undefined' ? activePage : '';
+      const isAdmin = typeof admin !== 'undefined' && admin;
+    %>
+
+    <div class="min-h-screen flex flex-col layout-bg">
+      <!-- HEADER -->
+      <header
+        class="sticky top-0 z-40 bg-black/80 border-b border-horriver-border backdrop-blur"
+      >
+        <nav
+          class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 gap-4"
+        >
+          <!-- Logo / Marca -->
+          <a href="/" class="flex items-center gap-2">
+            <div
+              class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70"
+            >
+              <img
+                src="/img/logo.jpg"
+                alt="Horriver Plate"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div class="flex flex-col leading-tight">
+              <span
+                class="font-title text-sm md:text-base text-horriver-orange tracking-wide"
+              >
+                Horriver Plate
+              </span>
+              <span class="text-[10px] text-horriver-gray">
+                Pelada • Stats • Resenha
+              </span>
+            </div>
+          </a>
+
+          <!-- Navegação -->
+          <ul
+            class="hidden md:flex items-center gap-5 text-[11px] md:text-xs"
+          >
+            <li>
+              <a
+                href="/"
+                class="transition-colors
+                <%= currentPage === 'home'
+                  ? 'text-horriver-orange'
+                  : 'text-horriver-gray hover:text-horriver-orange' %>"
+              >
+                Home
+              </a>
+            </li>
+            <li>
+              <a
+                href="/rankings"
+                class="transition-colors
+                <%= currentPage === 'rankings'
+                  ? 'text-horriver-orange'
+                  : 'text-horriver-gray hover:text-horriver-orange' %>"
+              >
+                Rankings
+              </a>
+            </li>
+            <li>
+              <a
+                href="/elenco"
+                class="transition-colors
+                <%= currentPage === 'elenco'
+                  ? 'text-horriver-orange'
+                  : 'text-horriver-gray hover:text-horriver-orange' %>"
+              >
+                Elenco
+              </a>
+            </li>
+            <li>
+              <a
+                href="/sobre"
+                class="transition-colors
+                <%= currentPage === 'sobre'
+                  ? 'text-horriver-orange'
+                  : 'text-horriver-gray hover:text-horriver-orange' %>"
+              >
+                Sobre
+              </a>
+            </li>
+          </ul>
+
+          <!-- Ações à direita -->
+          <div class="flex items-center gap-2">
+            <% if (!isAdmin) { %>
+              <!-- Quando NÃO está logado -->
+              <a
+                href="/login"
+                class="px-3 py-1 rounded-full border border-horriver-orange
+                       text-[11px] md:text-xs text-horriver-orange
+                       hover:bg-horriver-orange hover:text-horriver-bg
+                       transition-colors"
+              >
+                Login
+              </a>
+            <% } else { %>
+              <!-- Quando ESTÁ logado como admin -->
+              <a
+                href="/admin"
+                class="px-3 py-1 rounded-full border border-horriver-border
+                       text-[11px] md:text-xs text-horriver-light
+                       hover:border-horriver-orange hover:text-horriver-orange
+                       transition-colors"
+              >
+                Painel
+              </a>
+
+              <form method="POST" action="/logout">
+                <button
+                  type="submit"
+                  class="px-3 py-1 rounded-full border border-red-500/80
+                         text-[11px] md:text-xs text-red-400
+                         hover:bg-red-600 hover:text-horriver-bg
+                         transition-colors"
+                >
+                  Sair
+                </button>
+              </form>
+            <% } %>
+          </div>
+        </nav>
+      </header>
+
+      <!-- CONTEÚDO -->
+      <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+        <%- body %>
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="mt-8 border-t border-horriver-border text-xs text-horriver-gray/80">
+        <div
+          class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2"
+        >
+          <p class="text-center md:text-left">
+            &copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os direitos reservados.
+          </p>
+
+          <!-- Centro: Instagram -->
+          <a
+            href="https://www.instagram.com/_hpfrc/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 text-horriver-orange hover:text-horriver-red transition-colors text-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+              <path
+                d="M7.75 2C4.678 2 2 4.678 2 7.75v8.5C2 19.322 4.678 22 7.75 22h8.5c3.072 0 5.75-2.678 5.75-5.75v-8.5C22 4.678 19.322 2 16.25 2h-8.5zM12 7.25a4.75 4.75 0 1 1 0 9.5a4.75 4.75 0 0 1 0-9.5zm0 1.5a3.25 3.25 0 1 0 0 6.5a3.25 3.25 0 0 0 0-6.5zm5.25-.75a.75.75 0 1 1 0-1.5a.75.75 0 0 1 0 1.5z"
+              />
+            </svg>
+            @_hpfrc
+          </a>
+
+          <p class="text-center md:text-right">
+            Projeto feito com
+            <span class="text-horriver-orange font-semibold">futebol raiz</span>
+            e muita resenha. ⚽
+          </p>
+        </div>
+      </footer>
+
+    </div>
+  </body>
+</html>

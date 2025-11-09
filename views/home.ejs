@@ -1,0 +1,130 @@
+<section class="space-y-10 animate-fadeIn">
+  <!-- Destaques da Semana -->
+  <div class="bg-horriver-red/10 rounded-2xl p-6 shadow-card">
+    <h2 class="font-title text-2xl text-horriver-orange mb-4">
+      Destaques da Semana
+    </h2>
+
+    <% if (weekly) { %>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="space-y-2">
+          <h3 class="font-title text-lg text-horriver-light">
+            Craque da Semana
+          </h3>
+          <p class="text-sm text-horriver-gray">
+            <strong><%= weekly.craque?.name || "Jogador" %></strong>
+            <% if (weekly.craqueMatch) { %>
+              – partida: <%= weekly.craqueMatch.description || "" %>
+            <% } %>
+          </p>
+          <p class="text-xs text-horriver-gray">
+            Semana <%= weekly.week %> / <%= weekly.year %>
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="font-title text-lg text-horriver-light">
+            Time da Semana
+          </h3>
+          <p class="text-sm text-horriver-gray">
+            <strong><%= weekly.teamName || "Time vencedor" %></strong>
+          </p>
+        </div>
+      </div>
+    <% } else { %>
+      <p class="text-sm text-horriver-gray">
+        Ainda não há destaques cadastrados. Lance os dados pelo painel admin.
+      </p>
+    <% } %>
+  </div>
+
+  <!-- Rankings: Top 10 Artilheiros -->
+  <div class="space-y-4">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="font-title text-2xl text-horriver-orange">
+        Top 10 Artilheiros
+      </h2>
+      <a
+        href="/rankings?tipo=artilheiros"
+        class="text-xs text-horriver-orange hover:underline"
+      >
+        Ver rankings completos
+      </a>
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-horriver-red/40 bg-horriver-dark">
+      <table class="min-w-full text-sm">
+        <thead class="bg-horriver-red/20 text-horriver-light">
+          <tr>
+            <th class="text-left px-3 py-2">#</th>
+            <th class="text-left px-3 py-2">Jogador</th>
+            <th class="text-left px-3 py-2">Posição</th>
+            <th class="text-left px-3 py-2">Gols</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (topScorers && topScorers.length) { %>
+            <% topScorers.forEach((p, idx) => { %>
+              <tr class="border-t border-horriver-red/30 hover:bg-horriver-red/10 transition">
+                <td class="px-3 py-2"><%= idx + 1 %></td>
+                <td class="px-3 py-2"><%= p.name %></td>
+                <td class="px-3 py-2 text-xs uppercase text-horriver-gray"><%= p.position %></td>
+                <td class="px-3 py-2 font-semibold"><%= p.totalGoals %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td class="px-3 py-2 text-center text-horriver-gray" colspan="4">
+                Nenhum jogador cadastrado ainda.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Preview Elenco -->
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="font-title text-2xl text-horriver-orange">Nossos Jogadores</h2>
+      <a
+        href="/elenco"
+        class="text-xs text-horriver-orange hover:underline"
+      >
+        Ver elenco completo
+      </a>
+    </div>
+    <p class="text-sm text-horriver-gray">
+      Elenco ilustrativo. Os dados oficiais vêm do painel admin.
+    </p>
+  </div>
+
+  <!-- Sobre + Instagram -->
+  <div class="bg-horriver-red/10 rounded-2xl p-6 shadow-card grid md:grid-cols-2 gap-6 items-center">
+    <div class="flex flex-col items-center md:items-start gap-4">
+      <img src="/img/logo.png" alt="Horriver Plate" class="h-20 w-20 object-contain" />
+      <h2 class="font-title text-2xl text-horriver-orange">
+        Sobre o Projeto
+      </h2>
+      <p class="text-sm text-horriver-gray">
+        O Horriver Plate é a nossa pelada organizada, com estatísticas,
+        rankings, craque da semana e aquele clima de resenha de time profissional.
+      </p>
+      <a
+        href="https://instagram.com"
+        target="_blank"
+        class="inline-flex items-center justify-center px-4 py-2 text-xs rounded-full bg-gradient-horriver text-horriver-light shadow-glow hover:opacity-90 transition"
+      >
+        Ver no Instagram
+      </a>
+    </div>
+    <div class="hidden md:block text-sm text-horriver-gray">
+      <p>
+        Aqui você acompanha artilheiros, assistentes, notas, presença, time da semana,
+        craque da galera e muito mais. Tudo isso com visual inspirado em sites de clubes
+        profissionais e portais esportivos.
+      </p>
+    </div>
+  </div>
+</section>

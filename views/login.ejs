@@ -1,0 +1,61 @@
+<section class="flex items-center justify-center min-h-[70vh] animate-fadeIn">
+  <div
+    class="w-full max-w-sm bg-black/50 border border-horriver-red/40 rounded-2xl p-6 shadow-lg"
+  >
+    <div class="flex flex-col items-center gap-2 mb-4">
+      <img
+        src="/img/logo.jpg"
+        alt="Horriver Plate"
+        class="h-14 w-14 rounded-full border border-horriver-red/60 object-contain"
+      />
+      <h1 class="font-title text-2xl text-horriver-orange">
+        Painel Admin
+      </h1>
+      <p class="text-[11px] text-horriver-gray text-center">
+        Acesso restrito. Use o e-mail e senha de administrador.
+      </p>
+    </div>
+
+    <% if (error) { %>
+      <div class="mb-3 text-[11px] text-red-300 bg-red-900/30 border border-red-500/60 rounded-md px-3 py-2">
+        <%= error %>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/login" class="space-y-3 text-sm">
+      <div class="space-y-1">
+        <label class="text-xs text-horriver-gray">E-mail</label>
+        <input
+          type="email"
+          name="email"
+          required
+          class="w-full rounded-md bg-horriver-dark border-horriver-red/60 px-3 py-2 text-xs"
+          placeholder="admin@horriver.com"
+        />
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-xs text-horriver-gray">Senha</label>
+        <input
+          type="password"
+          name="password"
+          required
+          class="w-full rounded-md bg-horriver-dark border-horriver-red/60 px-3 py-2 text-xs"
+          placeholder="********"
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="w-full mt-2 py-2 text-xs rounded-full bg-gradient-horriver text-horriver-light hover:opacity-90 transition"
+      >
+        Entrar
+      </button>
+    </form>
+
+    <p class="mt-4 text-[11px] text-horriver-gray text-center">
+      Ao entrar, você terá acesso ao painel para lançar peladas, estatísticas e
+      gerenciar o elenco.
+    </p>
+  </div>
+</section>

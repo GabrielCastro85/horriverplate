@@ -1,0 +1,134 @@
+/* ===== THEME TOKENS ===== */
+:root[data-theme="light"] {
+  --bg: #f5f7fb;
+  --surface-1: #ffffff;
+  --surface-2: #eef2f8;
+  --surface-3: #e7ecf5;
+  --text-1: #0b1020;   /* títulos */
+  --text-2: #40485f;   /* textos secundários */
+  --muted:  #6b7280;
+
+  --accent: #ff7a18;   /* laranja da marca */
+  --accent-2: #ffb703;
+
+  --border: rgba(10,16,28,0.12);
+  --ring: rgba(255,122,24,0.35);
+  --shadow-1: 0 6px 24px rgba(9,18,31,0.08);
+
+  --card-grad-a: var(--surface-1);
+  --card-grad-b: var(--surface-2);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0f1a;
+  --surface-1: #0f141f;
+  --surface-2: #151b2b;
+  --surface-3: #1a2238;
+  --text-1: #f3f6ff;
+  --text-2: #c6cbe1;
+  --muted:  #8891a7;
+
+  --accent: #ff7a18;
+  --accent-2: #ffb703;
+
+  --border: rgba(255,255,255,0.08);
+  --ring: rgba(255,122,24,0.45);
+  --shadow-1: 0 8px 28px rgba(0,0,0,0.35);
+
+  --card-grad-a: #11182a;
+  --card-grad-b: #0d1220;
+}
+
+/* ===== BASE ===== */
+html, body {
+  background: var(--bg);
+  color: var(--text-1);
+}
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+
+/* ===== LAYOUT ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ===== NAVBAR ===== */
+.navbar {
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+}
+.navbar a,
+.navbar button { color: var(--text-1); }
+
+/* ===== COMPONENTS ===== */
+.card {
+  background: linear-gradient(160deg, var(--card-grad-a) 0%, var(--card-grad-b) 100%);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-1);
+  padding: 20px;
+}
+
+.card--accent {
+  position: relative;
+}
+.card--accent::after {
+  content: "";
+  position: absolute; inset: -1px;
+  border-radius: 20px;
+  pointer-events: none;
+  background: radial-gradient(1200px 400px at 12% 8%, var(--ring), transparent 60%);
+  z-index: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-2);
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+
+.title-xl { font-size: clamp(28px, 3vw, 42px); color: var(--text-1); font-weight: 800; }
+.title-lg { font-size: 20px; font-weight: 700; color: var(--text-1); }
+.subtitle { color: var(--text-2); }
+
+/* botões */
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-1);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.btn--accent {
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  color: #fff;
+  border: none;
+}
+
+/* imagens “molduradas” para os cards */
+.frame {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface-1);
+}
+
+/* pequenas utilidades */
+.grid { display: grid; gap: 20px; }
+.grid-2 { grid-template-columns: 1fr; }
+@media (min-width: 900px){ .grid-2 { grid-template-columns: 1fr 1fr; } }

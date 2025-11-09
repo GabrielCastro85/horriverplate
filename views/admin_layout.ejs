@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title><%= title %> | Painel Horriver Plate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/output.css" />
+  </head>
+  <body class="bg-horriver-dark text-horriver-light">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-horriver-dark border-b border-horriver-red/40">
+      <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+        <div class="flex items-center gap-2">
+          <img src="/img/logo.png" alt="Horriver Plate" class="h-8 w-8 object-contain" />
+          <div class="flex flex-col leading-tight">
+            <span class="font-title text-lg text-horriver-orange">
+              Painel do Admin
+            </span>
+            <span class="text-[11px] text-horriver-gray">
+              Horriver Plate
+            </span>
+          </div>
+        </div>
+
+        <% if (admin) { %>
+          <nav class="flex items-center gap-4 text-xs">
+            <a href="#fotos" class="hover:text-horriver-orange transition">
+              Fotos / Destaques
+            </a>
+            <a href="#pelada" class="hover:text-horriver-orange transition">
+              Peladas
+            </a>
+            <a href="#jogadores" class="hover:text-horriver-orange transition">
+              Jogadores
+            </a>
+            <a
+              href="/login/logout"
+              class="px-3 py-1 rounded-full border border-horriver-orange text-horriver-orange hover:bg-horriver-orange hover:text-horriver-dark transition"
+            >
+              Sair
+            </a>
+          </nav>
+        <% } %>
+      </div>
+    </header>
+
+    <main class="pt-20 pb-10">
+      <div class="max-w-6xl mx-auto px-4">
+        <%- body %>
+      </div>
+    </main>
+
+    <script>
+      // Scroll suave para âncoras internas
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener("click", (e) => {
+          const targetId = link.getAttribute("href");
+          const target = document.querySelector(targetId);
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
