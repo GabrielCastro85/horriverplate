@@ -1,3 +1,5 @@
+// prisma/seed.js
+require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 
@@ -6,11 +8,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Iniciando seed...");
 
-  
-  const email = "admin@horriverplate.com";
-  const plainPassword = "admin123";
+  const email = process.env.ADMIN_EMAIL || "admin@horriver.com";
+  const plainPassword = process.env.ADMIN_PASSWORD || "senha123";
 
-  
+  // Verifica se já existe admin com esse e-mail
   const existingAdmin = await prisma.admin.findUnique({
     where: { email },
   });
@@ -21,16 +22,18 @@ async function main() {
     await prisma.admin.create({
       data: {
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword, // ✅ campo correto do schema
       },
     });
 
-    console.log(`✅ Admin criado: ${email} / ${plainPassword}`);
+    console.log("✅ Admin criado com sucesso:");
+    console.log(`   Email: ${email}`);
+    console.log(`   Senha: ${plainPassword}`);
   } else {
-    console.log("ℹ️ Admin já existente, nenhum novo registro criado.");
+    console.log("ℹ️ Admin já existe, nenhum novo admin criado.");
   }
 
-  console.log("🌱 Seed finalizado com sucesso!");
+  console.log("🌱 Seed finalizado.");
 }
 
 main()
