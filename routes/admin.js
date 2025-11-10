@@ -18,7 +18,7 @@ function requireAdmin(req, res, next) {
 }
 
 // ==============================
-// 🔢 Helper: recomputar totais de jogadores
+// 🔢 Helper: recomputar totais de jogadores (para alguns IDs)
 // ==============================
 async function recomputeTotalsForPlayers(playerIds) {
   const uniqueIds = Array.from(new Set(playerIds)).filter((id) => !!id);
@@ -366,11 +366,7 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
       const appearedInPhoto = photo;
 
       const hasAnyData =
-        present ||
-        goals > 0 ||
-        assists > 0 ||
-        rating !== null ||
-        appearedInPhoto;
+        present || goals > 0 || assists > 0 || rating !== null || appearedInPhoto;
 
       const existing = statsByPlayerId.get(playerId);
 
@@ -608,7 +604,6 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       include: {
         stats: {
           include: { player: true },
-          // 🔽 ORDEM ALFABÉTICA PELO NOME
           orderBy: {
             player: { name: "asc" },
           },
@@ -637,10 +632,12 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
 });
 
 // ===============================================
-// 🔁 Handler: recalcular totais de todos os jogadores
+// 🔁 Rota: Recalcular totais de TODOS os jogadores
 // ===============================================
 async function handleRecalculateTotals(req, res) {
   try {
+    console.log("🔁 Recalculando totais de todos os jogadores...");
+
     const players = await prisma.player.findMany({
       include: {
         stats: true,
@@ -655,7 +652,6 @@ async function handleRecalculateTotals(req, res) {
       const totalMatches = stats.filter((s) => s.present).length;
       const totalPhotos = stats.filter((s) => s.appearedInPhoto).length;
 
-      // média só das stats que têm nota
       const rated = stats.filter((s) => s.rating != null);
       const totalRating =
         rated.length > 0
@@ -674,6 +670,7 @@ async function handleRecalculateTotals(req, res) {
       });
     }
 
+    console.log("✅ Totais recalculados com sucesso.");
     return res.redirect("/admin?success=totalsRecalculated");
   } catch (err) {
     console.error("Erro ao recalcular totais:", err);
@@ -681,7 +678,7 @@ async function handleRecalculateTotals(req, res) {
   }
 }
 
-// Aceita tanto POST quanto GET (pra funcionar com botão ou link)
-router.post("/recalculate-totals", requireAdmin, handleRecalculateTotals);
-router.get("/recalculate-totals", requireAdmin, handleRecalculateTotals);
+// Aceita QUALQUER método (GET, POST, etc) nesse caminho
+router.all("/recalculate-totals", requireAdmin, handleRecalculateTotals);
+
 module.exports = router;
