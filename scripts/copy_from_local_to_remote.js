@@ -1,147 +1,171 @@
 // scripts/copy_from_local_to_remote.js
-// Copia TUDO do banco local (velho) para o banco remoto (Render)
-
 require("dotenv").config();
-const { PrismaClient } = require("@prisma/client");
+const { Client } = require("pg");
 
-// Prisma apontando pro banco NOVO (Render) – usa DATABASE_URL
-const remote = new PrismaClient();
+const SOURCE_URL = process.env.LOCAL_DATABASE_URL; // banco antigo (local)
+const TARGET_URL = process.env.DATABASE_URL;       // banco novo (Render)
 
-// Prisma apontando pro banco ANTIGO (local) – usa LOCAL_DATABASE_URL
-const local = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.LOCAL_DATABASE_URL,
-    },
+if (!SOURCE_URL || !TARGET_URL) {
+  console.error("❌ LOCAL_DATABASE_URL ou DATABASE_URL não definidos no .env");
+  process.exit(1);
+}
+
+// Conexão local (sem SSL)
+const source = new Client({
+  connectionString: SOURCE_URL,
+});
+
+// Conexão REMOTA (Render) - com SSL OBRIGATÓRIO
+const target = new Client({
+  connectionString: TARGET_URL,
+  ssl: {
+    rejectUnauthorized: false,
   },
 });
 
+async function copyTable(tableName, columns, options = {}) {
+  const { where = "", orderBy = "id" } = options;
+
+  const whereClause = where ? `WHERE ${where}` : "";
+  const orderClause = orderBy ? `ORDER BY "${orderBy}"` : "";
+
+  // ❗ IMPORTANTE: usar nomes de colunas entre aspas nos SELECT também
+  const colSelect = columns.map((c) => `"${c}"`).join(", ");
+  const colList = columns.map((c) => `"${c}"`).join(", ");
+
+  console.log(`\n📥 Lendo dados da tabela "${tableName}" do banco LOCAL...`);
+  const res = await source.query(
+    `SELECT ${colSelect} FROM "${tableName}" ${whereClause} ${orderClause};`
+  );
+
+  console.log(`   → ${res.rows.length} registros encontrados.`);
+
+  if (!res.rows.length) return;
+
+  const placeholders = (n) =>
+    Array.from({ length: n }, (_, i) => `$${i + 1}`).join(", ");
+
+  console.log(`📤 Inserindo dados na tabela "${tableName}" do banco REMOTO...`);
+
+  for (const row of res.rows) {
+    const values = columns.map((c) => row[c]);
+    await target.query(
+      `INSERT INTO "${tableName}" (${colList}) VALUES (${placeholders(
+        columns.length
+      )});`,
+      values
+    );
+  }
+
+  console.log(`✅ Tabela "${tableName}" copiada com sucesso.`);
+}
+
 async function main() {
-  console.log("🛠 Iniciando cópia do banco LOCAL -> REMOTO...");
-  console.log("LOCAL_DATABASE_URL:", process.env.LOCAL_DATABASE_URL);
-  console.log("DATABASE_URL (REMOTE):", process.env.DATABASE_URL);
+  console.log("🔗 Conectando nos bancos...");
+  await source.connect();
+  await target.connect();
+  console.log("✅ Conectado no banco LOCAL e REMOTO.");
 
-  // 1) Buscar tudo do banco antigo (local)
-  console.log("📥 Lendo dados do banco LOCAL...");
+  // 1) Limpa dados do remoto (na ordem certa por causa de FKs)
+  console.log("\n🚨 Limpando dados do banco REMOTO (mas mantendo Admin)...");
 
-  const players = await local.player.findMany();
-  const matches = await local.match.findMany();
-  const playerStats = await local.playerStat.findMany();
-  const weeklyAwards = await local.weeklyAward.findMany();
-  const monthlyAwards = await local.monthlyAward.findMany();
+  await target.query(`DELETE FROM "WeeklyAward";`);
+  await target.query(`DELETE FROM "MonthlyAward";`);
+  await target.query(`DELETE FROM "PlayerStat";`);
+  await target.query(`DELETE FROM "Match";`);
+  await target.query(`DELETE FROM "Player";`);
 
-  console.log(`👤 Players:        ${players.length}`);
-  console.log(`⚽ Matches:        ${matches.length}`);
-  console.log(`📊 PlayerStats:    ${playerStats.length}`);
-  console.log(`🏆 WeeklyAwards:   ${weeklyAwards.length}`);
-  console.log(`🌙 MonthlyAwards:  ${monthlyAwards.length}`);
+  console.log("✅ Tabelas de stats, peladas e jogadores limpas no banco REMOTO.");
 
-  // 2) Limpar dados do banco REMOTO (Render),
-  //    mas mantendo o Admin que já foi criado pelo seed.
-  console.log("🧹 Limpando dados do banco REMOTO (menos Admin)...");
+  // 2) Copia Player
+  await copyTable("Player", [
+    "id",
+    "name",
+    "nickname",
+    "position",
+    "photoUrl",
+    "totalGoals",
+    "totalAssists",
+    "totalMatches",
+    "totalPhotos",
+    "totalRating",
+    "createdAt",
+    "updatedAt",
+  ]);
 
-  await remote.playerStat.deleteMany();
-  await remote.weeklyAward.deleteMany();
-  await remote.monthlyAward.deleteMany();
-  await remote.match.deleteMany();
-  await remote.player.deleteMany();
-  // Admin fica quietinho 🙂
+  // 3) Copia Match
+  await copyTable("Match", [
+    "id",
+    "playedAt",
+    "description",
+    "winnerTeam",
+    "createdAt",
+    "updatedAt",
+  ]);
 
-  // 3) Inserir dados no banco remoto na ordem certa
-  console.log("📤 Inserindo Players no banco REMOTO...");
-  if (players.length) {
-    await remote.player.createMany({
-      data: players.map((p) => ({
-        id: p.id,
-        name: p.name,
-        nickname: p.nickname,
-        position: p.position,
-        photoUrl: p.photoUrl,
-        totalGoals: p.totalGoals,
-        totalAssists: p.totalAssists,
-        totalMatches: p.totalMatches,
-        totalPhotos: p.totalPhotos,
-        totalRating: p.totalRating,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-      })),
-      skipDuplicates: true,
-    });
+  // 4) Copia PlayerStat
+  await copyTable("PlayerStat", [
+    "id",
+    "playerId",
+    "matchId",
+    "present",
+    "goals",
+    "assists",
+    "rating",
+    "appearedInPhoto",
+    "createdAt",
+    "updatedAt",
+  ]);
+
+  // 5) Copia WeeklyAward
+  await copyTable("WeeklyAward", [
+    "id",
+    "weekStart",
+    "teamPhotoUrl",
+    "bestPlayerId",
+    "winningMatchId",
+    "createdAt",
+  ]);
+
+  // 6) Copia MonthlyAward
+  await copyTable("MonthlyAward", [
+    "id",
+    "month",
+    "year",
+    "craqueId",
+    "createdAt",
+  ]);
+
+  console.log("\n🎯 Ajustando sequences (ids auto-increment) no REMOTO...");
+
+  const seqFixes = [
+    `SELECT setval(pg_get_serial_sequence('"Player"', 'id'), COALESCE((SELECT MAX(id) FROM "Player"), 1));`,
+    `SELECT setval(pg_get_serial_sequence('"Match"', 'id'), COALESCE((SELECT MAX(id) FROM "Match"), 1));`,
+    `SELECT setval(pg_get_serial_sequence('"PlayerStat"', 'id'), COALESCE((SELECT MAX(id) FROM "PlayerStat"), 1));`,
+    `SELECT setval(pg_get_serial_sequence('"WeeklyAward"', 'id'), COALESCE((SELECT MAX(id) FROM "WeeklyAward"), 1));`,
+    `SELECT setval(pg_get_serial_sequence('"MonthlyAward"', 'id'), COALESCE((SELECT MAX(id) FROM "MonthlyAward"), 1));`,
+  ];
+
+  for (const q of seqFixes) {
+    try {
+      await target.query(q);
+    } catch (err) {
+      console.warn(
+        "⚠️ Erro ajustando sequence (pode ignorar se tudo estiver funcionando):",
+        err.message
+      );
+    }
   }
 
-  console.log("📤 Inserindo Matches no banco REMOTO...");
-  if (matches.length) {
-    await remote.match.createMany({
-      data: matches.map((m) => ({
-        id: m.id,
-        playedAt: m.playedAt,
-        description: m.description,
-        winnerTeam: m.winnerTeam,
-        createdAt: m.createdAt,
-        updatedAt: m.updatedAt,
-      })),
-      skipDuplicates: true,
-    });
-  }
-
-  console.log("📤 Inserindo PlayerStats no banco REMOTO...");
-  if (playerStats.length) {
-    // pode precisar quebrar em lotes se tiver MUITA coisa, mas por enquanto manda de uma vez
-    await remote.playerStat.createMany({
-      data: playerStats.map((s) => ({
-        id: s.id,
-        playerId: s.playerId,
-        matchId: s.matchId,
-        present: s.present,
-        goals: s.goals,
-        assists: s.assists,
-        rating: s.rating,
-        appearedInPhoto: s.appearedInPhoto,
-        createdAt: s.createdAt,
-        updatedAt: s.updatedAt,
-      })),
-      skipDuplicates: true,
-    });
-  }
-
-  console.log("📤 Inserindo WeeklyAwards no banco REMOTO...");
-  if (weeklyAwards.length) {
-    await remote.weeklyAward.createMany({
-      data: weeklyAwards.map((w) => ({
-        id: w.id,
-        weekStart: w.weekStart,
-        teamPhotoUrl: w.teamPhotoUrl,
-        bestPlayerId: w.bestPlayerId,
-        winningMatchId: w.winningMatchId,
-        createdAt: w.createdAt,
-      })),
-      skipDuplicates: true,
-    });
-  }
-
-  console.log("📤 Inserindo MonthlyAwards no banco REMOTO...");
-  if (monthlyAwards.length) {
-    await remote.monthlyAward.createMany({
-      data: monthlyAwards.map((m) => ({
-        id: m.id,
-        month: m.month,
-        year: m.year,
-        craqueId: m.craqueId,
-        createdAt: m.createdAt,
-      })),
-      skipDuplicates: true,
-    });
-  }
-
-  console.log("✅ Migração concluída com sucesso!");
+  console.log("\n✅ Cópia concluída com sucesso!");
 }
 
 main()
   .catch((err) => {
-    console.error("❌ Erro na migração:", err);
+    console.error("❌ Erro ao copiar dados:", err);
   })
   .finally(async () => {
-    await local.$disconnect();
-    await remote.$disconnect();
-    process.exit();
+    await source.end();
+    await target.end();
+    console.log("🔚 Conexões fechadas.");
   });

@@ -691,14 +691,22 @@
 
   <!-- Rodapé admin: botão de reset -->
   <section class="pt-4 border-t border-horriver-border/60">
-    <form action="/admin/reset-totals" method="GET" class="inline">
+    <form
+      method="POST"
+      action="/admin/recalculate-totals"
+      class="inline"
+    >
       <button
         type="submit"
-        class="text-[11px] md:text-xs text-horriver-gray/70 hover:text-horriver-orange transition"
+        class="px-3 py-1 rounded-full border border-horriver-orange
+              text-[11px] md:text-xs text-horriver-orange
+              hover:bg-horriver-orange hover:text-horriver-bg
+              transition-colors"
       >
         Recalcular totais de todos os jogadores
       </button>
     </form>
+
   </section>
 </div>
 
