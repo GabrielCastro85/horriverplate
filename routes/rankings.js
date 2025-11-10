@@ -1,3 +1,4 @@
+// routes/rankings.js
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
@@ -25,9 +26,15 @@ function buildDateRange(scope, year, month) {
 
 router.get("/", async (req, res) => {
   const currentYear = new Date().getFullYear();
+
+  // filtros da query
   const scope = req.query.scope || "all"; // all | year | month
   const year = parseInt(req.query.year || currentYear, 10);
   const month = parseInt(req.query.month || "0", 10) || 0;
+
+  // filtro de posição (select na tela)
+  // valores esperados: "all", "Goleiro", "Zagueiro", "Meia", "Atacante"
+  const selPosition = req.query.position || "all";
 
   const range = buildDateRange(scope, year, month);
 
@@ -35,7 +42,7 @@ router.get("/", async (req, res) => {
     const playersMap = new Map();
 
     // ==============================
-    // 1) Dados base para rankings de stats
+    // 1) Agrega stats (geral ou por período)
     // ==============================
     if (!range) {
       // Sem filtro de datas: usa totais da tabela Player
@@ -105,10 +112,20 @@ router.get("/", async (req, res) => {
       }
     }
 
-    const list = Array.from(playersMap.values());
+    // transforma em lista
+    let list = Array.from(playersMap.values());
 
     // ==============================
-    // 2) Função genérica de ordenação (SEM limite de top 10)
+    // 2) Filtro por posição (se não for "all")
+    // ==============================
+    if (selPosition !== "all") {
+      list = list.filter(
+        (item) => item.player.position === selPosition
+      );
+    }
+
+    // ==============================
+    // 3) Função genérica de ordenação
     // ==============================
     function sortBy(field, calcFn) {
       return [...list]
@@ -124,11 +141,12 @@ router.get("/", async (req, res) => {
           if (vb !== va) return vb - va;
           return a.player.name.localeCompare(b.player.name);
         });
-      // ❌ removido .slice(0, 10) para listar todos
+      // 👆 aqui não dou slice(0, 10) porque na página
+      // de rankings você quis ver todos os nomes
     }
 
     // ==============================
-    // 3) Rankings de stats
+    // 4) Rankings de stats
     // ==============================
     const byGoals = sortBy("goals");
     const byAssists = sortBy("assists");
@@ -145,7 +163,7 @@ router.get("/", async (req, res) => {
     };
 
     // ==============================
-    // 4) Rankings de craques da semana / mês
+    // 5) Rankings de craques da semana / mês
     // ==============================
 
     // Craque da semana (bestPlayer em WeeklyAward)
@@ -167,10 +185,12 @@ router.get("/", async (req, res) => {
       weeklyMap.get(id).count++;
     }
 
-    const weeklyAwardsRanking = Array.from(weeklyMap.values()).sort((a, b) => {
-      if (b.count !== a.count) return b.count - a.count;
-      return a.player.name.localeCompare(b.player.name);
-    });
+    const weeklyAwardsRanking = Array.from(weeklyMap.values()).sort(
+      (a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.player.name.localeCompare(b.player.name);
+      }
+    );
 
     // Craque do mês (craque em MonthlyAward)
     const monthlyAwardsRaw = await prisma.monthlyAward.findMany({
@@ -199,7 +219,7 @@ router.get("/", async (req, res) => {
     );
 
     // ==============================
-    // 5) Render
+    // 6) Render
     // ==============================
     res.render("rankings", {
       title: "Rankings",
@@ -207,6 +227,7 @@ router.get("/", async (req, res) => {
       year,
       month,
       currentYear,
+      selPosition, // usado no select de posição no EJS
       rankings: {
         goals: byGoals,
         assists: byAssists,

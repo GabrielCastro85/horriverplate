@@ -126,7 +126,7 @@
           name="year"
           class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
         >
-          <% for (let y = currentYear; y >= currentYear - 10; y--) { %>
+          <% for (let y = currentYear; y >= 2025; y--) { %>
             <option value="<%= y %>" <%= Number(selYear) === y ? "selected" : "" %>>
               <%= y %>
             </option>

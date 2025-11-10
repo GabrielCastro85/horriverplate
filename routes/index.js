@@ -3,172 +3,252 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
 
-// Home pública
+// ==============================
+// Helpers
+// ==============================
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+// ==============================
+// HOME /
+// ==============================
 router.get("/", async (req, res) => {
   try {
-    // ============================
-    // 1) BUSCAS EM PARALELO
-    // ============================
-    const [
-      topScorers,
-      topAssists,
-      topRatings,
-      photoKings,
-      weeklyAward,
-      monthlyCraque,
-      recentMatches,
-      players,
-    ] = await Promise.all([
-      // Artilheiros
-      prisma.player.findMany({
-        orderBy: [{ totalGoals: "desc" }, { name: "asc" }],
-        take: 10,
-      }),
+    const now = new Date();
+    const currentYear = now.getFullYear();
 
-      // Assistências
-      prisma.player.findMany({
-        orderBy: [{ totalAssists: "desc" }, { name: "asc" }],
-        take: 10,
-      }),
+    // ------------------------------
+    // Craque do mês (último cadastrado)
+    // ------------------------------
+    const monthlyCraque = await prisma.monthlyAward.findFirst({
+      orderBy: [
+        { year: "desc" },
+        { month: "desc" },
+      ],
+      include: {
+        craque: true,
+      },
+    });
 
-      // Notas (somente quem já jogou alguma)
-      prisma.player.findMany({
-        where: { totalMatches: { gt: 0 } },
-        orderBy: [{ totalRating: "desc" }, { name: "asc" }],
-        take: 10,
-      }),
-
-      // Reis da foto
-      prisma.player.findMany({
-        orderBy: [{ totalPhotos: "desc" }, { name: "asc" }],
-        take: 10,
-      }),
-
-      // Destaque da semana mais recente
-      prisma.weeklyAward.findFirst({
-        orderBy: { weekStart: "desc" },
-        include: {
-          bestPlayer: true,
-          winningMatch: true,
-        },
-      }),
-
-      // Craque do mês mais recente
-      prisma.monthlyAward.findFirst({
-        orderBy: [{ year: "desc" }, { month: "desc" }],
-        include: {
-          craque: true,
-        },
-      }),
-
-      // Últimas peladas
-      prisma.match.findMany({
-        orderBy: { playedAt: "desc" },
-        take: 5,
-      }),
-
-      // Elenco (vamos usar pra prévia na home)
-      prisma.player.findMany({
-        orderBy: { name: "asc" },
-      }),
-    ]);
-
-    // ============================
-    // 2) STATS DO CRAQUE DO MÊS
-    // ============================
     let monthlyStats = null;
 
     if (monthlyCraque && monthlyCraque.craqueId) {
-      // início e fim do mês daquele prêmio
-      const monthStart = new Date(monthlyCraque.year, monthlyCraque.month - 1, 1);
-      const monthEnd = new Date(monthlyCraque.year, monthlyCraque.month, 1); // exclusivo
+      const { month, year } = monthlyCraque;
 
-      const agg = await prisma.playerStat.aggregate({
+      // início e fim do mês referente ao prêmio
+      const monthStart = new Date(year, month - 1, 1);
+      const monthEnd = new Date(year, month, 0);
+      monthStart.setHours(0, 0, 0, 0);
+      monthEnd.setHours(23, 59, 59, 999);
+
+      const stats = await prisma.playerStat.findMany({
         where: {
           playerId: monthlyCraque.craqueId,
           match: {
             playedAt: {
               gte: monthStart,
-              lt: monthEnd,
+              lte: monthEnd,
             },
           },
         },
-        _sum: {
-          goals: true,
-          assists: true,
-        },
-        _avg: {
-          rating: true,
-        },
-        _count: {
-          id: true,
-        },
+      });
+
+      let goals = 0;
+      let assists = 0;
+      let matches = 0;
+      let photos = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      stats.forEach((s) => {
+        goals += s.goals || 0;
+        assists += s.assists || 0;
+        if (s.present) matches++;
+        if (s.appearedInPhoto) photos++;
+        if (s.rating != null) {
+          ratingSum += s.rating;
+          ratingCount++;
+        }
       });
 
       monthlyStats = {
-        goals: agg._sum.goals || 0,
-        assists: agg._sum.assists || 0,
-        matches: agg._count.id || 0,
-        photos: 0, // se um dia tiver controle por mês, dá pra trocar aqui
-        avgRating: agg._avg.rating || 0,
+        goals,
+        assists,
+        matches,
+        photos,
+        avgRating: ratingCount > 0 ? ratingSum / ratingCount : 0,
       };
     }
 
-    // ============================
-    // 3) STATS DO CRAQUE DA SEMANA
-    // ============================
-    let weeklyStats = null;
+    // ------------------------------
+    // Craque / Time da semana (último WeeklyAward)
+    // ------------------------------
+    const weeklyAward = await prisma.weeklyAward.findFirst({
+      orderBy: { weekStart: "desc" },
+      include: {
+        bestPlayer: true,
+        winningMatch: true,
+      },
+    });
 
-    if (
-      weeklyAward &&
-      weeklyAward.bestPlayerId &&
-      weeklyAward.winningMatchId
-    ) {
-      // PlayerStat daquela pelada específica
-      const stat = await prisma.playerStat.findUnique({
+    // Stats da semana do craque da semana
+    let weeklyStats = null;
+    if (weeklyAward && weeklyAward.bestPlayerId) {
+      const weekStart = startOfDay(weeklyAward.weekStart);
+      const weekEnd = endOfDay(
+        new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+      );
+
+      const stats = await prisma.playerStat.findMany({
         where: {
-          playerId_matchId: {
-            playerId: weeklyAward.bestPlayerId,
-            matchId: weeklyAward.winningMatchId,
+          playerId: weeklyAward.bestPlayerId,
+          match: {
+            playedAt: {
+              gte: weekStart,
+              lte: weekEnd,
+            },
           },
         },
       });
 
-      if (stat) {
-        weeklyStats = {
-          goals: stat.goals || 0,
-          assists: stat.assists || 0,
-          // não usamos matches na tela, mas deixo 1 por semântica
-          matches: 1,
-          avgRating: stat.rating || 0,
-        };
-      }
+      let goals = 0;
+      let assists = 0;
+      let matches = 0;
+      let photos = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      stats.forEach((s) => {
+        goals += s.goals || 0;
+        assists += s.assists || 0;
+        if (s.present) matches++;
+        if (s.appearedInPhoto) photos++;
+        if (s.rating != null) {
+          ratingSum += s.rating;
+          ratingCount++;
+        }
+      });
+
+      weeklyStats = {
+        goals,
+        assists,
+        matches,
+        photos,
+        avgRating: ratingCount > 0 ? ratingSum / ratingCount : 0,
+      };
     }
 
-    // ============================
-    // 4) RENDERIZA HOME
-    // ============================
+    // ------------------------------
+    // Rankings rápidos (usando campos totais do Player)
+    // ------------------------------
+    const topScorers = await prisma.player.findMany({
+      orderBy: { totalGoals: "desc" },
+      take: 10,
+    });
+
+    const topAssists = await prisma.player.findMany({
+      orderBy: { totalAssists: "desc" },
+      take: 10,
+    });
+
+    const topRatings = await prisma.player.findMany({
+      where: {
+        totalRating: {
+          gt: 0,
+        },
+      },
+      orderBy: { totalRating: "desc" },
+      take: 10,
+    });
+
+    const photoKings = await prisma.player.findMany({
+      orderBy: { totalPhotos: "desc" },
+      take: 10,
+    });
+
+    // ------------------------------
+    // Elenco (para "Elenco em destaque")
+    // ------------------------------
+    const players = await prisma.player.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    // ------------------------------
+    // Últimas peladas
+    // ------------------------------
+    const recentMatches = await prisma.match.findMany({
+      orderBy: { playedAt: "desc" },
+      take: 10,
+    });
+
     res.render("index", {
       title: "Home",
       activePage: "home",
+
+      monthlyCraque,
+      monthlyStats,
+      weeklyAward,
+      weeklyStats,
 
       topScorers,
       topAssists,
       topRatings,
       photoKings,
 
-      weeklyAward,
-      weeklyStats,      // <== IMPORTANTE
-
-      monthlyCraque,
-      monthlyStats,     // <== IMPORTANTE
-
-      recentMatches,
       players,
+      recentMatches,
     });
   } catch (err) {
-    console.error("Erro na rota /:", err);
-    res.status(500).send("Erro ao carregar a página inicial");
+    console.error("Erro ao carregar home:", err);
+    res.status(500).send("Erro ao carregar a página inicial.");
+  }
+});
+
+// ==============================
+// PÁGINA PÚBLICA DE UMA PELADA
+// GET /matches/:id
+// ==============================
+router.get("/matches/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(404).render("404");
+    }
+
+    const match = await prisma.match.findUnique({
+      where: { id },
+      include: {
+        stats: {
+          include: { player: true },
+          orderBy: {
+            player: { name: "asc" },
+          },
+        },
+      },
+    });
+
+    if (!match) {
+      return res.status(404).render("404");
+    }
+
+    res.render("match_public", {
+      title: "Estatísticas da pelada",
+      activePage: "home",
+      match,
+      stats: match.stats || [],
+    });
+  } catch (err) {
+    console.error("Erro ao carregar pelada pública:", err);
+    res.status(500).send("Erro ao carregar estatísticas da pelada.");
   }
 });
 

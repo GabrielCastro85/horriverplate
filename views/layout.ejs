@@ -42,8 +42,8 @@
               },
             },
             boxShadow: {
-              card: "0 18px 45px rgba(0, 0, 0, 0.9)",
-              "card-soft": "0 18px 35px rgba(0, 0, 0, 0.75)",
+              card: "0 18px 45px rgba(15, 23, 42, 0.85)",
+              "card-soft": "0 18px 35px rgba(15, 23, 42, 0.7)",
             },
           },
         },
@@ -58,19 +58,11 @@
         color: #f5f5f5;
       }
 
-      /* 🔥 Fundo nas cores do Horriver (preto + vinho + laranja), sem azul */
+      /* Fundo geral da página (sem azul, mais quente e escuro) */
       .layout-bg {
-        background:
-          radial-gradient(
-            circle at top,
-            rgba(255, 122, 26, 0.18) 0,
-            transparent 55%
-          ),
-          radial-gradient(
-            circle at bottom,
-            rgba(139, 19, 32, 0.7) 0,
-            #050509 70%
-          );
+        background-image:
+          radial-gradient(circle at top, rgba(248, 113, 22, 0.18), transparent 55%),
+          radial-gradient(circle at bottom, rgba(127, 29, 29, 0.35), #050509 70%);
       }
 
       .card-highlight {
@@ -110,28 +102,26 @@
         pointer-events: none;
       }
 
-      /* 💳 Card interno sem azul, mais vinho/preto */
       .card-inner {
         position: relative;
         border-radius: 1.4rem;
         border: 1px solid rgba(248, 250, 252, 0.06);
-        background:
-          radial-gradient(
+        background: radial-gradient(
             circle at top left,
             rgba(255, 122, 26, 0.16),
             transparent 55%
           ),
           radial-gradient(
             circle at bottom right,
-            rgba(139, 19, 32, 0.6),
-            rgba(5, 5, 9, 0.95)
+            rgba(15, 23, 42, 0.6),
+            rgba(15, 23, 42, 0.95)
           );
-        box-shadow: 0 24px 55px rgba(0, 0, 0, 0.95);
+        box-shadow: 0 24px 55px rgba(15, 23, 42, 0.95);
       }
 
       .avatar-glow {
         box-shadow:
-          0 0 0 2px rgba(5, 5, 9, 1),
+          0 0 0 2px rgba(15, 23, 42, 1),
           0 0 0 5px rgba(255, 122, 26, 0.7),
           0 0 25px rgba(255, 122, 26, 0.9);
       }
@@ -174,6 +164,58 @@
         transform: rotate(-8deg);
         pointer-events: none;
       }
+
+      /* Botão hambúrguer mobile com animação */
+      .mobile-toggle {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        border-radius: 9999px;
+        border: 1px solid #ff7a1a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background: transparent;
+        transition: background 0.2s ease, border-color 0.2s ease,
+          transform 0.15s ease;
+      }
+
+      .mobile-toggle:hover {
+        background: rgba(249, 115, 22, 0.08);
+      }
+
+      .mobile-toggle-line,
+      .mobile-toggle-line::before,
+      .mobile-toggle-line::after {
+        position: absolute;
+        width: 18px;
+        height: 2px;
+        border-radius: 9999px;
+        background: #ff7a1a;
+        content: "";
+        transition: transform 0.22s ease, opacity 0.18s ease;
+      }
+
+      .mobile-toggle-line::before {
+        transform: translateY(-5px);
+      }
+
+      .mobile-toggle-line::after {
+        transform: translateY(5px);
+      }
+
+      .mobile-toggle.open .mobile-toggle-line {
+        opacity: 0;
+      }
+
+      .mobile-toggle.open .mobile-toggle-line::before {
+        transform: rotate(45deg);
+      }
+
+      .mobile-toggle.open .mobile-toggle-line::after {
+        transform: rotate(-45deg);
+      }
     </style>
   </head>
 
@@ -214,7 +256,7 @@
             </div>
           </a>
 
-          <!-- Navegação -->
+          <!-- Navegação desktop -->
           <ul
             class="hidden md:flex items-center gap-5 text-[11px] md:text-xs"
           >
@@ -264,15 +306,26 @@
             </li>
           </ul>
 
-          <!-- Ações à direita -->
-          <div class="flex items-center gap-2">
+          <!-- Ações à direita (desktop) -->
+          <div class="hidden md:flex items-center gap-2">
+            <a
+              href="https://www.instagram.com/_hpfrc/"
+              target="_blank"
+              class="px-3 py-1 rounded-full border border-horriver-orange/80
+                     text-[11px] md:text-xs text-horriver-orange
+                     hover:bg-horriver-orange hover:text-horriver-bg
+                     transition-colors"
+            >
+              Instagram
+            </a>
+
             <% if (!isAdmin) { %>
               <!-- Quando NÃO está logado -->
               <a
                 href="/login"
-                class="px-3 py-1 rounded-full border border-horriver-orange
-                       text-[11px] md:text-xs text-horriver-orange
-                       hover:bg-horriver-orange hover:text-horriver-bg
+                class="px-3 py-1 rounded-full border border-horriver-border
+                       text-[11px] md:text-xs text-horriver-gray
+                       hover:border-horriver-orange hover:text-horriver-orange
                        transition-colors"
               >
                 Login
@@ -302,7 +355,96 @@
               </form>
             <% } %>
           </div>
+
+          <!-- Botão mobile (hambúrguer) -->
+          <button
+            id="mobile-menu-toggle"
+            class="mobile-toggle md:hidden"
+            aria-label="Abrir menu"
+            aria-expanded="false"
+          >
+            <span class="mobile-toggle-line"></span>
+          </button>
         </nav>
+
+        <!-- Menu mobile -->
+        <div
+          id="mobile-menu"
+          class="md:hidden border-t border-horriver-border bg-black/95 hidden"
+        >
+          <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 text-sm">
+            <a
+              href="/"
+              class="py-1
+              <%= currentPage === 'home'
+                ? 'text-horriver-orange'
+                : 'text-horriver-gray hover:text-horriver-orange' %>"
+            >
+              Home
+            </a>
+            <a
+              href="/rankings"
+              class="py-1
+              <%= currentPage === 'rankings'
+                ? 'text-horriver-orange'
+                : 'text-horriver-gray hover:text-horriver-orange' %>"
+            >
+              Rankings
+            </a>
+            <a
+              href="/elenco"
+              class="py-1
+              <%= currentPage === 'elenco'
+                ? 'text-horriver-orange'
+                : 'text-horriver-gray hover:text-horriver-orange' %>"
+            >
+              Elenco
+            </a>
+            <a
+              href="/sobre"
+              class="py-1
+              <%= currentPage === 'sobre'
+                ? 'text-horriver-orange'
+                : 'text-horriver-gray hover:text-horriver-orange' %>"
+            >
+              Sobre
+            </a>
+
+            <div class="h-px bg-horriver-border/60 my-1"></div>
+
+            <a
+              href="https://www.instagram.com/_hpfrc/"
+              target="_blank"
+              class="py-1 text-horriver-orange hover:text-horriver-orange-soft"
+            >
+              Instagram
+            </a>
+
+            <% if (!isAdmin) { %>
+              <a
+                href="/login"
+                class="py-1 text-horriver-gray hover:text-horriver-orange"
+              >
+                Login
+              </a>
+            <% } else { %>
+              <a
+                href="/admin"
+                class="py-1 text-horriver-gray hover:text-horriver-orange"
+              >
+                Painel do admin
+              </a>
+              <form method="POST" action="/logout" class="mt-1">
+                <button
+                  type="submit"
+                  class="py-1 text-red-400 hover:text-red-300"
+                >
+                  Sair
+                </button>
+              </form>
+            <% } %>
+          </div>
+        </div>
       </header>
 
       <!-- CONTEÚDO -->
@@ -311,29 +453,16 @@
       </main>
 
       <!-- FOOTER -->
-      <footer class="mt-8 border-t border-horriver-border text-xs text-horriver-gray/80">
+      <footer
+        class="mt-8 border-t border-horriver-border text-[10px] md:text-xs text-horriver-gray/80"
+      >
         <div
           class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2"
         >
           <p class="text-center md:text-left">
-            &copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os direitos reservados.
+            &copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os
+            direitos reservados.
           </p>
-
-          <!-- Centro: Instagram -->
-          <a
-            href="https://www.instagram.com/_hpfrc/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-2 text-horriver-orange hover:text-horriver-red transition-colors text-sm"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
-              <path
-                d="M7.75 2C4.678 2 2 4.678 2 7.75v8.5C2 19.322 4.678 22 7.75 22h8.5c3.072 0 5.75-2.678 5.75-5.75v-8.5C22 4.678 19.322 2 16.25 2h-8.5zM12 7.25a4.75 4.75 0 1 1 0 9.5a4.75 4.75 0 0 1 0-9.5zm0 1.5a3.25 3.25 0 1 0 0 6.5a3.25 3.25 0 0 0 0-6.5zm5.25-.75a.75.75 0 1 1 0-1.5a.75.75 0 0 1 0 1.5z"
-              />
-            </svg>
-            @_hpfrc
-          </a>
-
           <p class="text-center md:text-right">
             Projeto feito com
             <span class="text-horriver-orange font-semibold">futebol raiz</span>
@@ -341,7 +470,22 @@
           </p>
         </div>
       </footer>
-
     </div>
+
+    <script>
+      // Toggle do menu mobile + animação do hambúrguer
+      document.addEventListener("DOMContentLoaded", () => {
+        const toggle = document.getElementById("mobile-menu-toggle");
+        const menu = document.getElementById("mobile-menu");
+
+        if (!toggle || !menu) return;
+
+        toggle.addEventListener("click", () => {
+          const isOpen = toggle.classList.toggle("open");
+          menu.classList.toggle("hidden", !isOpen);
+          toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+      });
+    </script>
   </body>
 </html>
