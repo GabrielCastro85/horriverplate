@@ -637,21 +637,51 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
 });
 
 // ===============================================
-// 🔁 Rota: Recalcular totais de todos os jogadores
+// 🔁 Handler: recalcular totais de todos os jogadores
 // ===============================================
-router.post("/recalculate-totals", requireAdmin, async (req, res) => {
+async function handleRecalculateTotals(req, res) {
   try {
     const players = await prisma.player.findMany({
-      select: { id: true },
+      include: {
+        stats: true,
+      },
     });
 
-    await recomputeTotalsForPlayers(players.map((p) => p.id));
+    for (const player of players) {
+      const stats = player.stats || [];
 
-    res.redirect("/admin?success=totalsRecalculated");
+      const totalGoals = stats.reduce((sum, s) => sum + (s.goals || 0), 0);
+      const totalAssists = stats.reduce((sum, s) => sum + (s.assists || 0), 0);
+      const totalMatches = stats.filter((s) => s.present).length;
+      const totalPhotos = stats.filter((s) => s.appearedInPhoto).length;
+
+      // média só das stats que têm nota
+      const rated = stats.filter((s) => s.rating != null);
+      const totalRating =
+        rated.length > 0
+          ? rated.reduce((sum, s) => sum + s.rating, 0) / rated.length
+          : 0;
+
+      await prisma.player.update({
+        where: { id: player.id },
+        data: {
+          totalGoals,
+          totalAssists,
+          totalMatches,
+          totalPhotos,
+          totalRating,
+        },
+      });
+    }
+
+    return res.redirect("/admin?success=totalsRecalculated");
   } catch (err) {
     console.error("Erro ao recalcular totais:", err);
-    res.status(500).send("Erro ao recalcular totais.");
+    return res.status(500).send("Erro ao recalcular totais.");
   }
-});
+}
 
+// Aceita tanto POST quanto GET (pra funcionar com botão ou link)
+router.post("/recalculate-totals", requireAdmin, handleRecalculateTotals);
+router.get("/recalculate-totals", requireAdmin, handleRecalculateTotals);
 module.exports = router;
