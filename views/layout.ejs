@@ -2,12 +2,10 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <title>
-      <%= typeof title !== 'undefined' ? title : 'Home' %> | Horriver Plate
-    </title>
+    <title><%= typeof title !== 'undefined' ? title : 'Home' %> | Horriver Plate</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Tailwind CDN -->
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -18,203 +16,94 @@
               "horriver-bg": "#050509",
               "horriver-light": "#f5f5f5",
               "horriver-red": "#8b1320",
-              "horriver-red-soft": "#f97373",
               "horriver-orange": "#ff7a1a",
-              "horriver-orange-soft": "#fed7aa",
               "horriver-gray": "#9ca3af",
-              "horriver-border": "rgba(148, 163, 184, 0.35)",
+              "horriver-border": "rgba(148,163,184,0.35)",
             },
             fontFamily: {
-              sans: ["system-ui", "ui-sans-serif", "sans-serif"],
-              title: ["Oswald", "system-ui", "sans-serif"],
-            },
-            backgroundImage: {
-              "gradient-horriver":
-                "linear-gradient(90deg, #8b1320, #ff7a1a)",
-            },
-            animation: {
-              fadeIn: "fadeIn 0.4s ease-out",
+              sans: ["system-ui","ui-sans-serif","sans-serif"],
+              title: ["Oswald","system-ui","sans-serif"],
             },
             keyframes: {
-              fadeIn: {
-                "0%": { opacity: 0, transform: "translateY(4px)" },
-                "100%": { opacity: 1, transform: "translateY(0)" },
-              },
+              fadeIn: { "0%":{opacity:0,transform:"translateY(8px)"}, "100%":{opacity:1,transform:"translateY(0)"} },
+              slideDown: { "0%":{opacity:0,transform:"translateY(-12px)"}, "100%":{opacity:1,transform:"translateY(0)"} },
+              slideUp: { "0%":{opacity:1,transform:"translateY(0)"}, "100%":{opacity:0,transform:"translateY(-12px)"} },
+            },
+            animation: {
+              fadeIn: "fadeIn .35s ease-out",
+              slideDown: "slideDown .22s ease-out",
+              slideUp: "slideUp .18s ease-in forwards",
             },
             boxShadow: {
-              card: "0 18px 45px rgba(15, 23, 42, 0.85)",
-              "card-soft": "0 18px 35px rgba(15, 23, 42, 0.7)",
-            },
-          },
-        },
-      };
+              card: "0 18px 45px rgba(15,23,42,.85)",
+              "card-soft":"0 18px 35px rgba(15,23,42,.7)",
+            }
+          }
+        }
+      }
     </script>
 
     <style>
+      /* Fundo geral */
       body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
         background-color: #050509;
         color: #f5f5f5;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
-      /* Fundo geral da página (sem azul, mais quente e escuro) */
+      /* Fundo quente */
       .layout-bg {
-        background-image:
-          radial-gradient(circle at top, rgba(248, 113, 22, 0.18), transparent 55%),
-          radial-gradient(circle at bottom, rgba(127, 29, 29, 0.35), #050509 70%);
+        background-image: radial-gradient(
+          circle at top,
+          #2d0509 0,
+          #120106 35%,
+          #050509 70%,
+          #000000 100%
+        );
       }
 
+      /* Contorno dos cards */
       .card-highlight {
         position: relative;
         overflow: hidden;
+        border-radius: 1.5rem;
       }
-
-      .card-highlight::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-            circle at top left,
-            rgba(255, 122, 26, 0.18) 0,
-            transparent 55%
-          ),
-          radial-gradient(
-            circle at bottom right,
-            rgba(255, 122, 26, 0.3) 0,
-            transparent 65%
-          );
-        opacity: 0.9;
-        pointer-events: none;
-      }
-
       .card-highlight::after {
         content: "";
         position: absolute;
         inset: -1px;
         border-radius: 1.5rem;
-        background: linear-gradient(
-          135deg,
-          rgba(255, 122, 26, 0.8),
-          rgba(139, 19, 32, 0.8)
-        );
-        opacity: 0.16;
+        background: linear-gradient(135deg, rgba(255, 122, 26, 0.8), rgba(139, 19, 32, 0.8));
+        opacity: 0.18;
         pointer-events: none;
       }
-
       .card-inner {
         position: relative;
         border-radius: 1.4rem;
         border: 1px solid rgba(248, 250, 252, 0.06);
-        background: radial-gradient(
-            circle at top left,
-            rgba(255, 122, 26, 0.16),
-            transparent 55%
-          ),
-          radial-gradient(
-            circle at bottom right,
-            rgba(15, 23, 42, 0.6),
-            rgba(15, 23, 42, 0.95)
-          );
+        background:
+          radial-gradient(circle at top left, rgba(255, 122, 26, 0.12), transparent 55%),
+          radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 1));
         box-shadow: 0 24px 55px rgba(15, 23, 42, 0.95);
       }
 
-      .avatar-glow {
-        box-shadow:
-          0 0 0 2px rgba(15, 23, 42, 1),
-          0 0 0 5px rgba(255, 122, 26, 0.7),
-          0 0 25px rgba(255, 122, 26, 0.9);
-      }
-
-      .badge-pulse {
-        position: relative;
-        overflow: hidden;
-      }
-
-      .badge-pulse::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 122, 26, 0.3),
-          transparent
-        );
-        transform: translateX(-100%);
-        animation: shimmer 2.6s infinite;
-      }
-
-      @keyframes shimmer {
-        0% {
-          transform: translateX(-100%);
-        }
-        60% {
-          transform: translateX(100%);
-        }
-        100% {
-          transform: translateX(100%);
-        }
-      }
-
-      .logo-watermark {
-        position: absolute;
-        inset: auto -60px -60px auto;
-        opacity: 0.07;
-        transform: rotate(-8deg);
-        pointer-events: none;
-      }
-
-      /* Botão hambúrguer mobile com animação */
-      .mobile-toggle {
-        position: relative;
-        width: 34px;
-        height: 34px;
-        border-radius: 9999px;
-        border: 1px solid #ff7a1a;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        background: transparent;
-        transition: background 0.2s ease, border-color 0.2s ease,
-          transform 0.15s ease;
-      }
-
-      .mobile-toggle:hover {
-        background: rgba(249, 115, 22, 0.08);
-      }
-
-      .mobile-toggle-line,
-      .mobile-toggle-line::before,
-      .mobile-toggle-line::after {
-        position: absolute;
-        width: 18px;
+      /* Ícone hambúrguer */
+      .hamburger-line {
+        display: block;
         height: 2px;
-        border-radius: 9999px;
+        width: 18px;
         background: #ff7a1a;
-        content: "";
-        transition: transform 0.22s ease, opacity 0.18s ease;
+        border-radius: 999px;
+        transition: transform .18s ease, opacity .18s ease;
       }
-
-      .mobile-toggle-line::before {
-        transform: translateY(-5px);
+      .hamburger-active .line-1 {
+        transform: translateY(6px) rotate(45deg);
       }
-
-      .mobile-toggle-line::after {
-        transform: translateY(5px);
-      }
-
-      .mobile-toggle.open .mobile-toggle-line {
+      .hamburger-active .line-2 {
         opacity: 0;
       }
-
-      .mobile-toggle.open .mobile-toggle-line::before {
-        transform: rotate(45deg);
-      }
-
-      .mobile-toggle.open .mobile-toggle-line::after {
-        transform: rotate(-45deg);
+      .hamburger-active .line-3 {
+        transform: translateY(-6px) rotate(-45deg);
       }
     </style>
   </head>
@@ -227,225 +116,78 @@
 
     <div class="min-h-screen flex flex-col layout-bg">
       <!-- HEADER -->
-      <header
-        class="sticky top-0 z-40 bg-black/80 border-b border-horriver-border backdrop-blur"
-      >
-        <nav
-          class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 gap-4"
-        >
-          <!-- Logo / Marca -->
+      <header class="sticky top-0 z-40 bg-black/80 border-b border-horriver-border backdrop-blur">
+        <nav class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 gap-4">
           <a href="/" class="flex items-center gap-2">
-            <div
-              class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70"
-            >
-              <img
-                src="/img/logo.jpg"
-                alt="Horriver Plate"
-                class="w-full h-full object-cover"
-              />
+            <div class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70">
+              <img src="/img/logo.jpg" alt="Horriver Plate" class="w-full h-full object-cover" />
             </div>
             <div class="flex flex-col leading-tight">
-              <span
-                class="font-title text-sm md:text-base text-horriver-orange tracking-wide"
-              >
-                Horriver Plate
-              </span>
-              <span class="text-[10px] text-horriver-gray">
-                Pelada • Stats • Resenha
-              </span>
+              <span class="font-title text-sm md:text-base text-horriver-orange tracking-wide">Horriver Plate</span>
+              <span class="text-[10px] text-horriver-gray">Pelada • Stats • Resenha</span>
             </div>
           </a>
 
           <!-- Navegação desktop -->
-          <ul
-            class="hidden md:flex items-center gap-5 text-[11px] md:text-xs"
-          >
-            <li>
-              <a
-                href="/"
-                class="transition-colors
-                <%= currentPage === 'home'
-                  ? 'text-horriver-orange'
-                  : 'text-horriver-gray hover:text-horriver-orange' %>"
-              >
-                Home
-              </a>
-            </li>
-            <li>
-              <a
-                href="/rankings"
-                class="transition-colors
-                <%= currentPage === 'rankings'
-                  ? 'text-horriver-orange'
-                  : 'text-horriver-gray hover:text-horriver-orange' %>"
-              >
-                Rankings
-              </a>
-            </li>
-            <li>
-              <a
-                href="/elenco"
-                class="transition-colors
-                <%= currentPage === 'elenco'
-                  ? 'text-horriver-orange'
-                  : 'text-horriver-gray hover:text-horriver-orange' %>"
-              >
-                Elenco
-              </a>
-            </li>
-            <li>
-              <a
-                href="/sobre"
-                class="transition-colors
-                <%= currentPage === 'sobre'
-                  ? 'text-horriver-orange'
-                  : 'text-horriver-gray hover:text-horriver-orange' %>"
-              >
-                Sobre
-              </a>
-            </li>
+          <ul class="hidden md:flex items-center gap-5 text-[11px] md:text-xs">
+            <li><a href="/" class="<%= currentPage==='home'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Home</a></li>
+            <li><a href="/rankings" class="<%= currentPage==='rankings'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Rankings</a></li>
+            <li><a href="/elenco" class="<%= currentPage==='elenco'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Elenco</a></li>
+            <li><a href="/sobre" class="<%= currentPage==='sobre'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Sobre</a></li>
           </ul>
 
-          <!-- Ações à direita (desktop) -->
+          <!-- Ações -->
           <div class="hidden md:flex items-center gap-2">
-            <a
-              href="https://www.instagram.com/_hpfrc/"
-              target="_blank"
-              class="px-3 py-1 rounded-full border border-horriver-orange/80
-                     text-[11px] md:text-xs text-horriver-orange
-                     hover:bg-horriver-orange hover:text-horriver-bg
-                     transition-colors"
-            >
-              Instagram
-            </a>
-
+            <a href="https://www.instagram.com/_hpfrc/" target="_blank" rel="noopener" class="px-3 py-1 rounded-full border border-horriver-orange text-[11px] md:text-xs text-horriver-orange hover:bg-horriver-orange hover:text-horriver-bg transition-colors">Instagram</a>
             <% if (!isAdmin) { %>
-              <!-- Quando NÃO está logado -->
-              <a
-                href="/login"
-                class="px-3 py-1 rounded-full border border-horriver-border
-                       text-[11px] md:text-xs text-horriver-gray
-                       hover:border-horriver-orange hover:text-horriver-orange
-                       transition-colors"
-              >
-                Login
-              </a>
+              <a href="/login" class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors">Login</a>
             <% } else { %>
-              <!-- Quando ESTÁ logado como admin -->
-              <a
-                href="/admin"
-                class="px-3 py-1 rounded-full border border-horriver-border
-                       text-[11px] md:text-xs text-horriver-light
-                       hover:border-horriver-orange hover:text-horriver-orange
-                       transition-colors"
-              >
-                Painel
-              </a>
-
+              <a href="/admin" class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors">Painel</a>
               <form method="POST" action="/logout">
-                <button
-                  type="submit"
-                  class="px-3 py-1 rounded-full border border-red-500/80
-                         text-[11px] md:text-xs text-red-400
-                         hover:bg-red-600 hover:text-horriver-bg
-                         transition-colors"
-                >
-                  Sair
-                </button>
+                <button type="submit" class="px-3 py-1 rounded-full border border-red-500/80 text-[11px] md:text-xs text-red-400 hover:bg-red-600 hover:text-horriver-bg transition-colors">Sair</button>
               </form>
             <% } %>
           </div>
 
-          <!-- Botão mobile (hambúrguer) -->
-          <button
-            id="mobile-menu-toggle"
-            class="mobile-toggle md:hidden"
-            aria-label="Abrir menu"
-            aria-expanded="false"
-          >
-            <span class="mobile-toggle-line"></span>
+          <!-- Botão hambúrguer -->
+          <button id="mobileMenuBtn" aria-label="Menu" class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full border border-horriver-orange/70">
+            <span class="flex flex-col gap-[5px]">
+              <span class="hamburger-line line-1"></span>
+              <span class="hamburger-line line-2"></span>
+              <span class="hamburger-line line-3"></span>
+            </span>
           </button>
         </nav>
-
-        <!-- Menu mobile -->
-        <div
-          id="mobile-menu"
-          class="md:hidden border-t border-horriver-border bg-black/95 hidden"
-        >
-          <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 text-sm">
-            <a
-              href="/"
-              class="py-1
-              <%= currentPage === 'home'
-                ? 'text-horriver-orange'
-                : 'text-horriver-gray hover:text-horriver-orange' %>"
-            >
-              Home
-            </a>
-            <a
-              href="/rankings"
-              class="py-1
-              <%= currentPage === 'rankings'
-                ? 'text-horriver-orange'
-                : 'text-horriver-gray hover:text-horriver-orange' %>"
-            >
-              Rankings
-            </a>
-            <a
-              href="/elenco"
-              class="py-1
-              <%= currentPage === 'elenco'
-                ? 'text-horriver-orange'
-                : 'text-horriver-gray hover:text-horriver-orange' %>"
-            >
-              Elenco
-            </a>
-            <a
-              href="/sobre"
-              class="py-1
-              <%= currentPage === 'sobre'
-                ? 'text-horriver-orange'
-                : 'text-horriver-gray hover:text-horriver-orange' %>"
-            >
-              Sobre
-            </a>
-
-            <div class="h-px bg-horriver-border/60 my-1"></div>
-
-            <a
-              href="https://www.instagram.com/_hpfrc/"
-              target="_blank"
-              class="py-1 text-horriver-orange hover:text-horriver-orange-soft"
-            >
-              Instagram
-            </a>
-
-            <% if (!isAdmin) { %>
-              <a
-                href="/login"
-                class="py-1 text-horriver-gray hover:text-horriver-orange"
-              >
-                Login
-              </a>
-            <% } else { %>
-              <a
-                href="/admin"
-                class="py-1 text-horriver-gray hover:text-horriver-orange"
-              >
-                Painel do admin
-              </a>
-              <form method="POST" action="/logout" class="mt-1">
-                <button
-                  type="submit"
-                  class="py-1 text-red-400 hover:text-red-300"
-                >
-                  Sair
-                </button>
-              </form>
-            <% } %>
-          </div>
-        </div>
       </header>
+
+      <!-- MENU MOBILE -->
+      <div id="mobileMenu" class="fixed inset-0 z-50 hidden">
+        <button id="mobileBackdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></button>
+        <div id="mobilePanel" class="relative mx-auto mt-2 w-[92%] max-w-sm rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown">
+          <div class="p-3 border-b border-horriver-border/60 flex justify-between items-center">
+            <span class="font-title text-horriver-orange text-sm">Navegação</span>
+            <button id="mobileClose" class="w-8 h-8 inline-flex items-center justify-center rounded-full border border-horriver-orange/60 text-horriver-orange">×</button>
+          </div>
+
+          <nav class="p-2 text-[13px]">
+            <a href="/" class="block px-3 py-2 rounded-lg hover:bg-white/5">Home</a>
+            <a href="/rankings" class="block px-3 py-2 rounded-lg hover:bg-white/5">Rankings</a>
+            <a href="/elenco" class="block px-3 py-2 rounded-lg hover:bg-white/5">Elenco</a>
+            <a href="/sobre" class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
+            <div class="mt-2 flex items-center gap-2 px-2">
+              <a href="https://www.instagram.com/_hpfrc/" target="_blank" rel="noopener" class="flex-1 px-3 py-2 rounded-lg border border-horriver-orange text-horriver-orange text-center hover:bg-horriver-orange hover:text-horriver-bg transition-colors">Instagram</a>
+              <% if (!isAdmin) { %>
+                <a href="/login" class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors">Login</a>
+              <% } else { %>
+                <a href="/admin" class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors">Painel</a>
+                <form method="POST" action="/logout" class="flex-1">
+                  <button type="submit" class="w-full px-3 py-2 rounded-lg border border-red-500/80 text-red-400 hover:bg-red-600 hover:text-horriver-bg transition-colors">Sair</button>
+                </form>
+              <% } %>
+            </div>
+          </nav>
+        </div>
+      </div>
 
       <!-- CONTEÚDO -->
       <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
@@ -453,39 +195,44 @@
       </main>
 
       <!-- FOOTER -->
-      <footer
-        class="mt-8 border-t border-horriver-border text-[10px] md:text-xs text-horriver-gray/80"
-      >
-        <div
-          class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2"
-        >
-          <p class="text-center md:text-left">
-            &copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os
-            direitos reservados.
-          </p>
-          <p class="text-center md:text-right">
-            Projeto feito com
-            <span class="text-horriver-orange font-semibold">futebol raiz</span>
-            e muita resenha. ⚽
-          </p>
+      <footer class="mt-8 border-t border-horriver-border text-[10px] md:text-xs text-horriver-gray/80">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2">
+          <p>&copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os direitos reservados.</p>
+          <p>Projeto feito com <span class="text-horriver-orange font-semibold">futebol raiz</span> e muita resenha. ⚽</p>
         </div>
       </footer>
     </div>
 
     <script>
-      // Toggle do menu mobile + animação do hambúrguer
-      document.addEventListener("DOMContentLoaded", () => {
-        const toggle = document.getElementById("mobile-menu-toggle");
-        const menu = document.getElementById("mobile-menu");
+      (function () {
+        const btn = document.getElementById('mobileMenuBtn');
+        const menu = document.getElementById('mobileMenu');
+        const panel = document.getElementById('mobilePanel');
+        const closeBtn = document.getElementById('mobileClose');
+        const backdrop = document.getElementById('mobileBackdrop');
 
-        if (!toggle || !menu) return;
+        function openMenu(){
+          menu.classList.remove('hidden');
+          requestAnimationFrame(()=> {
+            panel.classList.remove('animate-slideUp');
+            panel.classList.add('animate-slideDown');
+            btn.classList.add('hamburger-active');
+          });
+          document.body.style.overflow = 'hidden';
+        }
+        function closeMenu(){
+          panel.classList.remove('animate-slideDown');
+          panel.classList.add('animate-slideUp');
+          btn.classList.remove('hamburger-active');
+          setTimeout(()=>{ menu.classList.add('hidden');}, 180);
+          document.body.style.overflow = '';
+        }
 
-        toggle.addEventListener("click", () => {
-          const isOpen = toggle.classList.toggle("open");
-          menu.classList.toggle("hidden", !isOpen);
-          toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
-        });
-      });
+        btn && btn.addEventListener('click', openMenu);
+        closeBtn && closeBtn.addEventListener('click', closeMenu);
+        backdrop && backdrop.addEventListener('click', closeMenu);
+        window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !menu.classList.contains('hidden')) closeMenu();});
+      })();
     </script>
   </body>
 </html>
