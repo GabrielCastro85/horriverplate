@@ -366,7 +366,11 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
       const appearedInPhoto = photo;
 
       const hasAnyData =
-        present || goals > 0 || assists > 0 || rating !== null || appearedInPhoto;
+        present ||
+        goals > 0 ||
+        assists > 0 ||
+        rating !== null ||
+        appearedInPhoto;
 
       const existing = statsByPlayerId.get(playerId);
 
@@ -604,7 +608,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       include: {
         stats: {
           include: { player: true },
-          // 🔽 AGORA ORDEM ALFABÉTICA PELO NOME
+          // 🔽 ORDEM ALFABÉTICA PELO NOME
           orderBy: {
             player: { name: "asc" },
           },
@@ -629,6 +633,24 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
   } catch (err) {
     console.error("Erro ao carregar estatísticas da pelada:", err);
     res.redirect("/admin");
+  }
+});
+
+// ===============================================
+// 🔁 Rota: Recalcular totais de todos os jogadores
+// ===============================================
+router.post("/recalculate-totals", requireAdmin, async (req, res) => {
+  try {
+    const players = await prisma.player.findMany({
+      select: { id: true },
+    });
+
+    await recomputeTotalsForPlayers(players.map((p) => p.id));
+
+    res.redirect("/admin?success=totalsRecalculated");
+  } catch (err) {
+    console.error("Erro ao recalcular totais:", err);
+    res.status(500).send("Erro ao recalcular totais.");
   }
 });
 
