@@ -27,28 +27,49 @@
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
 
-  const selScope = scope || "all";       // all | year | month
-  const selYear = year || new Date().getFullYear();
-  const selMonth = month || 0;          // 0 = todos
-  const selPos = typeof selPosition !== "undefined" ? selPosition : "all";
+  const selYear = (typeof year !== "undefined" && year !== null && year !== "") ? String(year) : "all";
+  const selMonth = typeof month !== "undefined" ? Number(month) : 0;
+  const selPos = typeof selPosition !== "undefined" ? selPosition : (position || "all");
 
   const posLabel = (p) => {
     if (!p || p === "all") return "Todas";
     return p;
   };
 
-  const scopeLabel = () => {
-    if (selScope === "all") return "Geral (todos os tempos)";
-    if (selScope === "year") return `Ano de ${selYear}`;
-    if (selScope === "month") {
-      const mName = monthNames[(selMonth || 1) - 1] || "";
-      return `${mName} / ${selYear}`;
-    }
-    return "Período";
+  const periodLabel = () => {
+    if (!selYear || selYear === "all") return "Todos os anos";
+    const y = selYear;
+    if (!selMonth || Number(selMonth) === 0) return `Ano de ${y}`;
+    const mName = monthNames[(selMonth || 1) - 1] || "";
+    return `${mName} / ${y}`;
   };
 %>
 
 <style>
+  /* Cartões com borda/contorno igual à home */
+  .card-highlight {
+    background: linear-gradient(
+      135deg,
+      rgba(248, 113, 113, 0.9),
+      rgba(251, 146, 60, 0.5),
+      rgba(15, 23, 42, 1)
+    );
+  }
+
+  .card-inner {
+    background:
+      radial-gradient(circle at top left, rgba(248, 113, 113, 0.18), transparent 55%),
+      radial-gradient(circle at bottom right, rgba(251, 146, 60, 0.15), transparent 55%),
+      rgba(15, 23, 42, 0.98);
+    border-radius: 1.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.55);
+  }
+
+  .badge-pulse {
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.35);
+  }
+
   /* Scroll mais discreto dentro dos cards de ranking */
   .rk-scroll {
     scrollbar-width: thin;
@@ -67,6 +88,27 @@
     background: rgba(148, 163, 184, 0.6);
     border-radius: 999px;
   }
+
+  /* Destaque da coluna principal de cada ranking */
+  .stat-col {
+    font-weight: 700;
+    position: relative;
+  }
+  .stat-col::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, currentColor 0, transparent 70%);
+    opacity: 0.08;
+    pointer-events: none;
+  }
+
+  .stat-goal   { color: #f87171; } /* vermelho */
+  .stat-assist { color: #fb923c; } /* laranja */
+  .stat-total  { color: #fbbf24; } /* amarelo */
+  .stat-rating { color: #38bdf8; } /* azul claro */
+  .stat-photo  { color: #a855f7; } /* roxo */
+  .stat-match  { color: #4ade80; } /* verde p/ presenças */
 </style>
 
 <section class="space-y-8 animate-fadeIn">
@@ -84,8 +126,8 @@
       <!-- Resumo do filtro atual -->
       <div class="text-xs text-horriver-gray md:text-right">
         <p>
-          Escopo:
-          <span class="text-horriver-orange font-medium"><%= scopeLabel() %></span>
+          Período:
+          <span class="text-horriver-orange font-medium"><%= periodLabel() %></span>
         </p>
         <p>
           Posição:
@@ -100,34 +142,21 @@
       action="/rankings"
       class="bg-black/40 border border-horriver-border rounded-2xl px-4 py-3 flex flex-col md:flex-row md:items-end gap-3 text-[11px] md:text-xs"
     >
-      <!-- Escopo -->
-      <div class="flex-1 min-w-[140px]">
-        <label class="block text-horriver-gray mb-1">Escopo</label>
-        <select
-          name="scope"
-          class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
-        >
-          <option value="all" <%= selScope === "all" ? "selected" : "" %>>
-            Geral (todos os tempos)
-          </option>
-          <option value="year" <%= selScope === "year" ? "selected" : "" %>>
-            Ano específico
-          </option>
-          <option value="month" <%= selScope === "month" ? "selected" : "" %>>
-            Mês específico
-          </option>
-        </select>
-      </div>
-
       <!-- Ano -->
-      <div class="flex-1 min-w-[100px]">
+      <div class="flex-1 min-w-[120px]">
         <label class="block text-horriver-gray mb-1">Ano</label>
         <select
           name="year"
           class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
         >
+          <option value="all" <%= (!selYear || selYear === "all") ? "selected" : "" %>>
+            Todos os anos
+          </option>
           <% for (let y = currentYear; y >= 2025; y--) { %>
-            <option value="<%= y %>" <%= Number(selYear) === y ? "selected" : "" %>>
+            <option
+              value="<%= y %>"
+              <%= String(selYear) === String(y) ? "selected" : "" %>
+            >
               <%= y %>
             </option>
           <% } %>
@@ -141,11 +170,16 @@
           name="month"
           class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
         >
-          <option value="0" <%= Number(selMonth) === 0 ? "selected" : "" %>>Todos</option>
-          <% monthNames.forEach((mn, idx) => { 
+          <option value="0" <%= Number(selMonth) === 0 ? "selected" : "" %>>
+            Todos
+          </option>
+          <% monthNames.forEach((mn, idx) => {
                const mVal = idx + 1;
           %>
-            <option value="<%= mVal %>" <%= Number(selMonth) === mVal ? "selected" : "" %>>
+            <option
+              value="<%= mVal %>"
+              <%= Number(selMonth) === mVal ? "selected" : "" %>
+            >
               <%= mn %>
             </option>
           <% }) %>
@@ -247,7 +281,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold">
+                        <td class="px-2 py-1 text-center stat-col stat-goal">
                           <%= row.goals || 0 %>
                         </td>
                         <td class="px-2 py-1 text-center">
@@ -315,7 +349,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold">
+                        <td class="px-2 py-1 text-center stat-col stat-assist">
                           <%= row.assists || 0 %>
                         </td>
                         <td class="px-2 py-1 text-center">
@@ -391,7 +425,7 @@
                         <td class="px-2 py-1 text-center">
                           <%= row.assists || 0 %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold">
+                        <td class="px-2 py-1 text-center stat-col stat-total">
                           <%= (row.goals || 0) + (row.assists || 0) %>
                         </td>
                       </tr>
@@ -457,7 +491,7 @@
                         <td class="px-2 py-1 text-center">
                           <%= row.matches || 0 %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold">
+                        <td class="px-2 py-1 text-center stat-col stat-rating">
                           <%= fmtRating(row.rating) %>
                         </td>
                       </tr>
@@ -521,7 +555,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold">
+                        <td class="px-2 py-1 text-center stat-col stat-match">
                           <%= row.matches || 0 %>
                         </td>
                         <td class="px-2 py-1 text-center">
@@ -589,7 +623,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold">
+                        <td class="px-2 py-1 text-center stat-col stat-photo">
                           <%= row.photos || 0 %>
                         </td>
                       </tr>
