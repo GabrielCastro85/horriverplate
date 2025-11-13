@@ -27,9 +27,9 @@
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
 
-  const selYear = (typeof year !== "undefined" && year !== null && year !== "") ? String(year) : "all";
-  const selMonth = typeof month !== "undefined" ? Number(month) : 0;
-  const selPos = typeof selPosition !== "undefined" ? selPosition : (position || "all");
+  const selYear = (typeof year === "string" && year === "all") ? "all" : Number(year || new Date().getFullYear());
+  const selMonth = typeof month !== "undefined" ? Number(month) : 0; // 0 = todos
+  const selPos = typeof selPosition !== "undefined" ? selPosition : "all";
 
   const posLabel = (p) => {
     if (!p || p === "all") return "Todas";
@@ -37,39 +37,14 @@
   };
 
   const periodLabel = () => {
-    if (!selYear || selYear === "all") return "Todos os anos";
-    const y = selYear;
-    if (!selMonth || Number(selMonth) === 0) return `Ano de ${y}`;
+    if (selYear === "all") return "Geral (todos os anos)";
+    if (selMonth === 0) return `Ano de ${selYear}`;
     const mName = monthNames[(selMonth || 1) - 1] || "";
-    return `${mName} / ${y}`;
+    return `${mName} / ${selYear}`;
   };
 %>
 
 <style>
-  /* Cartões com borda/contorno igual à home */
-  .card-highlight {
-    background: linear-gradient(
-      135deg,
-      rgba(248, 113, 113, 0.9),
-      rgba(251, 146, 60, 0.5),
-      rgba(15, 23, 42, 1)
-    );
-  }
-
-  .card-inner {
-    background:
-      radial-gradient(circle at top left, rgba(248, 113, 113, 0.18), transparent 55%),
-      radial-gradient(circle at bottom right, rgba(251, 146, 60, 0.15), transparent 55%),
-      rgba(15, 23, 42, 0.98);
-    border-radius: 1.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.4);
-    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.55);
-  }
-
-  .badge-pulse {
-    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.35);
-  }
-
   /* Scroll mais discreto dentro dos cards de ranking */
   .rk-scroll {
     scrollbar-width: thin;
@@ -88,27 +63,6 @@
     background: rgba(148, 163, 184, 0.6);
     border-radius: 999px;
   }
-
-  /* Destaque da coluna principal de cada ranking */
-  .stat-col {
-    font-weight: 700;
-    position: relative;
-  }
-  .stat-col::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, currentColor 0, transparent 70%);
-    opacity: 0.08;
-    pointer-events: none;
-  }
-
-  .stat-goal   { color: #f87171; } /* vermelho */
-  .stat-assist { color: #fb923c; } /* laranja */
-  .stat-total  { color: #fbbf24; } /* amarelo */
-  .stat-rating { color: #38bdf8; } /* azul claro */
-  .stat-photo  { color: #a855f7; } /* roxo */
-  .stat-match  { color: #4ade80; } /* verde p/ presenças */
 </style>
 
 <section class="space-y-8 animate-fadeIn">
@@ -149,14 +103,11 @@
           name="year"
           class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
         >
-          <option value="all" <%= (!selYear || selYear === "all") ? "selected" : "" %>>
+          <option value="all" <%= selYear === "all" ? "selected" : "" %>>
             Todos os anos
           </option>
           <% for (let y = currentYear; y >= 2025; y--) { %>
-            <option
-              value="<%= y %>"
-              <%= String(selYear) === String(y) ? "selected" : "" %>
-            >
+            <option value="<%= y %>" <%= selYear === y ? "selected" : "" %>>
               <%= y %>
             </option>
           <% } %>
@@ -170,16 +121,11 @@
           name="month"
           class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
         >
-          <option value="0" <%= Number(selMonth) === 0 ? "selected" : "" %>>
-            Todos
-          </option>
+          <option value="0" <%= Number(selMonth) === 0 ? "selected" : "" %>>Todos</option>
           <% monthNames.forEach((mn, idx) => {
                const mVal = idx + 1;
           %>
-            <option
-              value="<%= mVal %>"
-              <%= Number(selMonth) === mVal ? "selected" : "" %>
-            >
+            <option value="<%= mVal %>" <%= Number(selMonth) === mVal ? "selected" : "" %>>
               <%= mn %>
             </option>
           <% }) %>
@@ -263,7 +209,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Gols</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Gols</th>
                       <th class="text-center px-2 py-1">Assist.</th>
                       <th class="text-center px-2 py-1">Part. G/A</th>
                     </tr>
@@ -281,7 +227,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center stat-col stat-goal">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
                           <%= row.goals || 0 %>
                         </td>
                         <td class="px-2 py-1 text-center">
@@ -331,7 +277,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Assist.</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Assist.</th>
                       <th class="text-center px-2 py-1">Gols</th>
                       <th class="text-center px-2 py-1">Part. G/A</th>
                     </tr>
@@ -349,7 +295,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center stat-col stat-assist">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
                           <%= row.assists || 0 %>
                         </td>
                         <td class="px-2 py-1 text-center">
@@ -403,7 +349,7 @@
                       <th class="text-left px-2 py-1">Posição</th>
                       <th class="text-center px-2 py-1">Gols</th>
                       <th class="text-center px-2 py-1">Assist.</th>
-                      <th class="text-center px-2 py-1">Total</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -425,7 +371,7 @@
                         <td class="px-2 py-1 text-center">
                           <%= row.assists || 0 %>
                         </td>
-                        <td class="px-2 py-1 text-center stat-col stat-total">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
                           <%= (row.goals || 0) + (row.assists || 0) %>
                         </td>
                       </tr>
@@ -472,7 +418,7 @@
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
                       <th class="text-center px-2 py-1">Presenças</th>
-                      <th class="text-center px-2 py-1">Média</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Média</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -491,7 +437,7 @@
                         <td class="px-2 py-1 text-center">
                           <%= row.matches || 0 %>
                         </td>
-                        <td class="px-2 py-1 text-center stat-col stat-rating">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
                           <%= fmtRating(row.rating) %>
                         </td>
                       </tr>
@@ -537,7 +483,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Presenças</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Presenças</th>
                       <th class="text-center px-2 py-1">Gols</th>
                       <th class="text-center px-2 py-1">Assist.</th>
                     </tr>
@@ -555,7 +501,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center stat-col stat-match">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
                           <%= row.matches || 0 %>
                         </td>
                         <td class="px-2 py-1 text-center">
@@ -607,7 +553,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Fotos</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Fotos</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -623,7 +569,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center stat-col stat-photo">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
                           <%= row.photos || 0 %>
                         </td>
                       </tr>

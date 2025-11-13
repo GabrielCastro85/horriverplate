@@ -3,246 +3,254 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
 
-// Monta o range de datas
-function buildDateRange(scope, year, month) {
-  if (scope === "all") return null;
-
-  const y = year || new Date().getFullYear();
-
-  if (scope === "year") {
-    const start = new Date(y, 0, 1);
-    const end = new Date(y + 1, 0, 1);
-    return { start, end };
+// Calcula o intervalo de datas com base em year/month
+function getDateRange(year, month) {
+  // "Todos os anos" => sem filtro de data
+  if (year === "all") {
+    return { from: null, to: null };
   }
 
-  if (scope === "month" && month && month >= 1 && month <= 12) {
-    const start = new Date(y, month - 1, 1);
-    const end = new Date(y, month, 1);
-    return { start, end };
+  const y = parseInt(year, 10);
+  const m = parseInt(month, 10);
+
+  if (Number.isNaN(y)) {
+    return { from: null, to: null };
   }
 
-  return null;
+  // Se tiver mês válido, filtra aquele mês
+  if (!Number.isNaN(m) && m > 0 && m <= 12) {
+    const from = new Date(y, m - 1, 1);
+    const to = new Date(y, m, 1);
+    return { from, to };
+  }
+
+  // Senão, filtra o ano inteiro
+  const from = new Date(y, 0, 1);
+  const to = new Date(y + 1, 0, 1);
+  return { from, to };
 }
 
 router.get("/", async (req, res) => {
-  const currentYear = new Date().getFullYear();
-
-  // filtros da query
-  const scope = req.query.scope || "all"; // all | year | month
-  const year = parseInt(req.query.year || currentYear, 10);
-  const month = parseInt(req.query.month || "0", 10) || 0;
-
-  // filtro de posição (select na tela)
-  // valores esperados: "all", "Goleiro", "Zagueiro", "Meia", "Atacante"
-  const selPosition = req.query.position || "all";
-
-  const range = buildDateRange(scope, year, month);
-
   try {
-    const playersMap = new Map();
+    const currentYear = new Date().getFullYear();
 
-    // ==============================
-    // 1) Agrega stats (geral ou por período)
-    // ==============================
-    if (!range) {
-      // Sem filtro de datas: usa totais da tabela Player
-      const players = await prisma.player.findMany({
-        orderBy: { name: "asc" },
-      });
+    let { year, month, position } = req.query;
 
-      for (const p of players) {
-        playersMap.set(p.id, {
-          player: p,
-          goals: p.totalGoals || 0,
-          assists: p.totalAssists || 0,
-          matches: p.totalMatches || 0,
-          photos: p.totalPhotos || 0,
-          rating: p.totalRating || 0,
-        });
-      }
-    } else {
-      // Com filtro de datas: agrega de PlayerStat + Match
-      const stats = await prisma.playerStat.findMany({
-        where: {
-          match: {
-            playedAt: {
-              gte: range.start,
-              lt: range.end,
-            },
+    // ✅ Defaults
+    if (!year) year = "all"; // "Todos os anos"
+    if (!month) month = "0"; // 0 = todos os meses
+    const selPosition = position && position !== "all" ? position : "all";
+
+    const { from, to } = getDateRange(year, month);
+
+    // Filtro de posição nos jogadores
+    const playerWhere =
+      selPosition !== "all"
+        ? { position: selPosition }
+        : {};
+
+    // Filtro de data via Match.playedAt
+    const statsWhere = {};
+    if (from && to) {
+      statsWhere.match = {
+        playedAt: {
+          gte: from,
+          lt: to,
+        },
+      };
+    }
+
+    // Puxa jogadores + stats filtradas
+    const players = await prisma.player.findMany({
+      where: playerWhere,
+      include: {
+        stats: {
+          where: statsWhere,
+          include: {
+            match: true,
           },
         },
-        include: {
-          player: true,
-          match: true,
-        },
+      },
+    });
+
+    // Monta dados agregados por jogador
+    const entries = players.map((p) => {
+      let goals = 0;
+      let assists = 0;
+      let matches = 0;
+      let photos = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      for (const s of p.stats) {
+        goals += s.goals || 0;
+        assists += s.assists || 0;
+        if (s.present) matches++;
+        if (s.appearedInPhoto) photos++;
+        if (s.rating != null) {
+          ratingSum += s.rating;
+          ratingCount++;
+        }
+      }
+
+      const rating = ratingCount > 0 ? ratingSum / ratingCount : 0;
+
+      return {
+        player: p,
+        goals,
+        assists,
+        matches,
+        photos,
+        rating,
+      };
+    });
+
+    // ======= GOLS =======
+    const goalsRanking = [...entries]
+      .filter((e) => e.goals > 0 || e.assists > 0 || e.matches > 0)
+      .sort((a, b) => {
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        if (b.assists !== a.assists) return b.assists - a.assists;
+        return b.matches - a.matches;
       });
 
-      for (const s of stats) {
-        if (!playersMap.has(s.playerId)) {
-          playersMap.set(s.playerId, {
-            player: s.player,
-            goals: 0,
-            assists: 0,
-            matches: 0,
-            photos: 0,
-            ratingSum: 0,
-            ratingCount: 0,
-            rating: 0,
-          });
-        }
+    // ======= ASSISTÊNCIAS =======
+    const assistsRanking = [...entries]
+      .filter((e) => e.assists > 0 || e.goals > 0 || e.matches > 0)
+      .sort((a, b) => {
+        if (b.assists !== a.assists) return b.assists - a.assists;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.matches - a.matches;
+      });
 
-        const agg = playersMap.get(s.playerId);
-        agg.goals += s.goals || 0;
-        agg.assists += s.assists || 0;
-        if (s.present) agg.matches++;
-        if (s.appearedInPhoto) agg.photos++;
-        if (s.rating != null) {
-          agg.ratingSum += s.rating;
-          agg.ratingCount++;
-        }
-      }
+    // ======= GOLS + ASSISTÊNCIAS =======
+    const gaRanking = [...entries]
+      .map((e) => ({
+        ...e,
+        totalGA: (e.goals || 0) + (e.assists || 0),
+      }))
+      .filter((e) => e.totalGA > 0 || e.matches > 0)
+      .sort((a, b) => {
+        if (b.totalGA !== a.totalGA) return b.totalGA - a.totalGA;
+        return b.matches - a.matches;
+      });
 
-      // Calcula média de notas
-      for (const agg of playersMap.values()) {
-        if (agg.ratingCount > 0) {
-          agg.rating = agg.ratingSum / agg.ratingCount;
-        } else {
-          agg.rating = 0;
-        }
-      }
+    // ======= NOTAS =======
+    const ratingsRanking = [...entries]
+      .filter((e) => e.matches > 0 && e.rating > 0)
+      .sort((a, b) => {
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return b.matches - a.matches;
+      });
+
+    // ======= PRESENÇAS =======
+    const matchesRanking = [...entries]
+      .filter((e) => e.matches > 0)
+      .sort((a, b) => {
+        if (b.matches !== a.matches) return b.matches - a.matches;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.assists - a.assists;
+      });
+
+    // ======= FOTOS =======
+    const photosRanking = [...entries]
+      .filter((e) => e.photos > 0)
+      .sort((a, b) => b.photos - a.photos);
+
+    // ======= CRAQUES DA SEMANA (contagem) =======
+    let weeklyWhere = {};
+    if (from && to) {
+      weeklyWhere = {
+        weekStart: {
+          gte: from,
+          lt: to,
+        },
+      };
     }
 
-    // transforma em lista
-    let list = Array.from(playersMap.values());
-
-    // ==============================
-    // 2) Filtro por posição (se não for "all")
-    // ==============================
-    if (selPosition !== "all") {
-      list = list.filter(
-        (item) => item.player.position === selPosition
-      );
-    }
-
-    // ==============================
-    // 3) Função genérica de ordenação
-    // ==============================
-    function sortBy(field, calcFn) {
-      return [...list]
-        .filter((item) => {
-          if (calcFn) return calcFn(item) > 0;
-          if (field === "rating") return item.rating > 0;
-          return item[field] > 0;
-        })
-        .sort((a, b) => {
-          const va = calcFn ? calcFn(a) : a[field];
-          const vb = calcFn ? calcFn(b) : b[field];
-
-          if (vb !== va) return vb - va;
-          return a.player.name.localeCompare(b.player.name);
-        });
-      // 👆 aqui não dou slice(0, 10) porque na página
-      // de rankings você quis ver todos os nomes
-    }
-
-    // ==============================
-    // 4) Rankings de stats
-    // ==============================
-    const byGoals = sortBy("goals");
-    const byAssists = sortBy("assists");
-    const byGA = sortBy(null, (i) => (i.goals || 0) + (i.assists || 0));
-    const byRating = sortBy("rating");
-    const byMatches = sortBy("matches");
-    const byPhotos = sortBy("photos");
-
-    const byPosition = {
-      Goleiro: list.filter((i) => i.player.position === "Goleiro"),
-      Zagueiro: list.filter((i) => i.player.position === "Zagueiro"),
-      Meia: list.filter((i) => i.player.position === "Meia"),
-      Atacante: list.filter((i) => i.player.position === "Atacante"),
-    };
-
-    // ==============================
-    // 5) Rankings de craques da semana / mês
-    // ==============================
-
-    // Craque da semana (bestPlayer em WeeklyAward)
-    const weeklyAwardsRaw = await prisma.weeklyAward.findMany({
-      where: { bestPlayerId: { not: null } },
-      include: { bestPlayer: true },
+    const weeklyRaw = await prisma.weeklyAward.findMany({
+      where: weeklyWhere,
+      include: {
+        bestPlayer: true,
+      },
     });
 
     const weeklyMap = new Map();
-    for (const award of weeklyAwardsRaw) {
-      if (!award.bestPlayer) continue;
-      const id = award.bestPlayer.id;
+    for (const w of weeklyRaw) {
+      if (!w.bestPlayer) continue;
+      const id = w.bestPlayer.id;
       if (!weeklyMap.has(id)) {
         weeklyMap.set(id, {
-          player: award.bestPlayer,
+          player: w.bestPlayer,
           count: 0,
         });
       }
       weeklyMap.get(id).count++;
     }
 
-    const weeklyAwardsRanking = Array.from(weeklyMap.values()).sort(
-      (a, b) => {
-        if (b.count !== a.count) return b.count - a.count;
-        return a.player.name.localeCompare(b.player.name);
-      }
+    const weeklyAwards = Array.from(weeklyMap.values()).sort(
+      (a, b) => b.count - a.count
     );
 
-    // Craque do mês (craque em MonthlyAward)
-    const monthlyAwardsRaw = await prisma.monthlyAward.findMany({
-      where: { craqueId: { not: null } },
-      include: { craque: true },
+    // ======= CRAQUES DO MÊS (contagem) =======
+    let monthlyWhere = {};
+    const yNum = parseInt(year, 10);
+    const mNum = parseInt(month, 10);
+
+    if (year !== "all" && !Number.isNaN(yNum)) {
+      monthlyWhere.year = yNum;
+      if (!Number.isNaN(mNum) && mNum > 0) {
+        monthlyWhere.month = mNum;
+      }
+    }
+    // year = all  => pega todos
+
+    const monthlyRaw = await prisma.monthlyAward.findMany({
+      where: monthlyWhere,
+      include: {
+        craque: true,
+      },
     });
 
     const monthlyMap = new Map();
-    for (const award of monthlyAwardsRaw) {
-      if (!award.craque) continue;
-      const id = award.craque.id;
+    for (const m of monthlyRaw) {
+      if (!m.craque) continue;
+      const id = m.craque.id;
       if (!monthlyMap.has(id)) {
         monthlyMap.set(id, {
-          player: award.craque,
+          player: m.craque,
           count: 0,
         });
       }
       monthlyMap.get(id).count++;
     }
 
-    const monthlyAwardsRanking = Array.from(monthlyMap.values()).sort(
-      (a, b) => {
-        if (b.count !== a.count) return b.count - a.count;
-        return a.player.name.localeCompare(b.player.name);
-      }
+    const monthlyAwards = Array.from(monthlyMap.values()).sort(
+      (a, b) => b.count - a.count
     );
 
-    // ==============================
-    // 6) Render
-    // ==============================
-    res.render("rankings", {
+    const rankings = {
+      goals: goalsRanking,
+      assists: assistsRanking,
+      ga: gaRanking,
+      ratings: ratingsRanking,
+      matches: matchesRanking,
+      photos: photosRanking,
+      weeklyAwards,
+      monthlyAwards,
+    };
+
+    return res.render("rankings", {
       title: "Rankings",
-      scope,
-      year,
-      month,
+      rankings,
+      year,                // pode ser "all" ou número em string
+      month: Number(month),
+      selPosition,
       currentYear,
-      selPosition, // usado no select de posição no EJS
-      rankings: {
-        goals: byGoals,
-        assists: byAssists,
-        ga: byGA,
-        ratings: byRating,
-        matches: byMatches,
-        photos: byPhotos,
-        byPosition,
-        weeklyAwards: weeklyAwardsRanking,
-        monthlyAwards: monthlyAwardsRanking,
-      },
     });
   } catch (err) {
-    console.error("Erro em /rankings:", err);
-    res.status(500).send("Erro ao carregar rankings");
+    console.error("Erro ao carregar rankings:", err);
+    return res.status(500).send("Erro ao carregar rankings.");
   }
 });
 
