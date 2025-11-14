@@ -36,8 +36,8 @@ router.get("/", async (req, res) => {
 
     let { year, month, position } = req.query;
 
-    // ✅ Defaults
-    if (!year) year = "all"; // "Todos os anos"
+    // ✅ Defaults – ano atual como padrão se nada for enviado
+    if (!year) year = String(currentYear); // ex: "2025"
     if (!month) month = "0"; // 0 = todos os meses
     const selPosition = position && position !== "all" ? position : "all";
 
@@ -170,9 +170,7 @@ router.get("/", async (req, res) => {
 
     const weeklyRaw = await prisma.weeklyAward.findMany({
       where: weeklyWhere,
-      include: {
-        bestPlayer: true,
-      },
+      include: { bestPlayer: true },
     });
 
     const weeklyMap = new Map();
@@ -194,22 +192,19 @@ router.get("/", async (req, res) => {
 
     // ======= CRAQUES DO MÊS (contagem) =======
     let monthlyWhere = {};
-    const yNum = parseInt(year, 10);
-    const mNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    const monthNum = parseInt(month, 10);
 
-    if (year !== "all" && !Number.isNaN(yNum)) {
-      monthlyWhere.year = yNum;
-      if (!Number.isNaN(mNum) && mNum > 0) {
-        monthlyWhere.month = mNum;
+    if (year !== "all" && !Number.isNaN(yearNum)) {
+      monthlyWhere.year = yearNum;
+      if (!Number.isNaN(monthNum) && monthNum > 0) {
+        monthlyWhere.month = monthNum;
       }
     }
-    // year = all  => pega todos
 
     const monthlyRaw = await prisma.monthlyAward.findMany({
       where: monthlyWhere,
-      include: {
-        craque: true,
-      },
+      include: { craque: true },
     });
 
     const monthlyMap = new Map();
