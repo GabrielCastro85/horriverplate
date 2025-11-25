@@ -102,6 +102,16 @@
         transform: translateY(-6px) rotate(-45deg);
       }
     </style>
+        <% if (typeof isProd !== 'undefined' && isProd && !isAdmin) { %>
+      <!-- Google tag (gtag.js) -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-0JGR9T4CY9"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-0JGR9T4CY9');
+      </script>
+    <% } %>
   </head>
 
   <body class="bg-horriver-bg text-horriver-light">

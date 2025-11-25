@@ -109,6 +109,11 @@ app.use((err, req, res, next) => {
   res.status(500).send("Erro interno do servidor");
 });
 
+app.use((req, res, next) => {
+  res.locals.isProd = process.env.NODE_ENV === 'production';
+  next();
+});
+
 // ==============================
 // 🚀 Start
 // ==============================
