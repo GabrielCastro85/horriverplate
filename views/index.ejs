@@ -1,38 +1,347 @@
 <%
-  // Helpers
+  // ===============================
+  // Helpers gerais
+  // ===============================
   const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString("pt-BR") : "-";
 
   const limit = (arr, n) => (arr && arr.length ? arr.slice(0, n) : []);
 
   const fmtRating = (val) => {
-    if (!val || Number.isNaN(val)) return "0.00";
+    if ((!val && val !== 0) || Number.isNaN(val)) return "0,00";
     return Number(val).toFixed(2).replace(".", ",");
   };
-
-  // Tenta achar objetos de stats tanto pelos nomes novos quanto por possíveis campos anexados
-  const mStats =
-    (typeof monthlyStats !== "undefined" && monthlyStats) ||
-    (monthlyCraque && monthlyCraque.stats) ||
-    null;
-
-  const wStats =
-    (typeof weeklyStats !== "undefined" && weeklyStats) ||
-    (weeklyAward && weeklyAward.stats) ||
-    null;
 
   const monthNames = [
     "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
+
+  // Stats do mês (craque)
+  const mStats =
+    (typeof monthlyStats !== "undefined" && monthlyStats) || null;
+
+  // Stats da semana (craque da semana)
+  const wStats =
+    (typeof weeklyStats !== "undefined" && weeklyStats) || null;
+
+  // ===============================
+  // Hall da Fama - Destaques da temporada (carrossel)
+  // ===============================
+  const highlightAwards = Array.isArray(seasonHighlightAwards)
+    ? seasonHighlightAwards
+    : [];
+
+  const hallYear = typeof seasonHighlightYear !== "undefined"
+    ? seasonHighlightYear
+    : null;
+
+  const awardByCat = {};
+  highlightAwards.forEach((a) => {
+    awardByCat[a.category] = a;
+  });
+
+  const catLabelMap = {
+    melhor_jogador: "Craque da temporada",
+    artilheiro: "Artilheiro da temporada",
+    assistente: "Rei das assistências",
+    melhor_goleiro: "Muralha da temporada",
+    melhor_zagueiro: "Melhor zagueiro",
+    melhor_meia: "Maestro da temporada",
+    melhor_atacante: "Melhor atacante"
+  };
+
+  // Gradientes pensados pra combinar com o site e com a ideia de prêmio
+  const catGradientMap = {
+    melhor_jogador: "from-yellow-300 via-amber-300 to-yellow-500", // Ballon d'Or vibes
+    artilheiro: "from-yellow-400 via-amber-400 to-orange-500",      // ouro quente
+    assistente: "from-emerald-400 via-emerald-500 to-emerald-700",  // verde (assist)
+    melhor_goleiro: "from-sky-400 via-cyan-500 to-blue-600",
+    melhor_zagueiro: "from-slate-500 via-slate-600 to-slate-800",
+    melhor_meia: "from-purple-400 via-violet-500 to-fuchsia-500",
+    melhor_atacante: "from-rose-500 via-red-500 to-orange-500"
+  };
+
+  const hasHallCarousel = highlightAwards.length > 0;
+
+  // Monta slides em ordem:
+  // 1) Craque
+  // 2) Artilheiro + Assistente
+  // 3) Goleiro + Zagueiro
+  // 4) Meia + Atacante
+  const hallSlides = [];
+
+  if (awardByCat.melhor_jogador) {
+    hallSlides.push({
+      key: "craque",
+      type: "single",
+      title: "Craque da temporada",
+      awards: [awardByCat.melhor_jogador]
+    });
+  }
+
+  const ataqueAwards = [];
+  if (awardByCat.artilheiro) ataqueAwards.push(awardByCat.artilheiro);
+  if (awardByCat.assistente) ataqueAwards.push(awardByCat.assistente);
+  if (ataqueAwards.length) {
+    hallSlides.push({
+      key: "ataque",
+      type: "pair",
+      title: "Reis do ataque",
+      awards: ataqueAwards
+    });
+  }
+
+  const defesaAwards = [];
+  if (awardByCat.melhor_goleiro) defesaAwards.push(awardByCat.melhor_goleiro);
+  if (awardByCat.melhor_zagueiro) defesaAwards.push(awardByCat.melhor_zagueiro);
+  if (defesaAwards.length) {
+    hallSlides.push({
+      key: "defesa",
+      type: "pair",
+      title: "Muralhas lá atrás",
+      awards: defesaAwards
+    });
+  }
+
+  const criacaoAwards = [];
+  if (awardByCat.melhor_meia) criacaoAwards.push(awardByCat.melhor_meia);
+  if (awardByCat.melhor_atacante) criacaoAwards.push(awardByCat.melhor_atacante);
+  if (criacaoAwards.length) {
+    hallSlides.push({
+      key: "criacao",
+      type: "pair",
+      title: "Maestro e matador",
+      awards: criacaoAwards
+    });
+  }
 %>
 
 <section class="space-y-10 animate-fadeIn">
 
   <!-- ======================================================
-       CRAQUE DO MÊS - CARD SOZINHO EM CIMA (FULL WIDTH)
+       HALL DA FAMA – CARROSSEL DA TEMPORADA
   ======================================================= -->
-  <header>
+  <% if (hasHallCarousel && hallSlides.length) { %>
+    <section
+      id="hallCarousel"
+      class="card-inner rounded-3xl px-5 py-6 md:px-8 md:py-8 space-y-4 relative overflow-hidden"
+      style="min-height: 280px;"
+    >
+      <div class="flex items-start justify-between gap-4 mb-2">
+        <div>
+          <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.20em]">
+            Temporada <%= hallYear || "" %> • Premiação
+          </p>
+          <h1 class="text-2xl md:text-3xl font-title text-horriver-light">
+            Hall da Fama – Campeões da temporada
+          </h1>
+          <p class="text-xs md:text-sm text-horriver-gray mt-1 max-w-xl">
+            Destaques oficiais da temporada <%= hallYear || '' %>, em evidência na home
+            até o fim do ano. Depois, eles ficam eternizados na página do Hall da Fama.
+          </p>
+        </div>
+
+        <!-- Dots -->
+        <div class="hidden md:flex flex-col items-end gap-1 text-[10px]">
+          <div class="flex items-center gap-2 mb-1">
+            <% hallSlides.forEach((slide, i) => { %>
+              <button
+                type="button"
+                class="hall-dot w-2 h-2 rounded-full border border-horriver-orange/70
+                       <%= i === 0 ? 'bg-horriver-orange' : 'bg-transparent' %>"
+                data-index="<%= i %>"
+                aria-label="Ir para slide <%= i + 1 %>"
+              ></button>
+            <% }) %>
+          </div>
+          <span class="text-horriver-gray/70">
+            Use as setas ou clique nos pontos
+          </span>
+        </div>
+      </div>
+
+      <!-- Slides -->
+      <div class="relative mt-3 h-[260px] md:h-[320px] lg:h-[360px]">
+        <% hallSlides.forEach((slide, idx) => { %>
+          <div
+            class="hall-slide absolute inset-0 transition-all duration-500 ease-out
+                   <%= idx === 0
+                        ? 'opacity-100 translate-x-0 pointer-events-auto z-10'
+                        : 'opacity-0 translate-x-6 pointer-events-none z-0' %>"
+            data-index="<%= idx %>"
+          >
+            <% if (slide.type === "single") {
+                 const a = slide.awards[0];
+                 const p = a.player || {};
+                 const grad = catGradientMap[a.category] || "from-slate-500 via-slate-600 to-slate-800";
+                 const label = catLabelMap[a.category] || a.category;
+            %>
+              <!-- Card único: Craque da temporada (Ballon d'Or style) -->
+              <div
+                class="relative w-full h-full bg-gradient-to-r <%= grad %> rounded-3xl
+                       shadow-card-soft flex flex-col md:flex-row items-center
+                       gap-6 px-5 md:px-10 py-6 md:py-8 overflow-hidden"
+              >
+                <!-- Aureola dourada no fundo -->
+                <div
+                  class="pointer-events-none absolute -right-16 -bottom-16 w-56 h-56 rounded-full
+                         border border-yellow-300/40 bg-yellow-300/10 blur-md"
+                ></div>
+
+                <!-- Estrela de destaque -->
+                <div
+                  class="absolute top-4 left-4 inline-flex items-center gap-2 px-3 py-1
+                         rounded-full bg-black/40 border border-yellow-300/70"
+                >
+                  <span class="text-yellow-300 text-base">★</span>
+                  <span class="text-[11px] text-yellow-100 tracking-[0.18em] uppercase">
+                    Craque máximo
+                  </span>
+                </div>
+
+                <div class="flex-1 space-y-3 relative z-10">
+                  <p class="text-[11px] uppercase tracking-[0.2em] text-black/70">
+                    <%= label %>
+                  </p>
+                  <h2 class="text-2xl md:text-3xl font-title text-black">
+                    <%= p.name || 'Jogador' %>
+                  </h2>
+                  <% if (p.nickname) { %>
+                    <p class="text-sm text-black/80">
+                      "<%= p.nickname %>"
+                    </p>
+                  <% } %>
+                  <% if (p.position) { %>
+                    <p class="text-[11px] text-black/75 uppercase">
+                      <%= p.position %>
+                    </p>
+                  <% } %>
+                  <p class="text-[11px] text-black/75 mt-2 max-w-md">
+                    Eleito o grande nome da temporada <%= hallYear || '' %>.
+                    Aquele nível de futebol que vira referência na resenha por muito tempo.
+                  </p>
+                </div>
+
+                <!-- Foto grande -->
+                <div
+                  class="relative z-10 w-32 h-32 md:w-40 md:h-40 rounded-full border-[5px] border-yellow-200/95
+                         bg-black/30 flex items-center justify-center overflow-hidden shadow-xl"
+                >
+                  <% if (p.photoUrl) { %>
+                    <img
+                      src="<%= p.photoUrl %>"
+                      alt="<%= p.name %>"
+                      class="w-full h-full object-cover"
+                    />
+                  <% } else if (p.name) { %>
+                    <span class="text-4xl font-semibold text-white">
+                      <%= p.name.charAt(0).toUpperCase() %>
+                    </span>
+                  <% } else { %>
+                    <span class="text-3xl font-semibold text-white">?</span>
+                  <% } %>
+                </div>
+              </div>
+
+            <% } else { %>
+              <!-- Slides em pares (artilheiro+assistente, etc.) -->
+              <div
+                class="w-full h-full flex flex-col gap-4 md:gap-6 justify-center"
+              >
+                <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.20em]">
+                  <%= slide.title %>
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4 md:gap-6">
+                  <% slide.awards.forEach((a) => {
+                       const p = a.player || {};
+                       const grad = catGradientMap[a.category] || "from-slate-500 via-slate-600 to-slate-800";
+                       const label = catLabelMap[a.category] || a.category;
+                  %>
+                    <div
+                      class="bg-gradient-to-r <%= grad %> rounded-3xl px-4 md:px-6 py-4 md:py-6
+                             shadow-card-soft flex items-center gap-4 md:gap-6 relative overflow-hidden"
+                    >
+                      <!-- leve overlay escuro pra aproximar do tema do site -->
+                      <div class="pointer-events-none absolute inset-0 bg-black/10"></div>
+
+                      <div class="flex-1 space-y-2 relative z-10">
+                        <p class="text-[10px] md:text-[11px] uppercase tracking-[0.18em] text-black/80">
+                          <%= label %>
+                        </p>
+                        <p class="text-lg md:text-xl font-semibold text-black">
+                          <%= p.name || 'Jogador' %>
+                          <% if (p.nickname) { %>
+                            <span class="text-[12px] text-black/75">
+                              ("<%= p.nickname %>")
+                            </span>
+                          <% } %>
+                        </p>
+                        <% if (p.position) { %>
+                          <p class="text-[10px] text-black/75 uppercase">
+                            <%= p.position %>
+                          </p>
+                        <% } %>
+                      </div>
+
+                      <div
+                        class="relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-full border-[3px] border-white/85
+                               bg-black/20 flex items-center justify-center overflow-hidden shrink-0"
+                      >
+                        <% if (p.photoUrl) { %>
+                          <img
+                            src="<%= p.photoUrl %>"
+                            alt="<%= p.name %>"
+                            class="w-full h-full object-cover"
+                          />
+                        <% } else if (p.name) { %>
+                          <span class="text-2xl font-semibold text-white">
+                            <%= p.name.charAt(0).toUpperCase() %>
+                          </span>
+                        <% } else { %>
+                          <span class="text-xl font-semibold text-white">?</span>
+                        <% } %>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+
+      <% if (hallSlides.length > 1) { %>
+        <!-- Controles -->
+        <div class="mt-4 flex items-center justify-between text-[11px]">
+          <button
+            id="hallPrev"
+            type="button"
+            class="inline-flex items-center gap-1 px-3 py-1 rounded-full
+                   bg-black/40 border border-horriver-border text-horriver-gray
+                   hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+          >
+            ← Anterior
+          </button>
+          <button
+            id="hallNext"
+            type="button"
+            class="inline-flex items-center gap-1 px-3 py-1 rounded-full
+                   bg-black/40 border border-horriver-border text-horriver-gray
+                   hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+          >
+            Próximo →
+          </button>
+        </div>
+      <% } %>
+    </section>
+  <% } %>
+
+  <!-- ======================================================
+       CRAQUE DO MÊS – HERO
+  ======================================================= -->
+  <header class="mt-4">
     <div
       class="relative w-full bg-gradient-to-br from-black via-horriver-dark to-black
              border border-horriver-red/60 rounded-3xl px-6 py-8 md:px-10 md:py-10
@@ -47,7 +356,6 @@
       </div>
 
       <div class="relative z-10 flex flex-col items-center gap-6">
-        <!-- Etiqueta -->
         <span
           class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red/30
                  border border-horriver-red/70 text-[11px] text-horriver-gray"
@@ -60,7 +368,6 @@
             Nenhum craque do mês cadastrado ainda. Defina um no painel do administrador.
           </p>
         <% } else { %>
-          <!-- Avatar + nome + mês -->
           <div class="flex flex-col items-center gap-4">
             <div
               class="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden
@@ -103,7 +410,6 @@
             </div>
           </div>
 
-          <!-- Chips de stats do mês -->
           <div class="mt-6 space-y-2 text-center">
             <p class="text-[11px] text-horriver-gray tracking-wide uppercase">
               Estatísticas do mês
@@ -111,46 +417,23 @@
             <div
               class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-w-4xl mx-auto text-[11px]"
             >
-              <div
-                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
-                       flex flex-col items-center"
-              >
+              <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
                 <p class="text-horriver-gray">Gols no mês</p>
-                <p class="text-horriver-light font-semibold text-sm">
-                  <%= mStats ? mStats.goals : 0 %>
-                </p>
+                <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.goals : 0 %></p>
               </div>
-              <div
-                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
-                       flex flex-col items-center"
-              >
+              <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
                 <p class="text-horriver-gray">Assistências no mês</p>
-                <p class="text-horriver-light font-semibold text-sm">
-                  <%= mStats ? mStats.assists : 0 %>
-                </p>
+                <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.assists : 0 %></p>
               </div>
-              <div
-                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
-                       flex flex-col items-center"
-              >
+              <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
                 <p class="text-horriver-gray">Presenças no mês</p>
-                <p class="text-horriver-light font-semibold text-sm">
-                  <%= mStats ? mStats.matches : 0 %>
-                </p>
+                <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.matches : 0 %></p>
               </div>
-              <div
-                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
-                       flex flex-col items-center"
-              >
+              <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
                 <p class="text-horriver-gray">Fotos no mês</p>
-                <p class="text-horriver-light font-semibold text-sm">
-                  <%= mStats ? mStats.photos : 0 %>
-                </p>
+                <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.photos : 0 %></p>
               </div>
-              <div
-                class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60
-                       flex flex-col items-center"
-              >
+              <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
                 <p class="text-horriver-gray">Nota média do mês</p>
                 <p class="text-horriver-light font-semibold text-sm">
                   <%= mStats ? fmtRating(mStats.avgRating) : "0,00" %>
@@ -196,7 +479,6 @@
               Nenhum jogador definido como craque da semana.
             </p>
           <% } else { %>
-            <!-- Avatar + infos -->
             <div class="flex flex-col items-center gap-3">
               <div
                 class="w-24 h-24 rounded-full overflow-hidden border-[3px]
@@ -242,7 +524,6 @@
               </div>
             </div>
 
-            <!-- Stats da semana -->
             <div class="mt-3 space-y-2 text-center">
               <p class="text-[11px] text-horriver-gray tracking-wide uppercase">
                 Estatísticas da semana
@@ -250,28 +531,19 @@
               <div
                 class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 max-w-md mx-auto text-[11px]"
               >
-                <div
-                  class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70
-                         flex flex-col items-center"
-                >
+                <div class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70 flex flex-col items-center">
                   <p class="text-horriver-gray">Gols na semana</p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= wStats ? wStats.goals : 0 %>
                   </p>
                 </div>
-                <div
-                  class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70
-                         flex flex-col items-center"
-                >
+                <div class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70 flex flex-col items-center">
                   <p class="text-horriver-gray">Assistências na semana</p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= wStats ? wStats.assists : 0 %>
                   </p>
                 </div>
-                <div
-                  class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70
-                         flex flex-col items-center"
-                >
+                <div class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70 flex flex-col items-center">
                   <p class="text-horriver-gray">Nota da semana</p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= wStats ? fmtRating(wStats.avgRating) : "0,00" %>
@@ -346,9 +618,7 @@
             <div
               class="mt-2 rounded-2xl overflow-hidden bg-black/80 border border-horriver-orange/60 flex-1 flex flex-col"
             >
-              <div
-                class="flex-1 flex items-center justify-center max-h-72 bg-black"
-              >
+              <div class="flex-1 flex items-center justify-center max-h-72 bg-black">
                 <img
                   src="<%= weeklyAward.teamPhotoUrl %>"
                   alt="Time da semana"
@@ -707,7 +977,6 @@
   <!-- TEXTO FINAL -->
   <section class="mt-10 pt-6 border-t border-horriver-border text-center">
     <div class="max-w-xl mx-auto space-y-3">
-
       <div
         class="inline-flex items-center gap-2 px-3 py-1 rounded-full
                bg-horriver-red/20 border border-horriver-red/60 text-[11px]
@@ -731,7 +1000,9 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
+    // ==========================
     // Tabs de ranking na home
+    // ==========================
     const rkBtns = document.querySelectorAll(".rk-home-btn");
     const rkTabs = document.querySelectorAll(".rk-home-tab");
 
@@ -751,13 +1022,105 @@
       });
     });
 
-    // Elenco em destaque: sorteia 8 jogadores aleatórios para mostrar
-    const playerCards = Array.from(document.querySelectorAll("[data-player-card]"));
+    // ==========================
+    // Elenco em destaque: sorteia 8 jogadores
+    // ==========================
+    const playerCards = Array.from(
+      document.querySelectorAll("[data-player-card]")
+    );
     if (playerCards.length > 8) {
       const shuffled = [...playerCards].sort(() => Math.random() - 0.5);
       shuffled.forEach((card, index) => {
         card.style.display = index < 8 ? "" : "none";
       });
+    }
+
+    // ==========================
+    // Carrossel Hall da Fama
+    // ==========================
+    const hallCarousel = document.getElementById("hallCarousel");
+    const hallSlidesEls = Array.from(document.querySelectorAll(".hall-slide"));
+    const hallDots = Array.from(document.querySelectorAll(".hall-dot"));
+    const prevBtn = document.getElementById("hallPrev");
+    const nextBtn = document.getElementById("hallNext");
+
+    let hallIndex = 0;
+    let hallTimer = null;
+
+    function setHallActive(idx) {
+      if (!hallSlidesEls.length) return;
+      const total = hallSlidesEls.length;
+      const newIndex = ((idx % total) + total) % total;
+
+      hallSlidesEls.forEach((slide, i) => {
+        if (i === newIndex) {
+          slide.classList.remove("opacity-0", "translate-x-6", "pointer-events-none", "z-0");
+          slide.classList.add("opacity-100", "translate-x-0", "pointer-events-auto", "z-10");
+        } else {
+          slide.classList.remove("opacity-100", "translate-x-0", "pointer-events-auto", "z-10");
+          slide.classList.add("opacity-0", "translate-x-6", "pointer-events-none", "z-0");
+        }
+      });
+
+      hallDots.forEach((dot, i) => {
+        if (i === newIndex) {
+          dot.classList.add("bg-horriver-orange");
+        } else {
+          dot.classList.remove("bg-horriver-orange");
+        }
+      });
+
+      hallIndex = newIndex;
+    }
+
+    function nextHall() {
+      setHallActive(hallIndex + 1);
+    }
+
+    function prevHall() {
+      setHallActive(hallIndex - 1);
+    }
+
+    function startHallAuto() {
+      if (hallTimer || hallSlidesEls.length <= 1) return;
+      hallTimer = setInterval(nextHall, 6000);
+    }
+
+    function stopHallAuto() {
+      if (hallTimer) {
+        clearInterval(hallTimer);
+        hallTimer = null;
+      }
+    }
+
+    if (hallSlidesEls.length) {
+      startHallAuto();
+
+      if (nextBtn) nextBtn.addEventListener("click", () => {
+        stopHallAuto();
+        nextHall();
+        startHallAuto();
+      });
+
+      if (prevBtn) prevBtn.addEventListener("click", () => {
+        stopHallAuto();
+        prevHall();
+        startHallAuto();
+      });
+
+      hallDots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+          const idx = parseInt(dot.dataset.index, 10) || 0;
+          stopHallAuto();
+          setHallActive(idx);
+          startHallAuto();
+        });
+      });
+
+      if (hallCarousel) {
+        hallCarousel.addEventListener("mouseenter", stopHallAuto);
+        hallCarousel.addEventListener("mouseleave", startHallAuto);
+      }
     }
   });
 </script>

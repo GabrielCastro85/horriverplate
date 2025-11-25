@@ -1,0 +1,247 @@
+<%
+  const currentYear = new Date().getFullYear();
+
+  // ⭐ Categorias devem ser exatamente iguais ao ENUM do Prisma
+  const categoryList = [
+    { key: "artilheiro", label: "Artilheiro da temporada" },
+    { key: "assistente", label: "Assistente da temporada" },
+    { key: "melhor_jogador", label: "Melhor jogador da temporada" },
+    { key: "melhor_goleiro", label: "Melhor goleiro" },
+    { key: "melhor_zagueiro", label: "Melhor zagueiro" },
+    { key: "melhor_meia", label: "Melhor meia" },
+    { key: "melhor_atacante", label: "Melhor atacante" },
+  ];
+
+  const yearKeys = Object.keys(awardsByYear || {})
+    .map(Number)
+    .sort((a, b) => b - a);
+
+  const latestYear = yearKeys.length ? yearKeys[0] : currentYear;
+%>
+
+<div class="space-y-8 animate-fadeIn">
+
+  <!-- Cabeçalho -->
+  <header class="space-y-2">
+    <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.18em]">
+      Painel do administrador
+    </p>
+
+    <h1 class="text-2xl md:text-3xl font-title text-horriver-light">
+      Premiação da temporada
+    </h1>
+
+    <a href="/admin" 
+       class="inline-flex items-center gap-1 text-[11px] text-horriver-gray hover:text-horriver-orange mt-2">
+      ← Voltar para o painel
+    </a>
+  </header>
+
+  <!-- Formulário -->
+  <section class="card-inner rounded-2xl p-6 md:p-7 space-y-4">
+    <h2 class="text-lg md:text-xl font-semibold text-horriver-orange">
+      Cadastrar / editar prêmio
+    </h2>
+
+    <form
+      action="/admin/season-awards"
+      method="POST"
+      class="grid md:grid-cols-4 gap-4 text-xs md:text-sm"
+    >
+      <!-- Ano -->
+      <div class="space-y-1">
+        <label class="block text-horriver-gray/80">Ano</label>
+        <input
+          type="number"
+          name="year"
+          value="<%= latestYear %>"
+          class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+          required
+        />
+      </div>
+
+      <!-- Categoria -->
+      <div class="space-y-1 md:col-span-2">
+        <label class="block text-horriver-gray/80">Categoria</label>
+        <select
+          name="category"
+          class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+          required
+        >
+          <option value="">Selecione uma categoria</option>
+          <% categoryList.forEach(c => { %>
+            <option value="<%= c.key %>"><%= c.label %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <!-- Jogador -->
+      <div class="space-y-1">
+        <label class="block text-horriver-gray/80">Jogador vencedor</label>
+        <select
+          name="playerId"
+          class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+          required
+        >
+          <option value="">Selecione</option>
+          <% players.forEach(p => { %>
+            <option value="<%= p.id %>">
+              <%= p.name %> <% if (p.nickname) { %> (<%= p.nickname %>) <% } %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="md:col-span-4 flex justify-end pt-1">
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+        >
+          Salvar prêmio
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Lista -->
+  <section class="space-y-4">
+    <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+      Premiações cadastradas
+    </h2>
+
+    <% if (!yearKeys.length) { %>
+      <p class="text-sm text-horriver-gray/80">
+        Nenhuma premiação cadastrada ainda.
+      </p>
+    <% } else { %>
+
+      <% yearKeys.forEach(year => {
+           const list = awardsByYear[year] || [];
+      %>
+
+        <div class="card-inner rounded-2xl p-4 md:p-5 border
+                    <%= year === latestYear ? 'border-horriver-orange/60' : 'border-horriver-border/60' %>">
+
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm md:text-base font-semibold text-horriver-orange">
+              Temporada <%= year %>
+            </h3>
+
+            <% if (year === latestYear) { %>
+              <span class="px-2 py-0.5 rounded-full bg-horriver-orange/15 border border-horriver-orange/60 text-[10px] text-horriver-orange">
+                Campeões atuais
+              </span>
+            <% } %>
+          </div>
+
+          <!-- Cards especiais (Artilheiro + Assistente) -->
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <% ["artilheiro", "assistente"].forEach(key => {
+                 const award = list.find(a => a.category === key);
+                 const player = award?.player;
+                 const conf = categoryList.find(c => c.key === key);
+            %>
+              <div class="p-4 rounded-xl bg-black/30 border border-horriver-border/40 shadow-card-soft">
+                <p class="text-xs text-horriver-gray/80"><%= conf.label %></p>
+                <p class="text-sm text-horriver-light font-semibold mt-1">
+                  <% if (player) { %>
+                    <%= player.name %>
+                    <% if (player.nickname) { %> (<%= player.nickname %>) <% } %>
+                  <% } else { %>
+                    —
+                  <% } %>
+                </p>
+              </div>
+            <% }) %>
+          </div>
+
+          <!-- Tabela geral -->
+          <div class="overflow-x-auto text-[11px] md:text-xs">
+            <table class="min-w-full border-collapse">
+              <thead>
+                <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+                  <th class="py-2 pr-3 text-left font-normal">Categoria</th>
+                  <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+                  <th class="py-2 pr-3 text-left font-normal">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% list.forEach(a => {
+
+                     // Não duplicar os cards especiais
+                     if (a.category === "artilheiro" || a.category === "assistente") return;
+
+                     const player = a.player;
+                     const conf = categoryList.find(c => c.key === a.category);
+                %>
+                  <tr class="border-b border-horriver-border/40 last:border-0">
+                    <td class="py-2 pr-3"><%= conf?.label || a.category %></td>
+
+                    <td class="py-2 pr-3 text-horriver-light">
+                      <% if (player) { %>
+                        <%= player.name %>
+                        <% if (player.nickname) { %> (<%= player.nickname %>) <% } %>
+                      <% } else { %> — <% } %>
+                    </td>
+
+                    <td class="py-2 pr-3">
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          class="text-[11px] text-horriver-orange hover:underline"
+                          data-award-edit
+                          data-year="<%= a.year %>"
+                          data-category="<%= a.category %>"
+                          data-player-id="<%= a.playerId || '' %>"
+                        >
+                          Editar
+                        </button>
+
+                        <form
+                          action="/admin/season-awards/<%= a.id %>/delete"
+                          method="POST"
+                          onsubmit="return confirm('Remover este prêmio?');"
+                        >
+                          <button 
+                            type="submit" 
+                            class="text-[11px] text-red-500 hover:underline">
+                            Excluir
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+        </div> <!-- card ano -->
+
+      <% }) %>
+
+    <% } %>
+  </section>
+</div>
+
+<script>
+  // Preenche automaticamente o formulário ao clicar em Editar
+  (function () {
+    const form = document.querySelector('form[action="/admin/season-awards"]');
+    if (!form) return;
+
+    const yearInput = form.querySelector('input[name="year"]');
+    const categorySelect = form.querySelector('select[name="category"]');
+    const playerSelect = form.querySelector('select[name="playerId"]');
+
+    document.querySelectorAll("[data-award-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        yearInput.value = btn.dataset.year;
+        categorySelect.value = btn.dataset.category;
+        playerSelect.value = btn.dataset.playerId;
+
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  })();
+</script>

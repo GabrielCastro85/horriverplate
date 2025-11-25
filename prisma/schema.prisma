@@ -9,6 +9,28 @@ datasource db {
 }
 
 //
+// =========================================
+// ENUMS
+// =========================================
+//
+
+enum SeasonAwardCategory {
+  artilheiro
+  assistente
+  melhor_jogador
+  melhor_goleiro
+  melhor_zagueiro
+  melhor_meia
+  melhor_atacante
+}
+
+//
+// =========================================
+// MODELS
+// =========================================
+//
+
+//
 // ADMIN (login do painel)
 //
 model Admin {
@@ -38,9 +60,10 @@ model Player {
   updatedAt DateTime @updatedAt
 
   // Relações
-  stats         PlayerStat[]
-  weeklyAwards  WeeklyAward[]  @relation("WeeklyBest")
-  monthlyAwards MonthlyAward[] @relation("MonthlyCraque")
+  stats          PlayerStat[]
+  weeklyAwards   WeeklyAward[]  @relation("WeeklyBest")
+  monthlyAwards  MonthlyAward[] @relation("MonthlyCraque")
+  seasonAwards   SeasonAward[]
 }
 
 //
@@ -120,4 +143,22 @@ model MonthlyAward {
   createdAt DateTime @default(now())
 
   @@unique([month, year])
+}
+
+//
+// PREMIAÇÃO DA TEMPORADA
+// (Melhor jogador, artilheiro, assistente, etc.)
+//
+model SeasonAward {
+  id       Int                  @id @default(autoincrement())
+  year     Int
+  category SeasonAwardCategory
+  playerId Int?
+  featuredOnHome Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  player   Player? @relation(fields: [playerId], references: [id])
+
+  // Garante que só exista 1 prêmio por Ano + Categoria
+  @@unique([year, category], name: "year_category")
 }

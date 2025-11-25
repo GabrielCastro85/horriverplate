@@ -44,14 +44,12 @@
     </script>
 
     <style>
-      /* Fundo geral */
       body {
         background-color: #050509;
         color: #f5f5f5;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
-      /* Fundo quente */
       .layout-bg {
         background-image: radial-gradient(
           circle at top,
@@ -62,7 +60,6 @@
         );
       }
 
-      /* Contorno dos cards */
       .card-highlight {
         position: relative;
         overflow: hidden;
@@ -87,7 +84,6 @@
         box-shadow: 0 24px 55px rgba(15, 23, 42, 0.95);
       }
 
-      /* Ícone hambúrguer */
       .hamburger-line {
         display: block;
         height: 2px;
@@ -112,6 +108,12 @@
     <%
       const currentPage = typeof activePage !== 'undefined' ? activePage : '';
       const isAdmin = typeof admin !== 'undefined' && admin;
+
+      // Controle para exibir o link "Hall da Fama"
+      // A partir de 29/11/2024 às 15h (horário local do servidor) ele aparece e fica pra sempre.
+      const _nowLayout = new Date();
+      const hallStartLayout = new Date(2024, 10, 29, 15, 0, 0); // 29/11/2024 15h
+      const showHallLink = _nowLayout.getTime() >= hallStartLayout.getTime();
     %>
 
     <div class="min-h-screen flex flex-col layout-bg">
@@ -120,37 +122,132 @@
         <nav class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 gap-4">
           <a href="/" class="flex items-center gap-2">
             <div class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70">
-              <img src="/img/logo.jpg" alt="Horriver Plate" class="w-full h-full object-cover" />
+              <img
+                src="/img/logo.jpg"
+                alt="Horriver Plate"
+                class="w-full h-full object-cover"
+              />
             </div>
+
             <div class="flex flex-col leading-tight">
-              <span class="font-title text-sm md:text-base text-horriver-orange tracking-wide">Horriver Plate</span>
+              <span class="font-title text-sm md:text-base text-horriver-orange tracking-wide">
+                Horriver Plate
+              </span>
               <span class="text-[10px] text-horriver-gray">Pelada • Stats • Resenha</span>
             </div>
           </a>
 
-          <!-- Navegação desktop -->
+
+          <!-- MENU DESKTOP -->
           <ul class="hidden md:flex items-center gap-5 text-[11px] md:text-xs">
-            <li><a href="/" class="<%= currentPage==='home'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Home</a></li>
-            <li><a href="/rankings" class="<%= currentPage==='rankings'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Rankings</a></li>
-            <li><a href="/elenco" class="<%= currentPage==='elenco'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Elenco</a></li>
-            <li><a href="/sobre" class="<%= currentPage==='sobre'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">Sobre</a></li>
+            <li>
+              <a href="/"
+                 class="<%= currentPage==='home'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">
+                Home
+              </a>
+            </li>
+            <li>
+              <a href="/rankings"
+                 class="<%= currentPage==='rankings'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">
+                Rankings
+              </a>
+            </li>
+            <li>
+              <a href="/elenco"
+                 class="<%= currentPage==='elenco'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">
+                Elenco
+              </a>
+            </li>
+
+            <% if (showHallLink) { %>
+              <li>
+                <a href="/hall-da-fama"
+                   class="<%= currentPage==='hall'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">
+                  Hall da Fama
+                </a>
+              </li>
+            <% } %>
+
+            <li>
+              <a href="/sobre"
+                 class="<%= currentPage==='sobre'?'text-horriver-orange':'text-horriver-gray hover:text-horriver-orange' %>">
+                Sobre
+              </a>
+            </li>
           </ul>
 
           <!-- Ações -->
           <div class="hidden md:flex items-center gap-2">
-            <a href="https://www.instagram.com/_hpfrc/" target="_blank" rel="noopener" class="px-3 py-1 rounded-full border border-horriver-orange text-[11px] md:text-xs text-horriver-orange hover:bg-horriver-orange hover:text-horriver-bg transition-colors">Instagram</a>
+              <a
+                  href="https://www.instagram.com/_hpfrc/"
+                  target="_blank"
+                  rel="noopener"
+                  class="group inline-flex items-center gap-2 px-3 py-1 rounded-full border border-horriver-orange/80
+                        bg-black/40 text-[11px] md:text-xs text-horriver-orange
+                        hover:bg-horriver-orange hover:text-horriver-bg
+                        transition-colors"
+                >
+                  <!-- Ícone estilo Instagram -->
+                  <span
+                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
+                          bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
+                          text-[10px] text-black shadow-sm"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      class="w-3.5 h-3.5"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="5"
+                        ry="5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                      ></rect>
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                      ></circle>
+                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
+                    </svg>
+                  </span>
+
+                  <span class="hidden sm:inline">@_hpfrc</span>
+                  <span class="sm:hidden">Instagram</span>
+                </a>
+
+
             <% if (!isAdmin) { %>
-              <a href="/login" class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors">Login</a>
+              <a href="/login"
+                 class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors">
+                Login
+              </a>
             <% } else { %>
-              <a href="/admin" class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors">Painel</a>
+              <a href="/admin"
+                 class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors">
+                Painel
+              </a>
               <form method="POST" action="/logout">
-                <button type="submit" class="px-3 py-1 rounded-full border border-red-500/80 text-[11px] md:text-xs text-red-400 hover:bg-red-600 hover:text-horriver-bg transition-colors">Sair</button>
+                <button type="submit"
+                        class="px-3 py-1 rounded-full border border-red-500/80 text-[11px] md:text-xs text-red-400 hover:bg-red-600 hover:text-horriver-bg transition-colors">
+                  Sair
+                </button>
               </form>
             <% } %>
           </div>
 
-          <!-- Botão hambúrguer -->
-          <button id="mobileMenuBtn" aria-label="Menu" class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full border border-horriver-orange/70">
+          <!-- HAMBURGER MOBILE -->
+          <button id="mobileMenuBtn" aria-label="Menu"
+                  class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full border border-horriver-orange/70">
             <span class="flex flex-col gap-[5px]">
               <span class="hamburger-line line-1"></span>
               <span class="hamburger-line line-2"></span>
@@ -163,25 +260,89 @@
       <!-- MENU MOBILE -->
       <div id="mobileMenu" class="fixed inset-0 z-50 hidden">
         <button id="mobileBackdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></button>
-        <div id="mobilePanel" class="relative mx-auto mt-2 w-[92%] max-w-sm rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown">
+        <div id="mobilePanel"
+             class="relative mx-auto mt-2 w-[92%] max-w-sm rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown">
           <div class="p-3 border-b border-horriver-border/60 flex justify-between items-center">
             <span class="font-title text-horriver-orange text-sm">Navegação</span>
-            <button id="mobileClose" class="w-8 h-8 inline-flex items-center justify-center rounded-full border border-horriver-orange/60 text-horriver-orange">×</button>
+            <button id="mobileClose"
+                    class="w-8 h-8 inline-flex items-center justify-center rounded-full border border-horriver-orange/60 text-horriver-orange">
+              ×
+            </button>
           </div>
 
           <nav class="p-2 text-[13px]">
             <a href="/" class="block px-3 py-2 rounded-lg hover:bg-white/5">Home</a>
             <a href="/rankings" class="block px-3 py-2 rounded-lg hover:bg-white/5">Rankings</a>
             <a href="/elenco" class="block px-3 py-2 rounded-lg hover:bg-white/5">Elenco</a>
+
+            <% if (showHallLink) { %>
+              <a href="/hall-da-fama" class="block px-3 py-2 rounded-lg hover:bg-white/5">Hall da Fama</a>
+            <% } %>
+
             <a href="/sobre" class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
+
             <div class="mt-2 flex items-center gap-2 px-2">
-              <a href="https://www.instagram.com/_hpfrc/" target="_blank" rel="noopener" class="flex-1 px-3 py-2 rounded-lg border border-horriver-orange text-horriver-orange text-center hover:bg-horriver-orange hover:text-horriver-bg transition-colors">Instagram</a>
+                <a
+                  href="https://www.instagram.com/_hpfrc/"
+                  target="_blank"
+                  rel="noopener"
+                  class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
+                        rounded-lg border border-horriver-orange/80 bg-black/40
+                        text-[12px] text-horriver-orange
+                        hover:bg-horriver-orange hover:text-horriver-bg
+                        transition-colors"
+                >
+                  <span
+                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
+                          bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
+                          text-[10px] text-black"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      class="w-3.5 h-3.5"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="5"
+                        ry="5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                      ></rect>
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="4"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                      ></circle>
+                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
+                    </svg>
+                  </span>
+                  <span>Instagram</span>
+                </a>
+
+
               <% if (!isAdmin) { %>
-                <a href="/login" class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors">Login</a>
+                <a href="/login"
+                   class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors">
+                  Login
+                </a>
               <% } else { %>
-                <a href="/admin" class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors">Painel</a>
+                <a href="/admin"
+                   class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors">
+                  Painel
+                </a>
                 <form method="POST" action="/logout" class="flex-1">
-                  <button type="submit" class="w-full px-3 py-2 rounded-lg border border-red-500/80 text-red-400 hover:bg-red-600 hover:text-horriver-bg transition-colors">Sair</button>
+                  <button type="submit"
+                          class="w-full px-3 py-2 rounded-lg border border-red-500/80 text-red-400 hover:bg-red-600 hover:text-horriver-bg transition-colors">
+                    Sair
+                  </button>
                 </form>
               <% } %>
             </div>
@@ -203,6 +364,7 @@
       </footer>
     </div>
 
+    <!-- Script do menu mobile -->
     <script>
       (function () {
         const btn = document.getElementById('mobileMenuBtn');

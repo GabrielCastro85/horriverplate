@@ -14,6 +14,7 @@ const loginRouter = require("./routes/login");
 const rankingsRouter = require("./routes/rankings");
 const elencoRouter = require("./routes/elenco");
 const sobreRouter = require("./routes/sobre");
+const awardsRouter = require("./routes/awards"); // ✅ NOVO: rota da premiação
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +93,7 @@ app.use("/", indexRouter);
 app.use("/rankings", rankingsRouter);
 app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
+app.use("/premiacao", awardsRouter); // ✅ NOVO: página de premiação
 app.use("/admin", adminRouter);
 
 // ==============================

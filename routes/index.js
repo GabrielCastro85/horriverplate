@@ -4,14 +4,13 @@ const router = express.Router();
 const prisma = require("../utils/db");
 
 // ==============================
-// Helpers
+// Helpers de datas
 // ==============================
 function startOfDay(date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;
 }
-
 function endOfDay(date) {
   const d = new Date(date);
   d.setHours(23, 59, 59, 999);
@@ -24,27 +23,26 @@ function endOfDay(date) {
 router.get("/", async (req, res) => {
   try {
     const now = new Date();
-    const currentYear = now.getFullYear();
 
-    // ------------------------------
-    // Craque do mês (último cadastrado)
-    // ------------------------------
+    // Janela em que o carrossel da temporada aparece na home
+    // (29/11/2024 às 15h até 31/12/2024 23:59:59 - horário local do servidor)
+    const highlightStart = new Date(2024, 10, 29, 15, 0, 0); // 29/11 (mês 10)
+    const highlightEnd = new Date(2024, 11, 31, 23, 59, 59, 999); // 31/12
+    const showSeasonHighlight =
+      now.getTime() >= highlightStart.getTime() &&
+      now.getTime() <= highlightEnd.getTime();
+
+    // =====================================================
+    // CRAQUE DO MÊS
+    // =====================================================
     const monthlyCraque = await prisma.monthlyAward.findFirst({
-      orderBy: [
-        { year: "desc" },
-        { month: "desc" },
-      ],
-      include: {
-        craque: true,
-      },
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+      include: { craque: true },
     });
 
     let monthlyStats = null;
-
-    if (monthlyCraque && monthlyCraque.craqueId) {
+    if (monthlyCraque?.craqueId) {
       const { month, year } = monthlyCraque;
-
-      // início e fim do mês referente ao prêmio
       const monthStart = new Date(year, month - 1, 1);
       const monthEnd = new Date(year, month, 0);
       monthStart.setHours(0, 0, 0, 0);
@@ -54,20 +52,17 @@ router.get("/", async (req, res) => {
         where: {
           playerId: monthlyCraque.craqueId,
           match: {
-            playedAt: {
-              gte: monthStart,
-              lte: monthEnd,
-            },
+            playedAt: { gte: monthStart, lte: monthEnd },
           },
         },
       });
 
-      let goals = 0;
-      let assists = 0;
-      let matches = 0;
-      let photos = 0;
-      let ratingSum = 0;
-      let ratingCount = 0;
+      let goals = 0,
+        assists = 0,
+        matches = 0,
+        photos = 0,
+        ratingSum = 0,
+        ratingCount = 0;
 
       stats.forEach((s) => {
         goals += s.goals || 0;
@@ -85,13 +80,13 @@ router.get("/", async (req, res) => {
         assists,
         matches,
         photos,
-        avgRating: ratingCount > 0 ? ratingSum / ratingCount : 0,
+        avgRating: ratingCount ? ratingSum / ratingCount : 0,
       };
     }
 
-    // ------------------------------
-    // Craque / Time da semana (último WeeklyAward)
-    // ------------------------------
+    // =====================================================
+    // CRAQUE / TIME DA SEMANA
+    // =====================================================
     const weeklyAward = await prisma.weeklyAward.findFirst({
       orderBy: { weekStart: "desc" },
       include: {
@@ -100,9 +95,8 @@ router.get("/", async (req, res) => {
       },
     });
 
-    // Stats da semana do craque da semana
     let weeklyStats = null;
-    if (weeklyAward && weeklyAward.bestPlayerId) {
+    if (weeklyAward?.bestPlayerId) {
       const weekStart = startOfDay(weeklyAward.weekStart);
       const weekEnd = endOfDay(
         new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
@@ -112,20 +106,17 @@ router.get("/", async (req, res) => {
         where: {
           playerId: weeklyAward.bestPlayerId,
           match: {
-            playedAt: {
-              gte: weekStart,
-              lte: weekEnd,
-            },
+            playedAt: { gte: weekStart, lte: weekEnd },
           },
         },
       });
 
-      let goals = 0;
-      let assists = 0;
-      let matches = 0;
-      let photos = 0;
-      let ratingSum = 0;
-      let ratingCount = 0;
+      let goals = 0,
+        assists = 0,
+        matches = 0,
+        photos = 0,
+        ratingSum = 0,
+        ratingCount = 0;
 
       stats.forEach((s) => {
         goals += s.goals || 0;
@@ -143,13 +134,49 @@ router.get("/", async (req, res) => {
         assists,
         matches,
         photos,
-        avgRating: ratingCount > 0 ? ratingSum / ratingCount : 0,
+        avgRating: ratingCount ? ratingSum / ratingCount : 0,
       };
     }
 
-    // ------------------------------
-    // Rankings rápidos (usando campos totais do Player)
-    // ------------------------------
+    // =====================================================
+    // DESTAQUES DA TEMPORADA (CARROSSEL DA HOME)
+    // Só aparece entre highlightStart e highlightEnd
+    // =====================================================
+    let seasonHighlightYear = null;
+    let seasonHighlightAwards = [];
+
+    if (showSeasonHighlight) {
+      // Pega ano mais recente que tem prêmios
+      const latestAward = await prisma.seasonAward.findFirst({
+        orderBy: { year: "desc" },
+      });
+
+      if (latestAward) {
+        seasonHighlightYear = latestAward.year;
+
+        const wantedCategories = [
+          "melhor_jogador",
+          "artilheiro",
+          "assistente",
+          "melhor_goleiro",
+          "melhor_zagueiro",
+          "melhor_meia",
+          "melhor_atacante",
+        ];
+
+        seasonHighlightAwards = await prisma.seasonAward.findMany({
+          where: {
+            year: seasonHighlightYear,
+            category: { in: wantedCategories },
+          },
+          include: { player: true },
+        });
+      }
+    }
+
+    // =====================================================
+    // RANKINGS RÁPIDOS
+    // =====================================================
     const topScorers = await prisma.player.findMany({
       orderBy: { totalGoals: "desc" },
       take: 10,
@@ -161,11 +188,7 @@ router.get("/", async (req, res) => {
     });
 
     const topRatings = await prisma.player.findMany({
-      where: {
-        totalRating: {
-          gt: 0,
-        },
-      },
+      where: { totalRating: { gt: 0 } },
       orderBy: { totalRating: "desc" },
       take: 10,
     });
@@ -175,21 +198,24 @@ router.get("/", async (req, res) => {
       take: 10,
     });
 
-    // ------------------------------
-    // Elenco (para "Elenco em destaque")
-    // ------------------------------
+    // =====================================================
+    // ELENCO
+    // =====================================================
     const players = await prisma.player.findMany({
       orderBy: { name: "asc" },
     });
 
-    // ------------------------------
-    // Últimas peladas
-    // ------------------------------
+    // =====================================================
+    // ÚLTIMAS PELADAS
+    // =====================================================
     const recentMatches = await prisma.match.findMany({
       orderBy: { playedAt: "desc" },
       take: 10,
     });
 
+    // =====================================================
+    // RENDER
+    // =====================================================
     res.render("index", {
       title: "Home",
       activePage: "home",
@@ -198,6 +224,9 @@ router.get("/", async (req, res) => {
       monthlyStats,
       weeklyAward,
       weeklyStats,
+
+      seasonHighlightAwards,
+      seasonHighlightYear,
 
       topScorers,
       topAssists,
@@ -215,30 +244,23 @@ router.get("/", async (req, res) => {
 
 // ==============================
 // PÁGINA PÚBLICA DE UMA PELADA
-// GET /matches/:id
 // ==============================
 router.get("/matches/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (Number.isNaN(id)) {
-      return res.status(404).render("404");
-    }
+    if (Number.isNaN(id)) return res.status(404).render("404");
 
     const match = await prisma.match.findUnique({
       where: { id },
       include: {
         stats: {
           include: { player: true },
-          orderBy: {
-            player: { name: "asc" },
-          },
+          orderBy: { player: { name: "asc" } },
         },
       },
     });
 
-    if (!match) {
-      return res.status(404).render("404");
-    }
+    if (!match) return res.status(404).render("404");
 
     res.render("match_public", {
       title: "Estatísticas da pelada",
@@ -249,6 +271,63 @@ router.get("/matches/:id", async (req, res) => {
   } catch (err) {
     console.error("Erro ao carregar pelada pública:", err);
     res.status(500).send("Erro ao carregar estatísticas da pelada.");
+  }
+});
+
+// ==============================
+// HALL DA FAMA – LIBERAÇÃO PROGRAMADA
+// ==============================
+router.get("/hall-da-fama", async (req, res) => {
+  try {
+    const now = new Date();
+
+    // ✅ Liberação programada para 2025:
+    // sábado 29/11 às 15h (horário de Brasília)
+    const releaseDate = new Date("2025-11-29T15:00:00-03:00");
+    const beforeRelease = now < releaseDate;
+
+    let awards = await prisma.seasonAward.findMany({
+      include: { player: true },
+      orderBy: [{ year: "desc" }, { category: "asc" }],
+    });
+
+    // ✅ Se ainda não chegou a data → esconder 2025
+    if (beforeRelease) {
+      awards = awards.filter((a) => a.year !== 2025);
+    }
+
+    if (!awards.length) {
+      return res.render("hall_da_fama", {
+        title: "Hall da Fama",
+        activePage: "hall",
+        awardsByYear: {},
+        years: [],
+        beforeRelease,
+        releaseLabel: "29/11/2025 às 15h",
+      });
+    }
+
+    const awardsByYear = awards.reduce((acc, a) => {
+      if (!acc[a.year]) acc[a.year] = [];
+      acc[a.year].push(a);
+      return acc;
+    }, {});
+
+    const years = Object.keys(awardsByYear)
+      .map(Number)
+      .sort((a, b) => b - a);
+
+    res.render("hall_da_fama", {
+      title: "Hall da Fama",
+      activePage: "hall",
+      awardsByYear,
+      years,
+      beforeRelease,
+      releaseLabel: "29/11/2025 às 15h",
+    });
+  } catch (err) {
+    console.error("Erro ao carregar Hall da Fama:", err);
+    res.status(500).send("Erro ao carregar Hall da Fama.");
   }
 });
 

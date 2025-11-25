@@ -113,6 +113,12 @@ router.get("/", requireAdmin, async (req, res) => {
       },
     });
 
+    // Premiações de temporada (para exibir resuminho se quiser)
+    const seasonAwards = await prisma.seasonAward.findMany({
+      include: { player: true },
+      orderBy: [{ year: "desc" }, { category: "asc" }],
+    });
+
     res.render("admin", {
       title: "Painel do Admin",
       matches,
@@ -120,6 +126,7 @@ router.get("/", requireAdmin, async (req, res) => {
       players,
       weeklyAwards,
       monthlyAwards,
+      seasonAwards,
     });
   } catch (err) {
     console.error("Erro ao carregar painel admin:", err);
@@ -203,7 +210,6 @@ router.post("/players/:id/delete", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) return res.redirect("/admin");
 
-    // Apaga stats do jogador antes (por segurança)
     await prisma.playerStat.deleteMany({
       where: { playerId: id },
     });
@@ -281,12 +287,10 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
       return res.redirect("/admin");
     }
 
-    // 1) apaga todas as stats ligadas a essa pelada
     await prisma.playerStat.deleteMany({
       where: { matchId: id },
     });
 
-    // 2) agora pode apagar a pelada em si
     await prisma.match.delete({
       where: { id },
     });
@@ -405,7 +409,6 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
       }
     }
 
-    // Recalcula totais para ranking
     await recomputeTotalsForPlayers(Array.from(touchedPlayerIds));
 
     res.redirect(`/admin/matches/${matchId}`);
@@ -590,6 +593,108 @@ router.post("/monthly-awards/:id/delete", requireAdmin, async (req, res) => {
     res.redirect("/admin");
   }
 });
+
+// ==============================
+// 🏆 Premiação da temporada (SeasonAward)
+// ==============================
+
+// Tela de gestão da premiação
+router.get("/premiacao", requireAdmin, async (req, res) => {
+  try {
+    const players = await prisma.player.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    const awards = await prisma.seasonAward.findMany({
+      include: { player: true },
+      orderBy: [{ year: "desc" }, { category: "asc" }],
+    });
+
+    const awardsByYear = awards.reduce((acc, award) => {
+      if (!acc[award.year]) acc[award.year] = [];
+      acc[award.year].push(award);
+      return acc;
+    }, {});
+
+    res.render("admin_awards", {
+      title: "Premiação da temporada",
+      players,
+      awardsByYear,
+    });
+  } catch (err) {
+    console.error("Erro ao carregar tela de premiação:", err);
+    res.status(500).send("Erro ao carregar premiação da temporada.");
+  }
+});
+
+// Criar/atualizar prêmio de temporada
+router.post("/season-awards", requireAdmin, async (req, res) => {
+  try {
+    const { year, category, playerId } = req.body;
+
+    const y = parseInt(year, 10);
+    const cat = category ? String(category) : null;
+    const pId = playerId && playerId !== "" ? Number(playerId) : null;
+
+    if (!y || !cat) {
+      return res.redirect("/admin/premiacao");
+    }
+
+    // 🔧 NÃO usamos mais year_category (não existe no schema).
+    // Então buscamos primeiro, depois fazemos update OU create.
+    const existing = await prisma.seasonAward.findFirst({
+      where: {
+        year: y,
+        category: cat,
+      },
+    });
+
+    if (existing) {
+      await prisma.seasonAward.update({
+        where: { id: existing.id },
+        data: {
+          playerId: pId,
+        },
+      });
+    } else {
+      await prisma.seasonAward.create({
+        data: {
+          year: y,
+          category: cat,
+          playerId: pId,
+        },
+      });
+    }
+
+    res.redirect("/admin/premiacao");
+  } catch (err) {
+    console.error("Erro ao salvar prêmio de temporada:", err);
+    res.redirect("/admin/premiacao");
+  }
+});
+
+// Excluir prêmio de temporada
+router.post(
+  "/season-awards/:id/delete",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) {
+        return res.redirect("/admin/premiacao");
+      }
+
+      await prisma.seasonAward.delete({
+        where: { id },
+      });
+
+      res.redirect("/admin/premiacao");
+    } catch (err) {
+      console.error("Erro ao excluir prêmio de temporada:", err);
+      res.redirect("/admin/premiacao");
+    }
+  }
+);
 
 // ==============================
 // 📊 Ver estatísticas de uma pelada (ADMIN)
