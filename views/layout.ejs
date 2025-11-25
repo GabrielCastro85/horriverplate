@@ -25,9 +25,18 @@
               title: ["Oswald","system-ui","sans-serif"],
             },
             keyframes: {
-              fadeIn: { "0%":{opacity:0,transform:"translateY(8px)"}, "100%":{opacity:1,transform:"translateY(0)"} },
-              slideDown: { "0%":{opacity:0,transform:"translateY(-12px)"}, "100%":{opacity:1,transform:"translateY(0)"} },
-              slideUp: { "0%":{opacity:1,transform:"translateY(0)"}, "100%":{opacity:0,transform:"translateY(-12px)"} },
+              fadeIn: {
+                "0%": { opacity: 0, transform: "translateY(8px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" }
+              },
+              slideDown: {
+                "0%": { opacity: 0, transform: "translateY(-12px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" }
+              },
+              slideUp: {
+                "0%": { opacity: 1, transform: "translateY(0)" },
+                "100%": { opacity: 0, transform: "translateY(-12px)" }
+              },
             },
             animation: {
               fadeIn: "fadeIn .35s ease-out",
@@ -36,7 +45,7 @@
             },
             boxShadow: {
               card: "0 18px 45px rgba(15,23,42,.85)",
-              "card-soft":"0 18px 35px rgba(15,23,42,.7)",
+              "card-soft": "0 18px 35px rgba(15,23,42,.7)",
             }
           }
         }
@@ -102,16 +111,15 @@
         transform: translateY(-6px) rotate(-45deg);
       }
     </style>
-        <% if (typeof isProd !== 'undefined' && isProd && !isAdmin) { %>
-      <!-- Google tag (gtag.js) -->
-      <script async src="https://www.googletagmanager.com/gtag/js?id=G-0JGR9T4CY9"></script>
-      <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-0JGR9T4CY9');
-      </script>
-    <% } %>
+
+    <!-- Google tag (gtag.js) - sempre carregando -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0JGR9T4CY9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-0JGR9T4CY9');
+    </script>
   </head>
 
   <body class="bg-horriver-bg text-horriver-light">
@@ -146,7 +154,6 @@
               <span class="text-[10px] text-horriver-gray">Pelada • Stats • Resenha</span>
             </div>
           </a>
-
 
           <!-- MENU DESKTOP -->
           <ul class="hidden md:flex items-center gap-5 text-[11px] md:text-xs">
@@ -188,53 +195,52 @@
 
           <!-- Ações -->
           <div class="hidden md:flex items-center gap-2">
-              <a
-                  href="https://www.instagram.com/_hpfrc/"
-                  target="_blank"
-                  rel="noopener"
-                  class="group inline-flex items-center gap-2 px-3 py-1 rounded-full border border-horriver-orange/80
-                        bg-black/40 text-[11px] md:text-xs text-horriver-orange
-                        hover:bg-horriver-orange hover:text-horriver-bg
-                        transition-colors"
+            <a
+              href="https://www.instagram.com/_hpfrc/"
+              target="_blank"
+              rel="noopener"
+              class="group inline-flex items-center gap-2 px-3 py-1 rounded-full border border-horriver-orange/80
+                    bg-black/40 text-[11px] md:text-xs text-horriver-orange
+                    hover:bg-horriver-orange hover:text-horriver-bg
+                    transition-colors"
+            >
+              <!-- Ícone estilo Instagram -->
+              <span
+                class="inline-flex items-center justify-center w-5 h-5 rounded-md
+                      bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
+                      text-[10px] text-black shadow-sm"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  class="w-3.5 h-3.5"
                 >
-                  <!-- Ícone estilo Instagram -->
-                  <span
-                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
-                          bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
-                          text-[10px] text-black shadow-sm"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                      class="w-3.5 h-3.5"
-                    >
-                      <rect
-                        x="3"
-                        y="3"
-                        width="18"
-                        height="18"
-                        rx="5"
-                        ry="5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.6"
-                      ></rect>
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="4"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.6"
-                      ></circle>
-                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
-                    </svg>
-                  </span>
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="5"
+                    ry="5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                  ></rect>
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                  ></circle>
+                  <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
+                </svg>
+              </span>
 
-                  <span class="hidden sm:inline">@_hpfrc</span>
-                  <span class="sm:hidden">Instagram</span>
-                </a>
-
+              <span class="hidden sm:inline">@_hpfrc</span>
+              <span class="sm:hidden">Instagram</span>
+            </a>
 
             <% if (!isAdmin) { %>
               <a href="/login"
@@ -292,51 +298,50 @@
             <a href="/sobre" class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
 
             <div class="mt-2 flex items-center gap-2 px-2">
-                <a
-                  href="https://www.instagram.com/_hpfrc/"
-                  target="_blank"
-                  rel="noopener"
-                  class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
-                        rounded-lg border border-horriver-orange/80 bg-black/40
-                        text-[12px] text-horriver-orange
-                        hover:bg-horriver-orange hover:text-horriver-bg
-                        transition-colors"
+              <a
+                href="https://www.instagram.com/_hpfrc/"
+                target="_blank"
+                rel="noopener"
+                class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
+                      rounded-lg border border-horriver-orange/80 bg-black/40
+                      text-[12px] text-horriver-orange
+                      hover:bg-horriver-orange hover:text-horriver-bg
+                      transition-colors"
+              >
+                <span
+                  class="inline-flex items-center justify-center w-5 h-5 rounded-md
+                        bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
+                        text-[10px] text-black"
                 >
-                  <span
-                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
-                          bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
-                          text-[10px] text-black"
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    class="w-3.5 h-3.5"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                      class="w-3.5 h-3.5"
-                    >
-                      <rect
-                        x="3"
-                        y="3"
-                        width="18"
-                        height="18"
-                        rx="5"
-                        ry="5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.6"
-                      ></rect>
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="4"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.6"
-                      ></circle>
-                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
-                    </svg>
-                  </span>
-                  <span>Instagram</span>
-                </a>
-
+                    <rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="5"
+                      ry="5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    ></rect>
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    ></circle>
+                    <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
+                  </svg>
+                </span>
+                <span>Instagram</span>
+              </a>
 
               <% if (!isAdmin) { %>
                 <a href="/login"
