@@ -11,6 +11,7 @@
 %>
 
 <section class="space-y-6 animate-fadeIn">
+
   <!-- Cabeçalho da pelada -->
   <header class="space-y-2">
     <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
@@ -33,45 +34,42 @@
     </div>
   </header>
 
-  <!-- Card grande com tabela -->
+  <!-- Card grande -->
   <section
     class="relative mt-4 rounded-3xl border border-horriver-red/60 overflow-hidden
-           bg-gradient-to-b from-black/80 via-horriver-dark to-black/95 shadow-card"
-  >
-    <!-- "Brilho" de fundo -->
+           bg-gradient-to-b from-black/80 via-horriver-dark to-black/95 shadow-card">
+
+    <!-- Glows -->
     <div class="absolute inset-0 pointer-events-none opacity-70">
-      <div
-        class="absolute -top-32 left-10 w-80 h-80 bg-horriver-orange/15 blur-3xl rounded-full"
-      ></div>
-      <div
-        class="absolute bottom-[-120px] right-[-80px] w-[380px] h-[380px]
-               bg-horriver-red/30 blur-3xl rounded-full"
-      ></div>
+      <div class="absolute -top-32 left-10 w-80 h-80 bg-horriver-orange/15 blur-3xl rounded-full"></div>
+      <div class="absolute bottom-[-120px] right-[-80px] w-[380px] h-[380px] bg-horriver-red/30 blur-3xl rounded-full"></div>
     </div>
 
     <!-- Conteúdo -->
     <div class="relative z-10 px-4 md:px-6 py-4 md:py-5">
-      <!-- Título da tabela -->
+
+      <!-- Título -->
       <div class="flex items-center justify-between gap-4 mb-3">
         <div>
-          <h2 class="font-title text-xl text-horriver-light">
-            Estatísticas da pelada
-          </h2>
-          <p class="text-[11px] text-horriver-gray">
-            Jogadores em ordem alfabética, com gols, assistências, presença e nota.
-          </p>
+          <h2 class="font-title text-xl text-horriver-light">Estatísticas da pelada</h2>
+          <p class="text-[11px] text-horriver-gray">Jogadores em ordem alfabética, com gols, assistências, presença e nota.</p>
         </div>
+
         <p class="text-[11px] text-horriver-gray">
           Total de jogadores:
           <span class="text-horriver-orange font-semibold"><%= safeStats.length %></span>
         </p>
       </div>
 
-      <!-- Wrapper com scroll -->
-      <div class="mt-2 rounded-2xl border border-horriver-red/50 bg-black/60 overflow-hidden">
-        <div class="max-h-[460px] overflow-y-auto scrollbar-thin scrollbar-thumb-horriver-red/60 scrollbar-track-transparent">
-          <table class="min-w-full text-xs">
-            <thead class="bg-gradient-to-r from-horriver-red/70 via-horriver-red/60 to-horriver-orange/70 text-[11px]">
+      <!-- MOBILE FIX – SCROLL HORIZONTAL -->
+      <div class="rounded-2xl border border-horriver-red/50 bg-black/60 overflow-hidden">
+
+        <!-- WRAPPER COM SCROLL HORIZONTAL NO MOBILE -->
+        <div class="overflow-x-auto md:overflow-x-visible">
+
+          <!-- TABELA COM MIN WIDTH PRA MOBILE -->
+          <table class="min-w-[620px] w-full text-[11px] sm:text-xs">
+            <thead class="bg-gradient-to-r from-horriver-red/70 via-horriver-red/60 to-horriver-orange/70">
               <tr>
                 <th class="px-3 py-2 text-left w-10">#</th>
                 <th class="px-3 py-2 text-left">Jogador</th>
@@ -83,6 +81,7 @@
                 <th class="px-3 py-2 text-center">Foto</th>
               </tr>
             </thead>
+
             <tbody>
               <% if (!safeStats.length) { %>
                 <tr>
@@ -92,28 +91,25 @@
                 </tr>
               <% } else { %>
                 <% safeStats.forEach((s, idx) => { %>
-                  <tr
-                    class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors"
-                  >
-                    <!-- # -->
-                    <td class="px-3 py-2 text-[11px] text-horriver-gray">
-                      <%= idx + 1 %>
-                    </td>
+                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors">
 
-                    <!-- Jogador -->
-                    <td class="px-3 py-2">
-                      <p class="text-horriver-light text-[13px]">
+                    <!-- # -->
+                    <td class="px-3 py-2 text-[11px] text-horriver-gray"><%= idx + 1 %></td>
+
+                    <!-- Nome -->
+                    <td class="px-3 py-2 whitespace-nowrap">
+                      <span class="text-horriver-light text-[13px]">
                         <%= s.player.name %>
-                        <% if (s.player.nickname) { %>
-                          <span class="text-horriver-gray text-[11px]">
-                            ("<%= s.player.nickname %>")
-                          </span>
-                        <% } %>
-                      </p>
+                      </span>
+                      <% if (s.player.nickname) { %>
+                        <span class="text-horriver-gray text-[10px]">
+                          ("<%= s.player.nickname %>")
+                        </span>
+                      <% } %>
                     </td>
 
                     <!-- Posição -->
-                    <td class="px-3 py-2 text-[11px] text-horriver-orange uppercase">
+                    <td class="px-3 py-2 text-[11px] text-horriver-orange uppercase whitespace-nowrap">
                       <%= s.player.position %>
                     </td>
 
@@ -122,46 +118,40 @@
                       <% if (s.present) { %>
                         <span class="text-emerald-400 text-sm">✔</span>
                       <% } else { %>
-                        <span class="text-horriver-gray/70 text-xs">—</span>
+                        <span class="text-horriver-gray/70 text-sm">—</span>
                       <% } %>
                     </td>
 
                     <!-- Gols -->
-                    <td class="px-3 py-2 text-center">
-                      <span class="font-semibold text-horriver-light">
-                        <%= s.goals || 0 %>
-                      </span>
+                    <td class="px-3 py-2 text-center font-semibold text-horriver-light">
+                      <%= s.goals || 0 %>
                     </td>
 
-                    <!-- Assistências -->
-                    <td class="px-3 py-2 text-center">
-                      <span class="font-semibold text-horriver-light">
-                        <%= s.assists || 0 %>
-                      </span>
+                    <!-- Assist -->
+                    <td class="px-3 py-2 text-center font-semibold text-horriver-light">
+                      <%= s.assists || 0 %>
                     </td>
 
                     <!-- Nota -->
-                    <td class="px-3 py-2 text-center">
-                      <span class="font-semibold text-horriver-light">
-                        <%= fmtRating(s.rating) %>
-                      </span>
+                    <td class="px-3 py-2 text-center font-semibold text-horriver-light">
+                      <%= fmtRating(s.rating) %>
                     </td>
 
-                    <!-- Foto (usa appearedInPhoto 👈) -->
+                    <!-- Foto -->
                     <td class="px-3 py-2 text-center">
                       <% if (s.appearedInPhoto) { %>
-                        <span class="text-horriver-orange text-base" title="Saiu na foto">
-                          📸
-                        </span>
+                        <span class="text-horriver-orange text-base">📸</span>
                       <% } else { %>
                         <span class="text-horriver-gray/70 text-xs">—</span>
                       <% } %>
                     </td>
+
                   </tr>
                 <% }) %>
               <% } %>
             </tbody>
           </table>
+
         </div>
       </div>
 
@@ -172,11 +162,11 @@
           class="inline-flex items-center px-4 py-1.5 rounded-full text-[11px]
                  border border-horriver-border text-horriver-gray
                  hover:border-horriver-orange hover:text-horriver-orange
-                 transition-colors"
-        >
+                 transition-colors">
           Voltar para a home
         </a>
       </div>
+
     </div>
   </section>
 </section>
