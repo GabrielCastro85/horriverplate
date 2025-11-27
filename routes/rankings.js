@@ -36,8 +36,8 @@ router.get("/", async (req, res) => {
 
     let { year, month, position } = req.query;
 
-    // ✅ Defaults – ano atual como padrão se nada for enviado
-    if (!year) year = String(currentYear); // ex: "2025"
+    // Defaults – ano atual como padrão se nada for enviado
+    if (!year) year = String(currentYear);
     if (!month) month = "0"; // 0 = todos os meses
     const selPosition = position && position !== "all" ? position : "all";
 
@@ -104,6 +104,61 @@ router.get("/", async (req, res) => {
         rating,
       };
     });
+
+    // ======= MÉDIA PONDERADA (0–10) =======
+    // Normaliza gols e assistências para 0–10 com base no máximo do período
+    const maxGoals = entries.reduce(
+      (max, e) => (e.goals > max ? e.goals : max),
+      0
+    );
+    const maxAssists = entries.reduce(
+      (max, e) => (e.assists > max ? e.assists : max),
+      0
+    );
+
+    // Pesos (G=4 / A=2 / N=4)
+    const weights = {
+      goals: 4,
+      assists: 2,
+      rating: 4,
+    };
+    const weightsSum = weights.goals + weights.assists + weights.rating;
+
+    const weightedRanking = entries
+      .map((e) => {
+        const golsNorm =
+          maxGoals > 0 ? (e.goals / maxGoals) * 10 : 0;
+        const assistsNorm =
+          maxAssists > 0 ? (e.assists / maxAssists) * 10 : 0;
+        const ratingNorm = e.rating || 0; // já está em 0–10
+
+        const weightedScore =
+          weightsSum > 0
+            ? (golsNorm * weights.goals +
+                assistsNorm * weights.assists +
+                ratingNorm * weights.rating) /
+              weightsSum
+            : 0;
+
+        return {
+          ...e,
+          weightedScore,
+          golsNorm,
+          assistsNorm,
+          ratingNorm,
+        };
+      })
+      // pelo menos alguma participação
+      .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
+      .sort((a, b) => {
+        if (b.weightedScore !== a.weightedScore) {
+          return b.weightedScore - a.weightedScore;
+        }
+        // desempates: nota > gols > assistências
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.assists - a.assists;
+      });
 
     // ======= GOLS =======
     const goalsRanking = [...entries]
@@ -231,6 +286,7 @@ router.get("/", async (req, res) => {
       ratings: ratingsRanking,
       matches: matchesRanking,
       photos: photosRanking,
+      weighted: weightedRanking,
       weeklyAwards,
       monthlyAwards,
     };

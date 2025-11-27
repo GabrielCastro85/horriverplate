@@ -1,5 +1,7 @@
 <%
-  // Helper de data
+  // ===============================
+  // Helpers e preparação de dados
+  // ===============================
   const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString("pt-BR") : "-";
 
@@ -18,6 +20,7 @@
   const ratings = safeArr(rankings && rankings.ratings);
   const matches = safeArr(rankings && rankings.matches);
   const photos = safeArr(rankings && rankings.photos);
+  const weighted = safeArr(rankings && rankings.weighted);
 
   const weeklyAwards = safeArr(rankings && rankings.weeklyAwards);
   const monthlyAwards = safeArr(rankings && rankings.monthlyAwards);
@@ -27,7 +30,10 @@
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
 
-  const selYear = (typeof year === "string" && year === "all") ? "all" : Number(year || new Date().getFullYear());
+  const selYear = (typeof year === "string" && year === "all")
+    ? "all"
+    : Number(year || new Date().getFullYear());
+
   const selMonth = typeof month !== "undefined" ? Number(month) : 0; // 0 = todos
   const selPos = typeof selPosition !== "undefined" ? selPosition : "all";
 
@@ -41,6 +47,13 @@
     if (selMonth === 0) return `Ano de ${selYear}`;
     const mName = monthNames[(selMonth || 1) - 1] || "";
     return `${mName} / ${selYear}`;
+  };
+
+  const topRowClass = (idx) => {
+    if (idx === 0) return "rk-row-gold";
+    if (idx === 1) return "rk-row-silver";
+    if (idx === 2) return "rk-row-bronze";
+    return "";
   };
 %>
 
@@ -63,6 +76,35 @@
     background: rgba(148, 163, 184, 0.6);
     border-radius: 999px;
   }
+
+  /* Destaques para top 3 */
+  .rk-row-gold {
+    background: linear-gradient(
+      to right,
+      rgba(250, 204, 21, 0.18),
+      rgba(15, 23, 42, 0.2)
+    );
+  }
+  .rk-row-silver {
+    background: linear-gradient(
+      to right,
+      rgba(148, 163, 184, 0.18),
+      rgba(15, 23, 42, 0.2)
+    );
+  }
+  .rk-row-bronze {
+    background: linear-gradient(
+      to right,
+      rgba(248, 113, 113, 0.12),
+      rgba(15, 23, 42, 0.2)
+    );
+  }
+
+  .rk-row-gold td:first-child,
+  .rk-row-silver td:first-child,
+  .rk-row-bronze td:first-child {
+    font-weight: 700;
+  }
 </style>
 
 <section class="space-y-8 animate-fadeIn">
@@ -77,6 +119,7 @@
           Veja os rankings gerais ou filtrados por ano/mês e posição.
         </p>
       </div>
+
       <!-- Resumo do filtro atual -->
       <div class="text-xs text-horriver-gray md:text-right">
         <p>
@@ -176,7 +219,7 @@
 
   <!-- GRID DE RANKINGS PRINCIPAIS -->
   <section class="space-y-6">
-    <!-- Cards em 2 linhas: (Gols / Assistências / G+A) e (Notas / Presenças / Fotos) -->
+    <!-- Primeira grade: 3x2 (sem média ponderada) -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       <!-- ================= GOLS ================= -->
       <div class="card-highlight rounded-3xl p-[1px]">
@@ -216,7 +259,7 @@
                   </thead>
                   <tbody>
                     <% goals.forEach((row, idx) => { %>
-                      <tr class="border-t border-horriver-border/40">
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
                         <td class="px-2 py-1"><%= idx + 1 %></td>
                         <td class="px-2 py-1">
                           <%= row.player.name %>
@@ -284,7 +327,7 @@
                   </thead>
                   <tbody>
                     <% assists.forEach((row, idx) => { %>
-                      <tr class="border-t border-horriver-border/40">
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
                         <td class="px-2 py-1"><%= idx + 1 %></td>
                         <td class="px-2 py-1">
                           <%= row.player.name %>
@@ -354,7 +397,7 @@
                   </thead>
                   <tbody>
                     <% ga.forEach((row, idx) => { %>
-                      <tr class="border-t border-horriver-border/40">
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
                         <td class="px-2 py-1"><%= idx + 1 %></td>
                         <td class="px-2 py-1">
                           <%= row.player.name %>
@@ -423,7 +466,7 @@
                   </thead>
                   <tbody>
                     <% ratings.forEach((row, idx) => { %>
-                      <tr class="border-t border-horriver-border/40">
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
                         <td class="px-2 py-1"><%= idx + 1 %></td>
                         <td class="px-2 py-1">
                           <%= row.player.name %>
@@ -490,7 +533,7 @@
                   </thead>
                   <tbody>
                     <% matches.forEach((row, idx) => { %>
-                      <tr class="border-t border-horriver-border/40">
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
                         <td class="px-2 py-1"><%= idx + 1 %></td>
                         <td class="px-2 py-1">
                           <%= row.player.name %>
@@ -558,7 +601,7 @@
                   </thead>
                   <tbody>
                     <% photos.forEach((row, idx) => { %>
-                      <tr class="border-t border-horriver-border/40">
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
                         <td class="px-2 py-1"><%= idx + 1 %></td>
                         <td class="px-2 py-1">
                           <%= row.player.name %>
@@ -579,6 +622,80 @@
               </div>
             <% } %>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MÉDIA PONDERADA (FULL WIDTH) ================= -->
+    <div class="card-highlight rounded-3xl p-[1px] max-w-5xl mx-auto">
+      <div class="card-inner p-4 md:p-5 flex flex-col h-full">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="font-title text-lg text-horriver-light">
+              Média ponderada (0–10)
+            </h2>
+            <p class="text-[11px] text-horriver-gray mt-0.5">
+              Combina gols, assistências e nota com pesos (G=4 • A=2 • N=4).
+            </p>
+          </div>
+          <span
+            class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                   bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+          >
+            0–10
+          </span>
+        </div>
+
+        <div class="mt-4 flex-1 overflow-hidden">
+          <% if (!weighted.length) { %>
+            <p class="text-sm text-horriver-gray">
+              Nenhum dado para este período.
+            </p>
+          <% } else { %>
+            <div class="rk-scroll h-full overflow-y-auto">
+              <table class="w-full text-[11px]">
+                <thead class="bg-black/50 sticky top-0 z-10">
+                  <tr>
+                    <th class="text-left px-2 py-1">#</th>
+                    <th class="text-left px-2 py-1">Jogador</th>
+                    <th class="text-left px-2 py-1">Posição</th>
+                    <th class="text-center px-2 py-1">Gols</th>
+                    <th class="text-center px-2 py-1">Assist.</th>
+                    <th class="text-center px-2 py-1">Nota</th>
+                    <th class="text-center px-2 py-1 text-horriver-orange">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% weighted.forEach((row, idx) => { %>
+                    <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                      <td class="px-2 py-1"><%= idx + 1 %></td>
+                      <td class="px-2 py-1">
+                        <%= row.player.name %>
+                        <% if (row.player.nickname) { %>
+                          (<%= row.player.nickname %>)
+                        <% } %>
+                      </td>
+                      <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                        <%= row.player.position %>
+                      </td>
+                      <td class="px-2 py-1 text-center">
+                        <%= row.goals || 0 %>
+                      </td>
+                      <td class="px-2 py-1 text-center">
+                        <%= row.assists || 0 %>
+                      </td>
+                      <td class="px-2 py-1 text-center">
+                        <%= fmtRating(row.rating) %>
+                      </td>
+                      <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <%= fmtRating(row.weightedScore) %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
         </div>
       </div>
     </div>
