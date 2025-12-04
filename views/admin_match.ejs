@@ -154,3 +154,159 @@
     </button>
   </div>
 </form>
+
+<% const _voteBase = typeof voteBaseUrl !== 'undefined' ? voteBaseUrl : '/votar/'; %>
+
+<section id="votacao" class="mt-10 space-y-4">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+        Votação da pelada
+      </h2>
+      <p class="text-xs md:text-sm text-horriver-gray mt-1 max-w-2xl">
+        Gere links únicos para cada jogador presente votar (goleiro, zagueiro, meia, atacante e craque geral).
+        Cada link vale uma única submissão.
+      </p>
+    </div>
+
+    <form
+      action="/admin/matches/<%= match.id %>/vote-links"
+      method="POST"
+      class="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3"
+    >
+      <label class="flex items-center gap-2 text-[11px] text-horriver-gray">
+        <input type="checkbox" name="regenerate" value="1" class="w-4 h-4 accent-horriver-orange" />
+        Regenerar links existentes
+      </label>
+      <button
+        type="submit"
+        class="px-4 py-2 rounded-full bg-horriver-red text-horriver-light text-xs font-semibold hover:bg-red-700 transition shadow-card"
+      >
+        Gerar links para presentes
+      </button>
+    </form>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-2xl border border-horriver-border bg-black/50 overflow-hidden">
+      <div class="p-4 border-b border-horriver-border/60 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold text-horriver-light">Links por jogador</p>
+          <p class="text-[11px] text-horriver-gray">Copie e envie no privado do WhatsApp.</p>
+        </div>
+        <span class="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-gray">
+          Presenças: <%= voteLinks.length %>
+        </span>
+      </div>
+
+      <% if (voteLinks && voteLinks.length) { %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs md:text-sm">
+          <thead class="bg-black/60">
+            <tr>
+              <th class="px-3 py-3 text-left font-semibold text-horriver-gray">Jogador</th>
+              <th class="px-3 py-3 text-left font-semibold text-horriver-gray">Link</th>
+              <th class="px-3 py-3 text-left font-semibold text-horriver-gray">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% voteLinks.forEach(function(linkRow) { %>
+            <% const shareUrl = `${_voteBase}${linkRow.token}`; %>
+            <tr class="border-t border-horriver-border/40 hover:bg-white/5 transition">
+              <td class="px-3 py-2">
+                <div class="flex flex-col">
+                  <span class="font-medium text-horriver-light"><%= linkRow.player?.name %></span>
+                  <% if (linkRow.player?.position) { %>
+                  <span class="text-[10px] uppercase text-horriver-orange mt-0.5"><%= linkRow.player.position %></span>
+                  <% } %>
+                </div>
+              </td>
+              <td class="px-3 py-2 align-middle">
+                <div class="flex flex-col gap-1">
+                  <code class="text-[11px] bg-black/40 border border-horriver-border rounded px-2 py-1 break-all text-horriver-gray">
+                    <%= shareUrl %>
+                  </code>
+                  <span class="text-[10px] text-horriver-gray">Enviar individualmente para o jogador.</span>
+                </div>
+              </td>
+              <td class="px-3 py-2 align-middle">
+                <% if (linkRow.usedAt) { %>
+                <span class="inline-flex items-center gap-2 text-[11px] text-green-400">
+                  <span class="h-2 w-2 rounded-full bg-green-400"></span> usado em
+                  <%= new Date(linkRow.usedAt).toLocaleString('pt-BR') %>
+                </span>
+                <% } else { %>
+                <span class="inline-flex items-center gap-2 text-[11px] text-horriver-orange">
+                  <span class="h-2 w-2 rounded-full bg-horriver-orange"></span> pendente
+                </span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="p-4 text-sm text-horriver-gray">
+        Nenhum link gerado ainda. Marque presenças na tabela acima e clique em "Gerar links".
+      </div>
+      <% } %>
+    </div>
+
+    <div class="rounded-2xl border border-horriver-border bg-black/50 overflow-hidden">
+      <div class="p-4 border-b border-horriver-border/60 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold text-horriver-light">Votos registrados</p>
+          <p class="text-[11px] text-horriver-gray">Resumo rápido do que já entrou.</p>
+        </div>
+        <span class="text-[11px] px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-gray">
+          Total: <%= votes.length %>
+        </span>
+      </div>
+
+      <% if (votes && votes.length) { %>
+      <div class="divide-y divide-horriver-border/50 max-h-[460px] overflow-y-auto">
+        <% votes.forEach(function(vote) { %>
+        <div class="p-4 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-sm font-medium text-horriver-light">
+              Votante: <%= vote.voter ? vote.voter.name : 'link sem identificação' %>
+            </div>
+            <span class="text-[11px] text-horriver-gray">
+              <%= new Date(vote.submittedAt).toLocaleString('pt-BR') %>
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] md:text-xs text-horriver-gray">
+            <div>
+              <span class="text-horriver-light font-semibold">Goleiro:</span>
+              <%= vote.bestGoalkeeper ? vote.bestGoalkeeper.name : '—' %>
+            </div>
+            <div>
+              <span class="text-horriver-light font-semibold">Zagueiro:</span>
+              <%= vote.bestDefender ? vote.bestDefender.name : '—' %>
+            </div>
+            <div>
+              <span class="text-horriver-light font-semibold">Meia:</span>
+              <%= vote.bestMidfielder ? vote.bestMidfielder.name : '—' %>
+            </div>
+            <div>
+              <span class="text-horriver-light font-semibold">Atacante:</span>
+              <%= vote.bestForward ? vote.bestForward.name : '—' %>
+            </div>
+            <div class="sm:col-span-2">
+              <span class="text-horriver-light font-semibold">Craque geral:</span>
+              <%= vote.bestOverall ? vote.bestOverall.name : '—' %>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      <% } else { %>
+      <div class="p-4 text-sm text-horriver-gray">
+        Nenhum voto registrado ainda.
+      </div>
+      <% } %>
+    </div>
+  </div>
+</section>

@@ -64,6 +64,13 @@ model Player {
   weeklyAwards   WeeklyAward[]  @relation("WeeklyBest")
   monthlyAwards  MonthlyAward[] @relation("MonthlyCraque")
   seasonAwards   SeasonAward[]
+  voteLinks      VoteLink[]
+  votesGiven     Vote[]         @relation("VoteVoter")
+  votesAsGoalkeeper Vote[]      @relation("VoteBestGoalkeeper")
+  votesAsDefender   Vote[]      @relation("VoteBestDefender")
+  votesAsMidfielder Vote[]      @relation("VoteBestMidfielder")
+  votesAsForward    Vote[]      @relation("VoteBestForward")
+  votesAsOverall    Vote[]      @relation("VoteBestOverall")
 }
 
 //
@@ -81,6 +88,8 @@ model Match {
   // Relações
   stats        PlayerStat[]
   weeklyAwards WeeklyAward[] @relation("WeeklyMatch")
+  voteLinks    VoteLink[]
+  votes        Vote[]
 }
 
 //
@@ -161,4 +170,49 @@ model SeasonAward {
 
   // Garante que só exista 1 prêmio por Ano + Categoria
   @@unique([year, category], name: "year_category")
+}
+
+//
+// LINKS ÚNICOS DE VOTAÇÃO (por jogador e pelada)
+//
+model VoteLink {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  matchId   Int
+  playerId  Int
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  match  Match  @relation(fields: [matchId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+  vote   Vote?  @relation("VoteToken")
+
+  // Um link por jogador em cada pelada
+  @@unique([matchId, playerId])
+}
+
+//
+// VOTOS REGISTRADOS (uma submissão por token)
+//
+model Vote {
+  id                Int      @id @default(autoincrement())
+  matchId           Int
+  voterId           Int?
+  tokenId           Int?     @unique
+  bestGoalkeeperId  Int?
+  bestDefenderId    Int?
+  bestMidfielderId  Int?
+  bestForwardId     Int?
+  bestOverallId     Int?
+  submittedAt       DateTime @default(now())
+
+  match          Match    @relation(fields: [matchId], references: [id])
+  voter          Player?  @relation("VoteVoter", fields: [voterId], references: [id])
+  token          VoteLink? @relation("VoteToken", fields: [tokenId], references: [id])
+  bestGoalkeeper Player? @relation("VoteBestGoalkeeper", fields: [bestGoalkeeperId], references: [id])
+  bestDefender   Player? @relation("VoteBestDefender", fields: [bestDefenderId], references: [id])
+  bestMidfielder Player? @relation("VoteBestMidfielder", fields: [bestMidfielderId], references: [id])
+  bestForward    Player? @relation("VoteBestForward", fields: [bestForwardId], references: [id])
+  bestOverall    Player? @relation("VoteBestOverall", fields: [bestOverallId], references: [id])
 }

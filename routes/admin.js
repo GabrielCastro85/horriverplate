@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
+const crypto = require("crypto");
 const {
   uploadPlayerPhoto,
   uploadWeeklyTeamPhoto,
@@ -15,6 +16,10 @@ function requireAdmin(req, res, next) {
     return res.redirect("/login");
   }
   next();
+}
+
+function generateVoteToken() {
+  return crypto.randomBytes(12).toString("hex");
 }
 
 // ==============================
@@ -419,6 +424,80 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
 });
 
 // ==============================
+// 🔗 Gerar links únicos de votação para presentes
+// ==============================
+router.post("/matches/:id/vote-links", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    const regenerate = !!req.body.regenerate;
+
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+
+    const match = await prisma.match.findUnique({ where: { id: matchId } });
+    if (!match) {
+      return res.redirect("/admin");
+    }
+
+    const presentStats = await prisma.playerStat.findMany({
+      where: { matchId, present: true },
+      select: { playerId: true },
+    });
+
+    if (!presentStats.length) {
+      return res.redirect(`/admin/matches/${matchId}?error=sem-presenca`);
+    }
+
+    const presentIds = presentStats.map((s) => s.playerId);
+    const presentSet = new Set(presentIds);
+
+    await prisma.$transaction(async (tx) => {
+      const existingLinks = await tx.voteLink.findMany({ where: { matchId } });
+      const usedTokens = new Set(existingLinks.map((link) => link.token));
+
+      const staleIds = existingLinks
+        .filter((link) => !presentSet.has(link.playerId))
+        .map((link) => link.id);
+
+      if (staleIds.length) {
+        await tx.voteLink.deleteMany({ where: { id: { in: staleIds } } });
+      }
+
+      for (const playerId of presentIds) {
+        const existing = existingLinks.find((link) => link.playerId === playerId);
+
+        if (existing && !regenerate) {
+          continue;
+        }
+
+        let token = generateVoteToken();
+        while (usedTokens.has(token)) {
+          token = generateVoteToken();
+        }
+        usedTokens.add(token);
+
+        if (existing) {
+          await tx.voteLink.update({
+            where: { id: existing.id },
+            data: { token, usedAt: null },
+          });
+        } else {
+          await tx.voteLink.create({
+            data: { token, matchId, playerId },
+          });
+        }
+      }
+    });
+
+    return res.redirect(`/admin/matches/${matchId}#votacao`);
+  } catch (err) {
+    console.error("Erro ao gerar links de votação:", err);
+    return res.redirect(`/admin/matches/${req.params.id}`);
+  }
+});
+
+// ==============================
 // 🏅 Destaques (semana / mês)
 // ==============================
 
@@ -720,15 +799,43 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       return res.redirect("/admin");
     }
 
-    const players = await prisma.player.findMany({
-      orderBy: { name: "asc" },
-    });
+    const [players, voteLinks, votes] = await Promise.all([
+      prisma.player.findMany({
+        orderBy: { name: "asc" },
+      }),
+      prisma.voteLink.findMany({
+        where: { matchId: id },
+        include: {
+          player: true,
+          vote: true,
+        },
+        orderBy: { player: { name: "asc" } },
+      }),
+      prisma.vote.findMany({
+        where: { matchId: id },
+        include: {
+          voter: true,
+          bestGoalkeeper: true,
+          bestDefender: true,
+          bestMidfielder: true,
+          bestForward: true,
+          bestOverall: true,
+        },
+        orderBy: { submittedAt: "desc" },
+      }),
+    ]);
+
+    const baseVoteUrl = (process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
+    const voteBaseUrl = baseVoteUrl ? `${baseVoteUrl}/votar/` : `/votar/`;
 
     res.render("admin_match", {
       title: "Estatísticas da pelada",
       match,
       players,
       stats: match.stats || [],
+      voteLinks,
+      votes,
+      voteBaseUrl,
     });
   } catch (err) {
     console.error("Erro ao carregar estatísticas da pelada:", err);
