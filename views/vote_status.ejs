@@ -1,0 +1,33 @@
+<section class="max-w-2xl mx-auto px-4 py-10 md:py-14 text-center space-y-5">
+  <div class="card-highlight">
+    <div class="card-inner p-8 md:p-10 space-y-4">
+      <p class="text-xs uppercase tracking-[0.3em] text-horriver-orange">Horriver Plate</p>
+      <h1 class="text-2xl md:text-3xl font-semibold text-horriver-light"><%= title %></h1>
+      <p class="text-sm text-horriver-gray leading-relaxed"><%= message %></p>
+
+      <% if (status === 'success') { %>
+        <div class="flex items-center justify-center gap-3 text-green-400 text-sm font-medium bg-white/5 border border-horriver-border rounded-xl px-4 py-3">
+          <span class="h-2 w-2 rounded-full bg-green-400"></span>
+          Voto recebido! Obrigado por fortalecer a resenha.
+        </div>
+      <% } else if (status === 'used') { %>
+        <div class="flex items-center justify-center gap-3 text-horriver-orange text-sm font-medium bg-white/5 border border-horriver-border rounded-xl px-4 py-3">
+          <span class="h-2 w-2 rounded-full bg-horriver-orange"></span>
+          Este link já foi utilizado.
+        </div>
+      <% } else if (status === 'error') { %>
+        <div class="flex items-center justify-center gap-3 text-red-400 text-sm font-medium bg-white/5 border border-horriver-border rounded-xl px-4 py-3">
+          <span class="h-2 w-2 rounded-full bg-red-500"></span>
+          Houve um problema com o link.
+        </div>
+      <% } %>
+
+      <div class="text-[12px] text-horriver-gray">
+        <p>Se você acha que isso é um engano, avise o admin para receber um novo link.</p>
+        <% if (voteLink?.match?.playedAt) { %>
+          <p class="mt-2">Pelada de <span class="text-horriver-orange font-medium"><%= new Date(voteLink.match.playedAt).toLocaleDateString('pt-BR') %></span></p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
