@@ -1,0 +1,209 @@
+<%
+  const hasPlayers = Array.isArray(players) && players.length > 0;
+
+  const positions = [
+    "Todas",
+    "Goleiro",
+    "Zagueiro",
+    "Meia",
+    "Atacante"
+  ];
+%>
+
+<section class="space-y-6 animate-fadeIn">
+  <!-- Cabeçalho -->
+  <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+    <div class="space-y-2">
+      <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
+        Elenco
+      </h1>
+      <p class="text-sm text-horriver-gray max-w-xl">
+        Todos os jogadores cadastrados no Horriver Plate. Acompanhe posição,
+        apelido e um resumo rápido das estatísticas gerais.
+      </p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="flex flex-col sm:flex-row gap-3 text-[11px]">
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-horriver-gray mb-1">
+          Buscar jogador
+        </label>
+        <input
+          id="player-search"
+          type="text"
+          placeholder="Digite um nome ou apelido..."
+          class="w-full px-3 py-2 rounded-full bg-black/60 border border-horriver-border
+                 text-horriver-light placeholder:text-horriver-gray/60
+                 focus:outline-none focus:border-horriver-orange text-xs"
+        />
+      </div>
+
+      <div class="w-full sm:w-40">
+        <label class="block text-horriver-gray mb-1">
+          Filtrar por posição
+        </label>
+        <select
+          id="player-position-filter"
+          class="w-full px-3 py-2 rounded-full bg-black/60 border border-horriver-border
+                 text-horriver-light text-xs focus:outline-none focus:border-horriver-orange"
+        >
+          <% positions.forEach((pos) => { %>
+            <% const val = pos === "Todas" ? "all" : pos.toLowerCase(); %>
+            <option value="<%= val %>"><%= pos %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- Lista de jogadores -->
+  <section class="space-y-4">
+    <% if (!hasPlayers) { %>
+      <p class="text-sm text-horriver-gray">
+        Nenhum jogador cadastrado ainda.
+      </p>
+    <% } else { %>
+      <div class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <% players.forEach((p) => { %>
+          <article
+            class="player-card group relative rounded-3xl overflow-hidden
+                   border border-horriver-red/40 bg-gradient-to-br
+                   from-black/80 via-horriver-dark to-black
+                   shadow-card-soft transition-transform hover:-translate-y-1
+                   hover:shadow-card"
+            data-name="<%= (p.name + ' ' + (p.nickname || '')).toLowerCase() %>"
+            data-position="<%= (p.position || '').toLowerCase() %>"
+          >
+            <!-- Brilhinhos de fundo -->
+            <div class="absolute inset-0 opacity-70 pointer-events-none">
+              <div
+                class="absolute -top-16 left-0 w-32 h-32 bg-horriver-orange/25 blur-3xl rounded-full"
+              ></div>
+              <div
+                class="absolute bottom-[-70px] right-[-40px] w-40 h-40 bg-horriver-red/40 blur-3xl rounded-full"
+              ></div>
+            </div>
+
+            <!-- Conteúdo -->
+            <div class="relative z-10 p-4 flex flex-col gap-3">
+              <!-- Topo: avatar + nome -->
+              <div class="flex items-center gap-3">
+                <div
+                  class="h-12 w-12 rounded-full bg-black/80 border border-horriver-orange/70
+                         flex items-center justify-center overflow-hidden avatar-glow"
+                >
+                  <% if (p.photoUrl) { %>
+                    <img
+                      src="<%= p.photoUrl %>"
+                      alt="<%= p.name %>"
+                      class="h-full w-full object-cover"
+                    />
+                  <% } else { %>
+                    <span class="text-sm font-semibold text-horriver-light">
+                      <%= p.name.charAt(0).toUpperCase() %>
+                    </span>
+                  <% } %>
+                </div>
+
+                <div class="min-w-0">
+                  <p class="font-semibold text-horriver-light text-sm truncate">
+                    <%= p.name %>
+                  </p>
+                  <% if (p.nickname) { %>
+                    <p class="text-[11px] text-horriver-gray truncate">
+                      "<%= p.nickname %>"
+                    </p>
+                  <% } %>
+                  <p class="text-[10px] text-horriver-orange uppercase mt-0.5">
+                    <%= p.position %>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Linha divisória -->
+              <div class="h-px bg-gradient-to-r from-transparent via-horriver-red/60 to-transparent"></div>
+
+              <!-- Stats rápidos -->
+              <div class="grid grid-cols-2 gap-2 text-[10px]">
+                <div
+                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
+                         flex flex-col items-center"
+                >
+                  <p class="text-horriver-gray">Gols</p>
+                  <p class="text-horriver-light font-semibold text-sm">
+                    <%= p.totalGoals || 0 %>
+                  </p>
+                </div>
+
+                <div
+                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
+                         flex flex-col items-center"
+                >
+                  <p class="text-horriver-gray">Assistências</p>
+                  <p class="text-horriver-light font-semibold text-sm">
+                    <%= p.totalAssists || 0 %>
+                  </p>
+                </div>
+
+                <div
+                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-border
+                         flex flex-col items-center"
+                >
+                  <p class="text-horriver-gray">Presenças</p>
+                  <p class="text-horriver-light font-semibold text-sm">
+                    <%= p.totalMatches || 0 %>
+                  </p>
+                </div>
+
+                <div
+                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-border
+                         flex flex-col items-center"
+                >
+                  <p class="text-horriver-gray">Fotos</p>
+                  <p class="text-horriver-light font-semibold text-sm">
+                    <%= p.totalPhotos || 0 %>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("player-search");
+    const positionSelect = document.getElementById("player-position-filter");
+    const cards = Array.from(document.querySelectorAll(".player-card"));
+
+    function applyFilters() {
+      const term = (searchInput.value || "").toLowerCase().trim();
+      const pos = (positionSelect.value || "all").toLowerCase();
+
+      cards.forEach((card) => {
+        const name = card.dataset.name || "";
+        const cardPos = (card.dataset.position || "").toLowerCase();
+
+        const matchesName = !term || name.includes(term);
+        const matchesPos = pos === "all" || cardPos === pos;
+
+        if (matchesName && matchesPos) {
+          card.classList.remove("hidden");
+        } else {
+          card.classList.add("hidden");
+        }
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", applyFilters);
+    }
+    if (positionSelect) {
+      positionSelect.addEventListener("change", applyFilters);
+    }
+  });
+</script>

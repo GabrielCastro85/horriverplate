@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate",
-    "prisma:seed": "npx prisma db seed"
+    "prisma:seed": "npx prisma db seed",
+    "overall:recalc": "node scripts/recalculateOverall.js",
+    "achievements:recalc": "node scripts/recomputeAchievements.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

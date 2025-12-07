@@ -1,0 +1,241 @@
+<%
+// views/admin_match.ejs
+// Variáveis recebidas: match, players, stats
+// O layout.ejs já cuida de <html>, <body>, header, footer etc.
+// Aqui é só o conteúdo interno do <main>.
+%>
+
+<div class="mb-6 flex items-center justify-between gap-3">
+  <div>
+    <h1 class="text-xl md:text-2xl font-semibold text-horriver-light">
+      Estatísticas da pelada
+    </h1>
+    <p class="text-xs md:text-sm text-horriver-gray mt-1">
+      Data:
+      <span class="text-horriver-orange font-medium">
+        <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
+      </span>
+      <% if (match.description) { %>
+      · <%= match.description %>
+      <% } %>
+    </p>
+  </div>
+
+  <a
+    href="/admin"
+    class="px-3 py-1 rounded-full border border-horriver-orange text-[11px] md:text-xs text-horriver-orange hover:bg-horriver-orange hover:text-horriver-bg transition"
+  >
+    Voltar ao painel
+  </a>
+</div>
+
+<form
+  action="/admin/matches/<%= match.id %>/stats/bulk"
+  method="POST"
+  class="space-y-4"
+>
+  <div
+    class="overflow-x-auto rounded-2xl border border-horriver-border bg-black/50"
+  >
+        <table class="min-w-full text-xs md:text-sm">
+          <thead class="bg-black/60">
+            <tr>
+              <th class="px-3 py-3 text-left font-semibold text-horriver-gray">
+                Jogador
+              </th>
+              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+                OVR
+              </th>
+              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+                Presente
+              </th>
+              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+                Gols
+          </th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+            Assistências
+          </th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+            Nota
+          </th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+            Foto
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% players.forEach(function(player) { 
+             const stat = stats.find(s => s.playerId === player.id);
+        %>
+        <tr
+          class="border-t border-horriver-border/40 hover:bg-white/5 transition"
+        >
+          <!-- Jogador -->
+          <td class="px-3 py-2">
+            <div class="flex flex-col">
+              <span class="font-medium text-horriver-light">
+                <%= player.name %>
+              </span>
+              <% if (player.nickname) { %>
+              <span class="text-[11px] text-horriver-gray">
+                "<%= player.nickname %>"
+              </span>
+              <% } %>
+              <span class="text-[10px] uppercase text-horriver-orange mt-1">
+                <%= player.position %>
+              </span>
+            </div>
+          </td>
+          <!-- OVR -->
+          <td class="px-3 py-2 text-center align-middle">
+            <% if (player.overall != null) { %>
+              <span class="px-2 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold">
+                <%= player.overall %>
+              </span>
+            <% } else { %>
+              <span class="text-horriver-gray text-[11px]">-</span>
+            <% } %>
+          </td>
+
+          <!-- PRESENTE (checkbox) -->
+          <td class="px-3 py-2 text-center align-middle">
+            <input
+              type="checkbox"
+              name="present_<%= player.id %>"
+              class="w-4 h-4 accent-horriver-orange"
+              <%= stat && stat.present ? 'checked' : '' %>
+            />
+          </td>
+
+          <!-- GOLS -->
+          <td class="px-3 py-2 text-center align-middle">
+            <input
+              type="number"
+              name="goals_<%= player.id %>"
+              min="0"
+              step="1"
+              class="w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
+              value="<%= stat && stat.goals ? stat.goals : '' %>"
+            />
+          </td>
+
+          <!-- ASSISTÊNCIAS -->
+          <td class="px-3 py-2 text-center align-middle">
+            <input
+              type="number"
+              name="assists_<%= player.id %>"
+              min="0"
+              step="1"
+              class="w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
+              value="<%= stat && stat.assists ? stat.assists : '' %>"
+            />
+          </td>
+
+          <!-- NOTA (texto, 2 casas decimais, aceita vírgula) -->
+          <td class="px-3 py-2 text-center align-middle">
+            <input
+              type="text"
+              name="rating_<%= player.id %>"
+              inputmode="decimal"
+              class="w-20 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
+              placeholder="7,50"
+              value="<%= stat && stat.rating != null ? stat.rating.toFixed(2).replace('.', ',') : '' %>"
+            />
+          </td>
+
+          <!-- FOTO -->
+          <td class="px-3 py-2 text-center align-middle">
+            <input
+              type="checkbox"
+              name="photo_<%= player.id %>"
+              class="w-4 h-4 accent-horriver-orange"
+              <%= stat && stat.appearedInPhoto ? 'checked' : '' %>
+            />
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-end mt-4">
+    <div class="flex items-center gap-3">
+      <a
+        href="/admin/matches/<%= match.id %>/votes"
+        class="px-4 py-2 rounded-full border border-horriver-border text-horriver-light text-xs md:text-sm font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+      >
+        Ver votos
+      </a>
+      <button
+        type="submit"
+        class="px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+      >
+        Salvar estatísticas
+      </button>
+    </div>
+  </div>
+</form>
+
+<!-- ========================= -->
+<!-- Votação: geração de links -->
+<!-- ========================= -->
+<section id="votacao" class="mt-10 space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+        Votação da pelada
+      </h2>
+      <p class="text-xs text-horriver-gray">
+        Gera links únicos para os jogadores presentes votarem (via WhatsApp).
+      </p>
+    </div>
+    <form
+      action="/admin/matches/<%= match.id %>/vote-session"
+      method="POST"
+      class="flex items-center gap-2 text-[11px]"
+    >
+      <label class="flex items-center gap-1 text-horriver-gray">
+        Expira em (horas):
+        <input
+          type="number"
+          name="expiresHours"
+          min="0"
+          value="24"
+          class="w-16 bg-black/50 border border-horriver-border rounded px-2 py-1 text-horriver-light"
+        />
+      </label>
+      <button
+        type="submit"
+        class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+      >
+        Gerar links
+      </button>
+    </form>
+  </div>
+
+  <% if (!voteSession || !voteSession.tokens || !voteSession.tokens.length) { %>
+    <p class="text-sm text-horriver-gray">
+      Nenhuma sessão de votação criada ainda. Gere os links após marcar os presentes.
+    </p>
+  <% } else { %>
+    <div class="flex flex-col md:flex-row md:items-center gap-2 mb-3 text-[12px]">
+      <form
+        action="/admin/matches/<%= match.id %>/apply-votes"
+        method="POST"
+        class="flex items-center gap-2"
+        onsubmit="return confirm('Aplicar notas baseadas na votação? Não sobrescreve notas já lançadas.');"
+      >
+        <button
+          type="submit"
+          class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+        >
+          Aplicar votos como notas
+        </button>
+        <span class="text-horriver-gray text-[11px]">
+          Calcula notas para presentes (não altera notas já preenchidas).
+        </span>
+      </form>
+
+      <form
+        action="/admin/matches/<%= match.id %>/close-votes"
+

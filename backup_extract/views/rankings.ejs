@@ -1,0 +1,812 @@
+<%
+  // ===============================
+  // Helpers e preparação de dados
+  // ===============================
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+
+  const fmtRating = (val) => {
+    if (!val && val !== 0) return "0,00";
+    const num = Number(val);
+    if (Number.isNaN(num)) return "0,00";
+    return num.toFixed(2).replace(".", ",");
+  };
+
+  const safeArr = (arr) => (Array.isArray(arr) ? arr : []);
+
+  const goals = safeArr(rankings && rankings.goals);
+  const assists = safeArr(rankings && rankings.assists);
+  const ga = safeArr(rankings && rankings.ga);
+  const ratings = safeArr(rankings && rankings.ratings);
+  const matches = safeArr(rankings && rankings.matches);
+  const photos = safeArr(rankings && rankings.photos);
+  const weighted = safeArr(rankings && rankings.weighted);
+
+  const weeklyAwards = safeArr(rankings && rankings.weeklyAwards);
+  const monthlyAwards = safeArr(rankings && rankings.monthlyAwards);
+
+  const monthNames = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
+
+  const selYear = (typeof year === "string" && year === "all")
+    ? "all"
+    : Number(year || new Date().getFullYear());
+
+  const selMonth = typeof month !== "undefined" ? Number(month) : 0; // 0 = todos
+  const selPos = typeof selPosition !== "undefined" ? selPosition : "all";
+
+  const posLabel = (p) => {
+    if (!p || p === "all") return "Todas";
+    return p;
+  };
+
+  const periodLabel = () => {
+    if (selYear === "all") return "Geral (todos os anos)";
+    if (selMonth === 0) return `Ano de ${selYear}`;
+    const mName = monthNames[(selMonth || 1) - 1] || "";
+    return `${mName} / ${selYear}`;
+  };
+
+  const topRowClass = (idx) => {
+    if (idx === 0) return "rk-row-gold";
+    if (idx === 1) return "rk-row-silver";
+    if (idx === 2) return "rk-row-bronze";
+    return "";
+  };
+%>
+
+<style>
+  /* Scroll mais discreto dentro dos cards de ranking */
+  .rk-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.7) transparent;
+  }
+
+  .rk-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .rk-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .rk-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.6);
+    border-radius: 999px;
+  }
+
+  /* Destaques para top 3 */
+  .rk-row-gold {
+    background: linear-gradient(
+      to right,
+      rgba(250, 204, 21, 0.18),
+      rgba(15, 23, 42, 0.2)
+    );
+  }
+  .rk-row-silver {
+    background: linear-gradient(
+      to right,
+      rgba(148, 163, 184, 0.18),
+      rgba(15, 23, 42, 0.2)
+    );
+  }
+  .rk-row-bronze {
+    background: linear-gradient(
+      to right,
+      rgba(248, 113, 113, 0.12),
+      rgba(15, 23, 42, 0.2)
+    );
+  }
+
+  .rk-row-gold td:first-child,
+  .rk-row-silver td:first-child,
+  .rk-row-bronze td:first-child {
+    font-weight: 700;
+  }
+</style>
+
+<section class="space-y-8 animate-fadeIn">
+  <!-- TÍTULO E FILTROS -->
+  <header class="space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+      <div>
+        <h1 class="font-title text-3xl text-horriver-light">
+          Rankings completos
+        </h1>
+        <p class="text-sm text-horriver-gray mt-1">
+          Veja os rankings gerais ou filtrados por ano/mês e posição.
+        </p>
+      </div>
+
+      <!-- Resumo do filtro atual -->
+      <div class="text-xs text-horriver-gray md:text-right">
+        <p>
+          Período:
+          <span class="text-horriver-orange font-medium"><%= periodLabel() %></span>
+        </p>
+        <p>
+          Posição:
+          <span class="text-horriver-orange font-medium"><%= posLabel(selPos) %></span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Form de filtros -->
+    <form
+      method="GET"
+      action="/rankings"
+      class="bg-black/40 border border-horriver-border rounded-2xl px-4 py-3 flex flex-col md:flex-row md:items-end gap-3 text-[11px] md:text-xs"
+    >
+      <!-- Ano -->
+      <div class="flex-1 min-w-[120px]">
+        <label class="block text-horriver-gray mb-1">Ano</label>
+        <select
+          name="year"
+          class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
+        >
+          <option value="all" <%= selYear === "all" ? "selected" : "" %>>
+            Todos os anos
+          </option>
+          <% for (let y = currentYear; y >= 2025; y--) { %>
+            <option value="<%= y %>" <%= selYear === y ? "selected" : "" %>>
+              <%= y %>
+            </option>
+          <% } %>
+        </select>
+      </div>
+
+      <!-- Mês -->
+      <div class="flex-1 min-w-[120px]">
+        <label class="block text-horriver-gray mb-1">Mês</label>
+        <select
+          name="month"
+          class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
+        >
+          <option value="0" <%= Number(selMonth) === 0 ? "selected" : "" %>>Todos</option>
+          <% monthNames.forEach((mn, idx) => {
+               const mVal = idx + 1;
+          %>
+            <option value="<%= mVal %>" <%= Number(selMonth) === mVal ? "selected" : "" %>>
+              <%= mn %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <!-- Posição -->
+      <div class="flex-1 min-w-[130px]">
+        <label class="block text-horriver-gray mb-1">Posição</label>
+        <select
+          name="position"
+          class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
+        >
+          <% const posicoes = ["Todas", "Goleiro", "Zagueiro", "Meia", "Atacante"]; %>
+          <% posicoes.forEach((pos) => {
+               const val = pos === "Todas" ? "all" : pos;
+          %>
+            <option
+              value="<%= val %>"
+              <%= (selPos === val || (!selPos && val === "all")) ? "selected" : "" %>
+            >
+              <%= pos %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+
+      <!-- Botões -->
+      <div class="flex items-center gap-2 md:ml-4">
+        <button
+          type="submit"
+          class="px-3 py-1.5 rounded-lg bg-horriver-red text-horriver-light font-medium
+                 hover:bg-horriver-orange transition-colors"
+        >
+          Aplicar filtros
+        </button>
+
+        <a
+          href="/rankings"
+          class="px-3 py-1.5 rounded-lg border border-horriver-border text-horriver-gray
+                 hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+        >
+          Limpar
+        </a>
+      </div>
+    </form>
+  </header>
+
+  <!-- GRID DE RANKINGS PRINCIPAIS -->
+  <section class="space-y-6">
+    <!-- Primeira grade: 3x2 (sem média ponderada) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <!-- ================= GOLS ================= -->
+      <div class="card-highlight rounded-3xl p-[1px]">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">Artilheiros</h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais balançou a rede.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Gols
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden">
+            <% if (!goals.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <div class="rk-scroll h-full overflow-y-auto">
+                <table class="w-full text-[11px]">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Gols</th>
+                      <th class="text-center px-2 py-1">Assist.</th>
+                      <th class="text-center px-2 py-1">Part. G/A</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% goals.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                          <%= row.goals || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= row.assists || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= (row.goals || 0) + (row.assists || 0) %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= ASSISTÊNCIAS ================= -->
+      <div class="card-highlight rounded-3xl p-[1px]">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">Garçons</h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais serviu gols.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Assist.
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden">
+            <% if (!assists.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <div class="rk-scroll h-full overflow-y-auto">
+                <table class="w-full text-[11px]">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Assist.</th>
+                      <th class="text-center px-2 py-1">Gols</th>
+                      <th class="text-center px-2 py-1">Part. G/A</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% assists.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                          <%= row.assists || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= row.goals || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= (row.goals || 0) + (row.assists || 0) %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= GOLS + ASSISTÊNCIAS ================= -->
+      <div class="card-highlight rounded-3xl p-[1px]">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Participações em gol
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Soma de gols + assistências.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              G + A
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden">
+            <% if (!ga.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <div class="rk-scroll h-full overflow-y-auto">
+                <table class="w-full text-[11px]">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1">Gols</th>
+                      <th class="text-center px-2 py-1">Assist.</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% ga.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= row.goals || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= row.assists || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                          <%= (row.goals || 0) + (row.assists || 0) %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= NOTAS ================= -->
+      <div class="card-highlight rounded-3xl p-[1px]">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Maiores médias de nota
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Jogadores mais bem avaliados.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Notas
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden">
+            <% if (!ratings.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <div class="rk-scroll h-full overflow-y-auto">
+                <table class="w-full text-[11px]">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1">Presenças</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Média</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% ratings.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= row.matches || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                          <%= fmtRating(row.rating) %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PRESENÇAS ================= -->
+      <div class="card-highlight rounded-3xl p-[1px]">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Rei das presenças
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais marcou presença nas peladas.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Presenças
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden">
+            <% if (!matches.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <div class="rk-scroll h-full overflow-y-auto">
+                <table class="w-full text-[11px]">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Presenças</th>
+                      <th class="text-center px-2 py-1">Gols</th>
+                      <th class="text-center px-2 py-1">Assist.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% matches.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                          <%= row.matches || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= row.goals || 0 %>
+                        </td>
+                        <td class="px-2 py-1 text-center">
+                          <%= row.assists || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= FOTOS ================= -->
+      <div class="card-highlight rounded-3xl p-[1px]">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">
+                Rei das fotos
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Quem mais apareceu nos registros.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Fotos
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden">
+            <% if (!photos.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhum dado para este período.
+              </p>
+            <% } else { %>
+              <div class="rk-scroll h-full overflow-y-auto">
+                <table class="w-full text-[11px]">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">Fotos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% photos.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                          <%= row.photos || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MÉDIA PONDERADA (FULL WIDTH) ================= -->
+    <div class="card-highlight rounded-3xl p-[1px] max-w-5xl mx-auto">
+      <div class="card-inner p-4 md:p-5 flex flex-col h-full">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="font-title text-lg text-horriver-light">
+              Média ponderada (0–10)
+            </h2>
+            <p class="text-[11px] text-horriver-gray mt-0.5">
+              Combina gols, assistências e nota com pesos (G=4 • A=2 • N=4).
+            </p>
+          </div>
+          <span
+            class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                   bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+          >
+            0–10
+          </span>
+        </div>
+
+        <div class="mt-4 flex-1 overflow-hidden">
+          <% if (!weighted.length) { %>
+            <p class="text-sm text-horriver-gray">
+              Nenhum dado para este período.
+            </p>
+          <% } else { %>
+            <div class="rk-scroll h-full overflow-y-auto">
+              <table class="w-full text-[11px]">
+                <thead class="bg-black/50 sticky top-0 z-10">
+                  <tr>
+                    <th class="text-left px-2 py-1">#</th>
+                    <th class="text-left px-2 py-1">Jogador</th>
+                    <th class="text-left px-2 py-1">Posição</th>
+                    <th class="text-center px-2 py-1">Gols</th>
+                    <th class="text-center px-2 py-1">Assist.</th>
+                    <th class="text-center px-2 py-1">Nota</th>
+                    <th class="text-center px-2 py-1 text-horriver-orange">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% weighted.forEach((row, idx) => { %>
+                    <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                      <td class="px-2 py-1"><%= idx + 1 %></td>
+                      <td class="px-2 py-1">
+                        <%= row.player.name %>
+                        <% if (row.player.nickname) { %>
+                          (<%= row.player.nickname %>)
+                        <% } %>
+                      </td>
+                      <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                        <%= row.player.position %>
+                      </td>
+                      <td class="px-2 py-1 text-center">
+                        <%= row.goals || 0 %>
+                      </td>
+                      <td class="px-2 py-1 text-center">
+                        <%= row.assists || 0 %>
+                      </td>
+                      <td class="px-2 py-1 text-center">
+                        <%= fmtRating(row.rating) %>
+                      </td>
+                      <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <%= fmtRating(row.weightedScore) %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RANKINGS DE PRÊMIOS (CRAQUE DA SEMANA / MÊS) -->
+  <section class="space-y-6 mt-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Craques da semana e do mês
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] md:text-xs">
+      <!-- Craques da semana -->
+      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-title text-lg text-horriver-light">
+              Craques da semana
+            </h3>
+            <p class="text-[11px] text-horriver-gray">
+              Jogadores que mais vezes foram craque da semana.
+            </p>
+          </div>
+        </div>
+
+        <% if (!weeklyAwards.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum craque da semana registrado ainda.
+          </p>
+        <% } else { %>
+          <table class="w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1">Vezes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% weeklyAwards.forEach((row, idx) => { %>
+                <tr class="border-t border-horriver-border/40">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= row.player.name %>
+                    <% if (row.player.nickname) { %>
+                      (<%= row.player.nickname %>)
+                    <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= row.player.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold">
+                    <%= row.count || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+
+      <!-- Craques do mês -->
+      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-title text-lg text-horriver-light">
+              Craques do mês
+            </h3>
+            <p class="text-[11px] text-horriver-gray">
+              Quem mais levou o prêmio mensal.
+            </p>
+          </div>
+        </div>
+
+        <% if (!monthlyAwards.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhum craque do mês registrado ainda.
+          </p>
+        <% } else { %>
+          <table class="w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1">Vezes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% monthlyAwards.forEach((row, idx) => { %>
+                <tr class="border-t border-horriver-border/40">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= row.player.name %>
+                    <% if (row.player.nickname) { %>
+                      (<%= row.player.nickname %>)
+                    <% } %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= row.player.position %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold">
+                    <%= row.count || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+    </div>
+  </section>
+</section>

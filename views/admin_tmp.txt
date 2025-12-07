@@ -1,0 +1,1206 @@
+<!-- CSS do Cropper (somente usado no admin) -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css"
+/>
+
+<%
+  // controla exibi+?+?o do bot+?o de recalcular (vir+? da rota /admin)
+  const showResetButton =
+    typeof showReset !== "undefined" ? !!showReset : false;
+%>
+
+<div class="space-y-10 animate-fadeIn">
+    
+<!-- =====================================================
+       HEADER
+  ====================================================== -->
+  <header class="mb-2">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-semibold text-horriver-light">
+          Painel do Administrador
+        </h1>
+        <p class="text-[11px] md:text-xs text-horriver-gray/80 mt-1">
+          Gerencie peladas, jogadores, destaques da semana, craque do m+?s e a premia+?+?o da temporada.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2 text-[11px] md:text-xs">
+        <span class="px-3 py-1 rounded-full border border-horriver-border bg-black/50 text-horriver-gray">
+          Ambiente restrito ??? Admin
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================
+       GRID SUPERIOR: AÇÕES RÁPIDAS / NOVA PELADA / NOVO JOGADOR
+  ====================================================== -->
+  <div class="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
+    <!-- AÇÕES RÁPIDAS -->
+    <section class="card-highlight rounded-2xl p-[1px] h-full">
+      <div class="card-inner rounded-2xl p-6 md:p-7 space-y-5 h-full flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-lg md:text-xl font-semibold text-horriver-orange">
+              Operações rápidas
+            </h2>
+            <p class="text-[11px] text-horriver-gray/70">
+              Troque a skin do site e rode recálculos em um clique.
+            </p>
+          </div>
+          <span class="px-2 py-1 rounded-full bg-black/40 border border-horriver-border text-[10px] text-horriver-gray">
+            Seguro
+          </span>
+        </div>
+
+        <form action="/admin/skin-toggle" method="POST" class="space-y-2 text-xs md:text-sm">
+          <label class="block text-horriver-gray/80">
+            Skin ativa
+          </label>
+          <select
+            name="skin"
+            class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+            onchange="this.form.submit()"
+          >
+            <option value="default" <%= (skin === 'default') ? 'selected' : '' %>>Padrão</option>
+            <option value="game-day" <%= (skin === 'game-day') ? 'selected' : '' %>>Dia de Jogo</option>
+          </select>
+          <p class="text-[10px] text-horriver-gray/70">
+            A skin “Dia de Jogo” liga na terça automaticamente, mas você pode forçar aqui.
+          </p>
+        </form>
+
+        <div class="space-y-2">
+          <p class="text-[11px] text-horriver-gray/80">
+            Recalcular agora
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <form
+              method="POST"
+              action="/admin/recalculate-overall"
+              onsubmit="return confirm('Recalcular overall para todos os jogadores agora?');"
+            >
+              <button
+                type="submit"
+                class="px-3 py-1.5 rounded-full bg-horriver-orange text-[11px] md:text-xs font-semibold text-black hover:bg-orange-500 transition shadow-card-soft"
+              >
+                Overalls
+              </button>
+            </form>
+            <form
+              method="POST"
+              action="/admin/recalculate-achievements"
+              onsubmit="return confirm('Recalcular conquistas para todos os jogadores agora?');"
+            >
+              <button
+                type="submit"
+                class="px-3 py-1.5 rounded-full bg-horriver-red text-[11px] md:text-xs font-semibold text-black hover:bg-horriver-orange transition shadow-card-soft"
+              >
+                Conquistas
+              </button>
+            </form>
+          </div>
+          <p class="text-[10px] text-horriver-gray/70">
+            Usa gols, assistências, presenças e notas com pesos por posição, gravando histórico.
+          </p>
+        </div>
+      </div>
+    </section>
+    <!-- NOVA PELADA -->
+    <section class="card-highlight rounded-2xl p-[1px] h-full">
+      <div class="card-inner rounded-2xl p-6 md:p-7 space-y-4 h-full flex flex-col">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-lg md:text-xl font-semibold text-horriver-orange">
+            Nova pelada
+          </h2>
+          <span class="text-[11px] text-horriver-gray/70">
+            Use este card em toda ter+?a.
+          </span>
+        </div>
+
+        <form action="/admin/matches" method="POST" class="space-y-4 text-xs md:text-sm flex-1 flex flex-col">
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
+              Data
+            </label>
+            <input
+              type="date"
+              name="playedAt"
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+              required
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
+              Descri+?+?o (opcional)
+            </label>
+            <input
+              type="text"
+              name="description"
+              placeholder="ex: Pelada da ter+?a +? noite"
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
+              Time vencedor (opcional)
+            </label>
+            <input
+              type="text"
+              name="winnerTeam"
+              placeholder="ex: Time Laranja"
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+          >
+            Criar pelada
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- NOVO / EDITAR JOGADOR -->
+    <section class="card-highlight rounded-2xl p-[1px] h-full">
+      <div class="card-inner rounded-2xl p-6 md:p-7 space-y-4 h-full flex flex-col">
+        <div class="flex items-center justify-between gap-3">
+          <h2
+            id="playerFormTitle"
+            class="text-lg md:text-xl font-semibold text-horriver-orange"
+          >
+            Novo jogador
+          </h2>
+          <button
+            id="playerCancelEdit"
+            type="button"
+            class="hidden text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
+          >
+            Cancelar edi+?+?o
+          </button>
+        </div>
+
+        <p
+          id="playerFormHint"
+          class="text-[11px] text-horriver-gray/70"
+        >
+          Preencha para cadastrar um novo jogador.
+        </p>
+
+        <form
+          id="playerForm"
+          action="/admin/players"
+          method="POST"
+          class="space-y-4 text-xs md:text-sm flex-1 flex flex-col"
+          enctype="multipart/form-data"
+        >
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
+              Nome
+            </label>
+            <input
+              type="text"
+              name="name"
+              required
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
+              Apelido (opcional)
+            </label>
+            <input
+              type="text"
+              name="nickname"
+              placeholder="ex: Meurim, Bazim..."
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
+              WhatsApp (opcional)
+            </label>
+            <input
+              type="tel"
+              name="whatsapp"
+              inputmode="tel"
+              placeholder="ex: (11) 99999-9999"
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            />
+            <p class="text-[10px] text-horriver-gray/70">
+              Usado para enviar link de votação via WhatsApp.
+            </p>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
+              Posi+?+?o
+            </label>
+            <select
+              name="position"
+              required
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            >
+              <option value="Goleiro">Goleiro</option>
+              <option value="Zagueiro">Zagueiro</option>
+              <option value="Meia">Meia</option>
+              <option value="Atacante">Atacante</option>
+            </select>
+          </div>
+
+          <!-- Foto do jogador (apenas no cadastro) -->
+          <div
+            id="playerPhotoBlock"
+            class="space-y-1"
+          >
+            <label class="block text-horriver-gray/80">
+              Foto do jogador
+            </label>
+            <input
+              type="file"
+              name="photo"
+              accept="image/jpeg,image/png"
+              class="block w-full text-[11px] md:text-xs text-horriver-gray"
+            />
+            <p class="text-[10px] text-horriver-gray/70">
+              Aceita JPG/PNG, at+? 5MB. Usado apenas ao cadastrar um novo jogador.
+            </p>
+          </div>
+
+          <button
+            id="playerFormSubmit"
+            type="submit"
+            class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+          >
+            Adicionar jogador
+          </button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- =====================================================
+       JOGADORES CADASTRADOS
+  ====================================================== -->
+  <section class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+        Jogadores cadastrados
+      </h2>
+      <% if (players.length) { %>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
+          data-collapse-trigger="players-list"
+        >
+          <span
+            class="inline-block w-4 text-center">+</span>
+          <span data-collapse-label-players>Mostrar lista</span>
+        </button>
+      <% } %>
+    </div>
+
+    <% if (!players.length) { %>
+      <p class="text-xs md:text-sm text-horriver-gray/80">
+        Nenhum jogador cadastrado ainda.
+      </p>
+    <% } else { %>
+      <div
+        id="players-list"
+        data-collapse-target="players-list"
+        class="hidden"
+      >
+        <div class="card-inner rounded-2xl p-4 md:p-5 mt-1">
+          <div class="overflow-x-auto text-[11px] md:text-xs">
+            <table class="min-w-full border-collapse">
+              <thead>
+                <tr class="border-b border-horriver-border/70 text-horriver-gray/80">
+                  <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+                  <th class="py-2 pr-3 text-left font-normal">Apelido</th>
+                  <th class="py-2 pr-3 text-left font-normal">Posi+?+?o</th>
+                  <th class="py-2 pr-3 text-left font-normal">A+?+?es</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% players.forEach(p => { %>
+                  <tr class="border-b border-horriver-border/40 last:border-0">
+                    <td class="py-2 pr-3">
+                      <div class="flex items-center gap-2">
+                        <div class="h-7 w-7 rounded-full bg-horriver-red/40 flex items-center justify-center overflow-hidden">
+                          <% if (p.photoUrl) { %>
+                            <img
+                              src="<%= p.photoUrl %>"
+                              alt="<%= p.name %>"
+                              class="h-full w-full object-cover"
+                            />
+                          <% } else { %>
+                            <span class="text-[11px] font-semibold text-horriver-light">
+                              <%= p.name.charAt(0).toUpperCase() %>
+                            </span>
+                          <% } %>
+                        </div>
+                        <span><%= p.name %></span>
+                      </div>
+                    </td>
+                    <td class="py-2 pr-3 text-horriver-gray/90">
+                      <%= p.nickname || "-" %>
+                    </td>
+                    <td class="py-2 pr-3 text-horriver-gray/90">
+                      <%= p.whatsapp ? p.whatsapp : "-" %>
+                    </td>
+                    <td class="py-2 pr-3 text-horriver-orange/90 text-[10px] uppercase">
+                      <%= p.position %>
+                    </td>
+                    <td class="py-2 pr-3">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <% if (p.hallReason === "Aposentado") { %>
+                          <span class="px-2 py-0.5 rounded-full bg-horriver-border/40 border border-horriver-border text-[10px] text-horriver-gray">
+                            Aposentado
+                          </span>
+                        <% } %>
+                        <button
+                          type="button"
+                          class="text-[11px] text-horriver-orange hover:underline"
+                          data-player-edit
+                          data-id="<%= p.id %>"
+                          data-name="<%= p.name %>"
+                          data-nickname="<%= p.nickname || '' %>"
+                          data-whatsapp="<%= p.whatsapp || '' %>"
+                          data-position="<%= p.position %>"
+                        >
+                          Editar
+                        </button>
+
+                        <form action="/admin/players/<%= p.id %>/retire" method="POST">
+                          <button
+                            type="submit"
+                            class="text-[11px] text-horriver-gray hover:text-horriver-orange underline"
+                            onclick="return confirm('Aposentar <%= p.name %>? Ele deixa de receber novos stats.');"
+                          >
+                            Aposentar
+                          </button>
+                        </form>
+
+                        <form
+                          action="/admin/players/<%= p.id %>/delete"
+                          method="POST"
+                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estat+?sticas.');"
+                        >
+                          <button
+                            type="submit"
+                            class="text-[11px] text-red-500 hover:underline"
+                          >
+                            Excluir
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- =====================================================
+       PELADAS CADASTRADAS
+  ====================================================== -->
+    <section class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+        Peladas cadastradas
+      </h2>
+      <% if (groupedMatches.length) { %>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
+          data-collapse-trigger="matches-list"
+        >
+          <span class="inline-block w-4 text-center">+</span>
+          <span data-collapse-label-matches>Mostrar lista</span>
+        </button>
+      <% } %>
+    </div>
+
+    <% if (!groupedMatches.length) { %>
+      <p class="text-xs md:text-sm text-horriver-gray/80">
+        Nenhuma pelada cadastrada ainda.
+      </p>
+    <% } else { %>
+      <div
+        id="matches-list"
+        data-collapse-target="matches-list"
+        class="hidden"
+      >
+        <div class="space-y-4 mt-1">
+          <% groupedMatches.forEach(group => { %>
+            <div class="card-inner rounded-2xl p-4 md:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm md:text-base font-semibold text-horriver-orange">
+                  <%= group.group %>
+                </h3>
+              </div>
+
+              <div class="overflow-x-auto text-[11px] md:text-xs">
+                <table class="min-w-full border-collapse">
+                  <thead>
+                    <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+                      <th class="py-2 pr-4 text-left font-normal">Data</th>
+                      <th class="py-2 pr-4 text-left font-normal">Descri+?+?o</th>
+                      <th class="py-2 pr-4 text-left font-normal">Vencedor</th>
+                      <th class="py-2 pr-4 text-left font-normal">A+?+?es</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% group.matches.forEach(match => { %>
+                      <tr class="border-b border-horriver-border/40 last:border-0">
+                        <td class="py-2 pr-4">
+                          <%= new Date(match.playedAt).toLocaleDateString("pt-BR") %>
+                        </td>
+                        <td class="py-2 pr-4 text-horriver-gray/90">
+                          <%= match.description || "-" %>
+                        </td>
+                        <td class="py-2 pr-4">
+                          <span class="text-horriver-orange/90">
+                            <%= match.winnerTeam || "-" %>
+                          </span>
+                        </td>
+                        <td class="py-2 pr-4 space-x-2">
+                          <a
+                            href="/admin/matches/<%= match.id %>"
+                            class="text-[11px] text-horriver-orange hover:underline"
+                          >
+                            Estat+?sticas
+                          </a>
+
+                          <form
+                            action="/admin/matches/<%= match.id %>/delete"
+                            method="POST"
+                            class="inline"
+                            onsubmit="return confirm('Tem certeza que deseja excluir essa pelada?');"
+                          >
+                            <button
+                              type="submit"
+                              class="text-[11px] text-red-500 hover:underline"
+                            >
+                              Excluir
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+  </section>
+
+  <!-- =====================================================
+       DESTAQUE DA SEMANA & CRAQUE DO M+?S
+  ====================================================== -->
+  <section class="grid lg:grid-cols-2 gap-8">
+    <!-- DESTAQUE DA SEMANA -->
+    <div class="card-inner rounded-2xl p-6 md:p-7 space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+          Destaque da semana
+        </h2>
+      </div>
+
+      <form
+        id="weeklyForm"
+        action="/admin/weekly-awards"
+        method="POST"
+        enctype="multipart/form-data"
+        class="space-y-4 text-xs md:text-sm"
+      >
+        <div class="space-y-1">
+          <label class="block text-horriver-gray/80">
+            Semana (data de in+?cio)
+          </label>
+          <input
+            id="weekly_weekStart"
+            type="date"
+            name="weekStart"
+            class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            required
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-horriver-gray/80">
+            Craque da semana (opcional)
+          </label>
+          <select
+            id="weekly_bestPlayer"
+            name="bestPlayerId"
+            class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+          >
+            <option value="">Nenhum</option>
+            <% players.forEach(p => { %>
+              <option value="<%= p.id %>">
+                <%= p.name %><% if (p.nickname) { %> (<%= p.nickname %>)<% } %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-horriver-gray/80">
+            Pelada destaque (opcional)
+          </label>
+          <select
+            id="weekly_match"
+            name="winningMatchId"
+            class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+          >
+            <option value="">Nenhuma</option>
+            <% matches.forEach(m => { %>
+              <option value="<%= m.id %>">
+                <%= new Date(m.playedAt).toLocaleDateString("pt-BR") %>
+                <% if (m.description) { %> - <%= m.description %><% } %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-horriver-gray/80">
+            Foto do time da semana (opcional)
+          </label>
+          <input
+            id="weekly_teamPhotoInput"
+            type="file"
+            name="teamPhoto"
+            accept="image/jpeg,image/png"
+            class="block w-full text-[11px] md:text-xs text-horriver-gray"
+          />
+          <p class="text-[10px] text-horriver-gray/70">
+            Assim que voc+? escolher uma imagem, o editor de corte aparece logo abaixo.
+          </p>
+
+          <!-- +?rea de crop -->
+          <div
+            id="teamPhotoCropContainer"
+            class="mt-2 hidden space-y-2"
+          >
+            <p class="text-[10px] text-horriver-gray/70">
+              Ajuste o corte da imagem (arraste / use o scroll do mouse):
+            </p>
+            <div
+              class="border border-horriver-border rounded-lg overflow-hidden max-h-64 bg-black/60 flex items-center justify-center"
+            >
+              <img
+                id="teamPhotoCropImage"
+                class="max-w-full block"
+                alt="Pr+?-visualiza+?+?o do corte"
+              />
+            </div>
+            <button
+              type="button"
+              id="applyTeamPhotoCrop"
+              class="px-3 py-1 rounded-full bg-horriver-orange text-[11px] font-medium text-black hover:bg-orange-500 transition"
+            >
+              Aplicar corte
+            </button>
+            <p
+              id="teamPhotoCropDone"
+              class="text-[10px] text-horriver-gray/70 hidden"
+            >
+              Corte aplicado! A imagem ser+? enviada j+? recortada.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+        >
+          Salvar destaque da semana
+        </button>
+      </form>
+
+      <!-- Lista +?ltimos destaques -->
+      <div class="pt-4 border-t border-horriver-border/60 space-y-3">
+        <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
+          +?ltimos destaques
+        </h3>
+
+        <% if (!weeklyAwards.length) { %>
+          <p class="text-[11px] text-horriver-gray/70">
+            Nenhum destaque da semana cadastrado.
+          </p>
+        <% } else { %>
+          <ul class="space-y-2 text-[11px] md:text-xs">
+            <% weeklyAwards.forEach(w => { %>
+              <li
+                class="flex items-center justify-between gap-3 border border-horriver-border/60 rounded-lg px-3 py-2 bg-black/30"
+              >
+                <div class="space-y-0.5">
+                  <p class="text-horriver-light/90">
+                    Semana de
+                    <span class="text-horriver-orange">
+                      <%= new Date(w.weekStart).toLocaleDateString("pt-BR") %>
+                    </span>
+                  </p>
+                  <p class="text-[11px] text-horriver-gray/80">
+                    Craque:
+                    <span class="text-horriver-light">
+                      <%= w.bestPlayer
+                        ? w.bestPlayer.name + (w.bestPlayer.nickname ? " (" + w.bestPlayer.nickname + ")" : "")
+                        : "???"
+                      %>
+                    </span>
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="text-[11px] text-horriver-orange hover:underline"
+                    data-weekly-edit
+                    data-weekstart="<%= w.weekStart.toISOString().slice(0,10) %>"
+                    data-best-id="<%= w.bestPlayerId || '' %>"
+                    data-match-id="<%= w.winningMatchId || '' %>"
+                  >
+                    Editar
+                  </button>
+
+                  <form
+                    action="/admin/weekly-awards/<%= w.id %>/delete"
+                    method="POST"
+                    onsubmit="return confirm('Remover esse destaque da semana?');"
+                  >
+                    <button
+                      type="submit"
+                      class="text-[11px] text-red-500 hover:underline"
+                    >
+                      Excluir
+                    </button>
+                  </form>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- CRAQUE DO M+?S -->
+    <div class="card-inner rounded-2xl p-6 md:p-7 space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+          Craque do m+?s
+        </h2>
+      </div>
+
+      <form
+        id="monthlyForm"
+        action="/admin/monthly-awards"
+        method="POST"
+        class="space-y-4 text-xs md:text-sm"
+      >
+        <div class="space-y-1">
+          <label class="block text-horriver-gray/80">
+            M+?s
+          </label>
+          <select
+            id="monthly_month"
+            name="month"
+            class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+            required
+          >
+            <option value="">Selecione</option>
+            <option value="1">Janeiro</option>
+            <option value="2">Fevereiro</option>
+            <option value="3">Mar+?o</option>
+            <option value="4">Abril</option>
+            <option value="5">Maio</option>
+            <option value="6">Junho</option>
+            <option value="7">Julho</option>
+            <option value="8">Agosto</option>
+            <option value="9">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-horriver-gray/80">
+            Ano
+          </label>
+          <input
+            id="monthly_year"
+            type="number"
+            name="year"
+            value="<%= new Date().getFullYear() %>"
+            class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+            required
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-horriver-gray/80">
+            Craque do m+?s (opcional)
+          </label>
+          <select
+            id="monthly_craque"
+            name="craqueId"
+            class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+          >
+            <option value="">Nenhum</option>
+            <% players.forEach(p => { %>
+              <option value="<%= p.id %>">
+                <%= p.name %><% if (p.nickname) { %> (<%= p.nickname %>)<% } %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+        >
+          Salvar craque do m+?s
+        </button>
+      </form>
+
+      <!-- Lista +?ltimos craques do m+?s -->
+      <div class="pt-4 border-t border-horriver-border/60 space-y-3">
+        <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
+          +?ltimos craques do m+?s
+        </h3>
+
+        <% if (!monthlyAwards.length) { %>
+          <p class="text-[11px] text-horriver-gray/70">
+            Nenhum craque do m+?s cadastrado.
+          </p>
+        <% } else { %>
+          <ul class="space-y-2 text-[11px] md:text-xs">
+            <% monthlyAwards.forEach(m => { %>
+              <li
+                class="flex items-center justify-between gap-3 border border-horriver-border/60 rounded-lg px-3 py-2 bg-black/30"
+              >
+                <div class="space-y-0.5">
+                  <p class="text-horriver-light/90">
+                    <span class="text-horriver-orange">
+                      <%= m.month %>/<%= m.year %>
+                    </span>
+                  </p>
+                  <p class="text-[11px] text-horriver-gray/80">
+                    Craque:
+                    <span class="text-horriver-light">
+                      <%= m.craque
+                        ? m.craque.name + (m.craque.nickname ? " (" + m.craque.nickname + ")" : "")
+                        : "???"
+                      %>
+                    </span>
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="text-[11px] text-horriver-orange hover:underline"
+                    data-monthly-edit
+                    data-month="<%= m.month %>"
+                    data-year="<%= m.year %>"
+                    data-player-id="<%= m.craqueId || '' %>"
+                  >
+                    Editar
+                  </button>
+
+                  <form
+                    action="/admin/monthly-awards/<%= m.id %>/delete"
+                    method="POST"
+                    onsubmit="return confirm('Remover esse craque do m+?s?');"
+                  >
+                    <button
+                      type="submit"
+                      class="text-[11px] text-red-500 hover:underline"
+                    >
+                      Excluir
+                    </button>
+                  </form>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       PREMIA+?+?O DA TEMPORADA
+  ====================================================== -->
+  <section class="pt-4 border-t border-horriver-border/60">
+    <div class="card-inner rounded-2xl p-5 md:p-6 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+            Premia+?+?o da temporada
+          </h2>
+          <p class="text-[11px] md:text-xs text-horriver-gray/80">
+            Cadastre os pr+?mios de fim de ano (melhor jogador, artilheiro, por posi+?+?o, etc).
+          </p>
+        </div>
+        <a
+          href="/admin/premiacao"
+          class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+        >
+          Gerenciar premia+?+?o da temporada
+        </a>
+      </div>
+
+      <%
+        const hasSeasonAwards =
+          typeof seasonAwards !== "undefined" &&
+          seasonAwards &&
+          seasonAwards.length;
+
+        const seasonAwardLabels = {
+          ARTILHEIRO: "Artilheiro da temporada",
+          ASSISTENTE: "Assistente da temporada",
+          MELHOR_JOGADOR: "Melhor jogador da temporada",
+          MELHOR_GOLEIRO: "Melhor goleiro",
+          MELHOR_ZAGUEIRO: "Melhor zagueiro",
+          MELHOR_MEIA: "Melhor meia",
+          MELHOR_ATACANTE: "Melhor atacante",
+          REI_DAS_FOTOS: "Rei das fotos",
+        };
+
+        let latestYear = null;
+        let latestAwards = [];
+        if (hasSeasonAwards) {
+          latestYear = seasonAwards[0].year;
+          latestAwards = seasonAwards.filter(a => a.year === latestYear);
+        }
+      %>
+
+      <% if (hasSeasonAwards && latestAwards.length) { %>
+        <div class="mt-2 space-y-3">
+          <p class="text-[11px] md:text-xs text-horriver-gray/80">
+            Campe+?es atuais da temporada
+            <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
+          </p>
+          <div class="overflow-x-auto text-[11px] md:text-xs">
+            <table class="min-w-full border-collapse">
+              <thead>
+                <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+                  <th class="py-2 pr-3 text-left font-normal">Categoria</th>
+                  <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% latestAwards.forEach(a => { %>
+                  <tr class="border-b border-horriver-border/40 last:border-0">
+                    <td class="py-2 pr-3 text-horriver-gray/90">
+                      <%= seasonAwardLabels[a.category] || a.category %>
+                    </td>
+                    <td class="py-2 pr-3 text-horriver-light">
+                      <% if (a.player) { %>
+                        <%= a.player.name %><% if (a.player.nickname) { %> (<%= a.player.nickname %>)<% } %>
+                      <% } else { %>
+                        ???
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% } else { %>
+        <p class="text-[11px] md:text-xs text-horriver-gray/80">
+          Nenhuma premia+?+?o cadastrada ainda. Clique em "Gerenciar premia+?+?o da temporada" para come+?ar.
+        </p>
+      <% } %>
+    </div>
+  </section>    
+<!-- =====================================================
+       BOT+?O OCULTO: REINICIAR TOTAIS
+       (s+? aparece se showReset === true vindo da rota)
+  ====================================================== -->
+  <% if (showResetButton) { %>
+    <section class="pt-4 border-t border-horriver-border/60">
+      <form
+        method="POST"
+        action="/admin/recalculate-totals"
+        class="inline"
+        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estat+?sticas.');"
+      >
+        <button
+          type="submit"
+          class="px-3 py-1 rounded-full border border-horriver-orange
+                 text-[11px] md:text-xs text-horriver-orange
+                 hover:bg-horriver-orange hover:text-horriver-bg
+                 transition-colors"
+        >
+          Recalcular totais de todos os jogadores
+        </button>
+      </form>
+    </section>
+  <% } %>
+</div>
+
+<!-- =====================================================
+     SCRIPTS: CROPPER + L+?GICA DO PAINEL
+====================================================== -->
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
+<script>
+  (function () {
+    // ============ EDITAR JOGADOR ============
+    const playerForm = document.getElementById("playerForm");
+    const playerFormTitle = document.getElementById("playerFormTitle");
+    const playerFormHint = document.getElementById("playerFormHint");
+    const playerSubmit = document.getElementById("playerFormSubmit");
+    const playerCancelEdit = document.getElementById("playerCancelEdit");
+    const playerPhotoBlock = document.getElementById("playerPhotoBlock");
+
+    const inputName = playerForm.querySelector('input[name="name"]');
+    const inputNickname = playerForm.querySelector('input[name="nickname"]');
+    const selectPosition = playerForm.querySelector('select[name="position"]');
+    const inputPhoto = playerForm.querySelector('input[name="photo"]');
+
+    const originalAction = "/admin/players";
+
+    function setCreateMode() {
+      playerForm.setAttribute("action", originalAction);
+      playerForm.setAttribute("enctype", "multipart/form-data");
+      playerFormTitle.textContent = "Novo jogador";
+      playerFormHint.textContent = "Preencha para cadastrar um novo jogador.";
+      playerSubmit.textContent = "Adicionar jogador";
+      playerCancelEdit.classList.add("hidden");
+      if (playerPhotoBlock) playerPhotoBlock.classList.remove("hidden");
+
+      inputName.value = "";
+      inputNickname.value = "";
+      selectPosition.value = "Goleiro";
+      if (inputPhoto) inputPhoto.value = "";
+    }
+
+    function setEditMode({ id, name, nickname, position }) {
+      playerForm.setAttribute("action", "/admin/players/" + id + "/edit");
+      playerForm.removeAttribute("enctype");
+      playerFormTitle.textContent = "Editar jogador";
+      playerFormHint.textContent =
+        'Editando o jogador selecionado. Clique em "Cancelar edi+?+?o" para voltar ao modo de cadastro.';
+      playerSubmit.textContent = "Salvar altera+?+?es";
+      playerCancelEdit.classList.remove("hidden");
+      if (playerPhotoBlock) playerPhotoBlock.classList.add("hidden");
+
+      inputName.value = name || "";
+      inputNickname.value = nickname || "";
+      selectPosition.value = position || "Goleiro";
+      if (inputPhoto) inputPhoto.value = "";
+
+      playerForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    document.querySelectorAll("[data-player-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const name = btn.getAttribute("data-name") || "";
+        const nickname = btn.getAttribute("data-nickname") || "";
+        const position = btn.getAttribute("data-position") || "Goleiro";
+
+        setEditMode({ id, name, nickname, position });
+      });
+    });
+
+    playerCancelEdit.addEventListener("click", () => {
+      setCreateMode();
+    });
+
+    // come+?a em modo criar
+    setCreateMode();
+
+    // ============ EDITAR WEEKLY ============
+    const weeklyForm = document.getElementById("weeklyForm");
+    const weeklyWeekStart = document.getElementById("weekly_weekStart");
+    const weeklyBestPlayer = document.getElementById("weekly_bestPlayer");
+    const weeklyMatch = document.getElementById("weekly_match");
+
+    document.querySelectorAll("[data-weekly-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const weekStart = btn.getAttribute("data-weekstart");
+        const bestId = btn.getAttribute("data-best-id") || "";
+        const matchId = btn.getAttribute("data-match-id") || "";
+
+        if (weekStart) weeklyWeekStart.value = weekStart;
+        weeklyBestPlayer.value = bestId;
+        weeklyMatch.value = matchId;
+
+        weeklyForm.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    // ============ EDITAR MONTHLY ============
+    const monthlyForm = document.getElementById("monthlyForm");
+    const monthlyMonth = document.getElementById("monthly_month");
+    const monthlyYear = document.getElementById("monthly_year");
+    const monthlyCraque = document.getElementById("monthly_craque");
+
+    document.querySelectorAll("[data-monthly-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const month = btn.getAttribute("data-month") || "";
+        const theYear = btn.getAttribute("data-year") || "";
+        const playerId = btn.getAttribute("data-player-id") || "";
+
+        monthlyMonth.value = month;
+        if (theYear) monthlyYear.value = theYear;
+        monthlyCraque.value = playerId;
+
+        monthlyForm.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    // ============ CROP FOTO TIME DA SEMANA ============
+    const input = document.getElementById("weekly_teamPhotoInput");
+    const container = document.getElementById("teamPhotoCropContainer");
+    const img = document.getElementById("teamPhotoCropImage");
+    const applyBtn = document.getElementById("applyTeamPhotoCrop");
+    const doneMsg = document.getElementById("teamPhotoCropDone");
+
+    let cropper = null;
+    let originalFileName = null;
+
+    if (input && container && img && applyBtn) {
+      input.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith("image/")) {
+          return;
+        }
+
+        originalFileName = file.name || "time-semana.jpg";
+
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          img.src = ev.target.result;
+          container.classList.remove("hidden");
+          doneMsg.classList.add("hidden");
+
+          if (cropper) {
+            cropper.destroy();
+            cropper = null;
+          }
+
+          if (typeof Cropper === "undefined") {
+            alert(
+              "Ferramenta de corte n+?o carregou. Verifique sua conex+?o com a internet."
+            );
+            return;
+          }
+
+          cropper = new Cropper(img, {
+            aspectRatio: 16 / 9,
+            viewMode: 1,
+            autoCropArea: 1,
+            dragMode: "move",
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+
+      applyBtn.addEventListener("click", function () {
+        if (!cropper) {
+          return;
+        }
+
+        const canvas = cropper.getCroppedCanvas({
+          width: 1280,
+          height: 720,
+        });
+
+        canvas.toBlob(
+          function (blob) {
+            if (!blob) {
+              return;
+            }
+
+            const file = new File([blob], originalFileName, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+
+            doneMsg.classList.remove("hidden");
+          },
+          "image/jpeg",
+          0.9
+        );
+      });
+    }
+
+    // ============ COLAPSE: Jogadores / Peladas ============
+    function setupCollapse(targetId, labelType) {
+      const trigger = document.querySelector(
+        `[data-collapse-trigger="${targetId}"]`
+      );
+      const target = document.querySelector(
+        `[data-collapse-target="${targetId}"]`
+      );
+      if (!trigger || !target) return;
+
+      let labelEl = null;
+      if (labelType === "players") {
+        labelEl = trigger.querySelector("[data-collapse-label-players]");
+      } else if (labelType === "matches") {
+        labelEl = trigger.querySelector("[data-collapse-label-matches]");
+      }
+
+      function updateLabel() {
+        if (!labelEl) return;
+        const hidden = target.classList.contains("hidden");
+        labelEl.textContent = hidden ? "Mostrar lista" : "Esconder lista";
+        const iconSpan = trigger.querySelector("span:first-child");
+        if (iconSpan) {
+          iconSpan.textContent = hidden ? "+" : "-";
+        }
+      }
+
+      updateLabel();
+
+      trigger.addEventListener("click", () => {
+        target.classList.toggle("hidden");
+        updateLabel();
+      });
+    }
+
+    setupCollapse("players-list", "players");
+    setupCollapse("matches-list", "matches");
+  })();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+

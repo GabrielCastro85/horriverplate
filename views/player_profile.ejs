@@ -1,0 +1,159 @@
+ï»¿<section class="max-w-5xl mx-auto space-y-6 animate-fadeIn">
+  <header class="flex flex-col md:flex-row gap-4 items-center md:items-start">
+    <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange shadow-card-soft">
+      <% if (player.photoUrl) { %>
+        <img src="<%= player.photoUrl %>" class="w-full h-full object-cover" />
+      <% } else { %>
+        <div class="w-full h-full bg-black/40 flex items-center justify-center text-horriver-gray">Sem foto</div>
+      <% } %>
+    </div>
+    <div class="flex-1 space-y-1">
+      <h1 class="text-3xl font-title text-horriver-light"><%= player.name %></h1>
+      <% if (player.nickname) { %><p class="text-horriver-orange text-sm">(<%= player.nickname %>)</p><% } %>
+      <p class="text-sm text-horriver-gray">PosiÃÂ§ÃÂ£o: <span class="text-horriver-orange"><%= player.position %></span></p>
+            <div class="mt-2">
+        <span class="px-3 py-1 rounded-full bg-horriver-red/20 text-horriver-orange text-sm">
+          Overall: <%= Math.round(latestOverall || 0) %>
+        </span>
+      </div>
+      <div class="flex items-center gap-2 mt-3 text-sm">
+        <button
+          type="button"
+          id="copyProfileLink"
+          class="px-3 py-1 rounded-full border border-horriver-border bg-black/40 text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+        >
+          Copiar link do perfil
+        </button>
+        <span id="copyStatus" class="text-[11px] text-horriver-gray hidden">Copiado!</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <% [['Jogos', totals.matches], ['Gols', totals.goals], ['AssistÃÂªncias', totals.assists], ['Fotos', totals.photos]].forEach(([label, val]) => { %>
+      <div class="card-inner rounded-2xl p-4 text-center">
+        <p class="text-horriver-gray text-xs"><%= label %></p>
+        <p class="text-2xl text-horriver-light font-semibold"><%= val %></p>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="card-inner rounded-2xl p-4 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="font-title text-xl text-horriver-light">Conquistas</h2>
+      <span class="text-xs text-horriver-gray"><%= achievements.length %> desbloqueadas</span>
+    </div>
+    <% if (!achievements.length) { %>
+      <p class="text-horriver-gray text-sm">Nenhuma conquista ainda.</p>
+    <% } else { %>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <% achievements.forEach(pa => { %>
+          <div class="bg-black/40 border border-horriver-border rounded-xl p-3">
+            <p class="text-horriver-orange text-xs mb-1"><%= pa.achievement.category || 'Conquista' %></p>
+            <p class="text-horriver-light font-semibold"><%= pa.achievement.name %></p>
+            <p class="text-horriver-gray text-xs"><%= pa.achievement.description %></p>
+            <p class="text-[11px] text-horriver-gray mt-2">Desbloqueado em <%= new Date(pa.unlockedAt).toLocaleDateString('pt-BR') %></p>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="card-inner rounded-2xl p-4 space-y-2">
+    <h2 class="font-title text-xl text-horriver-light">EvoluÃÂ§ÃÂ£o das notas</h2>
+    <% if (!ratingsSeries.length) { %>
+      <p class="text-sm text-horriver-gray">Sem notas ainda.</p>
+    <% } else { %>
+      <svg viewBox="0 0 100 40" class="w-full h-32 text-horriver-orange">
+        <% const maxR = 10, minR = 0; const n = ratingsSeries.length; const step = n > 1 ? 100/(n-1) : 0; let path=''; ratingsSeries.forEach((p,i)=>{ const x = i*step; const y = 40 - ((p.rating - minR)/(maxR-minR))*40; path += (i===0? 'M':' L')+x+','+y; }); %>
+        <path d="<%= path %>" fill="none" stroke="currentColor" stroke-width="1.5" />
+      </svg>
+    <% } %>
+  </div>
+
+    <div class="card-inner rounded-2xl p-4 space-y-2">
+    <h2 class="font-title text-xl text-horriver-light">HistÃ³rico de overall (0â100)</h2>
+    <% if (!overallSeries.length) { %>
+      <p class="text-sm text-horriver-gray">Sem histÃ³rico calculado ainda.</p>
+    <% } else { %>
+      <svg viewBox="0 0 100 40" class="w-full h-32 text-horriver-orange">
+        <% const maxO = 100, minO = 0; const nO = overallSeries.length; const stepO = nO > 1 ? 100/(nO-1) : 0; let pathO=''; overallSeries.forEach((p,i)=>{ const x = i*stepO; const y = 40 - ((p.overall - minO)/(maxO-minO))*40; pathO += (i===0? 'M':' L')+x+','+y; }); %>
+        <path d="<%= pathO %>" fill="none" stroke="currentColor" stroke-width="1.5" />
+      </svg>
+      <p class="text-[11px] text-horriver-gray">Ãltimas <%= overallSeries.length %> mediÃ§Ãµes salvas.</p>
+    <% } %>
+  </div>
+<div class="card-inner rounded-2xl p-4 space-y-2">
+    <h2 class="font-title text-xl text-horriver-light">Gols por mÃÂªs</h2>
+    <% if (!goalsByMonth.length) { %>
+      <p class="text-sm text-horriver-gray">Sem gols registrados.</p>
+    <% } else { 
+         const maxG = Math.max(...goalsByMonth.map(g => g.value), 1);
+    %>
+      <div class="flex items-end gap-2 h-32">
+        <% goalsByMonth.forEach(g => { 
+             const [year, month] = g.label.split("-");
+             const pct = (g.value / maxG) * 100;
+             const monthLabel = new Date(`${g.label}-01`).toLocaleString('pt-BR', { month: 'short' });
+        %>
+          <div class="flex-1 flex flex-col items-center">
+            <div class="w-full rounded-t-md bg-gradient-to-t from-horriver-red to-horriver-orange" style="height:<%= pct %>%"></div>
+            <span class="text-[10px] text-horriver-gray mt-1"><%= monthLabel %>/<%= year.slice(-2) %></span>
+            <span class="text-[10px] text-horriver-orange"><%= g.value %></span>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="card-inner rounded-2xl p-4 space-y-2">
+    <h2 class="font-title text-xl text-horriver-light">Partidas recentes</h2>
+    <% if (!recentMatches.length) { %>
+      <p class="text-sm text-horriver-gray">Sem partidas.</p>
+    <% } else { %>
+      <div class="space-y-2">
+        <% recentMatches.forEach(m => { %>
+          <div class="flex items-center justify-between text-sm border border-horriver-border/60 rounded-lg px-3 py-2 bg-black/30">
+            <div>
+              <p class="text-horriver-light"><%= m.desc || 'Pelada' %></p>
+              <p class="text-[11px] text-horriver-gray"><%= new Date(m.date).toLocaleDateString('pt-BR') %></p>
+            </div>
+            <div class="flex gap-3 text-[11px] text-horriver-gray">
+              <span>G: <span class="text-horriver-orange"><%= m.goals || 0 %></span></span>
+              <span>A: <span class="text-horriver-orange"><%= m.assists || 0 %></span></span>
+              <span>Nota: <span class="text-horriver-orange"><%= m.rating ?? '-' %></span></span>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+
+
+
+<script>
+  (function () {
+    const btn = document.getElementById("copyProfileLink");
+    const status = document.getElementById("copyStatus");
+    if (!btn || !navigator.clipboard) return;
+
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        if (status) {
+          status.classList.remove("hidden");
+          status.textContent = "Copiado!";
+          setTimeout(() => status.classList.add("hidden"), 2000);
+        }
+      } catch (err) {
+        if (status) {
+          status.classList.remove("hidden");
+          status.textContent = "Erro ao copiar";
+          setTimeout(() => status.classList.add("hidden"), 2000);
+        }
+      }
+    });
+  })();
+</script>

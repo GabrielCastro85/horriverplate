@@ -6,18 +6,22 @@ const prisma = require("../utils/db");
 // helper pra transformar enum em label bonitinha
 function categoryLabel(category) {
   switch (category) {
-    case "BEST_PLAYER":
-      return "Melhor jogador";
-    case "TOP_SCORER":
+    case "ARTILHEIRO":
       return "Artilheiro";
-    case "BEST_GOALKEEPER":
+    case "ASSISTENTE":
+      return "Assistente";
+    case "MELHOR_JOGADOR":
+      return "Melhor jogador";
+    case "MELHOR_GOLEIRO":
       return "Melhor goleiro";
-    case "BEST_DEFENDER":
+    case "MELHOR_ZAGUEIRO":
       return "Melhor zagueiro";
-    case "BEST_MIDFIELDER":
+    case "MELHOR_MEIA":
       return "Melhor meia";
-    case "BEST_FORWARD":
+    case "MELHOR_ATACANTE":
       return "Melhor atacante";
+    case "REI_DAS_FOTOS":
+      return "Rei das fotos";
     default:
       return category;
   }

@@ -1,4 +1,4 @@
-<%
+﻿<%
 // views/admin_match.ejs
 // Variáveis recebidas: match, players, stats
 // O layout.ejs já cuida de <html>, <body>, header, footer etc.
@@ -37,17 +37,20 @@
   <div
     class="overflow-x-auto rounded-2xl border border-horriver-border bg-black/50"
   >
-    <table class="min-w-full text-xs md:text-sm">
-      <thead class="bg-black/60">
-        <tr>
-          <th class="px-3 py-3 text-left font-semibold text-horriver-gray">
-            Jogador
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Presente
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Gols
+        <table class="min-w-full text-xs md:text-sm">
+          <thead class="bg-black/60">
+            <tr>
+              <th class="px-3 py-3 text-left font-semibold text-horriver-gray">
+                Jogador
+              </th>
+              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+                OVR
+              </th>
+              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+                Presente
+              </th>
+              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
+                Gols
           </th>
           <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
             Assistências
@@ -82,6 +85,16 @@
                 <%= player.position %>
               </span>
             </div>
+          </td>
+          <!-- OVR -->
+          <td class="px-3 py-2 text-center align-middle">
+            <% if (player.overall != null) { %>
+              <span class="px-2 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold">
+                <%= player.overall %>
+              </span>
+            <% } else { %>
+              <span class="text-horriver-gray text-[11px]">-</span>
+            <% } %>
           </td>
 
           <!-- PRESENTE (checkbox) -->
@@ -146,11 +159,493 @@
   </div>
 
   <div class="flex justify-end mt-4">
-    <button
-      type="submit"
-      class="px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
-    >
-      Salvar estatísticas
-    </button>
+    <div class="flex items-center gap-3">
+      <a
+        href="/admin/matches/<%= match.id %>/votes"
+        class="px-4 py-2 rounded-full border border-horriver-border text-horriver-light text-xs md:text-sm font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+      >
+        Ver votos
+      </a>
+      <button
+        type="submit"
+        class="px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+      >
+        Salvar estatísticas
+      </button>
+    </div>
   </div>
 </form>
+
+<!-- ========================= -->
+<!-- Votação: geração de links -->
+<!-- ========================= -->
+<section id="votacao" class="mt-10 space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+        Votação da pelada
+      </h2>
+      <p class="text-xs text-horriver-gray">
+        Gera links únicos para os jogadores presentes votarem (via WhatsApp).
+      </p>
+    </div>
+    <form
+      action="/admin/matches/<%= match.id %>/vote-session"
+      method="POST"
+      class="flex items-center gap-2 text-[11px]"
+    >
+      <label class="flex items-center gap-1 text-horriver-gray">
+        Expira em (horas):
+        <input
+          type="number"
+          name="expiresHours"
+          min="0"
+          value="24"
+          class="w-16 bg-black/50 border border-horriver-border rounded px-2 py-1 text-horriver-light"
+        />
+      </label>
+      <button
+        type="submit"
+        class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+      >
+        Gerar links
+      </button>
+    </form>
+  </div>
+
+  <% if (!voteSession || !voteSession.tokens || !voteSession.tokens.length) { %>
+    <p class="text-sm text-horriver-gray">
+      Nenhuma sessão de votação criada ainda. Gere os links após marcar os presentes.
+    </p>
+  <% } else { %>
+    <div class="flex flex-col md:flex-row md:items-center gap-2 mb-3 text-[12px]">
+      <form
+        action="/admin/matches/<%= match.id %>/apply-votes"
+        method="POST"
+        class="flex items-center gap-2"
+        onsubmit="return confirm('Aplicar notas baseadas na votação? Não sobrescreve notas já lançadas.');"
+      >
+        <button
+          type="submit"
+          class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+        >
+          Aplicar votos como notas
+        </button>
+        <span class="text-horriver-gray text-[11px]">
+          Calcula notas para presentes (não altera notas já preenchidas).
+        </span>
+      </form>
+
+      <form
+        action="/admin/matches/<%= match.id %>/close-votes"
+        method="POST"
+        class="flex items-center gap-2"
+        onsubmit="return confirm('Encerrar a votação agora? Links restantes serão bloqueados.');"
+      >
+        <button
+          type="submit"
+          class="px-3 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-500 transition"
+        >
+          Encerrar votação
+        </button>
+        <span class="text-horriver-gray text-[11px]">
+          Expira a sessão e bloqueia links não usados.
+        </span>
+      </form>
+    </div>
+
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+      <p class="text-xs text-horriver-gray mb-2">
+        Sessão criada em <%= new Date(voteSession.createdAt).toLocaleString('pt-BR') %>
+        <% if (voteSession.expiresAt) { %>
+          · expira em <%= new Date(voteSession.expiresAt).toLocaleString('pt-BR') %>
+        <% } else { %>
+          · sem expiração
+        <% } %>
+      </p>
+
+      <div class="overflow-x-auto text-[11px] md:text-xs">
+        <table class="min-w-full border-collapse">
+          <thead>
+            <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+              <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+              <th class="py-2 pr-3 text-left font-normal">Posição</th>
+              <th class="py-2 pr-3 text-left font-normal">Link</th>
+              <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% voteSession.tokens.forEach((t) => {
+                 const link = `${voteBaseUrl}/votar/${t.token}`;
+                 const waRaw = t.player.whatsapp || "";
+                 const waDigits = waRaw.replace(/\\D/g, "");
+                 const msg = `Fala ${t.player.name}! Seu link de votação da pelada: ${link}`;
+                 const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
+            %>
+              <tr class="border-b border-horriver-border/40 last:border-0">
+                <td class="py-2 pr-3 text-horriver-light">
+                  <%= t.player.name %>
+                  <% if (t.player.nickname) { %>
+                    (<%= t.player.nickname %>)
+                  <% } %>
+                </td>
+                <td class="py-2 pr-3 text-horriver-orange/90 text-[10px] uppercase">
+                  <%= t.player.position %>
+                </td>
+                <td class="py-2 pr-3">
+                  <a
+                    href="<%= link %>"
+                    target="_blank"
+                    class="text-horriver-orange hover:underline break-all"
+                  >
+                    <%= link %>
+                  </a>
+                </td>
+                <td class="py-2 pr-3">
+                  <% if (waUrl) { %>
+                    <a
+                      href="<%= waUrl %>"
+                      target="_blank"
+                      class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red text-white hover:bg-horriver-orange transition"
+                    >
+                      Mandar link
+                    </a>
+                  <% } else { %>
+                    <span class="text-horriver-gray">Sem número</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% } %>
+</section>
+
+<!-- ========================= -->
+<!-- Sorteador de times (beta) -->
+<section class="mt-10 space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+        Sorteador inteligente de times
+      </h2>
+      <p class="text-xs text-horriver-gray">
+        Usa o mesmo overall do ranking e trava 6 jogadores por time. Convidados entram só no sorteio (não salvam no banco).
+      </p>
+    </div>
+  </div>
+
+  <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
+    <form id="sorterForm" class="space-y-3 text-[12px]">
+      <div class="grid md:grid-cols-2 gap-3">
+        <div class="space-y-2">
+          <p class="text-horriver-gray text-[12px]">Convidados (só para este sorteio)</p>
+          <div class="bg-black/30 border border-horriver-border rounded-xl p-3 space-y-2">
+            <div class="grid sm:grid-cols-2 gap-2">
+              <label class="flex flex-col gap-1 text-horriver-gray">
+                Nome
+                <input
+                  type="text"
+                  id="guestName"
+                  class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light"
+                  placeholder="Ex: Convidado"
+                />
+              </label>
+              <label class="flex flex-col gap-1 text-horriver-gray">
+                Posição
+                <select
+                  id="guestPos"
+                  class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light"
+                >
+                  <option>Goleiro</option>
+                  <option>Zagueiro</option>
+                  <option>Meia</option>
+                  <option>Atacante</option>
+                  <option>Outros</option>
+                </select>
+              </label>
+            </div>
+            <label class="flex flex-col gap-1 text-horriver-gray">
+              Força (40-100)
+              <input
+                type="number"
+                id="guestStr"
+                min="40"
+                max="100"
+                value="60"
+                class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light w-24"
+              />
+            </label>
+            <button
+              type="button"
+              id="addGuestBtn"
+              class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            >
+              Adicionar convidado
+            </button>
+            <input type="hidden" name="guests" id="guestsField" />
+            <div id="guestList" class="flex flex-wrap gap-2 text-[11px]"></div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <p class="text-horriver-gray text-[12px]">
+            Sorteio automático usando os presentes marcados acima. Se tiver mais de 12 presentes, cria 2, 3 ou 4 times com 6 em cada; extras vão para o banco.
+          </p>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="submit"
+              class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            >
+              Sortear times
+            </button>
+            <span id="sorterStatus" class="text-horriver-gray"></span>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div id="sorterResults" class="grid md:grid-cols-2 gap-3 text-[12px]"></div>
+    <div id="benchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
+
+    <div id="sorterShare" class="hidden flex flex-wrap items-center gap-2 text-[12px]">
+      <button
+        type="button"
+        id="copyTeamsBtn"
+        class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+      >
+        Copiar texto
+      </button>
+      <button
+        type="button"
+        id="imgTeamsBtn"
+        class="px-3 py-2 rounded-full border border-horriver-border text-horriver-light font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+      >
+        Baixar imagem
+      </button>
+      <span id="shareStatus" class="text-horriver-gray"></span>
+    </div>
+  </div>
+</section>
+
+<script>
+  (() => {
+    const matchId = <%= match.id %>;
+    const form = document.getElementById("sorterForm");
+    const resultsEl = document.getElementById("sorterResults");
+    const statusEl = document.getElementById("sorterStatus");
+    const shareBox = document.getElementById("sorterShare");
+    const copyBtn = document.getElementById("copyTeamsBtn");
+    const imgBtn = document.getElementById("imgTeamsBtn");
+    const shareStatus = document.getElementById("shareStatus");
+    const benchBox = document.getElementById("benchBox");
+
+    const guestName = document.getElementById("guestName");
+    const guestPos = document.getElementById("guestPos");
+    const guestStr = document.getElementById("guestStr");
+    const guestsField = document.getElementById("guestsField");
+    const guestList = document.getElementById("guestList");
+    const addGuestBtn = document.getElementById("addGuestBtn");
+
+    if (!form || !resultsEl) return;
+
+    const presentPlayers = <%- JSON.stringify(stats.filter(s => s.present).map(s => ({
+      id: s.playerId,
+      name: s.player.name,
+      nickname: s.player.nickname,
+      position: s.player.position || "Outros",
+    }))) %>;
+    const matchDateLabel = new Date("<%= match.playedAt.toISOString() %>").toLocaleDateString("pt-BR");
+
+    const guests = [];
+
+    function syncGuestsField() {
+      const lines = guests.map((g) => `${g.name};${g.position};${g.strength}`);
+      guestsField.value = lines.join("\n");
+      guestList.innerHTML = guests
+        .map(
+          (g, idx) => `
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-light">
+              ${g.name} • ${g.position} • ${g.strength}
+              <button type="button" data-remove="${idx}" class="text-horriver-orange hover:text-white">x</button>
+            </span>
+          `
+        )
+        .join("");
+    }
+
+    guestList.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-remove]");
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.remove, 10);
+      if (!Number.isNaN(idx)) {
+        guests.splice(idx, 1);
+        syncGuestsField();
+      }
+    });
+
+    addGuestBtn?.addEventListener("click", () => {
+      const name = (guestName.value || "Convidado").trim();
+      const position = guestPos.value || "Outros";
+      const strength = Math.max(40, Math.min(100, parseInt(guestStr.value || "60", 10) || 60));
+      guests.push({ name, position, strength });
+      guestName.value = "";
+      guestStr.value = "60";
+      syncGuestsField();
+    });
+
+    function renderTeams(teams, bench) {
+      resultsEl.innerHTML = teams
+        .map(
+          (t, idx) => `
+            <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30" data-team="${idx}">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-horriver-orange font-semibold flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background:#f97316"></span>
+                  <span data-team-name>${t.name}</span>
+                </p>
+                <p class="text-horriver-light" data-team-power>Força: ${Number(t.power || 0).toFixed(1)}</p>
+              </div>
+              <ul class="space-y-1" data-team-list>
+                ${(t.players || [])
+                  .map(
+                    (p) => `
+                      <li class="flex items-center justify-between gap-1 bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]">
+                        <div class="flex flex-col">
+                          <span>${p.name}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
+                          <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
+                        </div>
+                        <span class="text-horriver-gray">${Number(p.strength || 0).toFixed(1)}</span>
+                      </li>
+                    `
+                  )
+                  .join("")}
+              </ul>
+            </div>
+          `
+        )
+        .join("");
+
+      if (bench && bench.length) {
+        benchBox.classList.remove("hidden");
+        benchBox.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-horriver-orange font-semibold">Banco / Reservas</p>
+            <p class="text-horriver-light">${bench.length} jogador(es)</p>
+          </div>
+          <ul class="space-y-1">
+            ${bench
+              .map(
+                (p) => `
+                  <li class="flex items-center justify-between bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]">
+                    <div class="flex flex-col">
+                      <span>${p.name}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
+                      <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
+                    </div>
+                    <span class="text-horriver-gray">${Number(p.strength || 0).toFixed(1)}</span>
+                  </li>
+                `
+              )
+              .join("")}
+          </ul>
+        `;
+      } else {
+        benchBox.classList.add("hidden");
+        benchBox.innerHTML = "";
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "Sorteando...";
+      resultsEl.innerHTML = "";
+      benchBox.classList.add("hidden");
+      benchBox.innerHTML = "";
+
+      if (!presentPlayers.length) {
+        statusEl.textContent = "Nenhum jogador presente para sortear.";
+        return;
+      }
+
+      syncGuestsField();
+      const formData = new FormData();
+      formData.append("guests", guestsField.value || "");
+
+      try {
+        const resp = await fetch(`/admin/matches/${matchId}/sort-teams`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.error) {
+          statusEl.textContent = data.error || "Erro ao sortear.";
+          return;
+        }
+
+        renderTeams(data.teams || [], data.bench || []);
+        statusEl.textContent = `Gerados ${data.teams?.length || 0} time(s). Máximo 6 por time; extras ficam no banco.`;
+        if (shareBox) shareBox.classList.remove("hidden");
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Erro inesperado ao sortear.";
+      }
+    });
+
+    if (copyBtn) {
+      copyBtn.addEventListener("click", () => {
+        const blocks = resultsEl.querySelectorAll("[data-team]");
+        if (!blocks.length) return;
+        let text = `Sorteio da pelada ${matchDateLabel}\n`;
+        blocks.forEach((box) => {
+          const name = box.querySelector("[data-team-name]")?.textContent || "Time";
+          const lines = Array.from(box.querySelectorAll("li")).map((li) => {
+            const spans = li.querySelectorAll("span");
+            const nome = spans[0]?.textContent?.trim() || "";
+            const pos = spans[1]?.textContent?.trim() || "";
+            return `- ${nome}${pos ? " [" + pos + "]" : ""}`;
+          });
+          text += `\n${name}\n${lines.join("\n")}\n`;
+        });
+        const benchItems = benchBox.querySelectorAll("li");
+        if (benchItems.length) {
+          text += "\nBanco/Reservas\n";
+          benchItems.forEach((li) => {
+            const spans = li.querySelectorAll("span");
+            const nome = spans[0]?.textContent?.trim() || "";
+            const pos = spans[1]?.textContent?.trim() || "";
+            text += `- ${nome}${pos ? " [" + pos + "]" : ""}\n`;
+          });
+        }
+        try {
+          navigator.clipboard.writeText(text);
+          if (shareStatus) shareStatus.textContent = "Times copiados para a área de transferência.";
+        } catch (err) {
+          if (shareStatus) shareStatus.textContent = "Falha ao copiar. Copie manualmente.";
+        }
+      });
+    }
+
+    if (imgBtn) {
+      imgBtn.addEventListener("click", async () => {
+        shareStatus.textContent = "Gerando imagem...";
+        try {
+          if (typeof html2canvas === "undefined") {
+            shareStatus.textContent = "html2canvas não carregado.";
+            return;
+          }
+          const canvas = await html2canvas(resultsEl, { backgroundColor: "#0f0f0f", scale: 2 });
+          const link = document.createElement("a");
+          link.download = "times-sorteio.png";
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+          shareStatus.textContent = "Imagem baixada.";
+        } catch (err) {
+          console.error(err);
+          shareStatus.textContent = "Erro ao gerar imagem.";
+        }
+      });
+    }
+  })();
+</script>

@@ -1,0 +1,179 @@
+ï»¿<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+  <style>
+    /* Drag feedback */
+    [data-rank-list] li {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    [data-rank-list] li.dragging {
+      transform: scale(1.02);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    }
+  </style>
+  <header class="text-center space-y-2">
+    <h1 class="font-title text-3xl text-horriver-light">VotaÃÂ§ÃÂ£o da pelada</h1>
+    <% if (match) { %>
+      <p class="text-sm text-horriver-gray">
+        Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR") %></span>
+        <% if (match.description) { %> ÃÂ· <%= match.description %> <% } %>
+      </p>
+    <% } %>
+    <% if (voter) { %>
+      <p class="text-xs text-horriver-gray">
+        Link gerado para: <span class="text-horriver-light"><%= voter.name %></span>
+      </p>
+    <% } %>
+  </header>
+
+  <% if (error) { %>
+    <div class="bg-red-900/40 border border-red-600/60 text-red-100 rounded-2xl p-4 text-sm">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-100 rounded-2xl p-4 text-sm">
+      Voto registrado com sucesso. Obrigado!
+    </div>
+  <% } %>
+
+  <% if (!error && !success) { %>
+    <form method="POST" class="space-y-6">
+      <% Object.entries(grouped || {}).forEach(([pos, list]) => { %>
+        <% if (!list || !list.length) { return; } %>
+        <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3" data-rank-block data-position="<%= pos %>">
+          <div class="flex items-center justify-between">
+            <h2 class="font-title text-xl text-horriver-light"><%= pos %></h2>
+            <p class="text-[11px] text-horriver-gray">Arraste ou use as setas (mobile) para ordenar.</p>
+          </div>
+          <ul class="space-y-2" data-rank-list>
+            <% list.forEach((p, idx) => { %>
+              <li
+                class="flex items-center gap-3 text-sm text-horriver-light bg-white/5 rounded-xl px-3 py-2 cursor-move transition-transform duration-150 ease-out"
+                draggable="true"
+                data-player-id="<%= p.id %>"
+                data-position="<%= p.position %>"
+              >
+                <span class="rank-index w-7 text-center text-horriver-orange font-semibold"><%= idx + 1 %>.</span>
+                <div class="flex-1">
+                  <p class="font-semibold"><%= p.name %></p>
+                  <% if (p.nickname) { %>
+                    <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
+                  <% } %>
+                </div>
+                <div class="flex items-center gap-1 md:hidden">
+                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-up>Ã¢â â</button>
+                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-down>Ã¢â â</button>
+                </div>
+                <input type="hidden" name="rank_<%= p.position %>_<%= p.id %>" value="<%= idx + 1 %>" />
+              </li>
+            <% }) %>
+          </ul>
+        </div>
+      <% }) %>
+
+      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-2">
+        <h3 class="font-title text-lg text-horriver-light">Melhor da pelada</h3>
+        <select
+          name="bestOverall"
+          class="w-full bg-black/50 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+          required
+        >
+          <option value="">Escolha</option>
+          <% (players || []).forEach((p) => { %>
+            <option value="<%= p.id %>">
+              <%= p.name %><% if (p.nickname) { %> (<%= p.nickname %>)<% } %>
+            </option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div class="text-right">
+        <button
+          type="submit"
+          class="inline-flex items-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+        >
+          Enviar voto
+        </button>
+      </div>
+    </form>
+  <% } else if (error && !success) { %>
+    <div class="bg-red-900/40 border border-red-600/60 text-red-100 rounded-2xl p-4 text-sm">
+      <%= error %>
+    </div>
+  <% } else if (success) { %>
+    <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-100 rounded-2xl p-4 text-sm">
+      Seu voto foi registrado. Este link nÃÂ£o pode ser usado novamente.
+    </div>
+  <% } %>
+</section>
+
+<script>
+  (() => {
+    const blocks = document.querySelectorAll("[data-rank-block]");
+    blocks.forEach((block) => {
+      const list = block.querySelector("[data-rank-list]");
+      if (!list) return;
+
+      let dragEl = null;
+      let dragOverTimeout = null;
+
+      const updateIndexes = () => {
+        list.querySelectorAll("li").forEach((li, idx) => {
+          const idxSpan = li.querySelector(".rank-index");
+          if (idxSpan) idxSpan.textContent = `${idx + 1}.`;
+          const input = li.querySelector("input[type='hidden']");
+          if (input) input.value = idx + 1;
+        });
+      };
+
+      list.addEventListener("dragstart", (e) => {
+        const target = e.target.closest("li");
+        if (!target) return;
+        dragEl = target;
+        target.classList.add("ring-2", "ring-horriver-orange");
+        target.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+
+      list.addEventListener("dragend", (e) => {
+        const target = e.target.closest("li");
+        if (target) target.classList.remove("ring-2", "ring-horriver-orange", "dragging");
+        dragEl = null;
+      });
+
+      list.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const target = e.target.closest("li");
+        if (!target || target === dragEl) return;
+        const rect = target.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < (rect.height / 2);
+        if (before) {
+          list.insertBefore(dragEl, target);
+        } else {
+          list.insertBefore(dragEl, target.nextSibling);
+        }
+        updateIndexes();
+      });
+
+      // Mobile fallback: botÃÂµes Ã¢â â Ã¢â â
+      list.querySelectorAll("li").forEach((li) => {
+        const upBtn = li.querySelector("[data-move-up]");
+        const downBtn = li.querySelector("[data-move-down]");
+        const move = (dir) => {
+          const current = li;
+          if (dir === "up" && current.previousElementSibling) {
+            list.insertBefore(current, current.previousElementSibling);
+          } else if (dir === "down" && current.nextElementSibling) {
+            list.insertBefore(current.nextElementSibling, current);
+          }
+          updateIndexes();
+          current.classList.add("scale-[1.02]");
+          clearTimeout(dragOverTimeout);
+          dragOverTimeout = setTimeout(() => current.classList.remove("scale-[1.02]"), 150);
+        };
+        if (upBtn) upBtn.addEventListener("click", () => move("up"));
+        if (downBtn) downBtn.addEventListener("click", () => move("down"));
+      });
+    });
+  })();
+</script>

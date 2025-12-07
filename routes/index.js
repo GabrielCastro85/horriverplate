@@ -1,4 +1,4 @@
-// routes/index.js
+﻿// routes/index.js
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
@@ -15,6 +15,13 @@ function endOfDay(date) {
   const d = new Date(date);
   d.setHours(23, 59, 59, 999);
   return d;
+}
+
+function monthKey(date) {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
 }
 
 // ==============================
@@ -275,55 +282,179 @@ router.get("/matches/:id", async (req, res) => {
 });
 
 // ==============================
-// HALL DA FAMA – LIBERAÇÃO PROGRAMADA
+// LISTA DE PELADAS COM FILTRO POR MÊS/ANO
+// ==============================
+router.get("/peladas", async (req, res) => {
+  try {
+    const matches = await prisma.match.findMany({
+      orderBy: { playedAt: "desc" },
+      include: {
+        _count: { select: { stats: true } },
+      },
+    });
+
+    if (!matches.length) {
+      return res.render("peladas", {
+        title: "Peladas",
+        activePage: "peladas",
+        monthOptions: [],
+        yearOptions: [],
+        selectedMonth: null,
+        selectedYear: null,
+        matches: [],
+      });
+    }
+
+    const monthNames = [
+      "janeiro",
+      "fevereiro",
+      "março",
+      "abril",
+      "maio",
+      "junho",
+      "julho",
+      "agosto",
+      "setembro",
+      "outubro",
+      "novembro",
+      "dezembro",
+    ];
+
+    // Opções de ano (com "all")
+    const yearsSet = new Set();
+    matches.forEach((m) => {
+      const y = new Date(m.playedAt).getFullYear();
+      yearsSet.add(y);
+    });
+    const yearOptions = ["all", ...Array.from(yearsSet).sort((a, b) => b - a)];
+
+    const selectedYearRaw = req.query.year || yearOptions[1] || "all";
+    const selectedYear = yearOptions.includes(selectedYearRaw)
+      ? selectedYearRaw
+      : "all";
+
+    // Opções de mês dependem do ano selecionado (ou todos)
+    const monthsSet = new Set();
+    matches.forEach((m) => {
+      const d = new Date(m.playedAt);
+      const y = d.getFullYear();
+      const mn = d.getMonth() + 1;
+      if (selectedYear === "all" || y === Number(selectedYear)) {
+        monthsSet.add(mn);
+      }
+    });
+
+    const monthOptions = [
+      { value: "all", label: "Todos os meses" },
+      ...Array.from(monthsSet)
+        .sort((a, b) => b - a)
+        .map((mn) => ({
+          value: String(mn),
+          label: monthNames[mn - 1],
+        })),
+    ];
+
+    const selectedMonthRaw = req.query.month || "all";
+    const monthValues = monthOptions.map((m) => m.value);
+    const selectedMonth = monthValues.includes(selectedMonthRaw)
+      ? selectedMonthRaw
+      : "all";
+
+    const filteredMatches = matches.filter((m) => {
+      const d = new Date(m.playedAt);
+      const y = d.getFullYear();
+      const mn = d.getMonth() + 1;
+
+      if (selectedYear !== "all" && y !== Number(selectedYear)) return false;
+      if (selectedMonth !== "all" && mn !== Number(selectedMonth)) return false;
+      return true;
+    });
+
+    res.render("peladas", {
+      title: "Peladas",
+      activePage: "peladas",
+      yearOptions,
+      selectedYear,
+      monthOptions,
+      selectedMonth,
+      matches: filteredMatches,
+    });
+  } catch (err) {
+    console.error("Erro ao listar peladas:", err);
+    res.status(500).send("Erro ao carregar peladas.");
+  }
+});
+
+// ==============================
+// HALL DA FAMA 2.0
 // ==============================
 router.get("/hall-da-fama", async (req, res) => {
   try {
-    const now = new Date();
+    const players = await prisma.player.findMany({
+      where: { isHallOfFame: true },
+      orderBy: [{ hallInductedAt: "desc" }, { name: "asc" }],
+      include: {
+        achievements: { include: { achievement: true } },
+      },
+    });
 
-    // ✅ Liberação programada para 2025:
-    // sábado 29/11 às 15h (horário de Brasília)
-    const releaseDate = new Date("2025-11-29T15:00:00-03:00");
-    const beforeRelease = now < releaseDate;
-
-    let awards = await prisma.seasonAward.findMany({
+    // Campeões da temporada mais recente (premiação oficial)
+    const seasonAwards = await prisma.seasonAward.findMany({
       include: { player: true },
       orderBy: [{ year: "desc" }, { category: "asc" }],
     });
 
-    // ✅ Se ainda não chegou a data → esconder 2025
-    if (beforeRelease) {
-      awards = awards.filter((a) => a.year !== 2025);
+    let latestSeasonYear = null;
+    let latestSeasonAwards = [];
+    let hallFeatured = null;
+    let previousSeasonYear = null;
+    let previousSeasonAwards = [];
+    if (seasonAwards.length) {
+      latestSeasonYear = seasonAwards[0].year;
+      latestSeasonAwards = seasonAwards.filter(
+        (a) => a.year === latestSeasonYear
+      );
+
+      const byCategory = (cat) =>
+        latestSeasonAwards.find((a) => a.category === cat) || null;
+
+      // categorias seguem o enum SeasonAwardCategory (uppercase)
+      hallFeatured = {
+        best: byCategory("MELHOR_JOGADOR"),
+        scorer: byCategory("ARTILHEIRO"),
+        assist: byCategory("ASSISTENTE"),
+        photos: byCategory("REI_DAS_FOTOS"),
+        goalie: byCategory("MELHOR_GOLEIRO"),
+        defender: byCategory("MELHOR_ZAGUEIRO"),
+        midfielder: byCategory("MELHOR_MEIA"),
+        forward: byCategory("MELHOR_ATACANTE"),
+      };
+
+      // pega o ano anterior (se existir) para histórico
+      const otherYear = seasonAwards.find((a) => a.year < latestSeasonYear);
+      if (otherYear) {
+        previousSeasonYear = otherYear.year;
+        previousSeasonAwards = seasonAwards.filter(
+          (a) => a.year === previousSeasonYear
+        );
+      }
     }
 
-    if (!awards.length) {
-      return res.render("hall_da_fama", {
-        title: "Hall da Fama",
-        activePage: "hall",
-        awardsByYear: {},
-        years: [],
-        beforeRelease,
-        releaseLabel: "29/11/2025 às 15h",
-      });
-    }
-
-    const awardsByYear = awards.reduce((acc, a) => {
-      if (!acc[a.year]) acc[a.year] = [];
-      acc[a.year].push(a);
-      return acc;
-    }, {});
-
-    const years = Object.keys(awardsByYear)
-      .map(Number)
-      .sort((a, b) => b - a);
+    const retiredPlayers = await prisma.player.findMany({
+      where: { hallReason: "Aposentado" },
+      orderBy: [{ name: "asc" }],
+    });
 
     res.render("hall_da_fama", {
       title: "Hall da Fama",
       activePage: "hall",
-      awardsByYear,
-      years,
-      beforeRelease,
-      releaseLabel: "29/11/2025 às 15h",
+      players,
+      latestSeasonYear,
+      latestSeasonAwards,
+      hallFeatured,
+      previousSeasonYear,
+      previousSeasonAwards,
+      retiredPlayers,
     });
   } catch (err) {
     console.error("Erro ao carregar Hall da Fama:", err);

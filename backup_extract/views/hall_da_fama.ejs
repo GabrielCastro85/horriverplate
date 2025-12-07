@@ -1,0 +1,314 @@
+<%
+  // ===============================
+  // Helpers
+  // ===============================
+  const catOrder = [
+    "melhor_jogador",
+    "artilheiro",
+    "assistente",
+    "melhor_goleiro",
+    "melhor_zagueiro",
+    "melhor_meia",
+    "melhor_atacante",
+  ];
+
+  const catLabel = {
+    melhor_jogador: "Craque da temporada",
+    artilheiro: "Artilheiro da temporada",
+    assistente: "Rei das assistências",
+    melhor_goleiro: "Melhor goleiro",
+    melhor_zagueiro: "Melhor zagueiro",
+    melhor_meia: "Melhor meia",
+    melhor_atacante: "Melhor atacante",
+  };
+
+  const catTag = {
+    melhor_jogador: "CRAQUE",
+    artilheiro: "ARTILHEIRO",
+    assistente: "ASSISTENTE",
+    melhor_goleiro: "GOLEIRO",
+    melhor_zagueiro: "ZAGUEIRO",
+    melhor_meia: "MEIA",
+    melhor_atacante: "ATACANTE",
+  };
+
+  const sortAwards = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return [...arr].sort((a, b) => {
+      const ia = catOrder.indexOf(a.category);
+      const ib = catOrder.indexOf(b.category);
+      return ia - ib;
+    });
+  };
+
+  const hasBeforeRelease =
+    typeof beforeRelease !== "undefined" ? !!beforeRelease : false;
+%>
+
+<section class="space-y-8 animate-fadeIn">
+  <!-- Header -->
+  <header class="card-inner rounded-3xl px-6 py-6 md:px-8 md:py-7">
+    <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.20em]">
+      Horriver Plate • Premiação oficial
+    </p>
+    <h1 class="mt-1 text-2xl md:text-3xl font-title text-horriver-light">
+      Hall da Fama – Campeões da temporada
+    </h1>
+    <p class="mt-2 text-xs md:text-sm text-horriver-gray max-w-2xl">
+      Aqui ficam registrados os jogadores que marcaram época na nossa pelada.
+      Craque do ano, artilheiro, rei das assistências e os destaques por posição,
+      temporada por temporada.
+    </p>
+
+    <% if (hasBeforeRelease) { %>
+      <!-- Aviso de que 2025 ainda não liberou -->
+      <div class="mt-4 rounded-2xl border border-horriver-orange/70 bg-black/50 px-4 py-3 text-[11px] md:text-xs text-horriver-gray">
+        <p>
+          A premiação da temporada
+          <span class="text-horriver-orange font-semibold">2025</span>
+          será revelada em
+          <span class="text-horriver-orange font-semibold"><%= releaseLabel %></span>.
+        </p>
+        <p class="mt-1 text-[10px] text-horriver-gray/80">
+          Até lá, o Hall da Fama mostra apenas os campeões das temporadas anteriores. 👀✨
+        </p>
+      </div>
+    <% } %>
+  </header>
+
+  <% if (!years || !years.length) { %>
+    <div class="card-inner rounded-3xl px-6 py-6 md:px-8 md:py-7 text-sm text-horriver-gray text-center">
+      Nenhuma premiação de temporada cadastrada ainda.
+    </div>
+  <% } else { %>
+    <section class="space-y-4">
+      <% years.forEach((year, index) => {
+           const list = sortAwards(awardsByYear[year]);
+           const craque = list.find(a => a.category === "melhor_jogador");
+           const others = list.filter(a => a.category !== "melhor_jogador");
+      %>
+        <article class="card-inner rounded-3xl px-5 py-4 md:px-7 md:py-5">
+          <!-- Cabeçalho do ano (accordion) -->
+          <button
+            type="button"
+            onclick="toggleHall(<%= year %>)"
+            class="w-full flex items-center justify-between gap-3 text-left"
+          >
+            <div>
+              <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.22em]">
+                Temporada <%= year %>
+              </p>
+              <h2 class="text-lg md:text-xl font-title text-horriver-light">
+                Campeões da temporada
+              </h2>
+            </div>
+
+            <div class="flex items-center gap-2 text-[11px] text-horriver-gray">
+              <span><%= list.length %> prêmios</span>
+              <span
+                id="hallArrow-<%= year %>"
+                class="inline-flex items-center justify-center w-6 h-6 rounded-full
+                       border border-horriver-orange/70 text-horriver-orange
+                       transition-transform duration-200"
+                style="<%= index === 0 ? 'transform: rotate(0deg);' : 'transform: rotate(-90deg);' %>"
+              >
+                ▲
+              </span>
+            </div>
+          </button>
+
+          <!-- Conteúdo do ano -->
+          <div
+            id="hallContent-<%= year %>"
+            class="mt-5 space-y-5"
+            style="<%= index === 0 ? 'display: block;' : 'display: none;' %>"
+          >
+            <!-- Craque da temporada em destaque -->
+            <% if (craque) {
+                 const p = craque.player || {};
+            %>
+              <div
+                class="relative overflow-hidden rounded-3xl border
+                       border-amber-400/80 bg-gradient-to-r
+                       from-black via-horriver-dark to-black
+                       shadow-[0_0_40px_rgba(251,191,36,0.40)] px-5 py-5 md:px-7 md:py-6"
+              >
+                <div
+                  class="pointer-events-none absolute -right-16 -bottom-16 w-56 h-56
+                         rounded-full bg-gradient-to-tr from-amber-400/40 via-transparent to-transparent"
+                ></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row items-center gap-5 md:gap-8">
+                  <!-- Foto -->
+                  <div
+                    class="w-24 h-24 md:w-28 md:h-28 rounded-full border-[4px]
+                           border-amber-300 bg-black/60 flex items-center justify-center
+                           overflow-hidden shadow-xl"
+                  >
+                    <% if (p.photoUrl) { %>
+                      <img
+                        src="<%= p.photoUrl %>"
+                        alt="<%= p.name %>"
+                        class="w-full h-full object-cover"
+                      />
+                    <% } else if (p.name) { %>
+                      <span class="text-3xl font-semibold text-amber-200">
+                        <%= p.name.charAt(0).toUpperCase() %>
+                      </span>
+                    <% } else { %>
+                      <span class="text-2xl font-semibold text-amber-200">?</span>
+                    <% } %>
+                  </div>
+
+                  <!-- Texto -->
+                  <div class="flex-1 space-y-1">
+                    <div class="inline-flex items-center gap-2 mb-1">
+                      <span
+                        class="px-3 py-0.5 rounded-full text-[10px] font-semibold
+                               bg-amber-400 text-black tracking-[0.22em] uppercase"
+                      >
+                        Craque da temporada
+                      </span>
+                      <span class="text-[11px] text-horriver-gray">
+                        Temporada <%= year %>
+                      </span>
+                    </div>
+
+                    <h3 class="text-xl md:text-2xl font-title text-horriver-light">
+                      <%= p.name || 'Jogador' %>
+                    </h3>
+                    <% if (p.nickname) { %>
+                      <p class="text-sm text-horriver-gray">
+                        "<%= p.nickname %>"
+                      </p>
+                    <% } %>
+                    <% if (p.position) { %>
+                      <p class="text-[11px] text-horriver-orange uppercase mt-1">
+                        <%= p.position %>
+                      </p>
+                    <% } %>
+
+                    <p class="mt-2 text-[11px] md:text-xs text-horriver-gray max-w-xl">
+                      O jogador que dominou a temporada, decidiu peladas e virou referência
+                      no nosso futebol raiz. Status de lenda garantido no Hall da Fama.
+                    </p>
+                  </div>
+
+                  <!-- Badge estrela -->
+                  <div class="flex flex-col items-center gap-1 text-[10px] text-amber-200">
+                    <div
+                      class="w-10 h-10 rounded-full border border-amber-300
+                             flex items-center justify-center bg-black/60"
+                    >
+                      ★
+                    </div>
+                    <span>Lenda</span>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- Demais categorias, na ordem definida -->
+            <% if (others && others.length) { %>
+              <div class="grid md:grid-cols-2 gap-4 md:gap-5">
+                <% sortAwards(others).forEach((a) => {
+                     const p = a.player || {};
+                     const label = catLabel[a.category] || a.category;
+                     const tag = catTag[a.category] || "DESTAQUE";
+                %>
+                  <div
+                    class="rounded-2xl bg-gradient-to-br from-black via-horriver-dark to-black
+                           border border-horriver-border/80 px-4 py-4 md:px-5 md:py-4
+                           flex items-center gap-4"
+                  >
+                    <div
+                      class="w-14 h-14 rounded-full bg-horriver-red/40 border border-horriver-red/80
+                             flex items-center justify-center overflow-hidden shrink-0"
+                    >
+                      <% if (p.photoUrl) { %>
+                        <img
+                          src="<%= p.photoUrl %>"
+                          alt="<%= p.name %>"
+                          class="w-full h-full object-cover"
+                        />
+                      <% } else if (p.name) { %>
+                        <span class="text-xl font-semibold text-horriver-light">
+                          <%= p.name.charAt(0).toUpperCase() %>
+                        </span>
+                      <% } else { %>
+                        <span class="text-lg font-semibold text-horriver-light">?</span>
+                      <% } %>
+                    </div>
+
+                    <div class="flex-1 space-y-1">
+                      <div class="inline-flex items-center gap-2">
+                        <span
+                          class="px-2 py-0.5 rounded-full text-[9px] font-semibold
+                                 tracking-[0.20em] uppercase
+                                 bg-horriver-red/40 border border-horriver-red/70 text-horriver-gray"
+                        >
+                          <%= tag %>
+                        </span>
+                        <span class="text-[10px] text-horriver-gray/80">
+                          <%= label %>
+                        </span>
+                      </div>
+
+                      <p class="text-sm md:text-base font-semibold text-horriver-light">
+                        <%= p.name || 'Jogador' %>
+                        <% if (p.nickname) { %>
+                          <span class="text-[11px] text-horriver-gray">
+                            ("<%= p.nickname %>")
+                          </span>
+                        <% } %>
+                      </p>
+
+                      <% if (p.position) { %>
+                        <p class="text-[10px] text-horriver-orange uppercase">
+                          <%= p.position %>
+                        </p>
+                      <% } %>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        </article>
+      <% }) %>
+    </section>
+  <% } %>
+</section>
+
+<script>
+  (function () {
+    const years = <%- JSON.stringify(years || []) %>;
+
+    function toggleHall(year) {
+      const content = document.getElementById(`hallContent-${year}`);
+      const arrow = document.getElementById(`hallArrow-${year}`);
+      if (!content || !arrow) return;
+
+      const willOpen =
+        content.style.display === "none" ||
+        content.style.display === "";
+
+      years.forEach((y) => {
+        const c = document.getElementById(`hallContent-${y}`);
+        const a = document.getElementById(`hallArrow-${y}`);
+        if (!c || !a) return;
+
+        if (y === year && willOpen) {
+          c.style.display = "block";
+          a.style.transform = "rotate(0deg)";
+        } else {
+          c.style.display = "none";
+          a.style.transform = "rotate(-90deg)";
+        }
+      });
+    }
+
+    // Deixa a função disponível no escopo global para o onclick do botão
+    window.toggleHall = toggleHall;
+  })();
+</script>

@@ -1,4 +1,4 @@
-// routes/admin.js
+﻿// routes/admin.js
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
@@ -6,6 +6,7 @@ const {
   uploadPlayerPhoto,
   uploadWeeklyTeamPhoto,
 } = require("../utils/upload");
+const { computeOverallFromEntries } = require("../utils/overall");
 
 // ==============================
 // 🛡️ Middleware: exige admin logado
@@ -15,6 +16,28 @@ function requireAdmin(req, res, next) {
     return res.redirect("/login");
   }
   next();
+}
+
+// Normaliza WhatsApp: mantém dígitos, garante prefixo 55 e formata com máscara
+function normalizeWhatsapp(raw) {
+  if (!raw) return null;
+  const digits = String(raw).replace(/\D/g, "");
+  if (!digits) return null;
+  const withCountry = digits.startsWith("55") ? digits : `55${digits}`;
+  const trimmed = withCountry.slice(0, 13); // 55 + DDD + 9 dígitos
+  const cc = trimmed.slice(0, 2);
+  const ddd = trimmed.slice(2, 4);
+  const rest = trimmed.slice(4);
+  if (!ddd || !rest) return `(55)`;
+  let formatted;
+  if (rest.length > 5) {
+    formatted = `${rest.slice(0, 5)}-${rest.slice(5, 9)}`;
+  } else if (rest.length > 4) {
+    formatted = `${rest.slice(0, 4)}-${rest.slice(4)}`;
+  } else {
+    formatted = rest;
+  }
+  return `(${cc}) ${ddd} ${formatted}`.trim();
 }
 
 // ==============================
@@ -145,11 +168,13 @@ router.post(
   uploadPlayerPhoto.single("photo"),
   async (req, res) => {
     try {
-      const { name, nickname, position } = req.body;
+      const { name, nickname, position, whatsapp } = req.body;
 
       if (!name || !position) {
         return res.redirect("/admin");
       }
+
+      const cleanWhatsapp = normalizeWhatsapp(whatsapp);
 
       let photoUrl = null;
       if (req.file) {
@@ -161,6 +186,7 @@ router.post(
           name,
           nickname: nickname || null,
           position,
+          whatsapp: cleanWhatsapp,
           photoUrl,
           totalGoals: 0,
           totalAssists: 0,
@@ -179,30 +205,50 @@ router.post(
 );
 
 // Editar jogador
-router.post("/players/:id/edit", requireAdmin, async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const { name, nickname, position } = req.body;
+router.post(
+  "/players/:id/edit",
+  requireAdmin,
+  uploadPlayerPhoto.single("photo"),
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { name, nickname, position, whatsapp } = req.body;
 
-    if (!name || !position || Number.isNaN(id)) {
-      return res.redirect("/admin");
-    }
+      if (!name || !position || Number.isNaN(id)) {
+        return res.redirect("/admin");
+      }
 
-    await prisma.player.update({
-      where: { id },
-      data: {
+      const cleanWhatsapp = normalizeWhatsapp(whatsapp);
+
+      let photoUrl = null;
+      if (req.file) {
+        photoUrl = `/uploads/players/${req.file.filename}`;
+      }
+
+      const data = {
         name,
         nickname: nickname || null,
         position,
-      },
-    });
+        whatsapp: cleanWhatsapp,
+      };
 
-    res.redirect("/admin");
-  } catch (err) {
-    console.error("Erro ao editar jogador:", err);
-    res.redirect("/admin");
+      // Se enviou nova foto, atualiza photoUrl; caso contrário, mantém a atual
+      if (photoUrl) {
+        data.photoUrl = photoUrl;
+      }
+
+      await prisma.player.update({
+        where: { id },
+        data,
+      });
+
+      res.redirect("/admin");
+    } catch (err) {
+      console.error("Erro ao editar jogador:", err);
+      res.redirect("/admin");
+    }
   }
-});
+);
 
 // Excluir jogador
 router.post("/players/:id/delete", requireAdmin, async (req, res) => {
@@ -729,6 +775,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       match,
       players,
       stats: match.stats || [],
+      voteSession: null,
     });
   } catch (err) {
     console.error("Erro ao carregar estatísticas da pelada:", err);
@@ -786,4 +833,164 @@ async function handleRecalculateTotals(req, res) {
 // Aceita QUALQUER método (GET, POST, etc) nesse caminho
 router.all("/recalculate-totals", requireAdmin, handleRecalculateTotals);
 
+// ==============================
+// 🧠 Sorteador de times (6 por time, usa OVERALL do ranking)
+// ==============================
+function snakeDistribute(players, teamCount) {
+  const teams = Array.from({ length: teamCount }, () => []);
+  let forward = true;
+  let idx = 0;
+  for (const p of players) {
+    teams[idx].push(p);
+    if (forward) {
+      if (idx === teamCount - 1) {
+        forward = false;
+        idx--;
+      } else {
+        idx++;
+      }
+    } else {
+      if (idx === 0) {
+        forward = true;
+        idx++;
+      } else {
+        idx--;
+      }
+    }
+  }
+  return teams;
+}
+
+function computeTeamPower(team) {
+  return team.reduce((sum, p) => sum + (p.strength || 0), 0);
+}
+
+router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) return res.status(400).json({ error: "matchId inválido" });
+
+    const guestsRaw = req.body.guests || "";
+    const guestEntries = guestsRaw
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((line, idx) => {
+        const [name, pos, str] = line.split(";").map((s) => (s || "").trim());
+        const strength = Math.max(40, Math.min(100, parseInt(str || "60", 10) || 60));
+        return {
+          id: `guest-${idx}-${Date.now()}`,
+          name: name || "Convidado",
+          nickname: null,
+          position: pos || "Outros",
+          strength,
+          guest: true,
+        };
+      });
+
+    const stats = await prisma.playerStat.findMany({
+      where: { matchId, present: true },
+      include: { player: true },
+    });
+    if (!stats.length) {
+      return res.status(400).json({ error: "Nenhum jogador presente para sortear. Marque presenças primeiro." });
+    }
+
+    const playerIds = Array.from(new Set(stats.map((s) => s.playerId)));
+    const basePlayers = await prisma.player.findMany({
+      where: { id: { in: playerIds } },
+      orderBy: { name: "asc" },
+    });
+
+    const { computed } = computeOverallFromEntries(
+      basePlayers.map((p) => ({
+        player: p,
+        goals: p.totalGoals || 0,
+        assists: p.totalAssists || 0,
+        matches: p.totalMatches || 0,
+        rating: p.totalRating || 0,
+      }))
+    );
+    const overallMap = new Map(computed.map((c) => [c.player.id, c.overall]));
+
+    const players = stats.map((s) => ({
+      id: s.player.id,
+      name: s.player.name,
+      nickname: s.player.nickname,
+      position: s.player.position || "Outros",
+      strength: overallMap.get(s.playerId) ?? 60,
+      guest: false,
+    }));
+
+    const pool = [...players, ...guestEntries];
+    if (!pool.length) {
+      return res.status(400).json({ error: "Lista de jogadores vazia para sortear." });
+    }
+
+    const teamCount = Math.max(2, Math.floor(pool.length / 6) || 1);
+
+    const posGroups = {
+      Goleiro: [],
+      Zagueiro: [],
+      Meia: [],
+      Atacante: [],
+      Outros: [],
+    };
+    pool.forEach((p) => {
+      const pos = (p.position || "").toLowerCase();
+      if (pos.includes("goleiro")) posGroups.Goleiro.push(p);
+      else if (pos.includes("zag")) posGroups.Zagueiro.push(p);
+      else if (pos.includes("mei")) posGroups.Meia.push(p);
+      else if (pos.includes("atac")) posGroups.Atacante.push(p);
+      else posGroups.Outros.push(p);
+    });
+
+    Object.keys(posGroups).forEach((k) => posGroups[k].sort((a, b) => b.strength - a.strength));
+
+    const teamBuckets = Array.from({ length: teamCount }, () => []);
+    const bench = [];
+    const benchGk = [];
+
+    // Goleiros só entram nos times se houver um para cada time
+    if (posGroups.Goleiro.length >= teamCount) {
+      const distributedGk = snakeDistribute(posGroups.Goleiro, teamCount);
+      distributedGk.forEach((arr, idx) => teamBuckets[idx].push(...arr));
+    } else {
+      benchGk.push(...posGroups.Goleiro);
+    }
+
+    ["Zagueiro", "Meia", "Atacante", "Outros"].forEach((key) => {
+      const distributed = snakeDistribute(posGroups[key], teamCount);
+      distributed.forEach((arr, idx) => {
+        teamBuckets[idx].push(...arr);
+      });
+    });
+
+    teamBuckets.forEach((team) => {
+      while (team.length > 6) {
+        const removed = team.pop();
+        if (removed) bench.push(removed);
+      }
+    });
+
+    // Preenche vagas com reservas (não usa goleiros quando faltou 1 por time)
+    teamBuckets.forEach((team) => {
+      while (team.length < 6 && bench.length) {
+        team.push(bench.shift());
+      }
+    });
+
+    const teams = teamBuckets.map((t, idx) => ({
+      name: `Time ${idx + 1}`,
+      power: computeTeamPower(t),
+      players: t,
+    }));
+
+    return res.json({ teams, bench: [...bench, ...benchGk] });
+  } catch (err) {
+    console.error("Erro no sorteador:", err);
+    return res.status(500).json({ error: err && err.message ? err.message : "Erro ao sortear times" });
+  }
+});
 module.exports = router;
+

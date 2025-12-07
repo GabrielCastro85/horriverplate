@@ -155,6 +155,23 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
+              WhatsApp (opcional)
+            </label>
+            <input
+              type="tel"
+              name="whatsapp"
+              inputmode="tel"
+              pattern="[0-9]+"
+              placeholder="ex: 11999999999 (apenas números)"
+              class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
+            />
+            <p class="text-[10px] text-horriver-gray/70">
+              Use somente números;
+            </p>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-horriver-gray/80">
               Posição
             </label>
             <select
@@ -169,13 +186,13 @@
             </select>
           </div>
 
-          <!-- Foto do jogador (apenas no cadastro) -->
+          <!-- Foto do jogador (opcional) -->
           <div
             id="playerPhotoBlock"
             class="space-y-1"
           >
             <label class="block text-horriver-gray/80">
-              Foto do jogador
+              Foto do jogador (opcional)
             </label>
             <input
               type="file"
@@ -184,7 +201,7 @@
               class="block w-full text-[11px] md:text-xs text-horriver-gray"
             />
             <p class="text-[10px] text-horriver-gray/70">
-              Aceita JPG/PNG, até 5MB. Usado apenas ao cadastrar um novo jogador.
+              Aceita JPG/PNG, até 5MB. Deixe vazio para manter a foto atual.
             </p>
           </div>
 
@@ -239,6 +256,7 @@
                 <tr class="border-b border-horriver-border/70 text-horriver-gray/80">
                   <th class="py-2 pr-3 text-left font-normal">Jogador</th>
                   <th class="py-2 pr-3 text-left font-normal">Apelido</th>
+                  <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
                   <th class="py-2 pr-3 text-left font-normal">Posição</th>
                   <th class="py-2 pr-3 text-left font-normal">Ações</th>
                 </tr>
@@ -250,26 +268,17 @@
                       <div class="flex items-center gap-2">
                         <div class="h-7 w-7 rounded-full bg-horriver-red/40 flex items-center justify-center overflow-hidden">
                           <% if (p.photoUrl) { %>
-                            <img
-                              src="<%= p.photoUrl %>"
-                              alt="<%= p.name %>"
-                              class="h-full w-full object-cover"
-                            />
+                            <img src="<%= p.photoUrl %>" alt="<%= p.name %>" class="h-full w-full object-cover" />
                           <% } else { %>
-                            <span class="text-[11px] font-semibold text-horriver-light">
-                              <%= p.name.charAt(0).toUpperCase() %>
-                            </span>
+                            <span class="text-[11px] font-semibold text-horriver-light"><%= p.name.charAt(0).toUpperCase() %></span>
                           <% } %>
                         </div>
                         <span><%= p.name %></span>
                       </div>
                     </td>
-                    <td class="py-2 pr-3 text-horriver-gray/90">
-                      <%= p.nickname || "-" %>
-                    </td>
-                    <td class="py-2 pr-3 text-horriver-orange/90 text-[10px] uppercase">
-                      <%= p.position %>
-                    </td>
+                    <td class="py-2 pr-3 text-horriver-gray/90"><%= p.nickname || "-" %></td>
+                    <td class="py-2 pr-3 text-horriver-gray/90"><%= p.whatsapp || "-" %></td>
+                    <td class="py-2 pr-3 text-horriver-orange/90 text-[10px] uppercase"><%= p.position %></td>
                     <td class="py-2 pr-3">
                       <div class="flex items-center gap-2">
                         <button
@@ -279,22 +288,17 @@
                           data-id="<%= p.id %>"
                           data-name="<%= p.name %>"
                           data-nickname="<%= p.nickname || '' %>"
+                          data-whatsapp="<%= p.whatsapp || '' %>"
                           data-position="<%= p.position %>"
                         >
                           Editar
                         </button>
-
                         <form
                           action="/admin/players/<%= p.id %>/delete"
                           method="POST"
                           onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estatísticas.');"
                         >
-                          <button
-                            type="submit"
-                            class="text-[11px] text-red-500 hover:underline"
-                          >
-                            Excluir
-                          </button>
+                          <button type="submit" class="text-[11px] text-red-500 hover:underline">Excluir</button>
                         </form>
                       </div>
                     </td>
@@ -869,28 +873,27 @@
 
     function setCreateMode() {
       playerForm.setAttribute("action", originalAction);
-      playerForm.setAttribute("enctype", "multipart/form-data");
+      
+      inputName.value = "";
+      inputNickname.value = "";
+      selectPosition.value = "Goleiro";
+      if (inputPhoto) inputPhoto.value = "";
+      
       playerFormTitle.textContent = "Novo jogador";
       playerFormHint.textContent = "Preencha para cadastrar um novo jogador.";
       playerSubmit.textContent = "Adicionar jogador";
       playerCancelEdit.classList.add("hidden");
       if (playerPhotoBlock) playerPhotoBlock.classList.remove("hidden");
-
-      inputName.value = "";
-      inputNickname.value = "";
-      selectPosition.value = "Goleiro";
-      if (inputPhoto) inputPhoto.value = "";
     }
 
     function setEditMode({ id, name, nickname, position }) {
       playerForm.setAttribute("action", "/admin/players/" + id + "/edit");
-      playerForm.removeAttribute("enctype");
+      
       playerFormTitle.textContent = "Editar jogador";
-      playerFormHint.textContent =
-        'Editando o jogador selecionado. Clique em "Cancelar edição" para voltar ao modo de cadastro.';
+      playerFormHint.textContent = "Editando o jogador selecionado. Envie nova foto se quiser trocar; deixe vazio para manter a atual. Clique em \"Cancelar edição\" para voltar ao modo de cadastro.";
       playerSubmit.textContent = "Salvar alterações";
       playerCancelEdit.classList.remove("hidden");
-      if (playerPhotoBlock) playerPhotoBlock.classList.add("hidden");
+      if (playerPhotoBlock) playerPhotoBlock.classList.remove("hidden");
 
       inputName.value = name || "";
       inputNickname.value = nickname || "";

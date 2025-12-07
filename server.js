@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
@@ -15,6 +15,7 @@ const rankingsRouter = require("./routes/rankings");
 const elencoRouter = require("./routes/elenco");
 const sobreRouter = require("./routes/sobre");
 const awardsRouter = require("./routes/awards"); // ✅ NOVO: rota da premiação
+const playerRouter = require("./routes/player");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,33 @@ app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+
+// ==============================
+// 🎨 Skins dinâmicas
+// ==============================
+app.use((req, res, next) => {
+  const allowedSkins = ["default", "game-day"];
+  let skin = null;
+
+  // Prioridade: query > cookie > automática (terça)
+  if (req.query.skin && allowedSkins.includes(req.query.skin)) {
+    skin = req.query.skin;
+    // persiste override por 7 dias
+    res.cookie("skin", skin, { maxAge: 7 * 24 * 60 * 60 * 1000 });
+  } else if (req.cookies?.skin && allowedSkins.includes(req.cookies.skin)) {
+    skin = req.cookies.skin;
+  }
+
+  if (!skin) {
+    const now = new Date();
+    const isTuesday = now.getDay() === 2; // terça-feira
+    skin = isTuesday ? "game-day" : "default";
+  }
+
+  res.locals.skin = skin;
+  res.locals.isGameDay = skin === "game-day";
+  next();
+});
 
 // ==============================
 // 🛡️ Middleware: autenticação admin via JWT no cookie
@@ -94,6 +122,7 @@ app.use("/rankings", rankingsRouter);
 app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
 app.use("/premiacao", awardsRouter); // ✅ NOVO: página de premiação
+app.use("/jogador", playerRouter);
 app.use("/admin", adminRouter);
 
 // ==============================
@@ -110,7 +139,7 @@ app.use((err, req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  res.locals.isProd = process.env.NODE_ENV === 'production';
+  res.locals.isProd = process.env.NODE_ENV === "production";
   next();
 });
 
@@ -121,3 +150,4 @@ app.listen(PORT, () => {
   console.log(`🔥 Servidor rodando na porta ${PORT}`);
   console.log(`🌍 http://localhost:${PORT}`);
 });
+
