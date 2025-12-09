@@ -1,16 +1,14 @@
-require("dotenv").config();
-const prisma = require("../utils/db");
-const { computeOverallFromEntries } = require("../utils/overall");
+const prisma = require("./db");
+const { computeOverallFromEntries } = require("./overall");
 
 const MATCH_WINDOW = 10;
 
 /**
- * Recalcula overall (0-100) para todos os jogadores com base nas stats
- * das últimas X peladas e grava histórico em OverallHistory.
- *
- * Uso: node scripts/recalculateOverall.js
+ * Recalcula o overall para todos os jogadores com base nas estatísticas
+ * das últimas X partidas e salva o resultado na tabela OverallHistory.
+ * @returns {Promise<{count: number}>} - Retorna o número de jogadores atualizados.
  */
-async function main() {
+async function recalculateOverallForAllPlayers() {
   console.log(`Buscando as últimas ${MATCH_WINDOW} peladas...`);
 
   const lastMatches = await prisma.match.findMany({
@@ -21,7 +19,7 @@ async function main() {
 
   if (lastMatches.length === 0) {
     console.log("Nenhuma pelada encontrada para calcular o overall.");
-    return;
+    return { count: 0 };
   }
 
   const lastMatchIds = lastMatches.map((m) => m.id);
@@ -56,8 +54,7 @@ async function main() {
           ratingCount++;
         }
       }
-
-      // Só considera jogadores que participaram de pelo menos uma das últimas X peladas
+      
       if (matches === 0) {
         return null;
       }
@@ -66,16 +63,23 @@ async function main() {
 
       return { player: p, goals, assists, matches, rating };
     })
-    .filter(Boolean); // Remove os jogadores nulos (que não participaram)
+    .filter(Boolean);
 
   if (entries.length === 0) {
     console.log("Nenhum jogador com stats nas últimas peladas para calcular.");
-    return;
+    return { count: 0 };
   }
 
   console.log(`Calculando overall para ${entries.length} jogadores...`);
 
   const { computed, maxGoals, maxAssists, maxMatches } = computeOverallFromEntries(entries);
+  
+  // Limpa o histórico anterior para a mesma janela para evitar duplicatas
+  await prisma.overallHistory.deleteMany({
+    where: {
+      window: `last-${lastMatches.length}-matches`,
+    },
+  });
 
   const ops = computed.map((row) =>
     prisma.overallHistory.create({
@@ -104,13 +108,9 @@ async function main() {
   await prisma.$transaction(ops);
 
   console.log(`Overall gravado para ${ops.length} jogadores.`);
+  return { count: ops.length };
 }
 
-main()
-  .catch((err) => {
-    console.error("Erro ao recalcular overall:", err);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+module.exports = {
+  recalculateOverallForAllPlayers,
+};

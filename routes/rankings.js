@@ -296,6 +296,7 @@ router.get("/", async (req, res) => {
     const { computed: overallComputed } = computeOverallFromEntries(entries);
     const overallRanking = overallComputed
       .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
+      .map((e) => ({ ...e, overallScore: e.overall }))
       .sort((a, b) => {
         if (b.overall !== a.overall) return b.overall - a.overall;
         if (b.rating !== a.rating) return b.rating - a.rating;
@@ -384,6 +385,11 @@ router.get("/", async (req, res) => {
       (a, b) => b.count - a.count
     );
 
+    const last10Ranking = recentRanking.map((e) => ({
+      ...e,
+      last10Score: e.recentScore,
+    }));
+
     const rankings = {
       goals: goalsRanking,
       assists: assistsRanking,
@@ -394,6 +400,7 @@ router.get("/", async (req, res) => {
       overall: overallRanking,
       weighted: weightedRanking,
       recent: recentRanking,
+      last10: last10Ranking,
       weeklyAwards,
       monthlyAwards,
     };

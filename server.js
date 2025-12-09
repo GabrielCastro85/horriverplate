@@ -16,6 +16,7 @@ const elencoRouter = require("./routes/elenco");
 const sobreRouter = require("./routes/sobre");
 const awardsRouter = require("./routes/awards"); // ✅ NOVO: rota da premiação
 const playerRouter = require("./routes/player");
+const voteRouter = require("./routes/vote");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +33,7 @@ app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
 // 🌐 Middlewares básicos
 // ==============================
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -124,6 +126,7 @@ app.use("/sobre", sobreRouter);
 app.use("/premiacao", awardsRouter); // ✅ NOVO: página de premiação
 app.use("/jogador", playerRouter);
 app.use("/admin", adminRouter);
+app.use("/vote", voteRouter);
 
 // ==============================
 // 404 – sempre por último

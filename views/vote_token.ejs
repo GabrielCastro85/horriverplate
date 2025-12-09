@@ -10,11 +10,11 @@
     }
   </style>
   <header class="text-center space-y-2">
-    <h1 class="font-title text-3xl text-horriver-light">VotaÃÂ§ÃÂ£o da pelada</h1>
+    <h1 class="font-title text-3xl text-horriver-light">Votação da pelada</h1>
     <% if (match) { %>
       <p class="text-sm text-horriver-gray">
         Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR") %></span>
-        <% if (match.description) { %> ÃÂ· <%= match.description %> <% } %>
+        <% if (match.description) { %> · <%= match.description %> <% } %>
       </p>
     <% } %>
     <% if (voter) { %>
@@ -59,10 +59,16 @@
                   <% if (p.nickname) { %>
                     <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
                   <% } %>
+                  <p class="text-[11px] text-horriver-gray">
+                    Gols: <%= p.goals || 0 %> · Assist: <%= p.assists || 0 %>
+                    <% if (p.appearedInPhoto) { %>
+                      · 📸
+                    <% } %>
+                  </p>
                 </div>
                 <div class="flex items-center gap-1 md:hidden">
-                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-up>Ã¢â â</button>
-                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-down>Ã¢â â</button>
+                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-up>↑</button>
+                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-down>↓</button>
                 </div>
                 <input type="hidden" name="rank_<%= p.position %>_<%= p.id %>" value="<%= idx + 1 %>" />
               </li>
@@ -102,7 +108,7 @@
     </div>
   <% } else if (success) { %>
     <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-100 rounded-2xl p-4 text-sm">
-      Seu voto foi registrado. Este link nÃÂ£o pode ser usado novamente.
+      Seu voto foi registrado. Este link não pode ser usado novamente.
     </div>
   <% } %>
 </section>
@@ -155,7 +161,7 @@
         updateIndexes();
       });
 
-      // Mobile fallback: botÃÂµes Ã¢â â Ã¢â â
+      // Mobile fallback: botões ↑ ↓
       list.querySelectorAll("li").forEach((li) => {
         const upBtn = li.querySelector("[data-move-up]");
         const downBtn = li.querySelector("[data-move-down]");

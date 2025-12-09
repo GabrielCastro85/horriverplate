@@ -1,466 +1,6 @@
-﻿<%
-// views/admin_match.ejs
-// Variáveis recebidas: match, players, stats
-// O layout.ejs já cuida de <html>, <body>, header, footer etc.
-// Aqui é só o conteúdo interno do <main>.
-%>
 
-<div class="mb-6 flex items-center justify-between gap-3">
-  <div>
-    <h1 class="text-xl md:text-2xl font-semibold text-horriver-light">
-      Estatísticas da pelada
-    </h1>
-    <p class="text-xs md:text-sm text-horriver-gray mt-1">
-      Data:
-      <span class="text-horriver-orange font-medium">
-        <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
-      </span>
-      <% if (match.description) { %>
-      · <%= match.description %>
-      <% } %>
-    </p>
-  </div>
-
-  <a
-    href="/admin"
-    class="px-3 py-1 rounded-full border border-horriver-orange text-[11px] md:text-xs text-horriver-orange hover:bg-horriver-orange hover:text-horriver-bg transition"
-  >
-    Voltar ao painel
-  </a>
-</div>
-
-<form
-  action="/admin/matches/<%= match.id %>/stats/bulk"
-  method="POST"
-  class="space-y-4"
->
-  <div
-    class="overflow-x-auto rounded-2xl border border-horriver-border bg-black/50"
-  >
-        <table class="min-w-full text-xs md:text-sm">
-          <thead class="bg-black/60">
-            <tr>
-              <th class="px-3 py-3 text-left font-semibold text-horriver-gray">
-                Jogador
-              </th>
-              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-                OVR
-              </th>
-              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-                Presente
-              </th>
-              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-                Gols
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Assistências
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Nota
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Foto
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <% players.forEach(function(player) { 
-             const stat = stats.find(s => s.playerId === player.id);
-        %>
-        <tr
-          class="border-t border-horriver-border/40 hover:bg-white/5 transition"
-        >
-          <!-- Jogador -->
-          <td class="px-3 py-2">
-            <div class="flex flex-col">
-              <span class="font-medium text-horriver-light">
-                <%= player.name %>
-              </span>
-              <% if (player.nickname) { %>
-              <span class="text-[11px] text-horriver-gray">
-                "<%= player.nickname %>"
-              </span>
-              <% } %>
-              <span class="text-[10px] uppercase text-horriver-orange mt-1">
-                <%= player.position %>
-              </span>
-            </div>
-          </td>
-          <!-- OVR -->
-          <td class="px-3 py-2 text-center align-middle">
-            <% if (player.overall != null) { %>
-              <span class="px-2 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold">
-                <%= player.overall %>
-              </span>
-            <% } else { %>
-              <span class="text-horriver-gray text-[11px]">-</span>
-            <% } %>
-          </td>
-
-          <!-- PRESENTE (checkbox) -->
-          <td class="px-3 py-2 text-center align-middle">
-            <input
-              type="checkbox"
-              name="present_<%= player.id %>"
-              class="w-4 h-4 accent-horriver-orange"
-              <%= stat && stat.present ? 'checked' : '' %>
-            />
-          </td>
-
-          <!-- GOLS -->
-          <td class="px-3 py-2 text-center align-middle">
-            <input
-              type="number"
-              name="goals_<%= player.id %>"
-              min="0"
-              step="1"
-              class="w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
-              value="<%= stat && stat.goals ? stat.goals : '' %>"
-            />
-          </td>
-
-          <!-- ASSISTÊNCIAS -->
-          <td class="px-3 py-2 text-center align-middle">
-            <input
-              type="number"
-              name="assists_<%= player.id %>"
-              min="0"
-              step="1"
-              class="w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
-              value="<%= stat && stat.assists ? stat.assists : '' %>"
-            />
-          </td>
-
-          <!-- NOTA (texto, 2 casas decimais, aceita vírgula) -->
-          <td class="px-3 py-2 text-center align-middle">
-            <input
-              type="text"
-              name="rating_<%= player.id %>"
-              inputmode="decimal"
-              class="w-20 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
-              placeholder="7,50"
-              value="<%= stat && stat.rating != null ? stat.rating.toFixed(2).replace('.', ',') : '' %>"
-            />
-          </td>
-
-          <!-- FOTO -->
-          <td class="px-3 py-2 text-center align-middle">
-            <input
-              type="checkbox"
-              name="photo_<%= player.id %>"
-              class="w-4 h-4 accent-horriver-orange"
-              <%= stat && stat.appearedInPhoto ? 'checked' : '' %>
-            />
-          </td>
-        </tr>
-        <% }); %>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="flex justify-end mt-4">
-    <div class="flex items-center gap-3">
-      <a
-        href="/admin/matches/<%= match.id %>/votes"
-        class="px-4 py-2 rounded-full border border-horriver-border text-horriver-light text-xs md:text-sm font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
-      >
-        Ver votos
-      </a>
-      <button
-        type="submit"
-        class="px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
-      >
-        Salvar estatísticas
-      </button>
-    </div>
-  </div>
-</form>
-
-<!-- ========================= -->
-<!-- Votação: geração de links -->
-<!-- ========================= -->
-<section id="votacao" class="mt-10 space-y-4">
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-        Votação da pelada
-      </h2>
-      <p class="text-xs text-horriver-gray">
-        Gera links únicos para os jogadores presentes votarem (via WhatsApp).
-      </p>
-    </div>
-    <form
-      action="/admin/matches/<%= match.id %>/vote-session"
-      method="POST"
-      class="flex items-center gap-2 text-[11px]"
-    >
-      <label class="flex items-center gap-1 text-horriver-gray">
-        Expira em (horas):
-        <input
-          type="number"
-          name="expiresHours"
-          min="0"
-          value="24"
-          class="w-16 bg-black/50 border border-horriver-border rounded px-2 py-1 text-horriver-light"
-        />
-      </label>
-      <button
-        type="submit"
-        class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
-      >
-        Gerar links
-      </button>
-    </form>
-  </div>
-
-  <% if (!voteSession || !voteSession.tokens || !voteSession.tokens.length) { %>
-    <p class="text-sm text-horriver-gray">
-      Nenhuma sessão de votação criada ainda. Gere os links após marcar os presentes.
-    </p>
-  <% } else { %>
-    <div class="flex flex-col md:flex-row md:items-center gap-2 mb-3 text-[12px]">
-      <form
-        action="/admin/matches/<%= match.id %>/apply-votes"
-        method="POST"
-        class="flex items-center gap-2"
-        onsubmit="return confirm('Aplicar notas baseadas na votação? Não sobrescreve notas já lançadas.');"
-      >
-        <button
-          type="submit"
-          class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
-        >
-          Aplicar votos como notas
-        </button>
-        <span class="text-horriver-gray text-[11px]">
-          Calcula notas para presentes (não altera notas já preenchidas).
-        </span>
-      </form>
-
-      <form
-        action="/admin/matches/<%= match.id %>/close-votes"
-        method="POST"
-        class="flex items-center gap-2"
-        onsubmit="return confirm('Encerrar a votação agora? Links restantes serão bloqueados.');"
-      >
-        <button
-          type="submit"
-          class="px-3 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-500 transition"
-        >
-          Encerrar votação
-        </button>
-        <span class="text-horriver-gray text-[11px]">
-          Expira a sessão e bloqueia links não usados.
-        </span>
-      </form>
-    </div>
-
-    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
-      <p class="text-xs text-horriver-gray mb-2">
-        Sessão criada em <%= new Date(voteSession.createdAt).toLocaleString('pt-BR') %>
-        <% if (voteSession.expiresAt) { %>
-          · expira em <%= new Date(voteSession.expiresAt).toLocaleString('pt-BR') %>
-        <% } else { %>
-          · sem expiração
-        <% } %>
-      </p>
-
-      <div class="overflow-x-auto text-[11px] md:text-xs">
-        <table class="min-w-full border-collapse">
-          <thead>
-            <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
-              <th class="py-2 pr-3 text-left font-normal">Jogador</th>
-              <th class="py-2 pr-3 text-left font-normal">Posição</th>
-              <th class="py-2 pr-3 text-left font-normal">Link</th>
-              <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% voteSession.tokens.forEach((t) => {
-                 const link = `${voteBaseUrl}/vote/${t.token}`;
-                 const waRaw = t.player.whatsapp || "";
-                 const waDigits = waRaw.replace(/\\D/g, "");
-                 const msg = `Fala ${t.player.name}! Seu link de votação da pelada: ${link}`;
-                 const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
-            %>
-              <tr class="border-b border-horriver-border/40 last:border-0">
-                <td class="py-2 pr-3 text-horriver-light">
-                  <%= t.player.name %>
-                  <% if (t.player.nickname) { %>
-                    (<%= t.player.nickname %>)
-                  <% } %>
-                </td>
-                <td class="py-2 pr-3 text-horriver-orange/90 text-[10px] uppercase">
-                  <%= t.player.position %>
-                </td>
-                <td class="py-2 pr-3">
-                  <a
-                    href="<%= link %>"
-                    target="_blank"
-                    class="text-horriver-orange hover:underline break-all"
-                  >
-                    <%= link %>
-                  </a>
-                </td>
-                <td class="py-2 pr-3">
-                  <% if (waUrl) { %>
-                    <a
-                      href="<%= waUrl %>"
-                      target="_blank"
-                      class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red text-white hover:bg-horriver-orange transition"
-                    >
-                      Mandar link
-                    </a>
-                  <% } else { %>
-                    <span class="text-horriver-gray">Sem número</span>
-                  <% } %>
-                </td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  <% } %>
-</section>
-
-<!-- ========================= -->
-<!-- Sorteador de times (beta) -->
-<section class="mt-10 space-y-4">
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-        Sorteador inteligente de times
-      </h2>
-      <p class="text-xs text-horriver-gray">
-        Usa o mesmo overall do ranking e trava 6 jogadores por time. Convidados entram só no sorteio (não salvam no banco).
-      </p>
-    </div>
-  </div>
-
-  <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
-    <form id="sorterForm" class="space-y-3 text-[12px]">
-      <div class="grid md:grid-cols-2 gap-3">
-        <div class="space-y-2">
-          <p class="text-horriver-gray text-[12px]">Convidados (só para este sorteio)</p>
-          <div class="bg-black/30 border border-horriver-border rounded-xl p-3 space-y-2">
-            <div class="grid sm:grid-cols-2 gap-2">
-              <label class="flex flex-col gap-1 text-horriver-gray">
-                Nome
-                <input
-                  type="text"
-                  id="guestName"
-                  class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light"
-                  placeholder="Ex: Convidado"
-                />
-              </label>
-              <label class="flex flex-col gap-1 text-horriver-gray">
-                Posição
-                <select
-                  id="guestPos"
-                  class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light"
-                >
-                  <option>Goleiro</option>
-                  <option>Zagueiro</option>
-                  <option>Meia</option>
-                  <option>Atacante</option>
-                  <option>Outros</option>
-                </select>
-              </label>
-            </div>
-            <label class="flex flex-col gap-1 text-horriver-gray">
-              Força (40-100)
-              <input
-                type="number"
-                id="guestStr"
-                min="40"
-                max="100"
-                value="60"
-                class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light w-24"
-              />
-            </label>
-            <button
-              type="button"
-              id="addGuestBtn"
-              class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
-            >
-              Adicionar convidado
-            </button>
-            <input type="hidden" name="guests" id="guestsField" />
-            <div id="guestList" class="flex flex-wrap gap-2 text-[11px]"></div>
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <p class="text-horriver-gray text-[12px]">
-            Sorteio automático usando os presentes marcados acima. Se tiver mais de 12 presentes, cria 2, 3 ou 4 times com 6 em cada; extras vão para o banco.
-          </p>
-          <div class="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              id="sortBtn"
-              class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
-            >
-              Sortear times
-            </button>
-            <span id="sorterStatus" class="text-horriver-gray"></span>
-          </div>
-        </div>
-      </div>
-    </form>
-
-    <div id="sorterResults" class="grid md:grid-cols-2 gap-3 text-[12px]"></div>
-    <div id="goalkeeperBenchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
-    <div id="benchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
-
-    <div id="sorterShare" class="hidden flex flex-wrap items-center gap-2 text-[12px]">
-      <button
-        type="button"
-        id="copyTeamsBtn"
-        class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
-      >
-        Copiar texto
-      </button>
-      <button
-        type="button"
-        id="saveTeamsBtn"
-        class="px-3 py-2 rounded-full bg-green-500 text-black font-semibold hover:bg-green-400 transition"
-      >
-        Salvar times
-      </button>
-      <button
-        type="button"
-        id="imgTeamsBtn"
-        class="px-3 py-2 rounded-full border border-horriver-border text-horriver-light font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
-      >
-        Baixar imagem
-      </button>
-      <span id="shareStatus" class="text-horriver-gray"></span>
-    </div>
-  </div>
-</section>
-
-<style>
-  /* Feedback suave para drag-and-drop */
-  li.dragging {
-    opacity: 0.6;
-    transform: scale(0.98);
-  }
-  .drop-target {
-    outline: 1px dashed rgba(249, 115, 22, 0.8);
-    background: rgba(249, 115, 22, 0.05);
-  }
-  .drop-placeholder {
-    border: 1px dashed rgba(249, 115, 22, 0.5);
-    border-radius: 8px;
-    height: 32px;
-    margin-top: 4px;
-    background: rgba(255, 255, 255, 0.04);
-  }
-</style>
-
-<script>
   (() => {
-    const matchId = <%= match.id %>;
+    const matchId = 1;
     const form = document.getElementById("sorterForm");
     const resultsEl = document.getElementById("sorterResults");
     const statusEl = document.getElementById("sorterStatus");
@@ -472,7 +12,7 @@
     const shareStatus = document.getElementById("shareStatus");
     const benchBox = document.getElementById("benchBox");
     const goalkeeperBenchBox = document.getElementById("goalkeeperBenchBox");
-    const initialLineup = <%- JSON.stringify(lineupResult || null) %>;
+    const initialLineup = null;
 
     const guestName = document.getElementById("guestName");
     const guestPos = document.getElementById("guestPos");
@@ -483,7 +23,7 @@
 
     if (!form || !resultsEl) return;
 
-    const matchDateLabel = new Date("<%= match.playedAt.toISOString() %>").toLocaleDateString("pt-BR");
+    const matchDateLabel = new Date("2025-12-09T19:26:05.494Z").toLocaleDateString("pt-BR");
 
     const guests = [];
 
@@ -685,8 +225,6 @@
     }
 
     function setupDragAndDrop() {
-      const placeholder = document.createElement("li");
-      placeholder.className = "drop-placeholder";
       const draggableItems = document.querySelectorAll(
         "#sorterResults li[data-player-id], #benchBox li[data-player-id], #goalkeeperBenchBox li[data-player-id]"
       );
@@ -699,13 +237,6 @@
           currentDragEl = li;
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("text/plain", "moving");
-          li.classList.add("dragging");
-        });
-        li.addEventListener("dragend", () => {
-          li.classList.remove("dragging");
-          if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-          lists.forEach((list) => list.classList.remove("drop-target"));
-          currentDragEl = null;
         });
       });
 
@@ -713,32 +244,13 @@
         list.addEventListener("dragover", (e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = "move";
-          if (currentDragEl) {
-            list.classList.add("drop-target");
-            if (placeholder.parentNode !== list) {
-              if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-              list.appendChild(placeholder);
-            }
-          }
         });
         list.addEventListener("drop", (e) => {
           e.preventDefault();
           if (!currentDragEl) return;
-          list.classList.remove("drop-target");
-          if (placeholder.parentNode === list) {
-            list.insertBefore(currentDragEl, placeholder);
-            placeholder.parentNode.removeChild(placeholder);
-          } else {
-            list.appendChild(currentDragEl);
-          }
+          list.appendChild(currentDragEl);
           currentDragEl = null;
           recalculatePower();
-        });
-        list.addEventListener("dragleave", () => {
-          list.classList.remove("drop-target");
-          if (placeholder.parentNode === list) {
-            placeholder.parentNode.removeChild(placeholder);
-          }
         });
       });
     }
@@ -934,4 +446,3 @@
       });
     }
   })();
-</script>

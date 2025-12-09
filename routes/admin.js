@@ -1,11 +1,13 @@
-﻿// routes/admin.js
+// routes/admin.js
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../utils/db");
 const {
   uploadPlayerPhoto,
   uploadWeeklyTeamPhoto,
 } = require("../utils/upload");
+
 const { computeOverallFromEntries } = require("../utils/overall");
 
 // ==============================
@@ -16,28 +18,6 @@ function requireAdmin(req, res, next) {
     return res.redirect("/login");
   }
   next();
-}
-
-// Normaliza WhatsApp: mantém dígitos, garante prefixo 55 e formata com máscara
-function normalizeWhatsapp(raw) {
-  if (!raw) return null;
-  const digits = String(raw).replace(/\D/g, "");
-  if (!digits) return null;
-  const withCountry = digits.startsWith("55") ? digits : `55${digits}`;
-  const trimmed = withCountry.slice(0, 13); // 55 + DDD + 9 dígitos
-  const cc = trimmed.slice(0, 2);
-  const ddd = trimmed.slice(2, 4);
-  const rest = trimmed.slice(4);
-  if (!ddd || !rest) return `(55)`;
-  let formatted;
-  if (rest.length > 5) {
-    formatted = `${rest.slice(0, 5)}-${rest.slice(5, 9)}`;
-  } else if (rest.length > 4) {
-    formatted = `${rest.slice(0, 4)}-${rest.slice(4)}`;
-  } else {
-    formatted = rest;
-  }
-  return `(${cc}) ${ddd} ${formatted}`.trim();
 }
 
 // ==============================
@@ -173,8 +153,14 @@ router.post(
       if (!name || !position) {
         return res.redirect("/admin");
       }
-
-      const cleanWhatsapp = normalizeWhatsapp(whatsapp);
+      
+      let formattedWhatsapp = null;
+      if (whatsapp) {
+        const digitsOnly = whatsapp.replace(/\D/g, '');
+        if (digitsOnly) {
+          formattedWhatsapp = `55${digitsOnly}`;
+        }
+      }
 
       let photoUrl = null;
       if (req.file) {
@@ -186,7 +172,7 @@ router.post(
           name,
           nickname: nickname || null,
           position,
-          whatsapp: cleanWhatsapp,
+          whatsapp: formattedWhatsapp,
           photoUrl,
           totalGoals: 0,
           totalAssists: 0,
@@ -204,6 +190,32 @@ router.post(
   }
 );
 
+// Página para editar jogador
+router.get("/players/:id/edit", requireAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.redirect("/admin#jogadores");
+    }
+
+    const player = await prisma.player.findUnique({
+      where: { id },
+    });
+
+    if (!player) {
+      return res.redirect("/admin#jogadores");
+    }
+
+    res.render("admin_player_edit", {
+      title: `Editar ${player.name}`,
+      player,
+    });
+  } catch (err) {
+    console.error("Erro ao carregar página de edição de jogador:", err);
+    res.redirect("/admin#jogadores");
+  }
+});
+
 // Editar jogador
 router.post(
   "/players/:id/edit",
@@ -217,8 +229,14 @@ router.post(
       if (!name || !position || Number.isNaN(id)) {
         return res.redirect("/admin");
       }
-
-      const cleanWhatsapp = normalizeWhatsapp(whatsapp);
+      
+      let formattedWhatsapp = null;
+      if (whatsapp) {
+        const digitsOnly = whatsapp.replace(/\D/g, '');
+        if (digitsOnly) {
+          formattedWhatsapp = `55${digitsOnly}`;
+        }
+      }
 
       let photoUrl = null;
       if (req.file) {
@@ -229,7 +247,7 @@ router.post(
         name,
         nickname: nickname || null,
         position,
-        whatsapp: cleanWhatsapp,
+        whatsapp: formattedWhatsapp,
       };
 
       // Se enviou nova foto, atualiza photoUrl; caso contrário, mantém a atual
@@ -242,7 +260,7 @@ router.post(
         data,
       });
 
-      res.redirect("/admin");
+      res.redirect("/admin#jogadores");
     } catch (err) {
       console.error("Erro ao editar jogador:", err);
       res.redirect("/admin");
@@ -280,13 +298,14 @@ router.post("/matches", requireAdmin, async (req, res) => {
   try {
     const { playedAt, description, winnerTeam } = req.body;
 
-    if (!playedAt) {
+    const playedDate = playedAt ? new Date(playedAt) : null;
+    if (!playedDate || Number.isNaN(playedDate.getTime())) {
       return res.redirect("/admin");
     }
 
     await prisma.match.create({
       data: {
-        playedAt: new Date(playedAt),
+        playedAt: playedDate,
         description: description || null,
         winnerTeam: winnerTeam || null,
       },
@@ -305,14 +324,15 @@ router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const { playedAt, description, winnerTeam } = req.body;
 
-    if (Number.isNaN(id) || !playedAt) {
+    const playedDate = playedAt ? new Date(playedAt) : null;
+    if (Number.isNaN(id) || !playedDate || Number.isNaN(playedDate.getTime())) {
       return res.redirect("/admin");
     }
 
     await prisma.match.update({
       where: { id },
       data: {
-        playedAt: new Date(playedAt),
+        playedAt: playedDate,
         description: description || null,
         winnerTeam: winnerTeam || null,
       },
@@ -333,13 +353,94 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
       return res.redirect("/admin");
     }
 
-    await prisma.playerStat.deleteMany({
+    // Identifica entidades relacionadas para evitar erros de FK
+    const voteSessions = await prisma.voteSession.findMany({
       where: { matchId: id },
+      select: { id: true },
     });
+    const sessionIds = voteSessions.map((s) => s.id);
 
-    await prisma.match.delete({
-      where: { id },
-    });
+    const voteTokens = sessionIds.length
+      ? await prisma.voteToken.findMany({
+          where: { voteSessionId: { in: sessionIds } },
+          select: { id: true },
+        })
+      : [];
+    const tokenIds = voteTokens.map((t) => t.id);
+
+    const ballots = tokenIds.length
+      ? await prisma.voteBallot.findMany({
+          where: { voteTokenId: { in: tokenIds } },
+          select: { id: true },
+        })
+      : [];
+    const ballotIds = ballots.map((b) => b.id);
+
+    const voteLinks = prisma.voteLink
+      ? await prisma.voteLink.findMany({
+          where: { matchId: id },
+          select: { id: true },
+        })
+      : [];
+    const voteLinkIds = voteLinks.map((v) => v.id);
+
+    const publicVotes = prisma.publicVote
+      ? await prisma.publicVote.findMany({
+          where: { matchId: id },
+          select: { id: true },
+        })
+      : [];
+    const publicVoteIds = publicVotes.map((v) => v.id);
+
+    await prisma.$transaction([
+      ballotIds.length
+        ? prisma.voteRanking.deleteMany({
+            where: { voteBallotId: { in: ballotIds } },
+          })
+        : prisma.$executeRaw`SELECT 1`,
+      ballotIds.length
+        ? prisma.voteBallot.deleteMany({ where: { id: { in: ballotIds } } })
+        : prisma.$executeRaw`SELECT 1`,
+      tokenIds.length
+        ? prisma.voteToken.deleteMany({ where: { id: { in: tokenIds } } })
+        : prisma.$executeRaw`SELECT 1`,
+      sessionIds.length
+        ? prisma.voteSession.deleteMany({ where: { id: { in: sessionIds } } })
+        : prisma.$executeRaw`SELECT 1`,
+
+      voteLinkIds.length
+        ? prisma.voteChoice.deleteMany({
+            where: { voteLinkId: { in: voteLinkIds } },
+          })
+        : prisma.$executeRaw`SELECT 1`,
+      voteLinkIds.length
+        ? prisma.voteLink.deleteMany({ where: { id: { in: voteLinkIds } } })
+        : prisma.$executeRaw`SELECT 1`,
+
+      publicVoteIds.length
+        ? prisma.publicVoteRanking.deleteMany({
+            where: { publicVoteId: { in: publicVoteIds } },
+          })
+        : prisma.$executeRaw`SELECT 1`,
+      publicVoteIds.length
+        ? prisma.publicVote.deleteMany({ where: { id: { in: publicVoteIds } } })
+        : prisma.$executeRaw`SELECT 1`,
+
+      prisma.lineupDraw.deleteMany({ where: { matchId: id } }),
+
+      prisma.weeklyAward.updateMany({
+        where: { winningMatchId: id },
+        data: { winningMatchId: null },
+      }),
+
+      prisma.playerStat.deleteMany({
+        where: { matchId: id },
+      }),
+
+      prisma.match.delete({
+        where: { id },
+      }),
+    ]);
 
     return res.redirect("/admin");
   } catch (err) {
@@ -349,7 +450,44 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🔁 Selecionar pelada para lançar stats
+// Votos da pelada (sessao mais recente)
+router.get("/matches/:id/votes", requireAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.redirect("/admin");
+
+    const match = await prisma.match.findUnique({ where: { id } });
+    if (!match) return res.redirect("/admin");
+
+    const session = await prisma.voteSession.findFirst({
+      where: { matchId: id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const ballots = await prisma.voteBallot.findMany({
+      where: { token: { session: { matchId: id } } },
+      include: {
+        token: { include: { player: true } },
+        bestOverallPlayer: true,
+        rankings: { include: { player: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return res.render("admin_votes", {
+      title: "Votos da pelada",
+      match,
+      session,
+      ballots,
+    });
+  } catch (err) {
+    console.error("Erro ao listar votos da pelada:", err);
+    return res.redirect("/admin");
+  }
+});
+
+// ==============================
+// Selecionar pelada para lancar stats
 // ==============================
 router.get("/matches", requireAdmin, (req, res) => {
   const { matchId } = req.query;
@@ -759,6 +897,14 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
             player: { name: "asc" },
           },
         },
+        voteSessions: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            tokens: {
+              include: { player: true },
+            },
+          },
+        }
       },
     });
 
@@ -770,16 +916,254 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       orderBy: { name: "asc" },
     });
 
+    // Overall de cada jogador (mesma métrica do ranking)
+    const { computed: playersOverall } = computeOverallFromEntries(
+      players.map((p) => ({
+        player: p,
+        goals: p.totalGoals || 0,
+        assists: p.totalAssists || 0,
+        matches: p.totalMatches || 0,
+        rating: p.totalRating || 0,
+      }))
+    );
+    const overallById = new Map(playersOverall.map((o) => [o.player.id, o.overall]));
+    const playersWithOverall = players.map((p) => ({
+      ...p,
+      overall: overallById.get(p.id) ?? null,
+    }));
+    
+    const voteSession = match.voteSessions.length > 0 ? match.voteSessions[0] : null;
+    const voteBaseUrl = `${req.protocol}://${req.get('host')}`;
+
+    const lastLineupDraw = await prisma.lineupDraw.findFirst({
+      where: { matchId: id },
+      orderBy: { createdAt: "desc" },
+    });
+
     res.render("admin_match", {
       title: "Estatísticas da pelada",
       match,
-      players,
+      players: playersWithOverall,
       stats: match.stats || [],
-      voteSession: null,
+      voteSession, // Passando a sessão de votação para a view
+      voteBaseUrl,
+      req,
+      lineupResult: lastLineupDraw ? lastLineupDraw.result : null,
     });
   } catch (err) {
     console.error("Erro ao carregar estatísticas da pelada:", err);
     res.redirect("/admin");
+  }
+});
+
+// ==============================
+// Votações privadas por link (admin)
+// ==============================
+router.post("/matches/:id/vote-session", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) return res.redirect("/admin");
+
+    const expiresHours = Number(req.body.expiresHours ?? 24);
+    const expiresAt =
+      Number.isFinite(expiresHours) && expiresHours > 0
+        ? new Date(Date.now() + expiresHours * 60 * 60 * 1000)
+        : null;
+
+    const statsPresent = await prisma.playerStat.findMany({
+      where: { matchId, present: true },
+    });
+
+    if (!statsPresent.length) {
+      return res.redirect(`/admin/matches/${matchId}?error=noPresentPlayers`);
+    }
+
+    const tokensData = statsPresent.map((s) => ({
+      token: crypto.randomBytes(16).toString("hex"),
+      playerId: s.playerId,
+    }));
+
+    await prisma.voteSession.create({
+      data: {
+        matchId,
+        expiresAt,
+        createdByAdminId: req?.admin?.id ?? null,
+        tokens: {
+          create: tokensData,
+        },
+      },
+    });
+
+    return res.redirect(`/admin/matches/${matchId}?voteSessionCreated=true`);
+  } catch (err) {
+    console.error("Erro ao criar sessão de votos:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=voteSession`);
+  }
+});
+
+router.post("/matches/:id/close-votes", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) return res.redirect("/admin");
+
+    const session = await prisma.voteSession.findFirst({
+      where: { matchId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!session) {
+      return res.redirect(`/admin/matches/${matchId}?error=noSession`);
+    }
+
+    await prisma.voteSession.update({
+      where: { id: session.id },
+      data: { expiresAt: new Date() },
+    });
+
+    return res.redirect(`/admin/matches/${matchId}?votesClosed=true`);
+  } catch (err) {
+    console.error("Erro ao encerrar votação:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=closeVotes`);
+  }
+});
+
+// Placeholder: aplicar votos como notas (a ser implementado)
+router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
+  const matchId = Number(req.params.id);
+  if (Number.isNaN(matchId)) return res.redirect("/admin");
+
+  try {
+    const session = await prisma.voteSession.findFirst({
+      where: { matchId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        tokens: {
+          include: { ballot: { include: { rankings: true } } },
+        },
+      },
+    });
+
+    if (!session) {
+      return res.redirect(`/admin/matches/${matchId}?error=noSession`);
+    }
+
+    const ballots = await prisma.voteBallot.findMany({
+      where: { token: { voteSessionId: session.id } },
+      include: {
+        rankings: true,
+        token: true,
+      },
+    });
+
+    if (!ballots.length) {
+      return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
+    }
+
+    const stats = await prisma.playerStat.findMany({
+      where: { matchId, present: true },
+      include: { player: true },
+    });
+
+    if (!stats.length) {
+      return res.redirect(`/admin/matches/${matchId}?error=noPresentPlayers`);
+    }
+
+    // Mapa de quantos jogadores por posição (para normalizar ranking)
+    const posCounts = new Map();
+    stats.forEach((s) => {
+      const pos = (s.player.position || "Outros").toLowerCase();
+      posCounts.set(pos, (posCounts.get(pos) || 0) + 1);
+    });
+
+    // Score de ranking por jogador
+    const rankScores = new Map(); // playerId -> [scores]
+    ballots.forEach((b) => {
+      const byPos = new Map();
+      (b.rankings || []).forEach((r) => {
+        const pos = (r.position || "Outros").toLowerCase();
+        if (!byPos.has(pos)) byPos.set(pos, []);
+        byPos.get(pos).push(r);
+      });
+      byPos.forEach((list, pos) => {
+        const totalInPos = posCounts.get(pos) || list.length || 1;
+        list.forEach((r) => {
+          const denom = Math.max(totalInPos - 1, 1);
+          const score = (totalInPos - r.rank) / denom; // 1 para 1º, 0 para último
+          if (!rankScores.has(r.playerId)) rankScores.set(r.playerId, []);
+          rankScores.get(r.playerId).push(score);
+        });
+      });
+    });
+
+    // Contagem de votos para "melhor da pelada"
+    const mvpCounts = new Map();
+    ballots.forEach((b) => {
+      if (b.bestOverallPlayerId) {
+        mvpCounts.set(
+          b.bestOverallPlayerId,
+          (mvpCounts.get(b.bestOverallPlayerId) || 0) + 1
+        );
+      }
+    });
+    const maxMvp = mvpCounts.size ? Math.max(...mvpCounts.values()) : 0;
+    const mvpWinners = new Set(
+      Array.from(mvpCounts.entries())
+        .filter(([, v]) => v === maxMvp)
+        .map(([id]) => id)
+    );
+
+    const updates = [];
+    stats.forEach((stat) => {
+      const pos = (stat.player.position || "Outros").toLowerCase();
+      const rankList = rankScores.get(stat.playerId) || [];
+      const rankAvg =
+        rankList.length > 0
+          ? rankList.reduce((a, b) => a + b, 0) / rankList.length // 0..1
+          : 0;
+
+      const mvpScore = mvpCounts.has(stat.playerId)
+        ? mvpWinners.has(stat.playerId)
+          ? 1 // campeão de MVP
+          : 0.5 // recebeu votos de MVP
+        : 0;
+
+      const isGoalkeeper = pos.includes("goleiro");
+      const goalWeight = isGoalkeeper ? 0.2 : 0.5;
+      const assistWeight = isGoalkeeper ? 0.15 : 0.35;
+      const photoWeight = isGoalkeeper ? 0.25 : 0.2;
+      const statsRaw =
+        (stat.goals || 0) * goalWeight +
+        (stat.assists || 0) * assistWeight +
+        (stat.appearedInPhoto ? photoWeight : 0);
+      const maxStats = isGoalkeeper ? 1.0 : 1.5;
+      const statsScore = Math.min(statsRaw / maxStats, 1); // 0..1
+
+      // Peso total soma 1.0. Só dá 10 se rank for perfeito e for MVP de todos.
+      const weighted =
+        rankAvg * 0.6 +
+        mvpScore * 0.3 +
+        statsScore * 0.1;
+
+      // Base fixa de 2.0
+      let finalRating = Math.max(0, Math.min(10, 2 + weighted * 8));
+
+      updates.push(
+        prisma.playerStat.update({
+          where: { id: stat.id },
+          data: { rating: Number(finalRating.toFixed(2)) },
+        })
+      );
+    });
+
+    if (!updates.length) {
+      return res.redirect(`/admin/matches/${matchId}?error=noRatingsToUpdate`);
+    }
+
+    await prisma.$transaction(updates);
+    return res.redirect(`/admin/matches/${matchId}?applyVotes=true`);
+  } catch (err) {
+    console.error("Erro ao aplicar votos em notas:", err);
+    return res.redirect(`/admin/matches/${matchId}?error=applyVotes`);
   }
 });
 
@@ -833,32 +1217,53 @@ async function handleRecalculateTotals(req, res) {
 // Aceita QUALQUER método (GET, POST, etc) nesse caminho
 router.all("/recalculate-totals", requireAdmin, handleRecalculateTotals);
 
+
+// ===============================================
+// 🔁 Rota: Recalcular OVERALL (last 10)
+// ===============================================
+router.post("/recalculate-overall", requireAdmin, async (req, res) => {
+  try {
+    const { recalculateOverallForAllPlayers } = require("../utils/ranking");
+    const { count } = await recalculateOverallForAllPlayers();
+    
+    // Adicionando um pequeno delay para o usuário perceber a ação
+    setTimeout(() => {
+      res.redirect(`/admin?success=overallRecalculated&count=${count}`);
+    }, 500);
+
+  } catch (err) {
+    console.error("Erro ao recalcular overall:", err);
+    res.redirect("/admin?error=overallError");
+  }
+});
+
+
+
 // ==============================
 // 🧠 Sorteador de times (6 por time, usa OVERALL do ranking)
 // ==============================
+
+// Distribuição "snake" para balancear times
 function snakeDistribute(players, teamCount) {
-  const teams = Array.from({ length: teamCount }, () => []);
-  let forward = true;
-  let idx = 0;
-  for (const p of players) {
-    teams[idx].push(p);
-    if (forward) {
-      if (idx === teamCount - 1) {
-        forward = false;
-        idx--;
-      } else {
-        idx++;
-      }
-    } else {
-      if (idx === 0) {
-        forward = true;
-        idx++;
-      } else {
-        idx--;
-      }
+    const teams = Array.from({ length: teamCount }, () => []);
+    let playerIndex = 0;
+    for (let round = 0; playerIndex < players.length; round++) {
+        // Da esquerda pra direita
+        if (round % 2 === 0) {
+            for (let teamIdx = 0; teamIdx < teamCount; teamIdx++) {
+                if (playerIndex < players.length) {
+                    teams[teamIdx].push(players[playerIndex++]);
+                }
+            }
+        } else { // Da direita pra esquerda
+            for (let teamIdx = teamCount - 1; teamIdx >= 0; teamIdx--) {
+                if (playerIndex < players.length) {
+                    teams[teamIdx].push(players[playerIndex++]);
+                }
+            }
+        }
     }
-  }
-  return teams;
+    return teams;
 }
 
 function computeTeamPower(team) {
@@ -869,7 +1274,13 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
   try {
     const matchId = Number(req.params.id);
     if (Number.isNaN(matchId)) return res.status(400).json({ error: "matchId inválido" });
+    const presentIds = Array.isArray(req.body.presentIds)
+      ? req.body.presentIds
+          .map((id) => Number(id))
+          .filter((n) => Number.isFinite(n))
+      : [];
 
+    // 1. Convidados
     const guestsRaw = req.body.guests || "";
     const guestEntries = guestsRaw
       .split("\n")
@@ -888,18 +1299,37 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
         };
       });
 
-    const stats = await prisma.playerStat.findMany({
-      where: { matchId, present: true },
-      include: { player: true },
-    });
-    if (!stats.length) {
-      return res.status(400).json({ error: "Nenhum jogador presente para sortear. Marque presenças primeiro." });
+    // 2. Jogadores presentes
+    let stats;
+    if (presentIds.length) {
+      const playersPresent = await prisma.player.findMany({
+        where: { id: { in: presentIds } },
+      });
+      stats = playersPresent.map((p) => ({
+        playerId: p.id,
+        player: p,
+        present: true,
+        goals: 0,
+        assists: 0,
+        rating: null,
+      }));
+    } else {
+      stats = await prisma.playerStat.findMany({
+        where: { matchId, present: true },
+        include: { player: true },
+      });
     }
 
+    if (!stats.length && !guestEntries.length) {
+      return res
+        .status(400)
+        .json({ error: "Nenhum jogador presente para sortear. Marque presenças (ou adicione convidados)." });
+    }
+
+    // 3. Overall dos presentes
     const playerIds = Array.from(new Set(stats.map((s) => s.playerId)));
     const basePlayers = await prisma.player.findMany({
       where: { id: { in: playerIds } },
-      orderBy: { name: "asc" },
     });
 
     const { computed } = computeOverallFromEntries(
@@ -913,84 +1343,514 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     );
     const overallMap = new Map(computed.map((c) => [c.player.id, c.overall]));
 
+    // 3.1 Últimas 10 peladas de cada jogador presente (para balancear força recente)
+    const recentStatsRaw = await prisma.playerStat.findMany({
+      where: { playerId: { in: playerIds } },
+      orderBy: { match: { playedAt: "desc" } },
+      include: { match: true },
+    });
+
+    // Agrupa por jogador e pega só os 10 jogos mais recentes
+    const recentByPlayer = new Map();
+    for (const s of recentStatsRaw) {
+      if (!s.match || !s.match.playedAt) continue;
+      if (!recentByPlayer.has(s.playerId)) recentByPlayer.set(s.playerId, []);
+      if (recentByPlayer.get(s.playerId).length < 10) {
+        recentByPlayer.get(s.playerId).push(s);
+      }
+    }
+
+    // Maximos para normalizar gols/assist nas últimas 10
+    let maxGoals10 = 0;
+    let maxAssists10 = 0;
+    recentByPlayer.forEach((arr) => {
+      let g = 0;
+      let a = 0;
+      arr.forEach((s) => {
+        g += s.goals || 0;
+        a += s.assists || 0;
+      });
+      if (g > maxGoals10) maxGoals10 = g;
+      if (a > maxAssists10) maxAssists10 = a;
+    });
+
+    const last10ScoreMap = new Map();
+    const rating10Map = new Map();
+
+    recentByPlayer.forEach((arr, playerId) => {
+      let goals = 0;
+      let assists = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      arr.forEach((s) => {
+        goals += s.goals || 0;
+        assists += s.assists || 0;
+        if (s.rating != null) {
+          ratingSum += s.rating;
+          ratingCount += 1;
+        }
+      });
+
+      const ratingAvg = ratingCount > 0 ? ratingSum / ratingCount : 0;
+      const goalsNorm = maxGoals10 > 0 ? (goals / maxGoals10) * 10 : 0;
+      const assistsNorm = maxAssists10 > 0 ? (assists / maxAssists10) * 10 : 0;
+      const ratingNorm = ratingAvg || 0; // já em 0-10
+
+      // Peso recente: rating 5, gols 3, assist 2 (0-10)
+      const last10Score = (ratingNorm * 5 + goalsNorm * 3 + assistsNorm * 2) / 10;
+
+      last10ScoreMap.set(playerId, last10Score);
+      rating10Map.set(playerId, ratingAvg);
+    });
+
     const players = stats.map((s) => ({
       id: s.player.id,
       name: s.player.name,
       nickname: s.player.nickname,
       position: s.player.position || "Outros",
-      strength: overallMap.get(s.playerId) ?? 60,
+      // força combinando overall histórico + desempenho recente (últimas 10)
+      strength: (() => {
+        const baseOverall = overallMap.get(s.playerId) ?? 60;
+        const last10Score = last10ScoreMap.get(s.playerId) ?? 0; // 0-10
+        const combined = Math.round(baseOverall * 0.6 + (last10Score * 10) * 0.4);
+        return combined;
+      })(),
+      displayOverall: overallMap.get(s.playerId) ?? null,
       guest: false,
     }));
 
-    const pool = [...players, ...guestEntries];
-    if (!pool.length) {
-      return res.status(400).json({ error: "Lista de jogadores vazia para sortear." });
-    }
+    // 4. Pool completo
+    const fullPool = [...players, ...guestEntries];
 
-    const teamCount = Math.max(2, Math.floor(pool.length / 6) || 1);
-
-    const posGroups = {
-      Goleiro: [],
-      Zagueiro: [],
-      Meia: [],
-      Atacante: [],
-      Outros: [],
-    };
-    pool.forEach((p) => {
-      const pos = (p.position || "").toLowerCase();
-      if (pos.includes("goleiro")) posGroups.Goleiro.push(p);
-      else if (pos.includes("zag")) posGroups.Zagueiro.push(p);
-      else if (pos.includes("mei")) posGroups.Meia.push(p);
-      else if (pos.includes("atac")) posGroups.Atacante.push(p);
-      else posGroups.Outros.push(p);
+    // 5. Separar goleiros e jogadores de linha
+    const goalkeepers = [];
+    const fieldPlayers = [];
+    fullPool.forEach((p) => {
+      if ((p.position || "").toLowerCase().includes("goleiro")) {
+        goalkeepers.push(p);
+      } else {
+        fieldPlayers.push(p);
+      }
     });
 
-    Object.keys(posGroups).forEach((k) => posGroups[k].sort((a, b) => b.strength - a.strength));
-
-    const teamBuckets = Array.from({ length: teamCount }, () => []);
-    const bench = [];
-    const benchGk = [];
-
-    // Goleiros só entram nos times se houver um para cada time
-    if (posGroups.Goleiro.length >= teamCount) {
-      const distributedGk = snakeDistribute(posGroups.Goleiro, teamCount);
-      distributedGk.forEach((arr, idx) => teamBuckets[idx].push(...arr));
-    } else {
-      benchGk.push(...posGroups.Goleiro);
+    // 6. Validar número mínimo de jogadores de linha
+    const MIN_PLAYERS_PER_TEAM = 6;
+    const requiredFieldPlayers = MIN_PLAYERS_PER_TEAM * 2;
+    if (fieldPlayers.length < requiredFieldPlayers) {
+      return res.status(400).json({ error: `São necessários pelo menos ${requiredFieldPlayers} jogadores de linha para formar 2 times. Atualmente: ${fieldPlayers.length}.` });
     }
 
-    ["Zagueiro", "Meia", "Atacante", "Outros"].forEach((key) => {
-      const distributed = snakeDistribute(posGroups[key], teamCount);
-      distributed.forEach((arr, idx) => {
-        teamBuckets[idx].push(...arr);
+    // 7. Definir quantos times e quantos vão pro banco
+    const teamCount = Math.floor(fieldPlayers.length / MIN_PLAYERS_PER_TEAM);
+    const playersPerTeam = MIN_PLAYERS_PER_TEAM;
+    const totalPlayersForTeams = teamCount * playersPerTeam;
+
+    // 8. Ordenar por força para sorteio balanceado
+    fieldPlayers.sort((a, b) => b.strength - a.strength);
+
+    // 9. Distribuir os jogadores de linha
+    const playersToDistribute = fieldPlayers.slice(0, totalPlayersForTeams);
+    const teamBuckets = snakeDistribute(playersToDistribute, teamCount);
+
+    // 10. Opcional: distribuir goleiros se houver exatamente um por time
+    let keepGoalkeepersOnBench = true;
+    if (goalkeepers.length && goalkeepers.length === teamCount) {
+      keepGoalkeepersOnBench = false;
+      // embaralha levemente para não fixar sempre a mesma ordem
+      const shuffledGks = [...goalkeepers].sort(() => Math.random() - 0.5);
+      shuffledGks.forEach((gk, idx) => {
+        teamBuckets[idx].unshift({
+          ...gk,
+          displayOverall: overallMap.get(gk.id) ?? null,
+        });
       });
-    });
+    }
+    
+    // 11. Montar banco de reservas
+    const leftoverFieldPlayers = fieldPlayers.slice(totalPlayersForTeams);
+    const bench = [
+      ...(keepGoalkeepersOnBench ? goalkeepers : []),
+      ...leftoverFieldPlayers,
+    ].map((p) => ({
+      ...p,
+      displayOverall: overallMap.get(p.id) ?? null,
+    }));
+    bench.sort((a, b) => b.strength - a.strength);
 
-    teamBuckets.forEach((team) => {
-      while (team.length > 6) {
-        const removed = team.pop();
-        if (removed) bench.push(removed);
-      }
-    });
-
-    // Preenche vagas com reservas (não usa goleiros quando faltou 1 por time)
-    teamBuckets.forEach((team) => {
-      while (team.length < 6 && bench.length) {
-        team.push(bench.shift());
-      }
-    });
-
+    // 12. Finalizar e retornar
     const teams = teamBuckets.map((t, idx) => ({
       name: `Time ${idx + 1}`,
       power: computeTeamPower(t),
-      players: t,
+      players: t.map((p) => ({
+        ...p,
+        displayOverall: overallMap.get(p.id) ?? null,
+      })),
     }));
 
-    return res.json({ teams, bench: [...bench, ...benchGk] });
+    // 12. Persistir o sorteio mais recente para recarregar na tela depois
+    try {
+      await prisma.lineupDraw.create({
+        data: {
+          matchId,
+          seed: crypto.randomBytes(8).toString("hex"),
+          parameters: {
+            presentIds: playerIds,
+            guests: guestEntries,
+          },
+          result: { teams, bench },
+        },
+      });
+    } catch (persistErr) {
+      console.error("Erro ao salvar sorteio (LineupDraw):", persistErr);
+      // NÆo bloquear a resposta principal se o salvamento falhar
+    }
+
+    return res.json({ teams, bench });
+
   } catch (err) {
     console.error("Erro no sorteador:", err);
     return res.status(500).json({ error: err && err.message ? err.message : "Erro ao sortear times" });
   }
 });
-module.exports = router;
 
+router.post("/matches/:id/save-lineup", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) return res.status(400).json({ error: "matchId invalido" });
+
+    const { teams, bench, source } = req.body || {};
+
+    if (!Array.isArray(teams)) {
+      return res.status(400).json({ error: "Times invalidos para salvar." });
+    }
+
+    const normalizePlayer = (player, idx) => ({
+      id: player?.id ?? `custom-${idx}-${Date.now()}`,
+      name: player?.name || "Jogador",
+      nickname: player?.nickname || null,
+      position: player?.position || "",
+      strength: Number.isFinite(Number(player?.strength)) ? Number(player.strength) : 0,
+      guest: !!player?.guest,
+    });
+
+    const normalizedTeams = teams.map((team, idx) => {
+      const players = Array.isArray(team?.players) ? team.players.map((p, pIdx) => normalizePlayer(p, pIdx)) : [];
+      const power = players.reduce((sum, p) => sum + (p.strength || 0), 0);
+      return {
+        name: team?.name || `Time ${idx + 1}`,
+        colorName: team?.colorName || null,
+        colorValue: team?.colorValue || null,
+        power,
+        players,
+      };
+    });
+
+    const normalizedBench = Array.isArray(bench) ? bench.map((p, idx) => normalizePlayer(p, idx)) : [];
+
+    const saved = await prisma.lineupDraw.create({
+      data: {
+        matchId,
+        seed: crypto.randomBytes(8).toString("hex"),
+        parameters: { source: source || "manual-save" },
+        result: {
+          teams: normalizedTeams,
+          bench: normalizedBench,
+        },
+      },
+    });
+
+    return res.json({ ok: true, lineupId: saved.id });
+  } catch (err) {
+    console.error("Erro ao salvar lineup manualmente:", err);
+    return res.status(500).json({ error: "Erro ao salvar lineup" });
+  }
+});
+
+// ==============================
+// 🔗 Gerar link de votação pública para a pelada
+// ==============================
+router.post("/matches/:id/generate-voting-link", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+
+    const token = crypto.randomBytes(16).toString("hex");
+
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        votingToken: token,
+        votingStatus: "OPEN",
+      },
+    });
+
+        // We don't return the link directly, the view will build it.
+
+        // We just signal that it was successful.
+
+        return res.redirect(`/admin/matches/${matchId}?votingLinkGenerated=true`);
+
+      } catch (err) {
+
+        console.error("Erro ao gerar link de votação:", err);
+
+        return res.redirect(`/admin/matches/${req.params.id}?error=votingLink`);
+
+      }
+
+    });
+
+    
+
+    // ==============================
+
+    // 🧮 Calcular resultados da votação pública
+
+    // ==============================
+
+    router.post("/matches/:id/calculate-results", requireAdmin, async (req, res) => {
+
+      const matchId = Number(req.params.id);
+
+      if (Number.isNaN(matchId)) {
+
+        return res.redirect("/admin");
+
+      }
+
+    
+
+      try {
+
+        const [publicVotes, playerStats] = await Promise.all([
+
+          prisma.publicVote.findMany({
+
+            where: { matchId },
+
+            include: { rankings: true },
+
+          }),
+
+          prisma.playerStat.findMany({
+
+            where: { matchId, present: true },
+
+            include: { player: true },
+
+          }),
+
+        ]);
+
+    
+
+        if (publicVotes.length === 0) {
+
+          return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
+
+        }
+
+    
+
+        const finalScores = new Map();
+
+        playerStats.forEach(stat => {
+
+          finalScores.set(stat.playerId, { base: 5.0, mvp: 0, ranking: 0, stats: 0, statId: stat.id });
+
+        });
+
+    
+
+        // 1. Stats Score (Max 1.5)
+
+        playerStats.forEach(stat => {
+
+          const score = finalScores.get(stat.playerId);
+
+          let statPoints = 0;
+
+          statPoints += (stat.goals || 0) * 0.5;
+
+          statPoints += (stat.assists || 0) * 0.25;
+
+          if(stat.appearedInPhoto) statPoints += 0.25;
+
+          score.stats = Math.min(statPoints, 1.5);
+
+        });
+
+    
+
+        // 2. MVP Score (Max 1.5)
+
+        const mvpVotes = publicVotes.map(v => v.mvpPlayerId).filter(id => id != null);
+
+        if (mvpVotes.length > 0) {
+
+            const mvpCounts = mvpVotes.reduce((acc, id) => {
+
+                acc[id] = (acc[id] || 0) + 1;
+
+                return acc;
+
+            }, {});
+
+            
+
+            const maxVotes = Math.max(...Object.values(mvpCounts));
+
+            const winners = Object.keys(mvpCounts).filter(id => mvpCounts[id] === maxVotes);
+
+    
+
+            winners.forEach(winnerId => {
+
+                const id = Number(winnerId);
+
+                if (finalScores.has(id)) {
+
+                    finalScores.get(id).mvp = 1.5 / winners.length; // Share the bonus if tied
+
+                }
+
+            });
+
+    
+
+            // Bonus for receiving votes
+
+            Object.keys(mvpCounts).forEach(voterId => {
+
+                const id = Number(voterId);
+
+                if (finalScores.has(id) && !winners.includes(voterId)) {
+
+                     finalScores.get(id).mvp += 0.25;
+
+                }
+
+            });
+
+        }
+
+    
+
+        // 3. Ranking Score (Max 2.0)
+
+        const rankingScores = new Map(); // playerId -> [scores]
+
+        publicVotes.forEach(vote => {
+
+          const rankingsByPos = vote.rankings.reduce((acc, r) => {
+
+            if (!acc[r.position]) acc[r.position] = [];
+
+            acc[r.position].push(r);
+
+            return acc;
+
+          }, {});
+
+    
+
+          Object.values(rankingsByPos).forEach(ranks => {
+
+            const numPlayers = ranks.length;
+
+            if(numPlayers < 2) return;
+
+            ranks.forEach(rank => {
+
+              const score = (numPlayers - rank.rank) / (numPlayers - 1); // 1 for 1st, 0 for last
+
+              if (!rankingScores.has(rank.playerId)) rankingScores.set(rank.playerId, []);
+
+              rankingScores.get(rank.playerId).push(score);
+
+            });
+
+          });
+
+        });
+
+    
+
+        rankingScores.forEach((scores, playerId) => {
+
+          if (finalScores.has(playerId)) {
+
+            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+            finalScores.get(playerId).ranking = avg * 2.0; // Scale to max 2 points
+
+          }
+
+        });
+
+    
+
+        // 4. Final calculation and DB update prep
+
+        const updates = [];
+
+        finalScores.forEach((score, playerId) => {
+
+          let finalScore = score.base + score.mvp + score.ranking + score.stats;
+
+          finalScore = Math.min(Math.max(finalScore, 0), 10);
+
+          
+
+          updates.push(
+
+            prisma.playerStat.update({
+
+              where: { id: score.statId },
+
+              data: { rating: parseFloat(finalScore.toFixed(2)) },
+
+            })
+
+          );
+
+        });
+
+    
+
+        await prisma.$transaction(updates);
+
+    
+
+        await prisma.match.update({
+
+          where: { id: matchId },
+
+          data: { votingStatus: 'CLOSED' },
+
+        });
+
+    
+
+        res.redirect(`/admin/matches/${matchId}?resultsCalculated=true`);
+
+    
+
+      } catch (err) {
+
+        console.error("Erro ao calcular resultados da votação:", err);
+
+        res.redirect(`/admin/matches/${matchId}?error=results`);
+
+      }
+
+    });
+
+    
+
+    
+
+    module.exports = router;

@@ -1,4 +1,4 @@
-ï»¿<section class="max-w-5xl mx-auto space-y-6 animate-fadeIn">
+<section class="max-w-5xl mx-auto space-y-6 animate-fadeIn">
   <header class="flex flex-col md:flex-row gap-4 items-center md:items-start">
     <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange shadow-card-soft">
       <% if (player.photoUrl) { %>
@@ -10,7 +10,7 @@
     <div class="flex-1 space-y-1">
       <h1 class="text-3xl font-title text-horriver-light"><%= player.name %></h1>
       <% if (player.nickname) { %><p class="text-horriver-orange text-sm">(<%= player.nickname %>)</p><% } %>
-      <p class="text-sm text-horriver-gray">PosiÃÂ§ÃÂ£o: <span class="text-horriver-orange"><%= player.position %></span></p>
+      <p class="text-sm text-horriver-gray">Posição: <span class="text-horriver-orange"><%= player.position %></span></p>
             <div class="mt-2">
         <span class="px-3 py-1 rounded-full bg-horriver-red/20 text-horriver-orange text-sm">
           Overall: <%= Math.round(latestOverall || 0) %>
@@ -30,7 +30,7 @@
   </header>
 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-    <% [['Jogos', totals.matches], ['Gols', totals.goals], ['AssistÃÂªncias', totals.assists], ['Fotos', totals.photos]].forEach(([label, val]) => { %>
+    <% [['Jogos', totals.matches], ['Gols', totals.goals], ['Assistências', totals.assists], ['Fotos', totals.photos]].forEach(([label, val]) => { %>
       <div class="card-inner rounded-2xl p-4 text-center">
         <p class="text-horriver-gray text-xs"><%= label %></p>
         <p class="text-2xl text-horriver-light font-semibold"><%= val %></p>
@@ -60,7 +60,7 @@
   </div>
 
   <div class="card-inner rounded-2xl p-4 space-y-2">
-    <h2 class="font-title text-xl text-horriver-light">EvoluÃÂ§ÃÂ£o das notas</h2>
+    <h2 class="font-title text-xl text-horriver-light">Evolução das notas</h2>
     <% if (!ratingsSeries.length) { %>
       <p class="text-sm text-horriver-gray">Sem notas ainda.</p>
     <% } else { %>
@@ -72,34 +72,35 @@
   </div>
 
     <div class="card-inner rounded-2xl p-4 space-y-2">
-    <h2 class="font-title text-xl text-horriver-light">HistÃ³rico de overall (0â100)</h2>
+    <h2 class="font-title text-xl text-horriver-light">Histórico de overall (0–100)</h2>
     <% if (!overallSeries.length) { %>
-      <p class="text-sm text-horriver-gray">Sem histÃ³rico calculado ainda.</p>
+      <p class="text-sm text-horriver-gray">Sem histórico calculado ainda.</p>
     <% } else { %>
       <svg viewBox="0 0 100 40" class="w-full h-32 text-horriver-orange">
         <% const maxO = 100, minO = 0; const nO = overallSeries.length; const stepO = nO > 1 ? 100/(nO-1) : 0; let pathO=''; overallSeries.forEach((p,i)=>{ const x = i*stepO; const y = 40 - ((p.overall - minO)/(maxO-minO))*40; pathO += (i===0? 'M':' L')+x+','+y; }); %>
         <path d="<%= pathO %>" fill="none" stroke="currentColor" stroke-width="1.5" />
-      </svg>
-      <p class="text-[11px] text-horriver-gray">Ãltimas <%= overallSeries.length %> mediÃ§Ãµes salvas.</p>
+      <p class="text-[11px] text-horriver-gray">Últimas <%= overallSeries.length %> medições salvas.</p>
     <% } %>
   </div>
 <div class="card-inner rounded-2xl p-4 space-y-2">
-    <h2 class="font-title text-xl text-horriver-light">Gols por mÃÂªs</h2>
+    <h2 class="font-title text-xl text-horriver-light">Gols por mês</h2>
     <% if (!goalsByMonth.length) { %>
       <p class="text-sm text-horriver-gray">Sem gols registrados.</p>
     <% } else { 
          const maxG = Math.max(...goalsByMonth.map(g => g.value), 1);
     %>
-      <div class="flex items-end gap-2 h-32">
+      <div class="flex items-end gap-2 h-48">
         <% goalsByMonth.forEach(g => { 
              const [year, month] = g.label.split("-");
              const pct = (g.value / maxG) * 100;
              const monthLabel = new Date(`${g.label}-01`).toLocaleString('pt-BR', { month: 'short' });
         %>
           <div class="flex-1 flex flex-col items-center">
-            <div class="w-full rounded-t-md bg-gradient-to-t from-horriver-red to-horriver-orange" style="height:<%= pct %>%"></div>
+            <span class="text-[11px] text-horriver-light mb-1"><%= g.value %></span>
+            <div class="w-full rounded-t-md bg-gradient-to-t from-horriver-red to-horriver-orange relative" style="height:<%= pct %>%">
+              <span class="absolute inset-0 bg-horriver-orange/30 rounded-t-md"></span>
+            </div>
             <span class="text-[10px] text-horriver-gray mt-1"><%= monthLabel %>/<%= year.slice(-2) %></span>
-            <span class="text-[10px] text-horriver-orange"><%= g.value %></span>
           </div>
         <% }) %>
       </div>

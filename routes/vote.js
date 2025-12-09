@@ -1,5 +1,6 @@
 // routes/vote.js
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../utils/db");
 
@@ -34,7 +35,12 @@ async function loadContext(tokenValue) {
     return { error: "Nenhum jogador presente registrado para esta pelada." };
   }
 
-  const players = stats.map((s) => s.player);
+  const players = stats.map((s) => ({
+    ...s.player,
+    goals: s.goals || 0,
+    assists: s.assists || 0,
+    appearedInPhoto: !!s.appearedInPhoto,
+  }));
 
   const positions = ["Goleiro", "Zagueiro", "Meia", "Atacante"];
   const grouped = {};
@@ -165,5 +171,195 @@ router.post("/:token", async (req, res) => {
     });
   }
 });
+
+// Alias legacy /votar/:token -> /vote/:token
+router.get("/votar/:token", (req, res) => {
+  return res.redirect(`/vote/${req.params.token}`);
+});
+
+// ==============================
+// 🗳️ Votação Pública
+// ==============================
+
+// Carrega o contexto para a votação pública
+async function loadPublicVoteContext(matchId, token) {
+  if (!matchId || !token) {
+    return { error: "Link de votação inválido ou ausente." };
+  }
+
+  const match = await prisma.match.findUnique({
+    where: { id: Number(matchId) },
+  });
+
+  if (!match) {
+    return { error: "Pelada não encontrada." };
+  }
+
+  if (match.votingStatus !== 'OPEN' || match.votingToken !== token) {
+    return { error: "Este link de votação não está ativo ou é inválido." };
+  }
+
+  const stats = await prisma.playerStat.findMany({
+    where: { matchId: match.id, present: true },
+    include: { player: true },
+    orderBy: { player: { name: "asc" } },
+  });
+
+  if (!stats.length) {
+    return { error: "Nenhum jogador presente registrado para esta pelada." };
+  }
+
+  const players = stats.map((s) => s.player);
+
+  const positions = ["Goleiro", "Zagueiro", "Meia", "Atacante"];
+  const grouped = {};
+  positions.forEach((pos) => {
+    grouped[pos] = players.filter((p) => p.position === pos);
+  });
+  const others = players.filter((p) => !positions.includes(p.position));
+  if (others.length > 0) {
+    grouped.Outros = others;
+  }
+  
+  return { match, players, grouped, token };
+}
+
+
+router.get("/match/:matchId", async (req, res) => {
+  const { matchId } = req.params;
+  const { token } = req.query;
+
+  const ctx = await loadPublicVoteContext(matchId, token);
+
+  if (ctx.error) {
+    // Render a simple error page if context fails
+    return res.render("vote_page", {
+      title: "Erro na Votação",
+      error: ctx.error,
+      match: null,
+      players: [],
+      grouped: {},
+      token: null,
+      success: false,
+    });
+  }
+
+  res.render("vote_page", {
+    title: `Votação da Pelada`,
+    error: null,
+    match: ctx.match,
+    players: ctx.players,
+    grouped: ctx.grouped,
+    token: ctx.token,
+    success: false,
+  });
+});
+
+router.post("/match/:matchId", async (req, res) => {
+  const { matchId } = req.params;
+  const { token } = req.query;
+
+  const ctx = await loadPublicVoteContext(matchId, token);
+
+  if (ctx.error) {
+    return res.render("vote_page", {
+      title: "Erro na Votação",
+      error: ctx.error,
+      match: null, players: [], grouped: {}, token, success: false,
+    });
+  }
+
+  // Voter identification
+  let voterIdentifier = req.cookies[`vote_id_${matchId}`];
+  if (!voterIdentifier) {
+    voterIdentifier = crypto.randomBytes(16).toString("hex");
+    // Set the cookie for future visits
+    res.cookie(`vote_id_${matchId}`, voterIdentifier, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+  }
+
+  // Check if this identifier has already voted
+  const existingVote = await prisma.publicVote.findUnique({
+    where: {
+      matchId_voterIdentifier: {
+        matchId: ctx.match.id,
+        voterIdentifier,
+      }
+    }
+  });
+
+  if (existingVote) {
+    return res.render("vote_page", {
+      title: "Votação Encerrada",
+      error: "Você já votou nesta pelada.",
+      match: ctx.match,
+      players: ctx.players,
+      grouped: ctx.grouped,
+      token,
+      success: false,
+    });
+  }
+
+  try {
+    const rankings = [];
+    Object.keys(req.body).forEach(key => {
+      if (key.startsWith('rank-')) {
+        const position = key.replace('rank-', '');
+        const playerIds = req.body[key].split(',');
+        playerIds.forEach((id, index) => {
+          const playerId = parseInt(id, 10);
+          if (!Number.isNaN(playerId)) {
+            rankings.push({
+              playerId,
+              position,
+              rank: index + 1,
+            });
+          }
+        });
+      }
+    });
+
+    const mvpPlayerIdRaw = req.body.mvpPlayerId;
+    const mvpPlayerId = mvpPlayerIdRaw && ctx.players.some(p => p.id === parseInt(mvpPlayerIdRaw, 10)) 
+      ? parseInt(mvpPlayerIdRaw, 10) 
+      : null;
+
+    await prisma.publicVote.create({
+      data: {
+        matchId: ctx.match.id,
+        voterIdentifier,
+        mvpPlayerId: mvpPlayerId,
+        rankings: {
+          create: rankings,
+        },
+      },
+    });
+
+    return res.render("vote_page", {
+      title: "Obrigado por Votar!",
+      error: null,
+      match: ctx.match,
+      players: [],
+      grouped: {},
+      token,
+      success: true, // To show a success message
+    });
+
+  } catch (err) {
+    console.error("Erro ao salvar voto público:", err);
+    if (err.code === 'P2002') { // Unique constraint violation
+         return res.render("vote_page", {
+            title: "Votação Encerrada",
+            error: "Seu voto já foi computado.",
+            match: ctx.match, players: ctx.players, grouped: ctx.grouped, token, success: false,
+        });
+    }
+    return res.render("vote_page", {
+      title: "Erro na Votação",
+      error: "Ocorreu um erro ao salvar seu voto. Tente novamente.",
+      match: ctx.match, players: ctx.players, grouped: ctx.grouped, token, success: false,
+    });
+  }
+});
+
 
 module.exports = router;

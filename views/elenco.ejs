@@ -66,7 +66,8 @@
     <% } else { %>
       <div class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
         <% players.forEach((p) => { %>
-          <article
+          <a
+            href="/jogador/<%= p.id %>"
             class="player-card group relative rounded-3xl overflow-hidden
                    border border-horriver-red/40 bg-gradient-to-br
                    from-black/80 via-horriver-dark to-black
@@ -167,7 +168,7 @@
                 </div>
               </div>
             </div>
-          </article>
+          </a>
         <% }) %>
       </div>
     <% } %>

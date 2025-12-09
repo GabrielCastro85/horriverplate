@@ -1,0 +1,53 @@
+<% /* =====================================================================
+//  Página de Edição de Jogador
+// ================================================================== */ %>
+
+<div>
+  <a href="/admin#jogadores" class="text-sm text-horriver-orange hover:underline mb-4 inline-block">&larr; Voltar para o painel</a>
+  
+  <h2 class="font-title text-2xl text-horriver-orange mb-4">
+    Editando: <span class="text-horriver-light"><%= player.name %></span>
+  </h2>
+
+  <form action="/admin/players/<%= player.id %>/edit" method="POST" enctype="multipart/form-data" class="max-w-lg bg-horriver-gray-dark p-6 rounded-md space-y-4">
+    
+    <div>
+      <label for="name" class="block text-xs mb-1">Nome Completo</label>
+      <input type="text" name="name" id="name" value="<%= player.name %>" required class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+    </div>
+
+    <div>
+      <label for="nickname" class="block text-xs mb-1">Apelido</label>
+      <input type="text" name="nickname" id="nickname" value="<%= player.nickname || '' %>" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+    </div>
+    
+    <div>
+      <label for="whatsapp" class="block text-xs mb-1">Telefone (WhatsApp)</label>
+      <input type="tel" name="whatsapp" id="whatsapp" value="<%= player.whatsapp ? player.whatsapp.slice(2) : '' %>" placeholder="21999998888" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+      <p class="text-xs text-horriver-gray mt-1">Apenas números (DDD + número). O +55 será adicionado automaticamente.</p>
+    </div>
+
+    <div>
+      <label for="position" class="block text-xs mb-1">Posição Principal</label>
+      <select name="position" id="position" required class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+        <option value="GOL" <%= player.position === 'GOL' ? 'selected' : '' %>>Goleiro</option>
+        <option value="ZAG" <%= player.position === 'ZAG' ? 'selected' : '' %>>Zagueiro</option>
+        <option value="MEI" <%= player.position === 'MEI' ? 'selected' : '' %>>Meio-campo</option>
+        <option value="ATA" <%= player.position === 'ATA' ? 'selected' : '' %>>Atacante</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="player-photo" class="block text-xs mb-1">Alterar Foto</label>
+      <div class="flex items-center gap-4">
+        <img src="<%= player.photoUrl || '/img/logo-64x64.svg' %>" alt="Foto atual" class="w-12 h-12 rounded-full object-cover bg-horriver-dark">
+        <input type="file" name="photo" id="player-photo" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-horriver-orange file:text-horriver-dark hover:file:bg-horriver-orange/80">
+      </div>
+      <p class="text-xs text-horriver-gray mt-1">Deixe em branco para manter a foto atual.</p>
+    </div>
+
+    <div class="pt-4">
+      <button type="submit" class="w-full bg-horriver-orange text-horriver-dark font-bold py-2 rounded-md hover:bg-opacity-80 transition">Salvar Alterações</button>
+    </div>
+  </form>
+</div>

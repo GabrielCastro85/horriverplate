@@ -1,0 +1,79 @@
+<%# views/vote_page.ejs %>
+
+<% if (error) { %>
+  <div class="text-center p-8 bg-red-900/20 rounded-lg">
+    <h1 class="text-xl font-bold text-red-400">Erro</h1>
+    <p class="mt-2 text-horriver-light"><%= error %></p>
+    <a href="/" class="mt-4 inline-block px-4 py-2 text-sm font-semibold text-white bg-horriver-orange rounded-lg">Voltar para Home</a>
+  </div>
+<% } else if (success) { %>
+  <div class="text-center p-8 bg-green-900/20 rounded-lg">
+    <h1 class="text-xl font-bold text-green-400">Voto Computado!</h1>
+    <p class="mt-2 text-horriver-light">Obrigado pela sua participação. A resenha agradece!</p>
+    <a href="/" class="mt-4 inline-block px-4 py-2 text-sm font-semibold text-white bg-horriver-orange rounded-lg">Voltar para Home</a>
+  </div>
+<% } else { %>
+
+  <h1 class="text-2xl font-bold text-center text-horriver-orange">Votação da Pelada</h1>
+  <p class="text-center text-horriver-gray mb-8">Partida de <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %></p>
+
+  <form id="vote-form" method="POST" action="/vote/match/<%= match.id %>?token=<%= token %>" class="space-y-8">
+    
+    <% Object.keys(grouped).forEach(position => { %>
+      <div class="p-4 bg-black/30 rounded-lg border border-horriver-border">
+        <h2 class="text-lg font-semibold mb-3 text-horriver-light">Arraste para rankear - <span class="text-horriver-orange"><%= position %>s</span></h2>
+        <ul id="rank-<%= position %>" class="space-y-2 player-list">
+          <% grouped[position].forEach(player => { %>
+            <li data-id="<%= player.id %>" class="p-3 bg-horriver-dark rounded-md cursor-grab flex items-center gap-3">
+              <img src="<%= player.photoUrl || '/img/logo-128x128.svg' %>" class="w-10 h-10 rounded-full object-cover">
+              <span class="font-medium"><%= player.name %></span>
+            </li>
+          <% }) %>
+        </ul>
+        <input type="hidden" name="rank-<%= position %>" id="input-rank-<%= position %>">
+      </div>
+    <% }) %>
+
+    <div class="p-4 bg-black/30 rounded-lg border border-horriver-border">
+        <h2 class="text-lg font-semibold mb-3 text-horriver-light">⭐ Craque da Pelada (MVP)</h2>
+        <select name="mvpPlayerId" class="w-full p-3 bg-horriver-dark rounded-md border border-horriver-border text-horriver-light">
+          <option value="">-- Escolha o melhor jogador --</option>
+          <% players.forEach(player => { %>
+            <option value="<%= player.id %>"><%= player.name %></option>
+          <% }) %>
+        </select>
+    </div>
+
+    <div class="text-center">
+        <button type="submit" class="px-8 py-3 bg-horriver-orange text-black font-bold rounded-lg transition hover:bg-orange-500">
+            Enviar Voto
+        </button>
+    </div>
+
+  </form>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const form = document.getElementById('vote-form');
+      const playerLists = document.querySelectorAll('.player-list');
+
+      playerLists.forEach(list => {
+        new Sortable(list, {
+          animation: 150,
+          ghostClass: 'bg-horriver-orange/30'
+        });
+      });
+
+      form.addEventListener('submit', function (e) {
+        playerLists.forEach(list => {
+          const position = list.id.replace('rank-', '');
+          const hiddenInput = document.getElementById('input-rank-' + position);
+          const sortableInstance = Sortable.get(list);
+          const playerIds = sortableInstance.toArray();
+          hiddenInput.value = playerIds.join(',');
+        });
+      });
+    });
+  </script>
+<% } %>
