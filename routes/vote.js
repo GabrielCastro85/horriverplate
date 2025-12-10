@@ -25,6 +25,15 @@ async function loadContext(tokenValue) {
     return { error: "Este link expirou." };
   }
 
+  const normalizePosition = (raw) => {
+    const v = (raw || "").toString().toUpperCase();
+    if (v.startsWith("GOL")) return "Goleiro";
+    if (v.startsWith("ZA")) return "Zagueiro";
+    if (v.startsWith("MEI")) return "Meia";
+    if (v.startsWith("ATA")) return "Atacante";
+    return "Outros";
+  };
+
   const stats = await prisma.playerStat.findMany({
     where: { matchId: token.session.matchId, present: true },
     include: { player: true },
@@ -35,19 +44,32 @@ async function loadContext(tokenValue) {
     return { error: "Nenhum jogador presente registrado para esta pelada." };
   }
 
-  const players = stats.map((s) => ({
-    ...s.player,
-    goals: s.goals || 0,
-    assists: s.assists || 0,
-    appearedInPhoto: !!s.appearedInPhoto,
-  }));
-
-  const positions = ["Goleiro", "Zagueiro", "Meia", "Atacante"];
-  const grouped = {};
-  positions.forEach((pos) => {
-    grouped[pos] = players.filter((p) => p.position === pos);
+  const players = stats.map((s) => {
+    const label = normalizePosition(s.player.position);
+    return {
+      ...s.player,
+      positionLabel: label,
+      goals: s.goals || 0,
+      assists: s.assists || 0,
+      appearedInPhoto: !!s.appearedInPhoto,
+    };
   });
-  grouped.Outros = players.filter((p) => !positions.includes(p.position));
+
+  const grouped = {};
+  const groupedOrder = [];
+  const order = ["Goleiro", "Zagueiro", "Meia", "Atacante"];
+  order.forEach((label) => {
+    const list = players.filter((p) => p.positionLabel === label);
+    if (list.length) {
+      grouped[label] = list;
+      groupedOrder.push({ label, list });
+    }
+  });
+  const others = players.filter((p) => !order.includes(p.positionLabel));
+  if (others.length) {
+    grouped.Outros = others;
+    groupedOrder.push({ label: "Outros", list: others });
+  }
 
   return {
     token,
@@ -55,6 +77,7 @@ async function loadContext(tokenValue) {
     voter: token.player,
     players,
     grouped,
+    groupedOrder,
   };
 }
 
@@ -68,6 +91,7 @@ router.get("/:token", async (req, res) => {
       error: ctx.error,
       success: false,
       grouped: {},
+      groupedOrder: [],
       players: [],
       voter: null,
       match: null,
@@ -80,6 +104,7 @@ router.get("/:token", async (req, res) => {
     error: null,
     success: false,
     grouped: ctx.grouped,
+    groupedOrder: ctx.groupedOrder,
     players: ctx.players,
     voter: ctx.voter,
     match: ctx.match,
@@ -97,6 +122,7 @@ router.post("/:token", async (req, res) => {
       error: ctx.error,
       success: false,
       grouped: {},
+      groupedOrder: [],
       players: [],
       voter: null,
       match: null,
@@ -152,6 +178,7 @@ router.post("/:token", async (req, res) => {
       error: null,
       success: true,
       grouped: ctx.grouped,
+      groupedOrder: ctx.groupedOrder,
       players: ctx.players,
       voter: ctx.voter,
       match: ctx.match,
@@ -164,6 +191,7 @@ router.post("/:token", async (req, res) => {
       error: "Erro ao registrar o voto. Tente novamente.",
       success: false,
       grouped: ctx.grouped,
+      groupedOrder: ctx.groupedOrder,
       players: ctx.players,
       voter: ctx.voter,
       match: ctx.match,
@@ -209,19 +237,48 @@ async function loadPublicVoteContext(matchId, token) {
     return { error: "Nenhum jogador presente registrado para esta pelada." };
   }
 
-  const players = stats.map((s) => s.player);
+  const normalizePosition = (raw) => {
+    const v = (raw || "").toString().toUpperCase();
+    if (v.startsWith("GOL")) return "Goleiro";
+    if (v.startsWith("ZA")) return "Zagueiro";
+    if (v.startsWith("MEI")) return "Meia";
+    if (v.startsWith("ATA")) return "Atacante";
+    return "Outros";
+  };
 
-  const positions = ["Goleiro", "Zagueiro", "Meia", "Atacante"];
-  const grouped = {};
-  positions.forEach((pos) => {
-    grouped[pos] = players.filter((p) => p.position === pos);
+  const players = stats.map((s) => {
+    const label = normalizePosition(s.player.position);
+    return {
+      ...s.player,
+      positionLabel: label,
+      goals: s.goals || 0,
+      assists: s.assists || 0,
+      rating: s.rating,
+      appearedInPhoto: !!s.appearedInPhoto,
+    };
   });
-  const others = players.filter((p) => !positions.includes(p.position));
+
+  // agrupa preservando a ordem desejada
+  const grouped = {};
+  const groupedOrder = [];
+  const order = ["Goleiro", "Zagueiro", "Meia", "Atacante"];
+  order.forEach((label) => {
+    const list = players.filter((p) => p.positionLabel === label);
+    if (list.length) {
+      grouped[label] = list;
+      groupedOrder.push({ label, list });
+    }
+  });
+  // demais posições aparecem em "Outros"
+  const others = players.filter(
+    (p) => !order.includes(p.positionLabel)
+  );
   if (others.length > 0) {
-    grouped.Outros = others;
+    grouped["Outros"] = others;
+    groupedOrder.push({ label: "Outros", list: others });
   }
   
-  return { match, players, grouped, token };
+  return { match, players, grouped, groupedOrder, token };
 }
 
 
@@ -239,6 +296,7 @@ router.get("/match/:matchId", async (req, res) => {
       match: null,
       players: [],
       grouped: {},
+      groupedOrder: [],
       token: null,
       success: false,
     });
@@ -250,6 +308,7 @@ router.get("/match/:matchId", async (req, res) => {
     match: ctx.match,
     players: ctx.players,
     grouped: ctx.grouped,
+    groupedOrder: ctx.groupedOrder,
     token: ctx.token,
     success: false,
   });
@@ -265,7 +324,7 @@ router.post("/match/:matchId", async (req, res) => {
     return res.render("vote_page", {
       title: "Erro na Votação",
       error: ctx.error,
-      match: null, players: [], grouped: {}, token, success: false,
+      match: null, players: [], grouped: {}, groupedOrder: [], token, success: false,
     });
   }
 
@@ -294,6 +353,7 @@ router.post("/match/:matchId", async (req, res) => {
       match: ctx.match,
       players: ctx.players,
       grouped: ctx.grouped,
+      groupedOrder: ctx.groupedOrder,
       token,
       success: false,
     });
@@ -340,6 +400,7 @@ router.post("/match/:matchId", async (req, res) => {
       match: ctx.match,
       players: [],
       grouped: {},
+      groupedOrder: [],
       token,
       success: true, // To show a success message
     });
@@ -350,13 +411,13 @@ router.post("/match/:matchId", async (req, res) => {
          return res.render("vote_page", {
             title: "Votação Encerrada",
             error: "Seu voto já foi computado.",
-            match: ctx.match, players: ctx.players, grouped: ctx.grouped, token, success: false,
+            match: ctx.match, players: ctx.players, grouped: ctx.grouped, groupedOrder: ctx.groupedOrder, token, success: false,
         });
     }
     return res.render("vote_page", {
       title: "Erro na Votação",
       error: "Ocorreu um erro ao salvar seu voto. Tente novamente.",
-      match: ctx.match, players: ctx.players, grouped: ctx.grouped, token, success: false,
+      match: ctx.match, players: ctx.players, grouped: ctx.grouped, groupedOrder: ctx.groupedOrder, token, success: false,
     });
   }
 });

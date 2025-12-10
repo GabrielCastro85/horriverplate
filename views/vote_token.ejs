@@ -1,4 +1,4 @@
-ï»¿<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
   <style>
     /* Drag feedback */
     [data-rank-list] li {
@@ -38,11 +38,11 @@
 
   <% if (!error && !success) { %>
     <form method="POST" class="space-y-6">
-      <% Object.entries(grouped || {}).forEach(([pos, list]) => { %>
-        <% if (!list || !list.length) { return; } %>
-        <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3" data-rank-block data-position="<%= pos %>">
+      <% const blocks = (groupedOrder && groupedOrder.length) ? groupedOrder : Object.entries(grouped || {}).map(([label, list]) => ({ label, list })); %>
+      <% blocks.forEach(({label, list}) => { if (!list || !list.length) { return; } %>
+        <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3" data-rank-block data-position="<%= label %>">
           <div class="flex items-center justify-between">
-            <h2 class="font-title text-xl text-horriver-light"><%= pos %></h2>
+            <h2 class="font-title text-xl text-horriver-light"><%= label %></h2>
             <p class="text-[11px] text-horriver-gray">Arraste ou use as setas (mobile) para ordenar.</p>
           </div>
           <ul class="space-y-2" data-rank-list>
