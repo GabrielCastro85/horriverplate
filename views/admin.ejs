@@ -220,6 +220,81 @@
     </div>
   </section>
 
+  <!-- Premiação da temporada / Hall da Fama -->
+  <section class="pt-4 border-t border-horriver-border/60">
+    <div class="card-inner rounded-2xl p-5 md:p-6 space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+            Premiação da temporada
+          </h2>
+          <p class="text-[11px] md:text-xs text-horriver-gray/80">
+            Cadastre os prêmios de fim de ano (melhor jogador, artilheiro, por posição, etc).
+          </p>
+        </div>
+        <a
+          href="/admin/premiacao"
+          class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
+        >
+          Gerenciar premiação da temporada
+        </a>
+      </div>
+
+      <%
+        const hasSeasonAwards =
+          typeof seasonAwards !== "undefined" &&
+          seasonAwards &&
+          seasonAwards.length;
+
+        let latestYear = null;
+        let latestAwards = [];
+        if (hasSeasonAwards) {
+          latestYear = seasonAwards[0].year;
+          latestAwards = seasonAwards.filter(a => a.year === latestYear);
+        }
+      %>
+
+      <% if (hasSeasonAwards && latestAwards.length) { %>
+        <div class="mt-2 space-y-3">
+          <p class="text-[11px] md:text-xs text-horriver-gray/80">
+            Campeões atuais da temporada
+            <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
+          </p>
+          <div class="overflow-x-auto text-[11px] md:text-xs">
+            <table class="min-w-full border-collapse">
+              <thead>
+                <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+                  <th class="py-2 pr-3 text-left font-normal">Categoria</th>
+                  <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% latestAwards.forEach(a => { %>
+                  <tr class="border-b border-horriver-border/40 last:border-0">
+                    <td class="py-2 pr-3 text-horriver-gray/90">
+                      <%= a.category %>
+                    </td>
+                    <td class="py-2 pr-3 text-horriver-light">
+                      <% if (a.player) { %>
+                        <%= a.player.name %><% if (a.player.nickname) { %> (<%= a.player.nickname %>)<% } %>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% } else { %>
+        <p class="text-[11px] md:text-xs text-horriver-gray/80">
+          Nenhuma premiação cadastrada ainda. Clique em "Gerenciar premiação da temporada" para começar.
+        </p>
+      <% } %>
+    </div>
+  </section>
+
   <!-- Jogadores -->
   <section id="jogadores" class="scroll-mt-16 space-y-4">
     <div class="flex items-center justify-between">
