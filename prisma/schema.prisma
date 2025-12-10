@@ -35,6 +35,7 @@ model Player {
   hallTitle      String?
   isHallOfFame   Boolean             @default(false)
   monthlyAwards  MonthlyAward[]      @relation("MonthlyCraque")
+  overallHistory OverallHistory[]
   achievements   PlayerAchievement[]
   stats          PlayerStat[]
   seasonAwards   SeasonAward[]
@@ -44,9 +45,6 @@ model Player {
   voteRankings   VoteRanking[]
   voteTokens     VoteToken[]
   weeklyAwards   WeeklyAward[]       @relation("WeeklyBest")
-  overallHistory OverallHistory[]
-  mvpPublicVotes PublicVote[] @relation("PublicVoteMVP")
-  publicRankings PublicVoteRanking[]
 }
 
 model Match {
@@ -54,20 +52,15 @@ model Match {
   playedAt     DateTime
   description  String?
   winnerTeam   String?
+  votingToken  String?
+  votingStatus String?      @default("CLOSED")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  lineupDraws  LineupDraw[]
   stats        PlayerStat[]
   VoteLink     VoteLink[]
   voteSessions VoteSession[]
   weeklyAwards WeeklyAward[] @relation("WeeklyMatch")
-  lineupDraws  LineupDraw[]
-
-  // New fields for public voting
-  votingStatus VotingStatus  @default(PENDING)
-  votingToken  String?       @unique
-
-  // Relations for public voting
-  publicVotes  PublicVote[]
 }
 
 model PlayerStat {
@@ -216,7 +209,6 @@ model PlayerAchievement {
   @@unique([playerId, achievementId])
 }
 
-// Histórico de overalls calculados (não afeta colunas legadas)
 model OverallHistory {
   id           Int      @id @default(autoincrement())
   playerId     Int
@@ -224,60 +216,21 @@ model OverallHistory {
   window       String?
   source       Json?
   calculatedAt DateTime @default(now())
-
-  player Player @relation(fields: [playerId], references: [id])
+  player       Player   @relation(fields: [playerId], references: [id])
 
   @@index([playerId, calculatedAt])
 }
 
-// Sorteios de times reprodutíveis (guarda seed, parâmetros e resultado)
 model LineupDraw {
-  id            Int      @id @default(autoincrement())
-  matchId       Int
-  seed          String
-  parameters    Json?
-  result        Json
-  createdAt     DateTime @default(now())
-
-  match Match @relation(fields: [matchId], references: [id])
+  id         Int      @id @default(autoincrement())
+  matchId    Int
+  seed       String
+  parameters Json?
+  result     Json
+  createdAt  DateTime @default(now())
+  match      Match    @relation(fields: [matchId], references: [id])
 
   @@index([matchId, createdAt])
-}
-
-// A single ballot from a public/anonymous voter
-model PublicVote {
-  id              Int      @id @default(autoincrement())
-  matchId         Int
-  voterIdentifier String   // Anonymously identifies a voter (e.g., session cookie, IP hash)
-  createdAt       DateTime @default(now())
-
-  match           Match             @relation(fields: [matchId], references: [id])
-  mvpPlayerId     Int?
-  mvpPlayer       Player?           @relation("PublicVoteMVP", fields: [mvpPlayerId], references: [id])
-  rankings        PublicVoteRanking[]
-
-  @@unique([matchId, voterIdentifier])
-}
-
-model PublicVoteRanking {
-  id           Int        @id @default(autoincrement())
-  publicVoteId Int
-  publicVote   PublicVote @relation(fields: [publicVoteId], references: [id])
-  
-  playerId     Int
-  player       Player     @relation(fields: [playerId], references: [id])
-  
-  position     String
-  rank         Int
-  
-  @@unique([publicVoteId, position, rank])
-  @@unique([publicVoteId, playerId]) // can't rank the same player twice
-}
-
-enum VotingStatus {
-  PENDING
-  OPEN
-  CLOSED
 }
 
 enum SeasonAwardCategory {
