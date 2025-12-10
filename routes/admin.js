@@ -1665,22 +1665,50 @@ router.post("/matches/:id/generate-voting-link", requireAdmin, async (req, res) 
 
     
 
-        // 1. Stats Score (Max 1.5)
-
-        playerStats.forEach(stat => {
-
+        // 1. Stats Score (Max variável por posição, com pesos por posição)
+        playerStats.forEach((stat) => {
           const score = finalScores.get(stat.playerId);
+          if (!score) return;
+
+          const pos = (stat.player.position || "").toLowerCase();
+
+          let goalW = 0.45;
+          let assistW = 0.35;
+          let photoW = 0.4;
+          let maxStats = 1.2;
+
+          if (pos.includes("goleiro")) {
+            goalW = 0.15;
+            assistW = 0.25;
+            photoW = 0.8;
+            maxStats = 1.0;
+          } else if (pos.includes("zagueiro")) {
+            goalW = 0.25;
+            assistW = 0.25;
+            photoW = 0.7;
+            maxStats = 1.0;
+          } else if (pos.includes("meia") || pos.includes("volante")) {
+            goalW = 0.35;
+            assistW = 0.35;
+            photoW = 0.5;
+            maxStats = 1.2;
+          } else {
+            // atacante / ponta / default
+            goalW = 0.45;
+            assistW = 0.35;
+            photoW = 0.4;
+            maxStats = 1.2;
+          }
 
           let statPoints = 0;
+          statPoints += (stat.goals || 0) * goalW;
+          statPoints += (stat.assists || 0) * assistW;
 
-          statPoints += (stat.goals || 0) * 0.5;
+          if (stat.appearedInPhoto) {
+            statPoints += photoW;
+          }
 
-          statPoints += (stat.assists || 0) * 0.25;
-
-          if(stat.appearedInPhoto) statPoints += 0.25;
-
-          score.stats = Math.min(statPoints, 1.5);
-
+          score.stats = Math.min(statPoints, maxStats);
         });
 
     

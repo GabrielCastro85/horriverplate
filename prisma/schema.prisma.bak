@@ -1,0 +1,253 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  passwordHash String
+  voteSessions VoteSession[] @relation("AdminVoteSessions")
+}
+
+model Player {
+  id             Int                 @id @default(autoincrement())
+  name           String
+  nickname       String?
+  position       String
+  photoUrl       String?
+  totalGoals     Int                 @default(0)
+  totalAssists   Int                 @default(0)
+  totalMatches   Int                 @default(0)
+  totalPhotos    Int                 @default(0)
+  totalRating    Float               @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  whatsapp       String?
+  hallBadges     Json?
+  hallInductedAt DateTime?
+  hallReason     String?
+  hallTitle      String?
+  isHallOfFame   Boolean             @default(false)
+  monthlyAwards  MonthlyAward[]      @relation("MonthlyCraque")
+  overallHistory OverallHistory[]
+  achievements   PlayerAchievement[]
+  stats          PlayerStat[]
+  seasonAwards   SeasonAward[]
+  voteBallots    VoteBallot[]        @relation("BestOverallPlayer")
+  VoteChoice     VoteChoice[]
+  VoteLink       VoteLink[]
+  voteRankings   VoteRanking[]
+  voteTokens     VoteToken[]
+  weeklyAwards   WeeklyAward[]       @relation("WeeklyBest")
+}
+
+model Match {
+  id           Int           @id @default(autoincrement())
+  playedAt     DateTime
+  description  String?
+  winnerTeam   String?
+  votingToken  String?
+  votingStatus String?      @default("CLOSED")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  lineupDraws  LineupDraw[]
+  stats        PlayerStat[]
+  VoteLink     VoteLink[]
+  voteSessions VoteSession[]
+  weeklyAwards WeeklyAward[] @relation("WeeklyMatch")
+}
+
+model PlayerStat {
+  id              Int      @id @default(autoincrement())
+  playerId        Int
+  matchId         Int
+  present         Boolean  @default(false)
+  goals           Int      @default(0)
+  assists         Int      @default(0)
+  rating          Float?
+  appearedInPhoto Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  match           Match    @relation(fields: [matchId], references: [id])
+  player          Player   @relation(fields: [playerId], references: [id])
+
+  @@unique([playerId, matchId])
+}
+
+model WeeklyAward {
+  id             Int      @id @default(autoincrement())
+  weekStart      DateTime @unique
+  teamPhotoUrl   String?
+  bestPlayerId   Int?
+  winningMatchId Int?
+  createdAt      DateTime @default(now())
+  bestPlayer     Player?  @relation("WeeklyBest", fields: [bestPlayerId], references: [id])
+  winningMatch   Match?   @relation("WeeklyMatch", fields: [winningMatchId], references: [id])
+}
+
+model MonthlyAward {
+  id        Int      @id @default(autoincrement())
+  month     Int
+  year      Int
+  craqueId  Int?
+  createdAt DateTime @default(now())
+  craque    Player?  @relation("MonthlyCraque", fields: [craqueId], references: [id])
+
+  @@unique([month, year])
+}
+
+model SeasonAward {
+  id             Int                 @id @default(autoincrement())
+  year           Int
+  category       SeasonAwardCategory
+  playerId       Int
+  featuredOnHome Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  player         Player              @relation(fields: [playerId], references: [id])
+
+  @@unique([year, category], name: "year_category")
+}
+
+model VoteSession {
+  id               Int         @id @default(autoincrement())
+  matchId          Int
+  expiresAt        DateTime?
+  createdByAdminId Int?
+  createdAt        DateTime    @default(now())
+  createdByAdmin   Admin?      @relation("AdminVoteSessions", fields: [createdByAdminId], references: [id])
+  match            Match       @relation(fields: [matchId], references: [id])
+  tokens           VoteToken[]
+}
+
+model VoteToken {
+  id            Int         @id @default(autoincrement())
+  token         String      @unique
+  voteSessionId Int
+  playerId      Int
+  usedAt        DateTime?
+  createdAt     DateTime    @default(now())
+  ballot        VoteBallot?
+  player        Player      @relation(fields: [playerId], references: [id])
+  session       VoteSession @relation(fields: [voteSessionId], references: [id])
+
+  @@unique([voteSessionId, playerId])
+}
+
+model VoteBallot {
+  id                  Int           @id @default(autoincrement())
+  voteTokenId         Int           @unique
+  bestOverallPlayerId Int?
+  createdAt           DateTime      @default(now())
+  bestOverallPlayer   Player?       @relation("BestOverallPlayer", fields: [bestOverallPlayerId], references: [id])
+  token               VoteToken     @relation(fields: [voteTokenId], references: [id])
+  rankings            VoteRanking[]
+}
+
+model VoteRanking {
+  id           Int        @id @default(autoincrement())
+  voteBallotId Int
+  position     String
+  playerId     Int
+  rank         Int
+  createdAt    DateTime   @default(now())
+  player       Player     @relation(fields: [playerId], references: [id])
+  ballot       VoteBallot @relation(fields: [voteBallotId], references: [id])
+
+  @@unique([voteBallotId, position, rank])
+}
+
+model VoteLink {
+  id         Int          @id @default(autoincrement())
+  token      String       @unique
+  createdAt  DateTime     @default(now())
+  usedAt     DateTime?
+  playerId   Int
+  matchId    Int
+  phone      String?
+  VoteChoice VoteChoice[]
+  Match      Match        @relation(fields: [matchId], references: [id])
+  Player     Player       @relation(fields: [playerId], references: [id])
+}
+
+model VoteChoice {
+  id             Int          @id @default(autoincrement())
+  category       VoteCategory
+  createdAt      DateTime     @default(now())
+  voteLinkId     Int
+  targetPlayerId Int
+  Player         Player       @relation(fields: [targetPlayerId], references: [id])
+  VoteLink       VoteLink     @relation(fields: [voteLinkId], references: [id])
+}
+
+model Achievement {
+  id          Int                 @id @default(autoincrement())
+  slug        String              @unique
+  name        String
+  description String
+  category    String?
+  icon        String?
+  criteria    Json?
+  createdAt   DateTime            @default(now())
+  players     PlayerAchievement[]
+}
+
+model PlayerAchievement {
+  id            Int         @id @default(autoincrement())
+  playerId      Int
+  achievementId Int
+  unlockedAt    DateTime    @default(now())
+  meta          Json?
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  player        Player      @relation(fields: [playerId], references: [id])
+
+  @@unique([playerId, achievementId])
+}
+
+model OverallHistory {
+  id           Int      @id @default(autoincrement())
+  playerId     Int
+  overall      Float
+  window       String?
+  source       Json?
+  calculatedAt DateTime @default(now())
+  player       Player   @relation(fields: [playerId], references: [id])
+
+  @@index([playerId, calculatedAt])
+}
+
+model LineupDraw {
+  id         Int      @id @default(autoincrement())
+  matchId    Int
+  seed       String
+  parameters Json?
+  result     Json
+  createdAt  DateTime @default(now())
+  match      Match    @relation(fields: [matchId], references: [id])
+
+  @@index([matchId, createdAt])
+}
+
+enum SeasonAwardCategory {
+  ARTILHEIRO
+  ASSISTENTE
+  MELHOR_JOGADOR
+  MELHOR_GOLEIRO
+  MELHOR_ZAGUEIRO
+  MELHOR_MEIA
+  MELHOR_ATACANTE
+  REI_DAS_FOTOS
+}
+
+enum VoteCategory {
+  GOLEIRO
+  ZAGUEIRO
+  MEIA
+  ATACANTE
+  CRAQUE
+}
