@@ -127,6 +127,14 @@ function findClosestPlayer(name, playerMap) {
   return null;
 }
 
+function guessPosition(rawName) {
+  const s = rawName.toLowerCase();
+  if (s.includes("gk") || s.includes("goleiro")) return "GOLEIRO";
+  if (s.includes("zagueiro") || s.includes("zaga")) return "ZAGUEIRO";
+  if (s.includes("atac") || s.includes("forward")) return "ATACANTE";
+  return "MEIA";
+}
+
 // ==============================
 // Helpers de parse
 // ==============================
@@ -339,10 +347,20 @@ async function main() {
     }
 
     // Jogador (com alias + fuzzy)
-    const player = findClosestPlayer(jogadorRaw, playerMap);
+    let player = findClosestPlayer(jogadorRaw, playerMap);
     if (!player) {
-      unmatchedPlayers.add(jogadorRaw);
-      continue;
+      // cria jogador novo se não existir
+      const cleanName = jogadorRaw.replace(/\s+/g, " ").trim();
+      const position = guessPosition(jogadorRaw);
+      player = await prisma.player.create({
+        data: {
+          name: cleanName || "Jogador",
+          position,
+        },
+      });
+      const normNew = normalizeName(cleanName);
+      if (normNew) playerMap.set(normNew, player);
+      unmatchedPlayers.delete(jogadorRaw); // já tratado
     }
 
     touchedPlayerIds.add(player.id);
@@ -442,4 +460,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
