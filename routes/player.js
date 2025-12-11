@@ -23,6 +23,57 @@ router.get("/:id", async (req, res) => {
 
     if (!player) return res.status(404).send("Jogador não encontrado");
 
+    // Pega o overall calculado no mesmo período padrão do ranking (ano atual)
+    const currentYear = new Date().getFullYear();
+    const from = new Date(currentYear, 0, 1);
+    const to = new Date(currentYear + 1, 0, 1);
+
+    const playersForOverall = await prisma.player.findMany({
+      include: {
+        stats: {
+          where: {
+            match: {
+              playedAt: {
+                gte: from,
+                lt: to,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const overallEntries = playersForOverall.map((p) => {
+      let goals = 0;
+      let assists = 0;
+      let matches = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      for (const s of p.stats) {
+        goals += s.goals || 0;
+        assists += s.assists || 0;
+        if (s.present) matches++;
+        if (s.rating != null) {
+          ratingSum += s.rating;
+          ratingCount++;
+        }
+      }
+
+      const rating = ratingCount > 0 ? ratingSum / ratingCount : 0;
+
+      return {
+        player: p,
+        goals,
+        assists,
+        matches,
+        rating,
+      };
+    });
+
+    const { computed: rankingOverallComputed } = computeOverallFromEntries(overallEntries);
+    const rankingOverallMap = new Map(rankingOverallComputed.map((o) => [o.player.id, o.overall]));
+
     const totals = {
       goals: player.totalGoals || 0,
       assists: player.totalAssists || 0,
@@ -63,7 +114,9 @@ router.get("/:id", async (req, res) => {
     }));
 
     const overallHistory = player.overallHistory || [];
-    let latestOverall = overallHistory.length ? overallHistory[0].overall : null;
+    let latestOverall =
+      rankingOverallMap.get(player.id) ??
+      (overallHistory.length ? overallHistory[0].overall : null);
     const overallSeries = overallHistory
       .slice(0, 12)
       .map((o) => ({ date: o.calculatedAt, overall: o.overall }))

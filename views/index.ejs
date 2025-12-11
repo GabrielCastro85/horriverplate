@@ -498,13 +498,8 @@
               </div>
 
               <div class="text-center space-y-1 text-[12px]">
-                <p class="text-[11px] text-horriver-gray">
-                  Semana de
-                  <span class="text-horriver-light">
-                    <%= fmtDate(weeklyAward.weekStart) %>
-                  </span>
                   <% if (weeklyAward.winningMatch) { %>
-                    · Pelada em
+                    Pelada de
                     <span class="text-horriver-light">
                       <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
                     </span>
@@ -602,12 +597,7 @@
           </p>
         <% } else { %>
           <% if (weeklyAward.winningMatch) { %>
-            <p class="text-[11px] text-horriver-gray text-center">
-              Semana de
-              <span class="text-horriver-light">
-                <%= fmtDate(weeklyAward.weekStart) %>
-              </span>
-              · Pelada em
+              Pelada de
               <span class="text-horriver-light">
                 <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
               </span>

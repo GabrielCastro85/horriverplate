@@ -409,6 +409,7 @@ router.get("/hall-da-fama", async (req, res) => {
     let hallFeatured = null;
     let previousSeasonYear = null;
     let previousSeasonAwards = [];
+    let seasonHistory = [];
     if (seasonAwards.length) {
       latestSeasonYear = seasonAwards[0].year;
       latestSeasonAwards = seasonAwards.filter(
@@ -438,6 +439,21 @@ router.get("/hall-da-fama", async (req, res) => {
           (a) => a.year === previousSeasonYear
         );
       }
+
+      // agrupa todos os anos para histórico completo
+      const awardsByYear = seasonAwards.reduce((acc, award) => {
+        const y = award.year;
+        if (!acc[y]) acc[y] = [];
+        acc[y].push(award);
+        return acc;
+      }, {});
+      seasonHistory = Object.entries(awardsByYear)
+        .filter(([year]) => Number(year) !== latestSeasonYear) // já exibimos a mais recente em destaque
+        .sort((a, b) => Number(b[0]) - Number(a[0]))
+        .map(([year, awards]) => ({
+          year: Number(year),
+          awards,
+        }));
     }
 
     const retiredPlayers = await prisma.player.findMany({
@@ -454,6 +470,7 @@ router.get("/hall-da-fama", async (req, res) => {
       hallFeatured,
       previousSeasonYear,
       previousSeasonAwards,
+      seasonHistory,
       retiredPlayers,
     });
   } catch (err) {
