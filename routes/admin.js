@@ -1587,298 +1587,327 @@ router.post("/matches/:id/generate-voting-link", requireAdmin, async (req, res) 
       },
     });
 
-        // We don't return the link directly, the view will build it.
+    return res.redirect(`/admin/matches/${matchId}?votingLinkGenerated=true`);
+  } catch (err) {
+    console.error("Erro ao gerar link de votação:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=votingLink`);
+  }
+});
 
-        // We just signal that it was successful.
+// ----------------------------------------------
+// Helpers para cálculo de notas e prêmios
+// ----------------------------------------------
+function normalizePosition(pos) {
+  const p = (pos || "").toLowerCase();
+  if (p.includes("gol")) return "GOL";
+  if (p.includes("zag")) return "ZAG";
+  if (p.includes("vol")) return "VOL";
+  if (p.includes("mei")) return "MEI";
+  if (p.includes("ata") || p.includes("pont")) return "ATA";
+  return "OUTRO";
+}
 
-        return res.redirect(`/admin/matches/${matchId}?votingLinkGenerated=true`);
+function starsFromRank(rankIndex, totalPlayers) {
+  if (totalPlayers <= 1) return 5;
+  const t = rankIndex / (totalPlayers - 1);
+  const stars = 5 - 4 * t; // linear 5..1
+  return Math.round(stars * 2) / 2; // passo de 0.5
+}
 
-      } catch (err) {
+async function computeMatchRatingsAndAwards(matchId) {
+  const [ballots, playerStats] = await Promise.all([
+    prisma.voteBallot.findMany({
+      where: {
+        token: {
+          session: {
+            matchId,
+          },
+        },
+      },
+      include: {
+        rankings: true,
+        token: {
+          include: {
+            session: true,
+            player: true,
+          },
+        },
+      },
+    }),
+    prisma.playerStat.findMany({
+      where: { matchId, present: true },
+      include: { player: true },
+    }),
+  ]);
 
-        console.error("Erro ao gerar link de votação:", err);
+  if (!playerStats.length) {
+    return { error: "noStats" };
+  }
 
-        return res.redirect(`/admin/matches/${req.params.id}?error=votingLink`);
+  const scores = new Map();
+  playerStats.forEach((stat) => {
+    scores.set(stat.playerId, {
+      player: stat.player,
+      statId: stat.id,
+      goals: stat.goals || 0,
+      assists: stat.assists || 0,
+      appearedInPhoto: !!stat.appearedInPhoto,
+      votesCount: 0,
+      voteRating: 0,
+      statsRating: 0,
+      finalRating: 0,
+    });
+  });
 
+  // ---- Nota de votação (0..10) usando estrelas suavizadas
+  const sumStars = new Map();
+  const votesCount = new Map();
+  let globalStarsSum = 0;
+  let globalEvaluations = 0;
+
+  ballots.forEach((vote) => {
+    const grouped = vote.rankings.reduce((acc, r) => {
+      const key = normalizePosition(r.position);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(r);
+      return acc;
+    }, {});
+
+    Object.values(grouped).forEach((ranks) => {
+      ranks.sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+      const total = ranks.length;
+      ranks.forEach((rank, idx) => {
+        const index = typeof rank.rank === "number" ? Math.max(0, rank.rank - 1) : idx;
+        const stars = starsFromRank(index, total);
+        if (!scores.has(rank.playerId)) return;
+        sumStars.set(rank.playerId, (sumStars.get(rank.playerId) || 0) + stars);
+        votesCount.set(rank.playerId, (votesCount.get(rank.playerId) || 0) + 1);
+        globalStarsSum += stars;
+        globalEvaluations += 1;
+      });
+    });
+  });
+
+  const m = globalEvaluations > 0 ? globalStarsSum / globalEvaluations : 2.5;
+  const C = 3; // mínimo ideal de votos
+
+  scores.forEach((score, playerId) => {
+    const vCount = votesCount.get(playerId) || 0;
+    const R = vCount ? (sumStars.get(playerId) || 0) / vCount : 0;
+    let finalStars;
+    if (vCount > 0) {
+      finalStars = (R * vCount + m * C) / (vCount + C);
+    } else {
+      finalStars = m || 2.5;
+    }
+    score.votesCount = vCount;
+    score.voteRating = Number((finalStars * 2).toFixed(2));
+  });
+
+  // ---- Nota de stats (0..10) normalizada por posição
+  const maxGoals = Math.max(0, ...playerStats.map((s) => s.goals || 0));
+  const maxAssists = Math.max(0, ...playerStats.map((s) => s.assists || 0));
+
+  playerStats.forEach((stat) => {
+    const entry = scores.get(stat.playerId);
+    if (!entry) return;
+    const posGroup = normalizePosition(stat.player.position);
+
+    let gW = 0.6;
+    let aW = 0.3;
+    let photoBonus = stat.appearedInPhoto ? 0.1 : 0;
+
+    if (posGroup === "GOL") {
+      gW = 0.2;
+      aW = 0.3;
+      photoBonus = stat.appearedInPhoto ? 0.5 : 0;
+    } else if (posGroup === "ZAG") {
+      gW = 0.3;
+      aW = 0.4;
+      photoBonus = stat.appearedInPhoto ? 0.3 : 0;
+    } else if (posGroup === "MEI" || posGroup === "VOL") {
+      gW = 0.4;
+      aW = 0.4;
+      photoBonus = stat.appearedInPhoto ? 0.2 : 0;
+    }
+
+    const goalsRel = maxGoals > 0 ? (stat.goals || 0) / maxGoals : 0;
+    const assistsRel = maxAssists > 0 ? (stat.assists || 0) / maxAssists : 0;
+
+    let score0to1 = goalsRel * gW + assistsRel * aW + photoBonus;
+    if (score0to1 > 1) score0to1 = 1;
+    const statsRating = Number((score0to1 * 10).toFixed(2));
+
+    entry.statsRating = statsRating;
+  });
+
+  // ---- Nota final combinada e prêmios
+  scores.forEach((entry) => {
+    const finalRating = 0.7 * entry.voteRating + 0.3 * entry.statsRating;
+    entry.finalRating = Number(finalRating.toFixed(2));
+  });
+
+  const pickBest = (playerIds) => {
+    let best = null;
+    playerIds.forEach((pid) => {
+      const s = scores.get(pid);
+      if (!s) return;
+      if (!best) {
+        best = s;
+        return;
       }
+      if (s.finalRating > best.finalRating) {
+        best = s;
+        return;
+      }
+      const currentGa = (s.goals || 0) + (s.assists || 0);
+      const bestGa = (best.goals || 0) + (best.assists || 0);
+      if (s.finalRating === best.finalRating && currentGa > bestGa) {
+        best = s;
+        return;
+      }
+      if (
+        s.finalRating === best.finalRating &&
+        currentGa === bestGa &&
+        s.votesCount > best.votesCount
+      ) {
+        best = s;
+      }
+    });
+    return best;
+  };
 
+  const groupedIds = {
+    GOL: [],
+    ZAG: [],
+    MEI: [],
+    VOL: [],
+    ATA: [],
+    OUTRO: [],
+  };
+
+  playerStats.forEach((stat) => {
+    const key = normalizePosition(stat.player.position);
+    groupedIds[key] = groupedIds[key] || [];
+    groupedIds[key].push(stat.playerId);
+  });
+
+  const awards = {
+    craque: pickBest(Array.from(scores.keys())),
+    melhor_goleiro: pickBest(groupedIds.GOL || []),
+    melhor_zagueiro: pickBest(groupedIds.ZAG || []),
+    melhor_meia: pickBest([...(groupedIds.MEI || []), ...(groupedIds.VOL || [])]),
+    melhor_atacante: pickBest(groupedIds.ATA || []),
+  };
+
+  return { publicVotes: ballots, playerStats, scores, awards };
+}
+
+// ==============================
+// 🧮 Calcular resultados da votação pública
+// ==============================
+router.post("/matches/:id/calculate-results", requireAdmin, async (req, res) => {
+  const matchId = Number(req.params.id);
+  if (Number.isNaN(matchId)) {
+    return res.redirect("/admin");
+  }
+
+  try {
+    const result = await computeMatchRatingsAndAwards(matchId);
+    if (result.error) {
+      return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
+    }
+
+    if (!result.publicVotes || result.publicVotes.length === 0) {
+      return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
+    }
+
+    const updates = [];
+    result.scores.forEach((score) => {
+      updates.push(
+        prisma.playerStat.update({
+          where: { id: score.statId },
+          data: { rating: score.finalRating },
+        })
+      );
     });
 
-    
-
-    // ==============================
-
-    // 🧮 Calcular resultados da votação pública
-
-    // ==============================
-
-    router.post("/matches/:id/calculate-results", requireAdmin, async (req, res) => {
-
-      const matchId = Number(req.params.id);
-
-      if (Number.isNaN(matchId)) {
-
-        return res.redirect("/admin");
-
-      }
-
-    
-
-      try {
-
-        const [publicVotes, playerStats] = await Promise.all([
-
-          prisma.publicVote.findMany({
-
-            where: { matchId },
-
-            include: { rankings: true },
-
-          }),
-
-          prisma.playerStat.findMany({
-
-            where: { matchId, present: true },
-
-            include: { player: true },
-
-          }),
-
-        ]);
-
-    
-
-        if (publicVotes.length === 0) {
-
-          return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
-
-        }
-
-    
-
-        const finalScores = new Map();
-
-        playerStats.forEach(stat => {
-
-          finalScores.set(stat.playerId, { base: 5.0, mvp: 0, ranking: 0, stats: 0, statId: stat.id });
-
-        });
-
-    
-
-        // 1. Stats Score (Max variável por posição, com pesos por posição)
-        playerStats.forEach((stat) => {
-          const score = finalScores.get(stat.playerId);
-          if (!score) return;
-
-          const pos = (stat.player.position || "").toLowerCase();
-
-          let goalW = 0.45;
-          let assistW = 0.35;
-          let photoW = 0.4;
-          let maxStats = 1.2;
-
-          if (pos.includes("goleiro")) {
-            goalW = 0.15;
-            assistW = 0.25;
-            photoW = 0.8;
-            maxStats = 1.0;
-          } else if (pos.includes("zagueiro")) {
-            goalW = 0.25;
-            assistW = 0.25;
-            photoW = 0.7;
-            maxStats = 1.0;
-          } else if (pos.includes("meia") || pos.includes("volante")) {
-            goalW = 0.35;
-            assistW = 0.35;
-            photoW = 0.5;
-            maxStats = 1.2;
-          } else {
-            // atacante / ponta / default
-            goalW = 0.45;
-            assistW = 0.35;
-            photoW = 0.4;
-            maxStats = 1.2;
-          }
-
-          let statPoints = 0;
-          statPoints += (stat.goals || 0) * goalW;
-          statPoints += (stat.assists || 0) * assistW;
-
-          if (stat.appearedInPhoto) {
-            statPoints += photoW;
-          }
-
-          score.stats = Math.min(statPoints, maxStats);
-        });
-
-    
-
-        // 2. MVP Score (Max 1.5)
-
-        const mvpVotes = publicVotes.map(v => v.mvpPlayerId).filter(id => id != null);
-
-        if (mvpVotes.length > 0) {
-
-            const mvpCounts = mvpVotes.reduce((acc, id) => {
-
-                acc[id] = (acc[id] || 0) + 1;
-
-                return acc;
-
-            }, {});
-
-            
-
-            const maxVotes = Math.max(...Object.values(mvpCounts));
-
-            const winners = Object.keys(mvpCounts).filter(id => mvpCounts[id] === maxVotes);
-
-    
-
-            winners.forEach(winnerId => {
-
-                const id = Number(winnerId);
-
-                if (finalScores.has(id)) {
-
-                    finalScores.get(id).mvp = 1.5 / winners.length; // Share the bonus if tied
-
-                }
-
-            });
-
-    
-
-            // Bonus for receiving votes
-
-            Object.keys(mvpCounts).forEach(voterId => {
-
-                const id = Number(voterId);
-
-                if (finalScores.has(id) && !winners.includes(voterId)) {
-
-                     finalScores.get(id).mvp += 0.25;
-
-                }
-
-            });
-
-        }
-
-    
-
-        // 3. Ranking Score (Max 2.0)
-
-        const rankingScores = new Map(); // playerId -> [scores]
-
-        publicVotes.forEach(vote => {
-
-          const rankingsByPos = vote.rankings.reduce((acc, r) => {
-
-            if (!acc[r.position]) acc[r.position] = [];
-
-            acc[r.position].push(r);
-
-            return acc;
-
-          }, {});
-
-    
-
-          Object.values(rankingsByPos).forEach(ranks => {
-
-            const numPlayers = ranks.length;
-
-            if(numPlayers < 2) return;
-
-            ranks.forEach(rank => {
-
-              const score = (numPlayers - rank.rank) / (numPlayers - 1); // 1 for 1st, 0 for last
-
-              if (!rankingScores.has(rank.playerId)) rankingScores.set(rank.playerId, []);
-
-              rankingScores.get(rank.playerId).push(score);
-
-            });
-
-          });
-
-        });
-
-    
-
-        rankingScores.forEach((scores, playerId) => {
-
-          if (finalScores.has(playerId)) {
-
-            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-
-            finalScores.get(playerId).ranking = avg * 2.0; // Scale to max 2 points
-
-          }
-
-        });
-
-    
-
-        // 4. Final calculation and DB update prep
-
-        const updates = [];
-
-        finalScores.forEach((score, playerId) => {
-
-          let finalScore = score.base + score.mvp + score.ranking + score.stats;
-
-          finalScore = Math.min(Math.max(finalScore, 0), 10);
-
-          
-
-          updates.push(
-
-            prisma.playerStat.update({
-
-              where: { id: score.statId },
-
-              data: { rating: parseFloat(finalScore.toFixed(2)) },
-
-            })
-
-          );
-
-        });
-
-    
-
-        await prisma.$transaction(updates);
-
-    
-
-        await prisma.match.update({
-
-          where: { id: matchId },
-
-          data: { votingStatus: 'CLOSED' },
-
-        });
-
-    
-
-        res.redirect(`/admin/matches/${matchId}?resultsCalculated=true`);
-
-    
-
-      } catch (err) {
-
-        console.error("Erro ao calcular resultados da votação:", err);
-
-        res.redirect(`/admin/matches/${matchId}?error=results`);
-
-      }
-
+    if (updates.length) {
+      await prisma.$transaction(updates);
+    }
+
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { votingStatus: "CLOSED" },
     });
 
-    
+    return res.redirect(`/admin/matches/${matchId}?resultsCalculated=true`);
+  } catch (err) {
+    console.error("Erro ao calcular resultados da votação:", err);
+    return res.redirect(`/admin/matches/${matchId}?error=results`);
+  }
+});
 
-    
+// ==============================
+// 🏆 Card de prêmios da pelada
+// ==============================
+router.get("/matches/:id/awards-card", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) return res.redirect("/admin");
 
-    module.exports = router;
+    const match = await prisma.match.findUnique({ where: { id: matchId } });
+    if (!match) return res.redirect("/admin");
+
+    const result = await computeMatchRatingsAndAwards(matchId);
+    if (result.error) return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
+
+    const scoresList = Array.from(result.scores.values()).map((s) => ({
+      ...s,
+      playerId: s.player.id,
+    }));
+
+    return res.render("awards_card", {
+      layout: "layout",
+      match,
+      awards: result.awards,
+      scores: scoresList,
+    });
+  } catch (err) {
+    console.error("Erro ao exibir card de prêmios:", err);
+    return res.redirect("/admin");
+  }
+});
+
+// ==============================
+// 📊 Página de resultados/prêmios da pelada (com botão de download)
+// ==============================
+router.get("/matches/:id/awards", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) return res.redirect("/admin");
+
+    const match = await prisma.match.findUnique({ where: { id: matchId } });
+    if (!match) return res.redirect("/admin");
+
+    const result = await computeMatchRatingsAndAwards(matchId);
+    if (result.error) return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
+
+    const scoresList = Array.from(result.scores.values()).map((s) => ({
+      ...s,
+      playerId: s.player.id,
+    }));
+
+    return res.render("awards_results", {
+      layout: "layout",
+      match,
+      awards: result.awards,
+      scores: scoresList,
+    });
+  } catch (err) {
+    console.error("Erro ao exibir resultados/prêmios:", err);
+    return res.redirect("/admin");
+  }
+});
+
+module.exports = router;

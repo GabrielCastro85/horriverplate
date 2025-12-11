@@ -1,0 +1,131 @@
+<section class="min-h-screen bg-gradient-to-b from-black via-[#120008] to-[#1b0a0f] px-4 py-10 text-horriver-light">
+  <div class="max-w-5xl mx-auto space-y-8">
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Resultados da pelada</p>
+        <h1 class="text-2xl font-semibold text-horriver-orange">
+          <%= match.description || 'Pelada' %> — <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
+        </h1>
+      </div>
+      <a
+        href="/admin/matches/<%= match.id %>"
+        class="text-xs text-horriver-gray underline hover:text-horriver-orange transition"
+      >
+        Voltar para o painel da pelada
+      </a>
+    </header>
+
+    <div
+      id="awards-card"
+      class="rounded-3xl bg-gradient-to-br from-black/80 via-[#1c0b10]/80 to-[#2a0f16]/80 border border-horriver-border/60 shadow-2xl overflow-hidden"
+    >
+      <div class="p-6 md:p-8 space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Horriver Plate</p>
+            <h2 class="text-xl font-semibold text-horriver-light">Prêmios oficiais da pelada</h2>
+          </div>
+          <div class="text-right text-xs text-horriver-gray">
+            <p><%= match.description || 'Pelada' %></p>
+            <p><%= new Date(match.playedAt).toLocaleDateString('pt-BR') %></p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <% const awardList = [ ['Craque da Pelada', awards.craque], ['Melhor Goleiro', awards.melhor_goleiro], ['Melhor Zagueiro', awards.melhor_zagueiro], ['Melhor Meia', awards.melhor_meia], ['Melhor Atacante', awards.melhor_atacante] ]; %>
+          <% awardList.forEach(([label, item]) => { %>
+            <div class="rounded-2xl border border-horriver-border/50 bg-black/40 p-4">
+              <p class="text-xs uppercase tracking-[0.18em] text-horriver-gray mb-2"><%= label %></p>
+              <% if (item) { %>
+                <p class="text-lg font-semibold text-horriver-light"><%= item.player?.name || 'Jogador' %></p>
+                <p class="text-xs text-horriver-orange">
+                  <%= item.player?.position || item.positionNorm || '-' %> • Nota: <%= item.finalRating?.toFixed(2) %>
+                </p>
+                <p class="text-[11px] text-horriver-gray mt-1">
+                  Gols: <%= item.goals || 0 %> · Assist: <%= item.assists || 0 %> · Votos: <%= item.votesCount || 0 %>
+                </p>
+              <% } else { %>
+                <p class="text-sm text-horriver-gray">Sem dados suficientes.</p>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+
+        <div class="border-t border-horriver-border/30 pt-6">
+          <h3 class="text-sm uppercase tracking-[0.18em] text-horriver-gray mb-3">Notas finais por jogador</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm text-horriver-light">
+              <thead>
+                <tr class="text-xs uppercase tracking-[0.18em] text-horriver-gray">
+                  <th class="text-left py-2 pr-4">Jogador</th>
+                  <th class="text-left py-2 pr-4">Posição</th>
+                  <th class="text-left py-2 pr-4">Nota final</th>
+                  <th class="text-left py-2 pr-4">Votação</th>
+                  <th class="text-left py-2 pr-4">Stats</th>
+                  <th class="text-left py-2 pr-4">Gols</th>
+                  <th class="text-left py-2 pr-4">Assist</th>
+                  <th class="text-left py-2 pr-4">Votos</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-horriver-border/20">
+                <% scores.sort((a,b)=>b.finalRating-a.finalRating).forEach((s) => { %>
+                  <tr class="hover:bg-white/5 transition">
+                    <td class="py-2 pr-4 font-semibold"><%= s.player?.name || 'Jogador' %></td>
+                    <td class="py-2 pr-4 text-horriver-gray"><%= s.player?.position || '-' %></td>
+                    <td class="py-2 pr-4 text-horriver-orange font-semibold"><%= s.finalRating?.toFixed(2) %></td>
+                    <td class="py-2 pr-4"><%= s.voteRating?.toFixed(2) %></td>
+                    <td class="py-2 pr-4"><%= s.statsRating?.toFixed(2) %></td>
+                    <td class="py-2 pr-4"><%= s.goals || 0 %></td>
+                    <td class="py-2 pr-4"><%= s.assists || 0 %></td>
+                    <td class="py-2 pr-4"><%= s.votesCount || 0 %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <footer class="pt-4 border-t border-horriver-border/40 text-xs text-horriver-gray flex items-center justify-between">
+          <span>horriverplate.onrender.com</span>
+          <span>@_hpfrc</span>
+        </footer>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button
+        type="button"
+        id="download-awards-image"
+        class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
+      >
+        Baixar imagem dos prêmios
+      </button>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  const btn = document.getElementById("download-awards-image");
+  if (btn) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const card = document.getElementById("awards-card");
+      if (!card) return;
+      html2canvas(card, { backgroundColor: "#0d0d0d" }).then((canvas) => {
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "premios-pelada.png";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        });
+      });
+    });
+  }
+</script>
