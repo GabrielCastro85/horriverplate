@@ -225,7 +225,7 @@ router.post(
   async (req, res) => {
     try {
       const id = Number(req.params.id);
-      const { name, nickname, position, whatsapp } = req.body;
+      const { name, nickname, position, whatsapp, hallStatus, hallReasonText } = req.body;
 
       if (!name || !position || Number.isNaN(id)) {
         return res.redirect("/admin");
