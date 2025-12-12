@@ -9,10 +9,64 @@ function normalizeRatingStats(stats) {
   return { avg, count8, count9, count10 };
 }
 
+// Encontra a primeira data em que o jogador atingiu o alvo de progresso, percorrendo partidas em ordem cronológica
+function findUnlockDate(stats, category, code, target, playerPosition) {
+  if (!Array.isArray(stats) || !stats.length || !target) return null;
+  const sorted = [...stats].sort(
+    (a, b) => new Date(a.match?.playedAt || a.createdAt || 0) - new Date(b.match?.playedAt || b.createdAt || 0)
+  );
+
+  let accGoals = 0;
+  let accAssists = 0;
+  let accMatches = 0;
+  let accRatings = 0;
+  let accRatingCount = 0;
+  let acc8 = 0;
+  let acc9 = 0;
+  let acc10 = 0;
+  const isDef = (playerPosition || "").toLowerCase().includes("zag") || (playerPosition || "").toLowerCase().includes("def");
+
+  for (const s of sorted) {
+    const playedAt = s.match?.playedAt || s.createdAt || null;
+    accGoals += s.goals || 0;
+    accAssists += s.assists || 0;
+    if (s.present) accMatches += 1;
+    if (s.rating != null) {
+      accRatings += s.rating;
+      accRatingCount += 1;
+      if (s.rating >= 8) acc8 += 1;
+      if (s.rating >= 9) acc9 += 1;
+      if (s.rating >= 10) acc10 += 1;
+    }
+
+    if (category === "gols" && accGoals >= target) return playedAt;
+    if (category === "assistencias" && accAssists >= target) return playedAt;
+    if (category === "presenca" && accMatches >= target) return playedAt;
+    if (category === "zagueiro") {
+      if (!isDef) return null;
+      if (accMatches >= target) return playedAt;
+    }
+
+    if (category === "notas") {
+      if (code === "nota_media_6" || code === "nota_media_7") {
+        const avg = accRatingCount ? accRatings / accRatingCount : 0;
+        if (avg >= target) return playedAt;
+      } else if (code === "nota_10x8" && acc8 >= target) {
+        return playedAt;
+      } else if (code === "nota_25x9" && acc9 >= target) {
+        return playedAt;
+      } else if (code === "nota_10" && acc10 > 0) {
+        return playedAt;
+      }
+    }
+  }
+  return null;
+}
+
 async function evaluateAchievementsForPlayer(playerId) {
   const player = await prisma.player.findUnique({
     where: { id: playerId },
-    include: { stats: true },
+    include: { stats: { include: { match: true } } },
   });
   if (!player) return [];
 
@@ -37,21 +91,26 @@ async function evaluateAchievementsForPlayer(playerId) {
     let progress = 0;
     const target = ach.targetValue || 0;
     const pos = (player.position || "").toLowerCase();
+    let unlockDateCandidate = null;
 
     switch (ach.category) {
       case "gols":
         progress = player.totalGoals || 0;
+        unlockDateCandidate = findUnlockDate(player.stats, "gols", ach.code, target, pos);
         break;
       case "assistencias":
         progress = player.totalAssists || 0;
+        unlockDateCandidate = findUnlockDate(player.stats, "assistencias", ach.code, target, pos);
         break;
       case "presenca":
         progress = player.totalMatches || 0;
+        unlockDateCandidate = findUnlockDate(player.stats, "presenca", ach.code, target, pos);
         break;
       case "zagueiro":
         // Só conta se a posição for zagueiro/defensor
         if (pos.includes("zag") || pos.includes("def")) {
           progress = player.totalMatches || 0;
+          unlockDateCandidate = findUnlockDate(player.stats, "zagueiro", ach.code, target, pos);
         } else {
           progress = 0;
         }
@@ -66,6 +125,7 @@ async function evaluateAchievementsForPlayer(playerId) {
         } else if (ach.code === "nota_10") {
           progress = count10 > 0 ? 1 : 0;
         }
+        unlockDateCandidate = findUnlockDate(player.stats, "notas", ach.code, target, pos);
         break;
       case "premio":
         if (ach.code.startsWith("prem_semana")) progress = weeklyCount;
@@ -95,8 +155,13 @@ async function evaluateAchievementsForPlayer(playerId) {
     };
     if (shouldUnlock) {
       if (!alreadyUnlocked) {
-        data.unlockedAt = new Date();
+        data.unlockedAt = unlockDateCandidate || new Date();
         newlyUnlocked.push({ id: ach.id, title: ach.title, code: ach.code, category: ach.category, rarity: ach.rarity });
+      } else {
+        // atualiza data se não existir ou se encontrarmos uma data mais precisa/antiga
+        if (unlockDateCandidate && (!data.unlockedAt || new Date(unlockDateCandidate) < new Date(data.unlockedAt))) {
+          data.unlockedAt = unlockDateCandidate;
+        }
       }
     } else {
       data.unlockedAt = null; // reverte se não atingiu
