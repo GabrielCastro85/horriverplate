@@ -1,6 +1,7 @@
 const express = require("express");
 const prisma = require("../utils/db");
 const { computeOverallFromEntries } = require("../utils/overall");
+const { evaluateAchievementsForPlayer, getPlayerAchievements } = require("../utils/achievements");
 
 const router = express.Router();
 
@@ -13,7 +14,6 @@ router.get("/:id", async (req, res) => {
       where: { id },
       include: {
         stats: { include: { match: true }, orderBy: { match: { playedAt: "desc" } } },
-        achievements: { include: { achievement: true }, orderBy: { unlockedAt: "desc" } },
         overallHistory: {
           orderBy: { calculatedAt: "desc" },
           take: 12,
@@ -114,13 +114,58 @@ router.get("/:id", async (req, res) => {
     }));
 
     const overallHistory = player.overallHistory || [];
+
+    // Se não houver histórico salvo, gera um histórico sintético acumulando stats por partida
+    let syntheticOverallSeries = [];
+    if (!overallHistory.length && player.stats && player.stats.length) {
+      const chronoStats = [...player.stats]
+        .filter((s) => s.match?.playedAt)
+        .sort((a, b) => new Date(a.match.playedAt) - new Date(b.match.playedAt));
+
+      let g = 0;
+      let a = 0;
+      let m = 0;
+      let rSum = 0;
+      let rCount = 0;
+
+      chronoStats.forEach((s) => {
+        g += s.goals || 0;
+        a += s.assists || 0;
+        if (s.present) m += 1;
+        if (s.rating != null) {
+          rSum += s.rating;
+          rCount += 1;
+        }
+        const avgR = rCount ? rSum / rCount : 0;
+        const { computed } = computeOverallFromEntries([
+          {
+            player,
+            goals: g,
+            assists: a,
+            matches: m,
+            rating: avgR,
+          },
+        ]);
+        if (computed && computed.length) {
+          syntheticOverallSeries.push({
+            date: s.match.playedAt,
+            overall: computed[0].overall,
+          });
+        }
+      });
+    }
+
+    let overallSeries =
+      overallHistory.length > 0
+        ? overallHistory
+            .slice(0, 12)
+            .map((o) => ({ date: o.calculatedAt, overall: o.overall }))
+            .reverse()
+        : syntheticOverallSeries;
+
     let latestOverall =
       rankingOverallMap.get(player.id) ??
-      (overallHistory.length ? overallHistory[0].overall : null);
-    const overallSeries = overallHistory
-      .slice(0, 12)
-      .map((o) => ({ date: o.calculatedAt, overall: o.overall }))
-      .reverse();
+      (overallSeries.length ? overallSeries[overallSeries.length - 1].overall : null);
 
     if (latestOverall == null) {
       const { computed } = computeOverallFromEntries([
@@ -135,6 +180,32 @@ router.get("/:id", async (req, res) => {
       latestOverall = computed && computed.length ? computed[0].overall : 0;
     }
 
+    if (!overallSeries.length && latestOverall != null) {
+      overallSeries = [{ date: new Date(), overall: latestOverall }];
+    }
+
+    // Recalcula conquistas deste jogador
+    await evaluateAchievementsForPlayer(id);
+
+    // Busca apenas conquistas desbloqueadas
+    const achievements = await prisma.playerAchievement.findMany({
+      where: { playerId: id, unlockedAt: { not: null } },
+      include: { achievement: true },
+      orderBy: [
+        { unlockedAt: "desc" },
+        { achievement: { rarity: "desc" } },
+      ],
+    });
+
+    const pos = (player.position || "").toLowerCase();
+    const achievementsFiltered = achievements.filter((pa) => {
+      const cat = (pa.achievement?.category || "").toLowerCase();
+      if (cat === "zagueiro" && !(pos.includes("zag") || pos.includes("def"))) {
+        return false;
+      }
+      return true;
+    });
+
     res.render("player_profile", {
       title: player.name,
       activePage: "elenco",
@@ -143,7 +214,7 @@ router.get("/:id", async (req, res) => {
       ratingsSeries,
       goalsByMonth,
       recentMatches,
-      achievements: player.achievements,
+      achievements: achievementsFiltered,
       overallHistory,
       latestOverall,
       overallSeries,

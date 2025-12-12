@@ -186,27 +186,34 @@ model VoteChoice {
 }
 
 model Achievement {
-  id          Int                 @id @default(autoincrement())
-  slug        String              @unique
-  name        String
-  description String
-  category    String?
-  icon        String?
-  criteria    Json?
-  createdAt   DateTime            @default(now())
-  players     PlayerAchievement[]
+  id           Int                 @id @default(autoincrement())
+  code         String              @unique
+  title        String
+  description  String
+  category     String
+  rarity       String
+  targetValue  Int?
+  symbol       String?
+  isNumeric    Boolean             @default(false)
+  sortOrder    Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  players      PlayerAchievement[]
 }
 
 model PlayerAchievement {
-  id            Int         @id @default(autoincrement())
-  playerId      Int
-  achievementId Int
-  unlockedAt    DateTime    @default(now())
-  meta          Json?
-  achievement   Achievement @relation(fields: [achievementId], references: [id])
-  player        Player      @relation(fields: [playerId], references: [id])
+  id             Int         @id @default(autoincrement())
+  playerId       Int
+  achievementId  Int
+  progressValue  Int         @default(0)
+  unlockedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  achievement    Achievement @relation(fields: [achievementId], references: [id])
+  player         Player      @relation(fields: [playerId], references: [id])
 
   @@unique([playerId, achievementId])
+  @@index([playerId])
+  @@index([achievementId])
 }
 
 model OverallHistory {

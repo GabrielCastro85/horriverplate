@@ -46,6 +46,21 @@
       <p class="text-xs text-horriver-gray mt-1">Deixe em branco para manter a foto atual.</p>
     </div>
 
+    <div class="grid grid-cols-1 gap-3">
+      <div>
+        <label for="hallStatus" class="block text-xs mb-1">Status</label>
+        <select name="hallStatus" id="hallStatus" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
+          <option value="active" <%= player.hallReason !== 'Aposentado' ? 'selected' : '' %>>Ativo</option>
+          <option value="retired" <%= player.hallReason === 'Aposentado' ? 'selected' : '' %>>Aposentado (aparece no Hall)</option>
+        </select>
+        <p class="text-xs text-horriver-gray mt-1">Selecione “Aposentado” para aparecer na seção de aposentados do Hall.</p>
+      </div>
+      <div>
+        <label for="hallReason" class="block text-xs mb-1">Motivo (opcional)</label>
+        <input type="text" name="hallReasonText" id="hallReason" value="<%= player.hallReason && player.hallReason !== 'Aposentado' ? player.hallReason : '' %>" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange" placeholder="Motivo da homenagem/aposentadoria">
+      </div>
+    </div>
+
     <div class="pt-4">
       <button type="submit" class="w-full bg-horriver-orange text-horriver-dark font-bold py-2 rounded-md hover:bg-opacity-80 transition">Salvar Alterações</button>
     </div>

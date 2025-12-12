@@ -1,4 +1,4 @@
-<section class="max-w-5xl mx-auto space-y-6 animate-fadeIn">
+<section class="w-full max-w-5xl mx-auto px-4 sm:px-6 space-y-6 animate-fadeIn">
   <header class="flex flex-col md:flex-row gap-4 items-center md:items-start">
     <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange shadow-card-soft">
       <% if (player.photoUrl) { %>
@@ -44,16 +44,18 @@
       <span class="text-xs text-horriver-gray"><%= achievements.length %> desbloqueadas</span>
     </div>
     <% if (!achievements.length) { %>
-      <p class="text-horriver-gray text-sm">Nenhuma conquista ainda.</p>
+      <p class="text-horriver-gray text-sm">Nenhuma conquista desbloqueada ainda.</p>
     <% } else { %>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <% achievements.forEach(pa => { %>
-          <div class="bg-black/40 border border-horriver-border rounded-xl p-3">
-            <p class="text-horriver-orange text-xs mb-1"><%= pa.achievement.category || 'Conquista' %></p>
-            <p class="text-horriver-light font-semibold"><%= pa.achievement.name %></p>
-            <p class="text-horriver-gray text-xs"><%= pa.achievement.description %></p>
-            <p class="text-[11px] text-horriver-gray mt-2">Desbloqueado em <%= new Date(pa.unlockedAt).toLocaleDateString('pt-BR') %></p>
-          </div>
+          <%- include('partials/achievementCard', { ach: {
+                title: pa.achievement.title || pa.achievement.name,
+                description: pa.achievement.description || '',
+                category: pa.achievement.category,
+                rarity: pa.achievement.rarity || 'prata',
+                targetValue: pa.achievement.targetValue,
+                unlockedAt: pa.unlockedAt
+          } }) %>
         <% }) %>
       </div>
     <% } %>
@@ -71,38 +73,36 @@
     <% } %>
   </div>
 
-    <div class="card-inner rounded-2xl p-4 space-y-2">
-    <h2 class="font-title text-xl text-horriver-light">Histórico de overall (0–100)</h2>
-    <% if (!overallSeries.length) { %>
-      <p class="text-sm text-horriver-gray">Sem histórico calculado ainda.</p>
-    <% } else { %>
-      <svg viewBox="0 0 100 40" class="w-full h-32 text-horriver-orange">
-        <% const maxO = 100, minO = 0; const nO = overallSeries.length; const stepO = nO > 1 ? 100/(nO-1) : 0; let pathO=''; overallSeries.forEach((p,i)=>{ const x = i*stepO; const y = 40 - ((p.overall - minO)/(maxO-minO))*40; pathO += (i===0? 'M':' L')+x+','+y; }); %>
-        <path d="<%= pathO %>" fill="none" stroke="currentColor" stroke-width="1.5" />
-      <p class="text-[11px] text-horriver-gray">Últimas <%= overallSeries.length %> medições salvas.</p>
-    <% } %>
-  </div>
-<div class="card-inner rounded-2xl p-4 space-y-2">
+  <div class="card-inner rounded-2xl p-4 space-y-2">
     <h2 class="font-title text-xl text-horriver-light">Gols por mês</h2>
     <% if (!goalsByMonth.length) { %>
       <p class="text-sm text-horriver-gray">Sem gols registrados.</p>
     <% } else { 
-         const maxG = Math.max(...goalsByMonth.map(g => g.value), 1);
+         // Ordena por ano-mês para garantir sequência correta e formata label manualmente
+         const sortedGoals = [...goalsByMonth].sort((a, b) => new Date(a.label + "-01") - new Date(b.label + "-01"));
+         const monthNames = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+         const maxG = Math.max(...sortedGoals.map(g => g.value), 1);
     %>
-      <div class="flex items-end gap-2 h-48">
-        <% goalsByMonth.forEach(g => { 
+      <div class="w-full overflow-x-auto">
+        <div class="flex items-end gap-3 h-48 min-w-[640px]">
+        <% sortedGoals.forEach(g => { 
              const [year, month] = g.label.split("-");
-             const pct = (g.value / maxG) * 100;
-             const monthLabel = new Date(`${g.label}-01`).toLocaleString('pt-BR', { month: 'short' });
+             const monthIdx = Math.max(1, Math.min(12, parseInt(month, 10)));
+             const monthLabel = monthNames[monthIdx - 1] || month;
+             const maxBarPx = 160; // altura máxima da barra em px
+             const barHeight = Math.max(8, Math.round((g.value / maxG) * maxBarPx));
         %>
           <div class="flex-1 flex flex-col items-center">
-            <span class="text-[11px] text-horriver-light mb-1"><%= g.value %></span>
-            <div class="w-full rounded-t-md bg-gradient-to-t from-horriver-red to-horriver-orange relative" style="height:<%= pct %>%">
-              <span class="absolute inset-0 bg-horriver-orange/30 rounded-t-md"></span>
+            <div class="flex flex-col items-center w-full">
+              <div class="w-full rounded-t-md bg-gradient-to-t from-horriver-red to-horriver-orange relative" style="height:<%= barHeight %>px">
+                <span class="absolute inset-0 bg-horriver-orange/30 rounded-t-md"></span>
+              </div>
+              <span class="text-[11px] text-horriver-light mt-1"><%= g.value %></span>
+              <span class="text-[10px] text-horriver-gray mt-1"><%= monthLabel %>/<%= year.slice(-2) %></span>
             </div>
-            <span class="text-[10px] text-horriver-gray mt-1"><%= monthLabel %>/<%= year.slice(-2) %></span>
           </div>
         <% }) %>
+        </div>
       </div>
     <% } %>
   </div>

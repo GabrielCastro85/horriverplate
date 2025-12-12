@@ -1,92 +1,190 @@
 const prisma = require("./db");
 
-async function checkAndUnlock(playerId) {
-  const player = await prisma.player.findUnique({ where: { id: playerId } });
-  if (!player) return;
+function normalizeRatingStats(stats) {
+  const ratings = stats.map((s) => s.rating).filter((r) => r != null);
+  const avg = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+  const count8 = ratings.filter((r) => r >= 8).length;
+  const count9 = ratings.filter((r) => r >= 9).length;
+  const count10 = ratings.filter((r) => r >= 10).length;
+  return { avg, count8, count9, count10 };
+}
 
-  const totals = {
-    goals: player.totalGoals || 0,
-    assists: player.totalAssists || 0,
-    matches: player.totalMatches || 0,
-    photos: player.totalPhotos || 0,
-  };
+async function evaluateAchievementsForPlayer(playerId) {
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    include: { stats: true },
+  });
+  if (!player) return [];
 
-  const [weeklyCount, monthlyCount, stats] = await Promise.all([
-    prisma.weeklyAward.count({ where: { bestPlayerId: playerId } }),
-    prisma.monthlyAward.count({ where: { craqueId: playerId } }),
-    prisma.playerStat.findMany({
-      where: { playerId },
-      orderBy: { match: { playedAt: "desc" } },
-      select: { rating: true, match: { select: { playedAt: true } }, present: true },
-    }),
-  ]);
+  const { avg, count8, count9, count10 } = normalizeRatingStats(player.stats || []);
 
-  const ratings = stats.map((r) => r.rating).filter((r) => r != null);
-  const avgRating =
-    ratings.length > 0 ? ratings.reduce((sum, n) => sum + n, 0) / ratings.length : 0;
+  const weeklyCount = await prisma.weeklyAward.count({
+    where: { bestPlayerId: playerId },
+  });
+  const monthlyCount = await prisma.monthlyAward.count({
+    where: { craqueId: playerId },
+  });
 
   const achievements = await prisma.achievement.findMany();
-  const unlocked = await prisma.playerAchievement.findMany({
+  const existing = await prisma.playerAchievement.findMany({
     where: { playerId },
-    select: { achievementId: true },
   });
-  const unlockedSet = new Set(unlocked.map((u) => u.achievementId));
+  const existingMap = new Map(existing.map((pa) => [pa.achievementId, pa]));
 
-  const toUnlock = [];
+  const newlyUnlocked = [];
 
-  for (const a of achievements) {
-    if (unlockedSet.has(a.id)) continue;
-    const c = a.criteria || {};
+  for (const ach of achievements) {
+    let progress = 0;
+    const target = ach.targetValue || 0;
+    const pos = (player.position || "").toLowerCase();
 
-    switch (c.type) {
-      case "total_goals":
-        if (totals.goals >= c.min) toUnlock.push({ achievementId: a.id, meta: { value: totals.goals } });
+    switch (ach.category) {
+      case "gols":
+        progress = player.totalGoals || 0;
         break;
-      case "total_assists":
-        if (totals.assists >= c.min) toUnlock.push({ achievementId: a.id, meta: { value: totals.assists } });
+      case "assistencias":
+        progress = player.totalAssists || 0;
         break;
-      case "total_matches":
-        if (totals.matches >= c.min) toUnlock.push({ achievementId: a.id, meta: { value: totals.matches } });
+      case "presenca":
+        progress = player.totalMatches || 0;
         break;
-      case "rating_goalkeeper":
-        if (
-          player.position === "Goleiro" &&
-          totals.matches >= (c.minMatches || 0) &&
-          avgRating >= (c.minAvg || 0)
-        ) {
-          toUnlock.push({
-            achievementId: a.id,
-            meta: { avgRating, matches: totals.matches },
-          });
+      case "zagueiro":
+        // Só conta se a posição for zagueiro/defensor
+        if (pos.includes("zag") || pos.includes("def")) {
+          progress = player.totalMatches || 0;
+        } else {
+          progress = 0;
         }
         break;
-      case "photos_top": {
-        const top = await prisma.player.findFirst({
-          orderBy: { totalPhotos: "desc" },
-          select: { id: true, totalPhotos: true },
-        });
-        if (top && top.id === playerId && top.totalPhotos > 0) {
-          toUnlock.push({ achievementId: a.id, meta: { value: top.totalPhotos } });
+      case "notas":
+        if (ach.code === "nota_media_6" || ach.code === "nota_media_7") {
+          progress = avg;
+        } else if (ach.code === "nota_10x8") {
+          progress = count8;
+        } else if (ach.code === "nota_25x9") {
+          progress = count9;
+        } else if (ach.code === "nota_10") {
+          progress = count10 > 0 ? 1 : 0;
         }
         break;
-      }
-      case "weekly_awards":
-        if (weeklyCount >= c.min) toUnlock.push({ achievementId: a.id, meta: { weeklyCount } });
+      case "premio":
+        if (ach.code.startsWith("prem_semana")) progress = weeklyCount;
+        else if (ach.code.startsWith("prem_mes")) progress = monthlyCount;
+        else progress = weeklyCount + monthlyCount;
         break;
       default:
+        progress = existingMap.get(ach.id)?.progressValue || 0;
         break;
     }
-  }
 
-  for (const item of toUnlock) {
-    await prisma.playerAchievement.create({
-      data: {
+    const hasTarget = ach.isNumeric && target > 0;
+    let shouldUnlock = false;
+    if (ach.isNumeric) {
+      shouldUnlock = hasTarget ? progress >= target : false;
+    } else {
+      // não numéricas: só desbloqueia manualmente; não faz auto unlock aqui
+      shouldUnlock = false;
+    }
+
+    const current = existingMap.get(ach.id);
+    const alreadyUnlocked = !!current?.unlockedAt;
+
+    const data = {
+      progressValue: progress,
+      unlockedAt: current?.unlockedAt || null,
+    };
+    if (shouldUnlock) {
+      if (!alreadyUnlocked) {
+        data.unlockedAt = new Date();
+        newlyUnlocked.push({ id: ach.id, title: ach.title, code: ach.code, category: ach.category, rarity: ach.rarity });
+      }
+    } else {
+      data.unlockedAt = null; // reverte se não atingiu
+    }
+
+    await prisma.playerAchievement.upsert({
+      where: {
+        playerId_achievementId: {
+          playerId,
+          achievementId: ach.id,
+        },
+      },
+      update: data,
+      create: {
         playerId,
-        achievementId: item.achievementId,
-        meta: item.meta,
+        achievementId: ach.id,
+        progressValue: progress,
+        unlockedAt: data.unlockedAt,
       },
     });
   }
+
+  return newlyUnlocked;
 }
 
-module.exports = { checkAndUnlock };
+async function getPlayerAchievements(playerId) {
+  const achievements = await prisma.achievement.findMany({
+    orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { id: "asc" }],
+    include: {
+      players: {
+        where: { playerId },
+      },
+    },
+  });
+
+  return achievements.map((a) => {
+    const pa = a.players[0] || null;
+    return {
+      id: a.id,
+      code: a.code,
+      title: a.title,
+      description: a.description,
+      category: a.category,
+      rarity: a.rarity,
+      targetValue: a.targetValue,
+      symbol: a.symbol,
+      isNumeric: a.isNumeric,
+      sortOrder: a.sortOrder,
+      progressValue: pa?.progressValue || 0,
+      unlockedAt: pa?.unlockedAt || null,
+    };
+  });
+}
+
+async function getAchievementsStats() {
+  const achievements = await prisma.achievement.findMany({
+    orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { id: "asc" }],
+  });
+  const playerCount = await prisma.player.count();
+  const stats = [];
+
+  for (const ach of achievements) {
+    const unlockedCount = await prisma.playerAchievement.count({
+      where: { achievementId: ach.id, unlockedAt: { not: null } },
+    });
+    stats.push({
+      achievement: ach,
+      unlockedCount,
+      playerCount,
+      percent: playerCount > 0 ? Math.round((unlockedCount / playerCount) * 100) : 0,
+    });
+  }
+  return stats;
+}
+
+async function rebuildAchievementsForAllPlayers() {
+  const players = await prisma.player.findMany({ select: { id: true } });
+  const all = [];
+  for (const p of players) {
+    const newly = await evaluateAchievementsForPlayer(p.id);
+    all.push(...newly);
+  }
+  return all;
+}
+
+module.exports = {
+  evaluateAchievementsForPlayer,
+  getPlayerAchievements,
+  getAchievementsStats,
+  rebuildAchievementsForAllPlayers,
+};

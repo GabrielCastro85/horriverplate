@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
+const { getAchievementsStats } = require("../utils/achievements");
 
 // ==============================
 // Helpers de datas
@@ -476,6 +477,39 @@ router.get("/hall-da-fama", async (req, res) => {
   } catch (err) {
     console.error("Erro ao carregar Hall da Fama:", err);
     res.status(500).send("Erro ao carregar Hall da Fama.");
+  }
+});
+
+// ==============================
+// DEMO DE BADGES
+// ==============================
+router.get("/badges-demo", (req, res) => {
+  res.render("awards_badges_demo", {
+    title: "Badges Demo",
+    activePage: "home",
+  });
+});
+
+// ==============================
+// HALL DE CONQUISTAS
+// ==============================
+router.get("/achievements", async (req, res) => {
+  try {
+    const stats = await getAchievementsStats();
+    const grouped = stats.reduce((acc, item) => {
+      const cat = item.achievement.category;
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {});
+    res.render("achievements", {
+      title: "Hall de Conquistas",
+      activePage: "home",
+      grouped,
+    });
+  } catch (err) {
+    console.error("Erro ao carregar conquistas:", err);
+    res.status(500).send("Erro ao carregar conquistas.");
   }
 });
 

@@ -1,0 +1,35 @@
+<%
+// Props: { ach }
+// ach: { title, description, category, rarity, unlockedAt }
+const cat = (ach.category || "").toLowerCase();
+const emojiMap = {
+  gols: "⚽",
+  assistencias: "🎯",
+  zagueiro: "🛡️",
+  presenca: "📅",
+  notas: "⭐",
+  premio: "🏆",
+  lendaria: "👑",
+};
+const rarityOrder = { lendaria: 4, ouro: 3, prata: 2, bronze: 1 };
+const emoji = emojiMap[cat] || "🎖️";
+const desc = ach.description || (ach.targetValue ? `Complete ${ach.targetValue} em ${cat}` : "Conquista");
+const unlockedDate = ach.unlockedAt ? new Date(ach.unlockedAt).toLocaleDateString("pt-BR") : null;
+const chipLabel = cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : null;
+%>
+
+<div class="bg-black/40 border border-horriver-border rounded-xl p-3 flex gap-3 items-center">
+  <div class="text-3xl"><%= emoji %></div>
+  <div class="flex-1 space-y-1">
+    <div class="flex items-center gap-2">
+      <p class="text-horriver-light font-semibold text-sm"><%= ach.title %></p>
+      <% if (chipLabel) { %>
+        <span class="text-[10px] px-2 py-0.5 rounded-full border border-horriver-border text-horriver-gray uppercase tracking-wide"><%= chipLabel %></span>
+      <% } %>
+    </div>
+    <p class="text-[11px] text-horriver-gray"><%= desc %></p>
+    <% if (unlockedDate) { %>
+      <p class="text-[11px] text-green-400 flex items-center gap-1">✅ Desbloqueada em <%= unlockedDate %></p>
+    <% } %>
+  </div>
+</div>

@@ -1,0 +1,23 @@
+<section class="max-w-6xl mx-auto py-10 px-4 space-y-8">
+  <header class="space-y-2">
+    <h1 class="text-3xl font-title text-horriver-light">Badges de Conquistas</h1>
+    <p class="text-sm text-horriver-gray">Exemplos de uso do componente reutilizável.</p>
+  </header>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+    <%- include('partials/badge', { title: 'Pé na Forma', category: 'gols', rarity: 'bronze', unlocked: true, value: 10 }) %>
+    <%- include('partials/badge', { title: 'Artilheiro de Bairro', category: 'gols', rarity: 'prata', unlocked: true, value: 25 }) %>
+    <%- include('partials/badge', { title: 'Camisa 9 de Ouro', category: 'gols', rarity: 'ouro', unlocked: true, value: 50 }) %>
+    <%- include('partials/badge', { title: 'Imortal da Pelada', category: 'gols', rarity: 'lendaria', unlocked: true, value: 100 }) %>
+    <%- include('partials/badge', { title: 'Maestro', category: 'assistencias', rarity: 'ouro', unlocked: true, value: 75 }) %>
+    <%- include('partials/badge', { title: 'Basalto', category: 'zagueiro', rarity: 'prata', unlocked: true }) %>
+    <%- include('partials/badge', { title: 'Craque da Semana', category: 'premio', rarity: 'ouro', unlocked: false }) %>
+    <%- include('partials/badge', { title: 'Lenda Viva', category: 'lendaria', rarity: 'lendaria', unlocked: false }) %>
+  </div>
+
+  <div class="text-sm text-horriver-gray space-y-2">
+    <p>Para adicionar nova conquista, inclua um novo objeto (title/category/rarity/unlocked) e inclua o partial:</p>
+    <pre class="bg-black/40 border border-horriver-border rounded-xl p-3 text-[12px] text-horriver-light overflow-x-auto"><code>&lt;%- include('partials/badge', { title: 'Nova Conquista', category: 'gols', rarity: 'prata' }) %&gt;</code></pre>
+    <p>Categorias suportadas: <strong>gols, assistencias, zagueiro, presenca, notas, premio, lendaria</strong>. Raridades: <strong>bronze, prata, ouro, lendaria</strong>. Para nova categoria, adicione um case no ícone em <code>views/partials/badge.ejs</code>.</p>
+  </div>
+</section>

@@ -9,6 +9,7 @@ const {
 } = require("../utils/upload");
 
 const { computeOverallFromEntries } = require("../utils/overall");
+const { rebuildAchievementsForAllPlayers } = require("../utils/achievements");
 
 // ==============================
 // 🛡️ Middleware: exige admin logado
@@ -148,7 +149,7 @@ router.post(
   uploadPlayerPhoto.single("photo"),
   async (req, res) => {
     try {
-      const { name, nickname, position, whatsapp } = req.body;
+      const { name, nickname, position, whatsapp, hallStatus, hallReasonText } = req.body;
 
       if (!name || !position) {
         return res.redirect("/admin");
@@ -249,6 +250,16 @@ router.post(
         position,
         whatsapp: formattedWhatsapp,
       };
+
+      // Hall / aposentadoria
+      const status = hallStatus || "active";
+      if (status === "retired") {
+        data.isHallOfFame = false;
+        data.hallReason = "Aposentado";
+      } else {
+        data.isHallOfFame = false;
+        data.hallReason = hallReasonText || null;
+      }
 
       // Se enviou nova foto, atualiza photoUrl; caso contrário, mantém a atual
       if (photoUrl) {
@@ -1907,6 +1918,19 @@ router.get("/matches/:id/awards", requireAdmin, async (req, res) => {
   } catch (err) {
     console.error("Erro ao exibir resultados/prêmios:", err);
     return res.redirect("/admin");
+  }
+});
+
+// ==============================
+// 🔄 Rebuild de conquistas para todos os jogadores
+// ==============================
+router.post("/rebuild-achievements", requireAdmin, async (req, res) => {
+  try {
+    await rebuildAchievementsForAllPlayers();
+    return res.redirect("/admin?achievementsRebuilt=1");
+  } catch (err) {
+    console.error("Erro ao recalcular conquistas:", err);
+    return res.redirect("/admin?error=achievements");
   }
 });
 
