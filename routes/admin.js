@@ -29,9 +29,14 @@ async function recomputeTotalsForPlayers(playerIds) {
   if (!uniqueIds.length) return;
 
   for (const id of uniqueIds) {
-    const stats = await prisma.playerStat.findMany({
-      where: { playerId: id },
-    });
+    const [stats, player] = await Promise.all([
+      prisma.playerStat.findMany({
+        where: { playerId: id },
+        include: { match: true },
+        orderBy: { match: { playedAt: "desc" } },
+      }),
+      prisma.player.findUnique({ where: { id } }),
+    ]);
 
     let goals = 0;
     let assists = 0;
@@ -53,6 +58,9 @@ async function recomputeTotalsForPlayers(playerIds) {
 
     const avgRating = ratingCount > 0 ? ratingSum / ratingCount : 0;
 
+    // Overall din�mico: mant�m override manual (se existir), arredondado; n�o recalcula automaticamente
+    const overallDynamic = (player?.overallDynamic != null) ? Math.round(player.overallDynamic) : null;
+
     await prisma.player.update({
       where: { id },
       data: {
@@ -61,6 +69,8 @@ async function recomputeTotalsForPlayers(playerIds) {
         totalMatches: matches,
         totalPhotos: photos,
         totalRating: avgRating,
+        overallDynamic,
+        overallLastUpdated: new Date(),
       },
     });
   }
@@ -149,7 +159,7 @@ router.post(
   uploadPlayerPhoto.single("photo"),
   async (req, res) => {
     try {
-      const { name, nickname, position, whatsapp, hallStatus, hallReasonText } = req.body;
+      const { name, nickname, position, whatsapp, hallStatus, hallReasonText, baseOverall, overrideOverall } = req.body;
 
       if (!name || !position) {
         return res.redirect("/admin");
@@ -168,6 +178,10 @@ router.post(
         photoUrl = `/uploads/players/${req.file.filename}`;
       }
 
+      const baseOv = Math.round(Number(baseOverall));
+      const manualOvRaw = Number(overrideOverall);
+      const manualOv = Number.isFinite(manualOvRaw) ? Math.round(manualOvRaw) : null;
+
       await prisma.player.create({
         data: {
           name,
@@ -175,6 +189,8 @@ router.post(
           position,
           whatsapp: formattedWhatsapp,
           photoUrl,
+          baseOverall: Number.isFinite(baseOv) ? baseOv : 60,
+          overallDynamic: manualOv,
           totalGoals: 0,
           totalAssists: 0,
           totalMatches: 0,
@@ -225,7 +241,7 @@ router.post(
   async (req, res) => {
     try {
       const id = Number(req.params.id);
-      const { name, nickname, position, whatsapp, hallStatus, hallReasonText } = req.body;
+      const { name, nickname, position, whatsapp, hallStatus, hallReasonText, baseOverall, overrideOverall } = req.body;
 
       if (!name || !position || Number.isNaN(id)) {
         return res.redirect("/admin");
@@ -250,6 +266,19 @@ router.post(
         position,
         whatsapp: formattedWhatsapp,
       };
+
+      const baseOv = Math.round(Number(baseOverall));
+      if (Number.isFinite(baseOv)) {
+        data.baseOverall = baseOv;
+      }
+
+      const manualOvRaw = Number(overrideOverall);
+      if (Number.isFinite(manualOvRaw)) {
+        data.overallDynamic = Math.round(manualOvRaw);
+      } else {
+        // Se vazio, remove override manual
+        data.overallDynamic = null;
+      }
 
       // Hall / aposentadoria
       const status = hallStatus || "active";
@@ -1935,3 +1964,5 @@ router.post("/rebuild-achievements", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
+

@@ -8,20 +8,7 @@
       <h1 class="font-title text-2xl text-horriver-light">Admin Horriver Plate</h1>
       <p class="text-sm text-horriver-gray">Gerencie peladas, jogadores e destaques.</p>
     </div>
-    <div class="flex flex-wrap gap-2 text-xs">
-      <a
-        href="/admin/recalculate-totals"
-        class="px-3 py-2 rounded-md border border-horriver-red text-horriver-red hover:bg-horriver-red hover:text-horriver-dark transition"
-        onclick="return confirm('Isso pode demorar. Recalcular totais de todos os jogadores?');"
-      >Recalcular Totais (All-Time)</a>
-      <form action="/admin/recalculate-overall" method="POST">
-        <button
-          type="submit"
-          class="px-3 py-2 rounded-md border border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-horriver-dark transition"
-          onclick="return confirm('Recalcular Overall das ultimas 10 peladas?');"
-        >Recalcular Overall (Ultimas 10)</button>
-      </form>
-    </div>
+    <!-- Botões de reset removidos para este admin -->
   </header>
 
   <!-- Peladas -->

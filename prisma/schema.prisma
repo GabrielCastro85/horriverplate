@@ -21,6 +21,9 @@ model Player {
   nickname       String?
   position       String
   photoUrl       String?
+  baseOverall    Float               @default(60)
+  overallDynamic Float?
+  overallLastUpdated DateTime?
   totalGoals     Int                 @default(0)
   totalAssists   Int                 @default(0)
   totalMatches   Int                 @default(0)

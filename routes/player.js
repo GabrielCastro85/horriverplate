@@ -164,6 +164,7 @@ router.get("/:id", async (req, res) => {
         : syntheticOverallSeries;
 
     let latestOverall =
+      player.overallDynamic ??
       rankingOverallMap.get(player.id) ??
       (overallSeries.length ? overallSeries[overallSeries.length - 1].overall : null);
 

@@ -296,9 +296,13 @@ router.get("/", async (req, res) => {
     const { computed: overallComputed } = computeOverallFromEntries(entries);
     const overallRanking = overallComputed
       .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
-      .map((e) => ({ ...e, overallScore: e.overall }))
+      .map((e) => {
+        const manual = e.player?.overallDynamic ?? e.player?.baseOverall ?? null;
+        const score = manual != null ? Math.round(manual) : Math.round(e.overall);
+        return { ...e, overallScore: score };
+      })
       .sort((a, b) => {
-        if (b.overall !== a.overall) return b.overall - a.overall;
+        if (b.overallScore !== a.overallScore) return b.overallScore - a.overallScore;
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.goals !== a.goals) return b.goals - a.goals;
         return b.assists - a.assists;

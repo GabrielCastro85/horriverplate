@@ -38,6 +38,21 @@
     </div>
 
     <div>
+      <label for="baseOverall" class="block text-xs mb-1">Overall base</label>
+      <input
+        type="number"
+        name="baseOverall"
+        id="baseOverall"
+        min="0"
+        max="100"
+        step="1"
+        value="<%= typeof player.baseOverall === 'number' ? player.baseOverall : 60 %>"
+        class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange"
+      />
+      <p class="text-xs text-horriver-gray mt-1">Valor inicial manual; o overall dinâmico usa este número como ponto de partida.</p>
+    </div>
+
+    <div>
       <label for="player-photo" class="block text-xs mb-1">Alterar Foto</label>
       <div class="flex items-center gap-4">
         <img src="<%= player.photoUrl || '/img/logo-64x64.svg' %>" alt="Foto atual" class="w-12 h-12 rounded-full object-cover bg-horriver-dark">
@@ -66,3 +81,4 @@
     </div>
   </form>
 </div>
+
