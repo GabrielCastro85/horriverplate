@@ -1,4 +1,4 @@
-﻿<%
+<%
 // views/admin_match.ejs
 // Variáveis recebidas: match, players, stats
 // O layout.ejs já cuida de <html>, <body>, header, footer etc.
@@ -102,6 +102,8 @@
             <input
               type="checkbox"
               name="present_<%= player.id %>"
+              data-player-name="<%= player.name %>"
+              data-player-position="<%= player.position %>"
               class="w-4 h-4 accent-horriver-orange"
               <%= stat && stat.present ? 'checked' : '' %>
             />
@@ -396,10 +398,22 @@
           </div>
         </div>
 
-        <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-2">
           <p class="text-horriver-gray text-[12px]">
             Sorteio automático usando os presentes marcados acima. Se tiver mais de 12 presentes, cria 2, 3 ou 4 times com 6 em cada; extras vão para o banco.
           </p>
+          <div class="space-y-1 text-[11px]">
+            <p class="text-horriver-gray">
+              Marque os cabeças de chave (entre os presentes) para travar um em cada time.
+            </p>
+            <div
+              id="seedList"
+              class="bg-black/30 border border-horriver-border rounded-xl p-2 flex flex-wrap gap-2 min-h-[46px]"
+            ></div>
+            <p class="text-horriver-gray text-[10px]">
+              Atualiza automaticamente ao marcar/desmarcar presença.
+            </p>
+          </div>
           <div class="flex items-center gap-2 flex-wrap">
             <button
               type="button"
@@ -411,40 +425,40 @@
             <span id="sorterStatus" class="text-horriver-gray"></span>
           </div>
         </div>
+
+    <div class="space-y-3 w-full md:col-span-2">
+      <div class="grid gap-3 text-[12px] w-full [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]" id="sorterResults"></div>
+
+      <div id="sorterShare" class="hidden flex flex-wrap items-center gap-2 text-[12px]">
+        <button
+          type="button"
+          id="copyTeamsBtn"
+          class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+        >
+          Copiar texto
+        </button>
+        <button
+          type="button"
+          id="saveTeamsBtn"
+          class="px-3 py-2 rounded-full bg-green-500 text-black font-semibold hover:bg-green-400 transition"
+        >
+          Salvar times
+        </button>
+        <button
+          type="button"
+          id="imgTeamsBtn"
+          class="px-3 py-2 rounded-full border border-horriver-border text-horriver-light font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+        >
+          Baixar imagem
+        </button>
+        <span id="shareStatus" class="text-horriver-gray"></span>
       </div>
-    </form>
 
-    <div id="sorterResults" class="grid md:grid-cols-2 gap-3 text-[12px]"></div>
-    <div id="goalkeeperBenchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
-    <div id="benchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
-
-    <div id="sorterShare" class="hidden flex flex-wrap items-center gap-2 text-[12px]">
-      <button
-        type="button"
-        id="copyTeamsBtn"
-        class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
-      >
-        Copiar texto
-      </button>
-      <button
-        type="button"
-        id="saveTeamsBtn"
-        class="px-3 py-2 rounded-full bg-green-500 text-black font-semibold hover:bg-green-400 transition"
-      >
-        Salvar times
-      </button>
-      <button
-        type="button"
-        id="imgTeamsBtn"
-        class="px-3 py-2 rounded-full border border-horriver-border text-horriver-light font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
-      >
-        Baixar imagem
-      </button>
-      <span id="shareStatus" class="text-horriver-gray"></span>
+      <div class="grid md:grid-cols-2 gap-3">
+        <div id="goalkeeperBenchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
+        <div id="benchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
+      </div>
     </div>
-  </div>
-</section>
-
 <style>
   /* Feedback suave para drag-and-drop */
   li.dragging {
@@ -486,12 +500,14 @@
     const guestsField = document.getElementById("guestsField");
     const guestList = document.getElementById("guestList");
     const addGuestBtn = document.getElementById("addGuestBtn");
+    const seedList = document.getElementById("seedList");
 
     if (!form || !resultsEl) return;
 
     const matchDateLabel = new Date("<%= match.playedAt.toISOString() %>").toLocaleDateString("pt-BR");
 
     const guests = [];
+    const seedIds = new Set();
 
     function getPresentIdsFromForm() {
       return Array.from(document.querySelectorAll('input[name^="present_"]'))
@@ -499,6 +515,55 @@
         .map((cb) => cb.name.replace("present_", ""))
         .filter(Boolean);
     }
+
+    function getPresentPlayersDetail() {
+      return Array.from(document.querySelectorAll('input[name^="present_"]'))
+        .filter((cb) => cb.checked)
+        .map((cb) => ({
+          id: cb.name.replace("present_", ""),
+          name: cb.dataset.playerName || "Jogador",
+          position: cb.dataset.playerPosition || "",
+        }));
+    }
+
+    function renderSeedList() {
+      if (!seedList) return;
+      const presentPlayers = getPresentPlayersDetail();
+      const allowedIds = new Set(presentPlayers.map((p) => p.id));
+      Array.from(seedIds).forEach((id) => {
+        if (!allowedIds.has(id)) seedIds.delete(id);
+      });
+      if (!presentPlayers.length) {
+        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenças para escolher os cabeças de chave.</span>`;
+        return;
+      }
+      seedList.innerHTML = presentPlayers
+        .map((p) => {
+          const checked = seedIds.has(p.id) ? "checked" : "";
+          return `
+            <label class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-light cursor-pointer">
+              <input type="checkbox" class="accent-horriver-orange" data-seed-id="${p.id}" ${checked} />
+              <span>${p.name}</span>
+              <span class="text-horriver-gray text-[10px] uppercase">${p.position}</span>
+            </label>
+          `;
+        })
+        .join("");
+    }
+
+    seedList?.addEventListener("change", (e) => {
+      const cb = e.target.closest("input[data-seed-id]");
+      if (!cb) return;
+      const id = cb.dataset.seedId;
+      if (!id) return;
+      if (cb.checked) seedIds.add(id);
+      else seedIds.delete(id);
+    });
+
+    document.querySelectorAll('input[name^="present_"]').forEach((cb) => {
+      cb.addEventListener("change", renderSeedList);
+    });
+    renderSeedList();
 
     function syncGuestsField() {
       const lines = guests.map((g) => `${g.name};${g.position};${g.strength}`);
@@ -554,7 +619,7 @@
           const selectedColor = t.colorName || teamColors[idx % teamColors.length].name;
           const selectedDef = teamColors.find((c) => c.name === selectedColor) || teamColors[0];
           return `
-            <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30" data-team="${idx}" data-team-id="${idx}">
+            <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30" data-team="${idx}" data-team-id="${idx}" data-team-color="${selectedDef.value}" data-team-color-name="${selectedDef.name}">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full" data-color-indicator style="background:${selectedDef.value}"></span>
@@ -640,29 +705,39 @@
           .join("");
 
       if (goalkeeperBenchBox) {
-        goalkeeperBenchBox.classList.remove("hidden");
-        goalkeeperBenchBox.innerHTML = `
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-horriver-orange font-semibold">Goleiros</p>
-            <p class="text-horriver-light">${goalkeepers.length} jogador(es)</p>
-          </div>
-          <ul class="space-y-1 min-h-[12px]" data-list-id="goalkeeper-bench">
-            ${renderBenchList(goalkeepers, "goalkeeper-bench")}
-          </ul>
-        `;
+        if (goalkeepers.length) {
+          goalkeeperBenchBox.classList.remove("hidden");
+          goalkeeperBenchBox.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-horriver-orange font-semibold">Goleiros</p>
+              <p class="text-horriver-light">${goalkeepers.length} jogador(es)</p>
+            </div>
+            <ul class="space-y-1 min-h-[12px]" data-list-id="goalkeeper-bench">
+              ${renderBenchList(goalkeepers, "goalkeeper-bench")}
+            </ul>
+          `;
+        } else {
+          goalkeeperBenchBox.classList.add("hidden");
+          goalkeeperBenchBox.innerHTML = "";
+        }
       }
 
       if (benchBox) {
-        benchBox.classList.remove("hidden");
-        benchBox.innerHTML = `
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-horriver-orange font-semibold">Banco / Reservas</p>
-            <p class="text-horriver-light">${fieldBench.length} jogador(es)</p>
-          </div>
-          <ul class="space-y-1 min-h-[12px]" data-list-id="bench">
-            ${renderBenchList(fieldBench, "bench")}
-          </ul>
-        `;
+        if (fieldBench.length) {
+          benchBox.classList.remove("hidden");
+          benchBox.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-horriver-orange font-semibold">Banco / Reservas</p>
+              <p class="text-horriver-light">${fieldBench.length} jogador(es)</p>
+            </div>
+            <ul class="space-y-1 min-h-[12px]" data-list-id="bench">
+              ${renderBenchList(fieldBench, "bench")}
+            </ul>
+          `;
+        } else {
+          benchBox.classList.add("hidden");
+          benchBox.innerHTML = "";
+        }
       }
       recalculatePower();
       setupDragAndDrop();
@@ -845,7 +920,7 @@
       }
 
       syncGuestsField();
-      const payload = { guests: guestsField.value || "", presentIds };
+      const payload = { guests: guestsField.value || "", presentIds, seedIds: Array.from(seedIds) };
 
       try {
         const resp = await fetch(`/admin/matches/${matchId}/sort-teams`, {
@@ -927,7 +1002,95 @@
             shareStatus.textContent = "html2canvas não carregado.";
             return;
           }
-          const canvas = await html2canvas(resultsEl, { backgroundColor: "#0f0f0f", scale: 2 });
+          const teamsForShare = Array.from(resultsEl.querySelectorAll("[data-team]")).map((box) => {
+            const colorNameText =
+              box.getAttribute("data-team-color-name") ||
+              box.querySelector("[data-color-select]")?.selectedOptions?.[0]?.text ||
+              null;
+            const name = colorNameText
+              ? `Time ${colorNameText}`
+              : box.querySelector("[data-team-name]")?.textContent?.trim() || "Time";
+            const color =
+              box.getAttribute("data-team-color") ||
+              box.querySelector("[data-color-indicator]")?.style?.backgroundColor ||
+              "#f97316";
+            const players = Array.from(box.querySelectorAll("li")).map((li) => {
+              const spans = li.querySelectorAll("span");
+              const nome = spans[0]?.textContent?.trim() || "";
+              const pos = spans[1]?.textContent?.trim() || "";
+              const ovr = spans[2]?.textContent?.trim() || "";
+              return { nome, pos, ovr };
+            });
+            return { name, color, players };
+          });
+
+          if (!teamsForShare.length) {
+            shareStatus.textContent = "Sorteie os times antes de gerar imagem.";
+            return;
+          }
+
+          const card = document.createElement("div");
+          card.style.position = "fixed";
+          card.style.left = "-9999px";
+          card.style.top = "0";
+          card.style.width = "640px";
+          card.style.padding = "16px";
+          card.style.borderRadius = "18px";
+          card.style.background = "linear-gradient(135deg, #1a0b0b 0%, #0b0b10 60%, #1a0b0b 100%)";
+          card.style.color = "#f3f4f6";
+          card.style.fontFamily = "Inter, system-ui, -apple-system, sans-serif";
+          card.style.boxShadow = "0 12px 28px rgba(0,0,0,0.35)";
+          card.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <span style="font-size:12px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Times</span>
+                <span style="font-size:18px;font-weight:800;">Pelada ${matchDateLabel}</span>
+              </div>
+              <div style="width:70px;height:70px;border-radius:50%;overflow:hidden;border:2px solid #f97316;background:#0f0f15;display:flex;align-items:center;justify-content:center;">
+                <img
+                  src="/img/logo-32x32.svg"
+                  alt="Horriver Plate"
+                  style="width:auto;height:auto;max-width:80%;max-height:80%;object-fit:contain;display:block;opacity:0.95;"
+                />
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;">
+              ${teamsForShare
+                .map((t) => {
+                  const headerBg = t.color;
+                  return `
+                    <div style="position:relative;border:1px solid ${headerBg}40;border-radius:18px;overflow:hidden;background:linear-gradient(145deg, ${headerBg}33 0%, rgba(15,15,20,0.9) 70%);">
+                      <div style="position:absolute;right:-30px;bottom:-30px;width:120px;height:120px;opacity:0.06;background:url('/img/logo.jpg') center/contain no-repeat;"></div>
+                      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:${headerBg};color:#0b0b0b;font-weight:800;letter-spacing:0.5px;">
+                        <span>${t.name}</span>
+                        <span style="font-size:11px;">${t.players.length} jogadores</span>
+                      </div>
+                      <div style="padding:12px 14px 12px 14px;display:flex;flex-direction:column;gap:8px;">
+                        ${t.players
+                          .map(
+                            (p) => `
+                              <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+                                <div style="display:flex;flex-direction:column;gap:2px;">
+                                  <span style="font-weight:700;font-size:13px;">${p.nome}</span>
+                                  <span style="font-size:11px;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.4px;">${p.pos}</span>
+                                </div>
+                                <span style="font-size:12px;color:#fbd38d;font-weight:800;"></span>
+                              </div>
+                            `
+                          )
+                          .join("")}
+                      </div>
+                    </div>
+                  `;
+                })
+                .join("")}
+            </div>
+          `;
+
+          document.body.appendChild(card);
+          const canvas = await html2canvas(card, { backgroundColor: null, scale: 2 });
+          document.body.removeChild(card);
+
           const link = document.createElement("a");
           link.download = "times-sorteio.png";
           link.href = canvas.toDataURL("image/png");

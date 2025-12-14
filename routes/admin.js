@@ -1319,6 +1319,11 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
           .map((id) => Number(id))
           .filter((n) => Number.isFinite(n))
       : [];
+    const seedIds = Array.isArray(req.body.seedIds)
+      ? req.body.seedIds
+          .map((id) => Number(id))
+          .filter((n) => Number.isFinite(n))
+      : [];
 
     // 1. Convidados
     const guestsRaw = req.body.guests || "";
@@ -1489,9 +1494,31 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     // 8. Ordenar por força para sorteio balanceado
     fieldPlayers.sort((a, b) => b.strength - a.strength);
 
-    // 9. Distribuir os jogadores de linha
-    const playersToDistribute = fieldPlayers.slice(0, totalPlayersForTeams);
-    const teamBuckets = snakeDistribute(playersToDistribute, teamCount);
+    // 8.1. Cabeças de chave (mantêm um por time sempre que possível)
+    const seedSet = new Set(seedIds.map((id) => String(id)));
+    const seedPool = [];
+    const nonSeedPool = [];
+    fieldPlayers.forEach((p) => {
+      if (seedSet.has(String(p.id))) seedPool.push(p);
+      else nonSeedPool.push(p);
+    });
+    const orderedFieldPool = [...seedPool, ...nonSeedPool];
+
+    // 9. Distribuir os jogadores de linha com seeds priorizadas
+    const playersToDistribute = orderedFieldPool.slice(0, totalPlayersForTeams);
+    const seedsForTeams = playersToDistribute
+      .filter((p) => seedSet.has(String(p.id)))
+      .slice(0, teamCount);
+    const usedSeedIds = new Set(seedsForTeams.map((p) => String(p.id)));
+    const remainingPlayers = playersToDistribute.filter((p) => !usedSeedIds.has(String(p.id)));
+
+    const seededBuckets = Array.from({ length: teamCount }, () => []);
+    seedsForTeams.forEach((p, idx) => {
+      seededBuckets[idx % teamCount].push(p);
+    });
+
+    const autoBuckets = snakeDistribute(remainingPlayers, teamCount);
+    const teamBuckets = seededBuckets.map((bucket, idx) => [...bucket, ...(autoBuckets[idx] || [])]);
 
     // 10. Opcional: distribuir goleiros se houver exatamente um por time
     let keepGoalkeepersOnBench = true;
@@ -1508,7 +1535,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     }
     
     // 11. Montar banco de reservas
-    const leftoverFieldPlayers = fieldPlayers.slice(totalPlayersForTeams);
+    const leftoverFieldPlayers = orderedFieldPool.slice(totalPlayersForTeams);
     const bench = [
       ...(keepGoalkeepersOnBench ? goalkeepers : []),
       ...leftoverFieldPlayers,
@@ -1537,6 +1564,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
           parameters: {
             presentIds: playerIds,
             guests: guestEntries,
+            seeds: seedIds,
           },
           result: { teams, bench },
         },
@@ -1964,5 +1992,3 @@ router.post("/rebuild-achievements", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
-
-
