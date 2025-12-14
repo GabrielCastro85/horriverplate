@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/share/share.css" />
+    <style>
+      body {
+        width: 1080px;
+        height: <%= format === 'feed' ? 1350 : 1920 %>px;
+        padding: 32px;
+      }
+      .list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 14px;
+      }
+      .item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .rank {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: #f97316;
+        color: #0b0b0b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 12px;
+      }
+      .info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .info .name {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .info .meta {
+        font-size: 11px;
+        color: #cbd5e1;
+        text-transform: uppercase;
+      }
+      .value {
+        font-size: 14px;
+        font-weight: 800;
+        color: #fbd38d;
+      }
+    </style>
+  </head>
+  <body class="share-bg">
+    <div class="share-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:#f97316;text-transform:uppercase;letter-spacing:1px;font-weight:700;">
+            <%= subtitle %>
+          </span>
+          <h1 style="font-size:22px;font-weight:800;">Top 10 Horriver Plate</h1>
+        </div>
+        <div class="share-logo">
+          <img src="<%= BASE_URL %>/img/logo-32x32.svg" alt="Horriver Plate" />
+        </div>
+      </div>
+
+      <div class="list">
+        <% items.forEach((p) => { %>
+          <div class="item">
+            <div class="rank"><%= p.rank %></div>
+            <div class="info">
+              <div class="name"><%= p.name %></div>
+              <div class="meta"><%= p.position %> • G:<%= p.goals %> • A:<%= p.assists %></div>
+            </div>
+            <div class="value"><%= p.metric %></div>
+          </div>
+        <% }) %>
+      </div>
+
+      <div style="position:absolute;bottom:24px;left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;font-size:13px;">
+        <span>horriverplate.onrender.com</span>
+        <span>@_hpfc</span>
+      </div>
+    </div>
+  </body>
+</html>

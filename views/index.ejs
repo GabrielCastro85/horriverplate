@@ -497,14 +497,20 @@
                 <% } %>
               </div>
 
-              <div class="text-center space-y-1 text-[12px]">
-                  <% if (weeklyAward.winningMatch) { %>
-                    Pelada de
-                    <span class="text-horriver-light">
+              <div class="text-center space-y-2 text-[12px]">
+                <% if (weeklyAward.winningMatch) { %>
+                  <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full
+                           bg-black/30 border border-horriver-border text-[11px]
+                           text-horriver-gray uppercase tracking-[0.12em]"
+                  >
+                    <span>Pelada</span>
+                    <span class="text-horriver-light font-semibold normal-case tracking-normal">
                       <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
                     </span>
-                  <% } %>
-                </p>
+                  </div>
+                <% } %>
+
                 <p class="text-horriver-light font-semibold text-base">
                   <%= weeklyAward.bestPlayer.name %>
                   <% if (weeklyAward.bestPlayer.nickname) { %>
@@ -597,11 +603,18 @@
           </p>
         <% } else { %>
           <% if (weeklyAward.winningMatch) { %>
-              Pelada de
-              <span class="text-horriver-light">
-                <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
-              </span>
-            </p>
+            <div class="text-center">
+              <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full
+                       bg-black/30 border border-horriver-border text-[11px]
+                       text-horriver-gray uppercase tracking-[0.12em]"
+              >
+                <span>Pelada</span>
+                <span class="text-horriver-light font-semibold normal-case tracking-normal">
+                  <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
+                </span>
+              </div>
+            </div>
           <% } %>
 
           <% if (weeklyAward.teamPhotoUrl) { %>

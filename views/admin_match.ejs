@@ -485,11 +485,15 @@
     const resultsEl = document.getElementById("sorterResults");
     const statusEl = document.getElementById("sorterStatus");
     const shareBox = document.getElementById("sorterShare");
+    const  = document.getElementById("");
     const copyBtn = document.getElementById("copyTeamsBtn");
     const imgBtn = document.getElementById("imgTeamsBtn");
     const saveBtn = document.getElementById("saveTeamsBtn");
     const sortBtn = document.getElementById("sortBtn");
     const shareStatus = document.getElementById("shareStatus");
+    const  = document.getElementById("");
+    const  = document.getElementById("");
+    const Btn = document.getElementById("Btn");
     const benchBox = document.getElementById("benchBox");
     const goalkeeperBenchBox = document.getElementById("goalkeeperBenchBox");
     const initialLineup = <%- JSON.stringify(lineupResult || null) %>;
@@ -900,6 +904,7 @@
     if (initialLineup && Array.isArray(initialLineup.teams) && initialLineup.teams.length) {
       renderTeams(initialLineup.teams || [], initialLineup.bench || []);
       if (shareBox) shareBox.classList.remove("hidden");
+      if () .classList.remove("hidden");
       statusEl.textContent = "Times salvos carregados.";
     }
 
@@ -937,6 +942,7 @@
         renderTeams(data.teams || [], data.bench || []);
         statusEl.textContent = `Gerados ${data.teams?.length || 0} time(s). Ajuste e salve se precisar.`;
         if (shareBox) shareBox.classList.remove("hidden");
+        if () .classList.remove("hidden");
         await persistLineup("auto-sort");
       } catch (err) {
         console.error(err);
@@ -1102,5 +1108,26 @@
         }
       });
     }
+
+    // Compartilhar link selecionado (cards gerados no servidor)
+    Btn?.addEventListener("click", async () => {
+      const url = ?.value;
+      if (!url) return;
+      const absoluteUrl = `${window.location.origin}${url}`;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "Horriver Plate", text: "Confira o card!", url: absoluteUrl });
+          return;
+        } catch (err) {
+          console.warn("Share cancelado ou indisponível", err);
+        }
+      }
+      try {
+        await navigator.clipboard.writeText(absoluteUrl);
+        if (shareStatus) shareStatus.textContent = "Link copiado para compartilhar.";
+      } catch (err) {
+        if (shareStatus) shareStatus.textContent = "Não foi possível copiar o link.";
+      }
+    });
   })();
 </script>
