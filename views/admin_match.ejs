@@ -480,20 +480,17 @@
 
 <script>
   (() => {
+    const statusEl = document.getElementById("sorterStatus");
+    try {
     const matchId = <%= match.id %>;
     const form = document.getElementById("sorterForm");
     const resultsEl = document.getElementById("sorterResults");
-    const statusEl = document.getElementById("sorterStatus");
     const shareBox = document.getElementById("sorterShare");
-    const  = document.getElementById("");
     const copyBtn = document.getElementById("copyTeamsBtn");
     const imgBtn = document.getElementById("imgTeamsBtn");
     const saveBtn = document.getElementById("saveTeamsBtn");
     const sortBtn = document.getElementById("sortBtn");
     const shareStatus = document.getElementById("shareStatus");
-    const  = document.getElementById("");
-    const  = document.getElementById("");
-    const Btn = document.getElementById("Btn");
     const benchBox = document.getElementById("benchBox");
     const goalkeeperBenchBox = document.getElementById("goalkeeperBenchBox");
     const initialLineup = <%- JSON.stringify(lineupResult || null) %>;
@@ -613,8 +610,14 @@
     ];
 
     function renderTeams(teams, bench) {
-      const goalkeepers = (bench || []).filter((p) => (p.position || "").toLowerCase().includes("goleiro"));
-      const fieldBench = (bench || []).filter((p) => !(p.position || "").toLowerCase().includes("goleiro"));
+      const goalkeepers = (bench || []).filter((p) => {
+        const pos = (p.position || "").toLowerCase();
+        return pos.includes("goleiro") || pos.includes("gol");
+      });
+      const fieldBench = (bench || []).filter((p) => {
+        const pos = (p.position || "").toLowerCase();
+        return !(pos.includes("goleiro") || pos.includes("gol"));
+      });
 
       resultsEl.innerHTML = (teams || [])
         .map((t, idx) => {
@@ -713,7 +716,10 @@
           goalkeeperBenchBox.classList.remove("hidden");
           goalkeeperBenchBox.innerHTML = `
             <div class="flex items-center justify-between mb-2">
-              <p class="text-horriver-orange font-semibold">Goleiros</p>
+              <div>
+                <p class="text-horriver-orange font-semibold">Goleiros</p>
+                <p class="text-horriver-gray text-[11px]">Arraste para um time se quiser.</p>
+              </div>
               <p class="text-horriver-light">${goalkeepers.length} jogador(es)</p>
             </div>
             <ul class="space-y-1 min-h-[12px]" data-list-id="goalkeeper-bench">
@@ -726,22 +732,10 @@
         }
       }
 
+      // Banco somente para goleiros; esconde reservas de linha
       if (benchBox) {
-        if (fieldBench.length) {
-          benchBox.classList.remove("hidden");
-          benchBox.innerHTML = `
-            <div class="flex items-center justify-between mb-2">
-              <p class="text-horriver-orange font-semibold">Banco / Reservas</p>
-              <p class="text-horriver-light">${fieldBench.length} jogador(es)</p>
-            </div>
-            <ul class="space-y-1 min-h-[12px]" data-list-id="bench">
-              ${renderBenchList(fieldBench, "bench")}
-            </ul>
-          `;
-        } else {
-          benchBox.classList.add("hidden");
-          benchBox.innerHTML = "";
-        }
+        benchBox.classList.add("hidden");
+        benchBox.innerHTML = "";
       }
       recalculatePower();
       setupDragAndDrop();
@@ -904,7 +898,6 @@
     if (initialLineup && Array.isArray(initialLineup.teams) && initialLineup.teams.length) {
       renderTeams(initialLineup.teams || [], initialLineup.bench || []);
       if (shareBox) shareBox.classList.remove("hidden");
-      if () .classList.remove("hidden");
       statusEl.textContent = "Times salvos carregados.";
     }
 
@@ -942,7 +935,6 @@
         renderTeams(data.teams || [], data.bench || []);
         statusEl.textContent = `Gerados ${data.teams?.length || 0} time(s). Ajuste e salve se precisar.`;
         if (shareBox) shareBox.classList.remove("hidden");
-        if () .classList.remove("hidden");
         await persistLineup("auto-sort");
       } catch (err) {
         console.error(err);
@@ -1004,18 +996,19 @@
       imgBtn.addEventListener("click", async () => {
         shareStatus.textContent = "Gerando imagem...";
         try {
+          // carrega html2canvas se ainda não estiver presente
           if (typeof html2canvas === "undefined") {
-            shareStatus.textContent = "html2canvas não carregado.";
-            return;
+            await new Promise((resolve, reject) => {
+              const s = document.createElement("script");
+              s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+              s.onload = resolve;
+              s.onerror = () => reject(new Error("Falha ao carregar html2canvas"));
+              document.body.appendChild(s);
+            });
           }
-          const teamsForShare = Array.from(resultsEl.querySelectorAll("[data-team]")).map((box) => {
-            const colorNameText =
-              box.getAttribute("data-team-color-name") ||
-              box.querySelector("[data-color-select]")?.selectedOptions?.[0]?.text ||
-              null;
-            const name = colorNameText
-              ? `Time ${colorNameText}`
-              : box.querySelector("[data-team-name]")?.textContent?.trim() || "Time";
+
+          const teamsForShare = Array.from(resultsEl.querySelectorAll("[data-team]")).map((box, idx) => {
+            const rawName = box.querySelector("[data-team-name]")?.textContent?.trim() || `Time ${idx + 1}`;
             const color =
               box.getAttribute("data-team-color") ||
               box.querySelector("[data-color-indicator]")?.style?.backgroundColor ||
@@ -1024,10 +1017,21 @@
               const spans = li.querySelectorAll("span");
               const nome = spans[0]?.textContent?.trim() || "";
               const pos = spans[1]?.textContent?.trim() || "";
-              const ovr = spans[2]?.textContent?.trim() || "";
-              return { nome, pos, ovr };
+              return { nome, pos };
             });
-            return { name, color, players };
+            const nomeCor =
+              box.getAttribute("data-team-color-name") ||
+              box.querySelector("[data-color-select]")?.selectedOptions?.[0]?.text ||
+              rawName;
+            const displayName = nomeCor ? `Time ${nomeCor}` : rawName;
+            return { name: displayName, color, players };
+          });
+
+          const goalkeepersForShare = Array.from(goalkeeperBenchBox?.querySelectorAll("li") || []).map((li) => {
+            const spans = li.querySelectorAll("span");
+            const nome = spans[0]?.textContent?.trim() || "";
+            const pos = spans[1]?.textContent?.trim() || "";
+            return { nome, pos };
           });
 
           if (!teamsForShare.length) {
@@ -1039,48 +1043,49 @@
           card.style.position = "fixed";
           card.style.left = "-9999px";
           card.style.top = "0";
-          card.style.width = "640px";
-          card.style.padding = "16px";
-          card.style.borderRadius = "18px";
-          card.style.background = "linear-gradient(135deg, #1a0b0b 0%, #0b0b10 60%, #1a0b0b 100%)";
+          card.style.width = "1400px";
+          card.style.padding = "22px 22px 26px";
+          card.style.borderRadius = "30px";
+          card.style.background = "radial-gradient(circle at 30% 20%, #2a0b0b 0%, #120606 38%, #0a090d 100%)";
           card.style.color = "#f3f4f6";
           card.style.fontFamily = "Inter, system-ui, -apple-system, sans-serif";
           card.style.boxShadow = "0 12px 28px rgba(0,0,0,0.35)";
-          card.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div style="display:flex;flex-direction:column;gap:4px;">
-                <span style="font-size:12px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;">Times</span>
-                <span style="font-size:18px;font-weight:800;">Pelada ${matchDateLabel}</span>
+
+          const headerHtml = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <span style="font-size:12px;color:#f97316;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;">Craque da semana - Times</span>
+                <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;">Pelada ${matchDateLabel}</span>
               </div>
-              <div style="width:70px;height:70px;border-radius:50%;overflow:hidden;border:2px solid #f97316;background:#0f0f15;display:flex;align-items:center;justify-content:center;">
-                <img
-                  src="/img/logo-32x32.svg"
-                  alt="Horriver Plate"
-                  style="width:auto;height:auto;max-width:80%;max-height:80%;object-fit:contain;display:block;opacity:0.95;"
-                />
+              <div style="width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid #f97316;background:#0f0f15;display:flex;align-items:center;justify-content:center;">
+                <img src="/img/logo-32x32.svg" alt="Horriver Plate" style="width:auto;height:auto;max-width:80%;max-height:80%;object-fit:contain;display:block;opacity:0.95;" />
               </div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;">
+          `;
+
+          const colors = ["#facc15", "#3b82f6", "#1f2937", "#10b981"];
+          const teamsHtml = `
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
               ${teamsForShare
-                .map((t) => {
-                  const headerBg = t.color;
+                .map((t, idx) => {
+                  const headerBg = colors[idx % colors.length];
                   return `
-                    <div style="position:relative;border:1px solid ${headerBg}40;border-radius:18px;overflow:hidden;background:linear-gradient(145deg, ${headerBg}33 0%, rgba(15,15,20,0.9) 70%);">
-                      <div style="position:absolute;right:-30px;bottom:-30px;width:120px;height:120px;opacity:0.06;background:url('/img/logo.jpg') center/contain no-repeat;"></div>
+                    <div style="position:relative;border:1px solid ${headerBg}40;border-radius:18px;overflow:hidden;background:linear-gradient(145deg, ${headerBg}26 0%, rgba(15,15,20,0.9) 70%);">
+                      <div style="position:absolute;right:-26px;bottom:-26px;width:110px;height:110px;opacity:0.08;background:url('/img/logo.jpg') center/contain no-repeat;"></div>
                       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:${headerBg};color:#0b0b0b;font-weight:800;letter-spacing:0.5px;">
                         <span>${t.name}</span>
                         <span style="font-size:11px;">${t.players.length} jogadores</span>
                       </div>
-                      <div style="padding:12px 14px 12px 14px;display:flex;flex-direction:column;gap:8px;">
+                      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
                         ${t.players
                           .map(
                             (p) => `
                               <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
                                 <div style="display:flex;flex-direction:column;gap:2px;">
-                                  <span style="font-weight:700;font-size:13px;">${p.nome}</span>
+                                  <span style="font-weight:800;font-size:13px;">${p.nome}</span>
                                   <span style="font-size:11px;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.4px;">${p.pos}</span>
                                 </div>
-                                <span style="font-size:12px;color:#fbd38d;font-weight:800;"></span>
+                                <span style="font-size:13px;color:#fbd38d;font-weight:800;"></span>
                               </div>
                             `
                           )
@@ -1092,6 +1097,31 @@
                 .join("")}
             </div>
           `;
+
+          const gkHtml =
+            goalkeepersForShare.length > 0
+              ? `
+            <div style="margin-top:18px;border:1px solid rgba(255,122,0,0.35);border-radius:16px;padding:12px 14px;background:rgba(255,122,0,0.05);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-weight:800;color:#f97316;">Goleiros (banco)</span>
+                <span style="font-size:12px;color:#f3f4f6;">${goalkeepersForShare.length} jogador(es)</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;">
+                ${goalkeepersForShare
+                  .map(
+                    (gk) => `
+                      <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:6px 8px;background:rgba(255,255,255,0.03);">
+                        <span style="font-weight:700;font-size:13px;">${gk.nome}</span>
+                        <span style="font-size:11px;color:#cbd5e1;">${gk.pos}</span>
+                      </div>
+                    `
+                  )
+                  .join("")}
+              </div>
+            </div>`
+              : "";
+
+          card.innerHTML = headerHtml + teamsHtml + gkHtml;
 
           document.body.appendChild(card);
           const canvas = await html2canvas(card, { backgroundColor: null, scale: 2 });
@@ -1109,25 +1139,10 @@
       });
     }
 
-    // Compartilhar link selecionado (cards gerados no servidor)
-    Btn?.addEventListener("click", async () => {
-      const url = ?.value;
-      if (!url) return;
-      const absoluteUrl = `${window.location.origin}${url}`;
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: "Horriver Plate", text: "Confira o card!", url: absoluteUrl });
-          return;
-        } catch (err) {
-          console.warn("Share cancelado ou indisponível", err);
-        }
-      }
-      try {
-        await navigator.clipboard.writeText(absoluteUrl);
-        if (shareStatus) shareStatus.textContent = "Link copiado para compartilhar.";
-      } catch (err) {
-        if (shareStatus) shareStatus.textContent = "Não foi possível copiar o link.";
-      }
-    });
+    console.info("Sorteador carregado");
+  } catch (err) {
+    console.error("Erro no script do sorteador", err);
+    if (statusEl) statusEl.textContent = "Erro no script. Veja o console.";
+  }
   })();
 </script>

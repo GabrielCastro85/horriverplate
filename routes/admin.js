@@ -1472,7 +1472,9 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     const goalkeepers = [];
     const fieldPlayers = [];
     fullPool.forEach((p) => {
-      if ((p.position || "").toLowerCase().includes("goleiro")) {
+      const pos = (p.position || "").toLowerCase();
+      const isGoalkeeper = pos.includes("goleiro") || pos.includes("gol");
+      if (isGoalkeeper) {
         goalkeepers.push(p);
       } else {
         fieldPlayers.push(p);
@@ -1520,19 +1522,8 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     const autoBuckets = snakeDistribute(remainingPlayers, teamCount);
     const teamBuckets = seededBuckets.map((bucket, idx) => [...bucket, ...(autoBuckets[idx] || [])]);
 
-    // 10. Opcional: distribuir goleiros se houver exatamente um por time
-    let keepGoalkeepersOnBench = true;
-    if (goalkeepers.length && goalkeepers.length === teamCount) {
-      keepGoalkeepersOnBench = false;
-      // embaralha levemente para não fixar sempre a mesma ordem
-      const shuffledGks = [...goalkeepers].sort(() => Math.random() - 0.5);
-      shuffledGks.forEach((gk, idx) => {
-        teamBuckets[idx].unshift({
-          ...gk,
-          displayOverall: overallMap.get(gk.id) ?? null,
-        });
-      });
-    }
+    // 10. Goleiros sempre vão para o banco (não entram direto nos times)
+    const keepGoalkeepersOnBench = true;
     
     // 11. Montar banco de reservas
     const leftoverFieldPlayers = orderedFieldPool.slice(totalPlayersForTeams);
