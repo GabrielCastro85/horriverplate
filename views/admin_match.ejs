@@ -429,6 +429,11 @@
     <div class="space-y-3 w-full md:col-span-2">
       <div class="grid gap-3 text-[12px] w-full [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]" id="sorterResults"></div>
 
+      <div class="grid gap-3">
+        <div id="goalkeeperBenchBox" class="hidden w-full text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
+        <div id="benchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
+      </div>
+
       <div id="sorterShare" class="hidden flex flex-wrap items-center gap-2 text-[12px]">
         <button
           type="button"
@@ -452,11 +457,6 @@
           Baixar imagem
         </button>
         <span id="shareStatus" class="text-horriver-gray"></span>
-      </div>
-
-      <div class="grid md:grid-cols-2 gap-3">
-        <div id="goalkeeperBenchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
-        <div id="benchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
       </div>
     </div>
 <style>
@@ -681,6 +681,9 @@
         const applyColor = () => {
           if (indicator) indicator.style.background = select.value;
           if (nameEl) nameEl.style.color = select.value;
+          teamEl.setAttribute("data-team-color", select.value);
+          const selectedText = select.options[select.selectedIndex]?.text || "";
+          if (selectedText) teamEl.setAttribute("data-team-color-name", selectedText);
         };
         select.addEventListener("change", applyColor);
         applyColor();
@@ -1009,7 +1012,9 @@
 
           const teamsForShare = Array.from(resultsEl.querySelectorAll("[data-team]")).map((box, idx) => {
             const rawName = box.querySelector("[data-team-name]")?.textContent?.trim() || `Time ${idx + 1}`;
+            const selectEl = box.querySelector("[data-color-select]");
             const color =
+              selectEl?.value ||
               box.getAttribute("data-team-color") ||
               box.querySelector("[data-color-indicator]")?.style?.backgroundColor ||
               "#f97316";
@@ -1021,7 +1026,7 @@
             });
             const nomeCor =
               box.getAttribute("data-team-color-name") ||
-              box.querySelector("[data-color-select]")?.selectedOptions?.[0]?.text ||
+              selectEl?.selectedOptions?.[0]?.text ||
               rawName;
             const displayName = nomeCor ? `Time ${nomeCor}` : rawName;
             return { name: displayName, color, players };
@@ -1068,7 +1073,7 @@
             <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
               ${teamsForShare
                 .map((t, idx) => {
-                  const headerBg = colors[idx % colors.length];
+                  const headerBg = t.color || colors[idx % colors.length];
                   return `
                     <div style="position:relative;border:1px solid ${headerBg}40;border-radius:18px;overflow:hidden;background:linear-gradient(145deg, ${headerBg}26 0%, rgba(15,15,20,0.9) 70%);">
                       <div style="position:absolute;right:-26px;bottom:-26px;width:110px;height:110px;opacity:0.08;background:url('/img/logo.jpg') center/contain no-repeat;"></div>
