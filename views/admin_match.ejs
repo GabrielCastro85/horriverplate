@@ -955,24 +955,49 @@
         const blocks = resultsEl.querySelectorAll("[data-team]");
         if (!blocks.length) return;
         let text = `Sorteio da pelada ${matchDateLabel}\n`;
+        const abbrevPos = (pos) => {
+          const p = (pos || "").toLowerCase();
+          if (!p) return "";
+          if (p.includes("goleiro")) return "GOL";
+          if (p.includes("ata")) return "ATA";
+          if (p.includes("atac")) return "ATA";
+          if (p.includes("meia") || p.includes("mei")) return "MEI";
+          if (p.includes("vol")) return "VOL";
+          if (p.includes("zag") || p.includes("def")) return "ZAG";
+          return p.slice(0, 3).toUpperCase();
+        };
+
         blocks.forEach((box) => {
-          const name = box.querySelector("[data-team-name]")?.textContent || "Time";
+          const colorName =
+            box.getAttribute("data-team-color-name") ||
+            box.querySelector("[data-color-select]")?.selectedOptions?.[0]?.text ||
+            "";
+          const rawName = box.querySelector("[data-team-name]")?.textContent || "Time";
+          const colorEmojiMap = {
+            Amarelo: "🟡",
+            Azul: "🔵",
+            Preto: "⚫",
+            Vermelho: "🔴",
+            Branco: "⚪",
+          };
+          const emoji = colorEmojiMap[colorName] || "🎨";
+          const name = colorName ? `${emoji} Time ${colorName}` : rawName;
           const lines = Array.from(box.querySelectorAll("li")).map((li) => {
             const spans = li.querySelectorAll("span");
             const nome = spans[0]?.textContent?.trim() || "";
-            const pos = spans[1]?.textContent?.trim() || "";
-            return `- ${nome}${pos ? " [" + pos + "]" : ""}`;
+            const isGuest = li.dataset.playerGuest === "true";
+            const pos = isGuest ? abbrevPos(spans[1]?.textContent?.trim() || "") : "";
+            return pos ? `- ${nome} ${pos}` : `- ${nome}`;
           });
           text += `\n${name}\n${lines.join("\n")}\n`;
         });
         const gkItems = goalkeeperBenchBox ? goalkeeperBenchBox.querySelectorAll("li") : [];
         if (gkItems.length) {
-          text += "\nGoleiros\n";
+          text += "\n🧤 Goleiros\n";
           gkItems.forEach((li) => {
             const spans = li.querySelectorAll("span");
             const nome = spans[0]?.textContent?.trim() || "";
-            const pos = spans[1]?.textContent?.trim() || "";
-            text += `- ${nome}${pos ? " [" + pos + "]" : ""}\n`;
+            text += `- ${nome}\n`;
           });
         }
 
@@ -982,8 +1007,9 @@
           benchItems.forEach((li) => {
             const spans = li.querySelectorAll("span");
             const nome = spans[0]?.textContent?.trim() || "";
-            const pos = spans[1]?.textContent?.trim() || "";
-            text += `- ${nome}${pos ? " [" + pos + "]" : ""}\n`;
+            const isGuest = li.dataset.playerGuest === "true";
+            const pos = isGuest ? abbrevPos(spans[1]?.textContent?.trim() || "") : "";
+            text += pos ? `- ${nome} ${pos}\n` : `- ${nome}\n`;
           });
         }
         try {
