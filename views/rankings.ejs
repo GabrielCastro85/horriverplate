@@ -28,6 +28,7 @@
 
   const weeklyAwards  = safeArr(rankings && rankings.weeklyAwards);
   const monthlyAwards = safeArr(rankings && rankings.monthlyAwards);
+  const colorWins = safeArr(rankings && rankings.colorWins);
 
   const monthNames = [
     "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
@@ -125,7 +126,7 @@
       </div>
 
       <!-- Resumo do filtro atual -->
-      <div class="text-xs text-horriver-gray md:text-right">
+      <div class="text-xs text-horriver-gray md:text-right space-y-2">
         <p>
           Período:
           <span class="text-horriver-orange font-medium"><%= periodLabel() %></span>
@@ -134,6 +135,7 @@
           Posição:
           <span class="text-horriver-orange font-medium"><%= posLabel(selPos) %></span>
         </p>
+
       </div>
     </div>
 
@@ -220,6 +222,43 @@
       </div>
     </form>
   </header>
+
+  <!-- Ranking por cor vencedora -->
+  <section class="space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="font-title text-xl text-horriver-light">
+        Cores com mais vitorias
+      </h2>
+      <span class="text-[11px] text-horriver-gray">
+        Contagem de peladas vencidas por cor de time.
+      </span>
+    </div>
+
+    <% if (!colorWins.length) { %>
+      <p class="text-sm text-horriver-gray">Nenhuma vitoria registrada por cor.</p>
+    <% } else { %>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <% const colorMap = { Amarelo: "#facc15", Azul: "#3b82f6", Preto: "#111827", Vermelho: "#ef4444" }; %>
+        <% colorWins.forEach((c, idx) => { %>
+          <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span
+                class="w-3 h-3 rounded-full border border-white/10"
+                style="background:<%= colorMap[c.name] || '#f97316' %>"
+              ></span>
+              <div>
+                <p class="text-horriver-light font-semibold"><%= c.name %></p>
+                <p class="text-[11px] text-horriver-gray">#<%= idx + 1 %></p>
+              </div>
+            </div>
+            <span class="text-xl font-semibold text-horriver-orange">
+              <%= c.count %>
+            </span>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
 
   <!-- GRID DE RANKINGS PRINCIPAIS -->
   <section class="space-y-6">

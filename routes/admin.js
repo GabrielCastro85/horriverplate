@@ -331,23 +331,38 @@ router.post("/players/:id/delete", requireAdmin, async (req, res) => {
 
 // ==============================
 // 🏆 Peladas (Matches) - CRUD
-// ==============================
+
+function parsePlayedAt({ playedAt, playedDate, playedTime }) {
+  if (playedAt) {
+    const parsed = new Date(playedAt);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  if (playedDate) {
+    const time = playedTime && playedTime.trim() ? playedTime.trim() : "00:00";
+    const parsed = new Date(`${playedDate}T${time}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  return null;
+}// ==============================
 
 // Criar nova pelada
 router.post("/matches", requireAdmin, async (req, res) => {
   try {
-    const { playedAt, description, winnerTeam } = req.body;
+    const { playedAt, playedDate, playedTime, description, winnerTeam, winnerColor } = req.body;
 
-    const playedDate = playedAt ? new Date(playedAt) : null;
-    if (!playedDate || Number.isNaN(playedDate.getTime())) {
+    const playedDateValue = parsePlayedAt({ playedAt, playedDate, playedTime });
+    if (!playedDateValue) {
       return res.redirect("/admin");
     }
 
     await prisma.match.create({
       data: {
-        playedAt: playedDate,
+        playedAt: playedDateValue,
         description: description || null,
         winnerTeam: winnerTeam || null,
+        winnerColor: winnerColor || null,
       },
     });
 
@@ -357,24 +372,24 @@ router.post("/matches", requireAdmin, async (req, res) => {
     res.redirect("/admin");
   }
 });
-
 // Editar pelada
 router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { playedAt, description, winnerTeam } = req.body;
+    const { playedAt, playedDate, playedTime, description, winnerTeam, winnerColor } = req.body;
 
-    const playedDate = playedAt ? new Date(playedAt) : null;
-    if (Number.isNaN(id) || !playedDate || Number.isNaN(playedDate.getTime())) {
+    const playedDateValue = parsePlayedAt({ playedAt, playedDate, playedTime });
+    if (Number.isNaN(id) || !playedDateValue) {
       return res.redirect("/admin");
     }
 
     await prisma.match.update({
       where: { id },
       data: {
-        playedAt: playedDate,
+        playedAt: playedDateValue,
         description: description || null,
         winnerTeam: winnerTeam || null,
+        winnerColor: winnerColor || null,
       },
     });
 
@@ -384,7 +399,6 @@ router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
     res.redirect("/admin");
   }
 });
-
 // Excluir pelada (apaga stats primeiro)
 router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
   try {
@@ -634,6 +648,14 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
     }
 
     await recomputeTotalsForPlayers(Array.from(touchedPlayerIds));
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "winnerColor")) {
+      const winnerColor = (req.body.winnerColor || "").trim();
+      await prisma.match.update({
+        where: { id: matchId },
+        data: { winnerColor: winnerColor || null },
+      });
+    }
 
     res.redirect(`/admin/matches/${matchId}`);
   } catch (err) {
@@ -1983,3 +2005,6 @@ router.post("/rebuild-achievements", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
+
+

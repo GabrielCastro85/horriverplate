@@ -34,6 +34,22 @@
   method="POST"
   class="space-y-4"
 >
+  <div class="bg-black/40 border border-horriver-border rounded-xl p-3 text-[12px] text-horriver-gray">
+    <label class="flex flex-col gap-1 max-w-[240px]">
+      Cor do time vencedor (opcional)
+      <select
+        name="winnerColor"
+        class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+      >
+        <option value="" <%= !match.winnerColor ? "selected" : "" %>>Nenhuma</option>
+        <option value="Amarelo" <%= match.winnerColor === "Amarelo" ? "selected" : "" %>>Amarelo</option>
+        <option value="Azul" <%= match.winnerColor === "Azul" ? "selected" : "" %>>Azul</option>
+        <option value="Preto" <%= match.winnerColor === "Preto" ? "selected" : "" %>>Preto</option>
+        <option value="Vermelho" <%= match.winnerColor === "Vermelho" ? "selected" : "" %>>Vermelho</option>
+        
+      </select>
+    </label>
+  </div>
   <div
     class="overflow-x-auto rounded-2xl border border-horriver-border bg-black/50"
   >
@@ -1177,3 +1193,4 @@
   }
   })();
 </script>
+

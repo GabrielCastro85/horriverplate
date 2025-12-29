@@ -17,7 +17,6 @@ const sobreRouter = require("./routes/sobre");
 const awardsRouter = require("./routes/awards"); // ✅ NOVO: rota da premiação
 const playerRouter = require("./routes/player");
 const voteRouter = require("./routes/vote");
-const shareRouter = require("./routes/share");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -128,7 +127,6 @@ app.use("/premiacao", awardsRouter); // ✅ NOVO: página de premiação
 app.use("/jogador", playerRouter);
 app.use("/admin", adminRouter);
 app.use("/vote", voteRouter);
-app.use("/share", shareRouter);
 
 
 // ==============================

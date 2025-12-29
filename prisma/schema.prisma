@@ -16,38 +16,38 @@ model Admin {
 }
 
 model Player {
-  id             Int                 @id @default(autoincrement())
-  name           String
-  nickname       String?
-  position       String
-  photoUrl       String?
-  baseOverall    Float               @default(60)
-  overallDynamic Float?
-  overallLastUpdated DateTime?
-  totalGoals     Int                 @default(0)
-  totalAssists   Int                 @default(0)
-  totalMatches   Int                 @default(0)
-  totalPhotos    Int                 @default(0)
-  totalRating    Float               @default(0)
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  whatsapp       String?
-  hallBadges     Json?
-  hallInductedAt DateTime?
-  hallReason     String?
-  hallTitle      String?
-  isHallOfFame   Boolean             @default(false)
-  monthlyAwards  MonthlyAward[]      @relation("MonthlyCraque")
-  overallHistory OverallHistory[]
-  achievements   PlayerAchievement[]
-  stats          PlayerStat[]
-  seasonAwards   SeasonAward[]
-  voteBallots    VoteBallot[]        @relation("BestOverallPlayer")
-  VoteChoice     VoteChoice[]
-  VoteLink       VoteLink[]
-  voteRankings   VoteRanking[]
-  voteTokens     VoteToken[]
-  weeklyAwards   WeeklyAward[]       @relation("WeeklyBest")
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  nickname           String?
+  position           String
+  photoUrl           String?
+  totalGoals         Int                 @default(0)
+  totalAssists       Int                 @default(0)
+  totalMatches       Int                 @default(0)
+  totalPhotos        Int                 @default(0)
+  totalRating        Float               @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  whatsapp           String?
+  hallBadges         Json?
+  hallInductedAt     DateTime?
+  hallReason         String?
+  hallTitle          String?
+  isHallOfFame       Boolean             @default(false)
+  baseOverall        Float               @default(60)
+  overallDynamic     Float?
+  overallLastUpdated DateTime?           @db.Timestamp(6)
+  monthlyAwards      MonthlyAward[]      @relation("MonthlyCraque")
+  overallHistory     OverallHistory[]
+  achievements       PlayerAchievement[]
+  stats              PlayerStat[]
+  seasonAwards       SeasonAward[]
+  voteBallots        VoteBallot[]        @relation("BestOverallPlayer")
+  VoteChoice         VoteChoice[]
+  VoteLink           VoteLink[]
+  voteRankings       VoteRanking[]
+  voteTokens         VoteToken[]
+  weeklyAwards       WeeklyAward[]       @relation("WeeklyBest")
 }
 
 model Match {
@@ -55,10 +55,11 @@ model Match {
   playedAt     DateTime
   description  String?
   winnerTeam   String?
-  votingToken  String?
-  votingStatus String?      @default("CLOSED")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  votingToken  String?
+  votingStatus String?       @default("CLOSED")
+  winnerColor  String?
   lineupDraws  LineupDraw[]
   stats        PlayerStat[]
   VoteLink     VoteLink[]
@@ -189,30 +190,30 @@ model VoteChoice {
 }
 
 model Achievement {
-  id           Int                 @id @default(autoincrement())
-  code         String              @unique
-  title        String
-  description  String
-  category     String
-  rarity       String
-  targetValue  Int?
-  symbol       String?
-  isNumeric    Boolean             @default(false)
-  sortOrder    Int                 @default(0)
-  createdAt    DateTime            @default(now())
-  players      PlayerAchievement[]
+  id          Int                 @id @default(autoincrement())
+  description String
+  category    String
+  createdAt   DateTime            @default(now())
+  code        String              @unique
+  title       String
+  rarity      String
+  targetValue Int?
+  symbol      String?
+  isNumeric   Boolean             @default(false)
+  sortOrder   Int                 @default(0)
+  players     PlayerAchievement[]
 }
 
 model PlayerAchievement {
-  id             Int         @id @default(autoincrement())
-  playerId       Int
-  achievementId  Int
-  progressValue  Int         @default(0)
-  unlockedAt     DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  achievement    Achievement @relation(fields: [achievementId], references: [id])
-  player         Player      @relation(fields: [playerId], references: [id])
+  id            Int         @id @default(autoincrement())
+  playerId      Int
+  achievementId Int
+  unlockedAt    DateTime?
+  progressValue Int         @default(0)
+  createdAt     DateTime    @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime    @default(now()) @updatedAt @db.Timestamp(6)
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  player        Player      @relation(fields: [playerId], references: [id])
 
   @@unique([playerId, achievementId])
   @@index([playerId])

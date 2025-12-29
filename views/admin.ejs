@@ -23,17 +23,27 @@
       <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold text-lg text-horriver-light">Nova Pelada</h3>
         <form id="newMatchForm" action="/admin/matches" method="POST" class="space-y-3">
-          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
-            Data
-            <input
-              type="datetime-local"
-              name="playedAt"
-              id="playedAt"
-              required
-              placeholder="AAAA-MM-DDThh:mm"
-              class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
-            />
-          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+              Data
+              <input
+                type="date"
+                name="playedDate"
+                id="playedDate"
+                required
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              />
+            </label>
+            <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+              Horario (opcional)
+              <input
+                type="time"
+                name="playedTime"
+                id="playedTime"
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              />
+            </label>
+          </div>
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
             Descricao (opcional)
             <input
@@ -45,7 +55,22 @@
             />
           </label>
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
-            Time vencedor (opcional)
+            Cor do time vencedor (opcional)
+            <select
+              name="winnerColor"
+              id="winnerColor"
+              class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+            >
+              <option value="">Nenhuma</option>
+              <option value="Amarelo">Amarelo</option>
+              <option value="Azul">Azul</option>
+              <option value="Preto">Preto</option>
+              <option value="Vermelho">Vermelho</option>
+              
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm text-horriver-gray">
+            Nome do time vencedor (opcional)
             <input
               type="text"
               name="winnerTeam"
@@ -359,39 +384,19 @@
 </div>
 
 <script>
-  // Normaliza a data do formulÃ¡rio de nova pelada
+  // Define data padrão no formulário de nova pelada
   (function () {
     const form = document.getElementById("newMatchForm");
-    const input = document.getElementById("playedAt");
-    if (!form || !input) return;
+    const dateInput = document.getElementById("playedDate");
+    if (!form || !dateInput) return;
 
-    const setDefaultNow = () => {
+    const setDefaultDate = () => {
       const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      const isoLocal = now.toISOString().slice(0, 16);
-      if (!input.value) input.value = isoLocal;
+      const isoDate = now.toISOString().slice(0, 10);
+      if (!dateInput.value) dateInput.value = isoDate;
     };
 
-    const tryNormalize = () => {
-      const v = input.value.trim();
-      if (/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(v)) return true;
-      const ddmmyyyy = /^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/;
-      const m = v.match(ddmmyyyy);
-      if (m) {
-        const [_, d, mth, y] = m;
-        input.value = `${y}-${mth}-${d}T19:30`;
-        return true;
-      }
-      return false;
-    };
-
-    setDefaultNow();
-    input.addEventListener("blur", tryNormalize);
-    form.addEventListener("submit", (e) => {
-      if (!tryNormalize()) {
-        e.preventDefault();
-        alert("Use o formato AAAA-MM-DDThh:mm ou selecione no calendario.");
-      }
-    });
+    setDefaultDate();
   })();
 </script>
+

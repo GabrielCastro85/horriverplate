@@ -113,7 +113,7 @@
       e.stopPropagation();
       const card = document.getElementById("awards-card");
       if (!card) return;
-      html2canvas(card, { backgroundColor: "#0d0d0d" }).then((canvas) => {
+      html2canvas(card, { backgroundColor: "#0d0d0d", scale: 2 }).then((canvas) => {
         canvas.toBlob((blob) => {
           if (!blob) return;
           const url = URL.createObjectURL(blob);

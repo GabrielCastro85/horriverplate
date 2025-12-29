@@ -389,6 +389,36 @@ router.get("/", async (req, res) => {
       (a, b) => b.count - a.count
     );
 
+    const winnerColorsRaw = await prisma.match.findMany({
+      where: { winnerColor: { not: null } },
+      select: { winnerColor: true },
+    });
+
+    const colorLabels = ["Amarelo", "Azul", "Preto", "Vermelho"];
+    const fallbackColorCounts = {
+      Amarelo: 9,
+      Azul: 16,
+      Preto: 6,
+      Vermelho: 13,
+    };
+
+    const colorCounts = new Map(colorLabels.map((c) => [c, 0]));
+    winnerColorsRaw.forEach((m) => {
+      const color = (m.winnerColor || "").trim();
+      if (!colorCounts.has(color)) return;
+      colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+    });
+
+    const useFallbackCounts = winnerColorsRaw.length === 0;
+    const colorWins = colorLabels
+      .map((name) => ({
+        name,
+        count: useFallbackCounts
+          ? (fallbackColorCounts[name] || 0)
+          : (colorCounts.get(name) || 0),
+      }))
+      .sort((a, b) => b.count - a.count);
+
     const last10Ranking = recentRanking.map((e) => ({
       ...e,
       last10Score: e.recentScore,
@@ -407,6 +437,7 @@ router.get("/", async (req, res) => {
       last10: last10Ranking,
       weeklyAwards,
       monthlyAwards,
+      colorWins,
     };
 
     return res.render("rankings", {
