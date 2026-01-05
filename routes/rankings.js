@@ -389,10 +389,20 @@ router.get("/", async (req, res) => {
       (a, b) => b.count - a.count
     );
 
-    const winnerColorsRaw = await prisma.match.findMany({
-      where: { winnerColor: { not: null } },
-      select: { winnerColor: true },
-    });
+    const winnerColorWhere = { winnerColor: { not: null } };
+    if (from && to) {
+      winnerColorWhere.playedAt = { gte: from, lt: to };
+    }
+
+    const [winnerColorsRaw, totalWinnerColorsAll] = await Promise.all([
+      prisma.match.findMany({
+        where: winnerColorWhere,
+        select: { winnerColor: true },
+      }),
+      prisma.match.count({
+        where: { winnerColor: { not: null } },
+      }),
+    ]);
 
     const colorLabels = ["Amarelo", "Azul", "Preto", "Vermelho"];
     const fallbackColorCounts = {
@@ -409,7 +419,9 @@ router.get("/", async (req, res) => {
       colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
     });
 
-    const useFallbackCounts = winnerColorsRaw.length === 0;
+    const isYear2025 = String(year) === "2025";
+    const isAllMonths = month === "0" || month === 0 || typeof month === "undefined";
+    const useFallbackCounts = isYear2025 && isAllMonths && winnerColorsRaw.length === 0;
     const colorWins = colorLabels
       .map((name) => ({
         name,
