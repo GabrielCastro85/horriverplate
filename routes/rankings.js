@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
 const { computeOverallFromEntries } = require("../utils/overall");
+const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 // Calcula o intervalo de datas com base em year/month
 function getDateRange(year, month) {
@@ -74,6 +75,37 @@ router.get("/", async (req, res) => {
       },
     });
 
+    const matchIds = new Set();
+    players.forEach((p) => {
+      (p.stats || []).forEach((s) => {
+        if (s.match && s.match.id) matchIds.add(s.match.id);
+      });
+    });
+
+    const finalRatingsByMatch = new Map();
+    for (const matchId of matchIds) {
+      try {
+        const result = await computeMatchRatingsAndAwards(matchId);
+        if (!result.error && result.scores && typeof result.scores.forEach === "function") {
+          const map = new Map();
+          result.scores.forEach((score) => {
+            map.set(score.player.id, score.finalRating);
+          });
+          finalRatingsByMatch.set(matchId, map);
+        }
+      } catch (err) {
+        console.warn("Falha ao calcular notas finais no ranking:", err);
+      }
+    }
+
+    const getFinalRating = (stat) => {
+      const matchId = stat.match && stat.match.id;
+      if (!matchId) return stat.rating;
+      const map = finalRatingsByMatch.get(matchId);
+      if (map && map.has(stat.playerId)) return map.get(stat.playerId);
+      return stat.rating;
+    };
+
     // Monta dados agregados por jogador
     const entries = players.map((p) => {
       let goals = 0;
@@ -88,8 +120,9 @@ router.get("/", async (req, res) => {
         assists += s.assists || 0;
         if (s.present) matches++;
         if (s.appearedInPhoto) photos++;
-        if (s.rating != null) {
-          ratingSum += s.rating;
+        const finalRating = getFinalRating(s);
+        if (finalRating != null) {
+          ratingSum += finalRating;
           ratingCount++;
         }
       }
@@ -143,8 +176,9 @@ router.get("/", async (req, res) => {
           goals += s.goals || 0;
           assists += s.assists || 0;
           if (s.present) matches++;
-          if (s.rating != null) {
-            ratingSum += s.rating;
+          const finalRating = getFinalRating(s);
+          if (finalRating != null) {
+            ratingSum += finalRating;
             ratingCount++;
           }
         }
