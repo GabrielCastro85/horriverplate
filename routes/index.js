@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
 const { getAchievementsStats } = require("../utils/achievements");
+const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 // ==============================
 // Helpers de datas
@@ -270,11 +271,30 @@ router.get("/matches/:id", async (req, res) => {
 
     if (!match) return res.status(404).render("404");
 
+    let publicStats = match.stats || [];
+    try {
+      const result = await computeMatchRatingsAndAwards(id);
+      if (!result.error && result.scores && typeof result.scores.forEach === 'function') {
+        const finalMap = new Map();
+        result.scores.forEach((score) => {
+          finalMap.set(score.player.id, score.finalRating);
+        });
+        publicStats = publicStats.map((stat) => ({
+          ...stat,
+          rating: finalMap.has(stat.playerId)
+            ? finalMap.get(stat.playerId)
+            : stat.rating,
+        }));
+      }
+    } catch (calcErr) {
+      console.warn("Falha ao calcular nota final p£blica:", calcErr);
+    }
+
     res.render("match_public", {
-      title: "Estatísticas da pelada",
+      title: "Estat¡sticas da pelada",
       activePage: "home",
       match,
-      stats: match.stats || [],
+      stats: publicStats,
     });
   } catch (err) {
     console.error("Erro ao carregar pelada pública:", err);

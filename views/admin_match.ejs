@@ -1,4 +1,4 @@
-<%
+﻿<%
 // views/admin_match.ejs
 // Variáveis recebidas: match, players, stats
 // O layout.ejs já cuida de <html>, <body>, header, footer etc.
@@ -49,6 +49,17 @@
         
       </select>
     </label>
+  </div>
+  <div class="flex flex-wrap items-center gap-3 text-xs text-horriver-gray">
+    <label class="flex items-center gap-2">
+      <input
+        type="checkbox"
+        id="filterPresentOnly"
+        class="w-4 h-4 accent-horriver-orange"
+      />
+      Mostrar so presentes (desmarque para editar)
+    </label>
+    <span id="presentCount"></span>
   </div>
   <div
     class="overflow-x-auto rounded-2xl border border-horriver-border bg-black/50"
@@ -120,6 +131,7 @@
               name="present_<%= player.id %>"
               data-player-name="<%= player.name %>"
               data-player-position="<%= player.position %>"
+              data-player-strength="<%= player.overall != null ? player.overall : '' %>"
               class="w-4 h-4 accent-horriver-orange"
               <%= stat && stat.present ? 'checked' : '' %>
             />
@@ -157,7 +169,7 @@
               inputmode="decimal"
               class="w-20 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
               placeholder="7,50"
-              value="<%= stat && stat.rating != null ? stat.rating.toFixed(2).replace('.', ',') : '' %>"
+              value="<%= stat && (stat.finalRating != null || stat.rating != null) ? (stat.finalRating != null ? stat.finalRating : stat.rating).toFixed(2).replace('.', ',') : '' %>"
             />
           </td>
 
@@ -447,6 +459,7 @@
 
       <div class="grid gap-3">
         <div id="goalkeeperBenchBox" class="hidden w-full text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
+        <div id="availableBox" class="hidden w-full text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
         <div id="benchBox" class="hidden text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
       </div>
 
@@ -475,6 +488,38 @@
         <span id="shareStatus" class="text-horriver-gray"></span>
       </div>
     </div>
+<script>
+  (() => {
+    const filterToggle = document.getElementById("filterPresentOnly");
+    const countEl = document.getElementById("presentCount");
+    if (!filterToggle || !countEl) return;
+
+    const rows = Array.from(document.querySelectorAll("tbody tr"));
+    const entries = rows
+      .map((row) => ({
+        row,
+        checkbox: row.querySelector('input[name^="present_"]'),
+      }))
+      .filter((item) => item.checkbox);
+
+    const update = () => {
+      let count = 0;
+      entries.forEach(({ row, checkbox }) => {
+        const isPresent = checkbox.checked;
+        if (isPresent) count += 1;
+        row.classList.toggle("hidden", filterToggle.checked && !isPresent);
+      });
+      countEl.textContent = `${count} presentes selecionados`;
+    };
+
+    entries.forEach(({ checkbox }) => {
+      checkbox.addEventListener("change", update);
+    });
+    filterToggle.addEventListener("change", update);
+    update();
+  })();
+</script>
+
 <style>
   /* Feedback suave para drag-and-drop */
   li.dragging {
@@ -509,6 +554,7 @@
     const shareStatus = document.getElementById("shareStatus");
     const benchBox = document.getElementById("benchBox");
     const goalkeeperBenchBox = document.getElementById("goalkeeperBenchBox");
+    const availableBox = document.getElementById("availableBox");
     const initialLineup = <%- JSON.stringify(lineupResult || null) %>;
 
     const guestName = document.getElementById("guestName");
@@ -525,6 +571,7 @@
 
     const guests = [];
     const seedIds = new Set();
+    const guestsStorageKey = `hp_match_${matchId}_guests`;
 
     function getPresentIdsFromForm() {
       return Array.from(document.querySelectorAll('input[name^="present_"]'))
@@ -540,7 +587,13 @@
           id: cb.name.replace("present_", ""),
           name: cb.dataset.playerName || "Jogador",
           position: cb.dataset.playerPosition || "",
+          strength: Number(cb.dataset.playerStrength || cb.dataset.playerOverall || 0),
         }));
+    }
+
+    function isGoalkeeperPosition(pos = "") {
+      const p = pos.toLowerCase();
+      return p.includes("goleiro") || p.includes("gol");
     }
 
     function renderSeedList() {
@@ -578,13 +631,21 @@
     });
 
     document.querySelectorAll('input[name^="present_"]').forEach((cb) => {
-      cb.addEventListener("change", renderSeedList);
+      cb.addEventListener("change", () => {
+        renderSeedList();
+        updateAvailableList();
+      });
     });
     renderSeedList();
 
     function syncGuestsField() {
       const lines = guests.map((g) => `${g.name};${g.position};${g.strength}`);
       guestsField.value = lines.join("\n");
+      try {
+        localStorage.setItem(guestsStorageKey, guestsField.value);
+      } catch (err) {
+        console.warn("Nao foi possivel salvar convidados no storage.", err);
+      }
       guestList.innerHTML = guests
         .map(
           (g, idx) => `
@@ -595,6 +656,30 @@
           `
         )
         .join("");
+    }
+
+    function loadGuestsFromStorage() {
+      let raw = "";
+      try {
+        raw = localStorage.getItem(guestsStorageKey) || "";
+      } catch (err) {
+        console.warn("Nao foi possivel ler convidados do storage.", err);
+      }
+      if (!raw) return;
+      raw
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .forEach((line) => {
+          const [name, position, strengthRaw] = line.split(";");
+          const strength = Math.max(40, Math.min(100, parseInt(strengthRaw || "60", 10) || 60));
+          guests.push({
+            name: (name || "Convidado").trim(),
+            position: (position || "Outros").trim(),
+            strength,
+          });
+        });
+      syncGuestsField();
     }
 
     guestList.addEventListener("click", (e) => {
@@ -615,7 +700,9 @@
       guestName.value = "";
       guestStr.value = "60";
       syncGuestsField();
+      updateAvailableList();
     });
+    loadGuestsFromStorage();
 
     const teamColors = [
       { name: "Amarelo", value: "#facc15" },
@@ -756,6 +843,7 @@
         benchBox.classList.add("hidden");
         benchBox.innerHTML = "";
       }
+      updateAvailableList();
       recalculatePower();
       setupDragAndDrop();
     }
@@ -782,11 +870,74 @@
       }
     }
 
+    function updateAvailableList() {
+      if (!availableBox) return;
+      if (!resultsEl.querySelector("[data-team]")) {
+        availableBox.classList.add("hidden");
+        availableBox.innerHTML = "";
+        return;
+      }
+
+      const assignedIds = new Set(
+        Array.from(
+          document.querySelectorAll(
+            "#sorterResults li[data-player-id], #goalkeeperBenchBox li[data-player-id]"
+          )
+        ).map((li) => li.dataset.playerId)
+      );
+
+      const available = getPresentPlayersDetail()
+        .filter((p) => !assignedIds.has(p.id))
+        .filter((p) => !isGoalkeeperPosition(p.position));
+
+      if (!available.length) {
+        availableBox.classList.add("hidden");
+        availableBox.innerHTML = "";
+        return;
+      }
+
+      availableBox.classList.remove("hidden");
+      availableBox.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-horriver-orange font-semibold">Disponiveis</p>
+            <p class="text-horriver-gray text-[11px]">Arraste para trocar sem refazer o sorteio.</p>
+          </div>
+          <p class="text-horriver-light">${available.length} jogador(es)</p>
+        </div>
+        <ul class="space-y-1 min-h-[12px]" data-list-id="available">
+          ${available
+            .map(
+              (p) => `
+                <li
+                  class="flex items-center justify-between bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
+                  data-player-id="${p.id}"
+                  data-player-strength="${p.strength || 0}"
+                  data-player-overall="${p.strength || 0}"
+                  data-player-position="${p.position || ""}"
+                  data-player-name="${p.name}"
+                  data-player-nickname=""
+                  data-player-guest="false"
+                  data-list-id="available"
+                >
+                  <div class="flex flex-col">
+                    <span>${p.name}</span>
+                    <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
+                  </div>
+                  <span class="text-horriver-gray">${Number(p.strength || 0).toFixed(1)}</span>
+                </li>
+              `
+            )
+            .join("")}
+        </ul>
+      `;
+    }
+
     function setupDragAndDrop() {
       const placeholder = document.createElement("li");
       placeholder.className = "drop-placeholder";
       const draggableItems = document.querySelectorAll(
-        "#sorterResults li[data-player-id], #benchBox li[data-player-id], #goalkeeperBenchBox li[data-player-id]"
+        "#sorterResults li[data-player-id], #benchBox li[data-player-id], #goalkeeperBenchBox li[data-player-id], #availableBox li[data-player-id]"
       );
       const lists = document.querySelectorAll("[data-team-list],[data-list-id]");
       let currentDragEl = null;
@@ -831,6 +982,7 @@
           }
           currentDragEl = null;
           recalculatePower();
+          updateAvailableList();
         });
         list.addEventListener("dragleave", () => {
           list.classList.remove("drop-target");
@@ -929,6 +1081,10 @@
       if (goalkeeperBenchBox) {
         goalkeeperBenchBox.classList.add("hidden");
         goalkeeperBenchBox.innerHTML = "";
+      }
+      if (availableBox) {
+        availableBox.classList.add("hidden");
+        availableBox.innerHTML = "";
       }
 
       const presentIds = getPresentIdsFromForm();

@@ -962,7 +962,13 @@
             </div>
             <div class="text-right text-[11px]">
               <p class="text-horriver-orange">
-                <%= m.winnerTeam || "Sem time vencedor" %>
+                <% if (m.winnerTeam) { %>
+                  <%= m.winnerTeam %>
+                <% } else if (m.winnerColor) { %>
+                  Time <%= m.winnerColor %>
+                <% } else { %>
+                  Sem time vencedor
+                <% } %>
               </p>
               <a
                 href="/matches/<%= m.id %>"
