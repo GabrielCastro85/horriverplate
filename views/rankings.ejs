@@ -238,8 +238,11 @@
       <p class="text-sm text-horriver-gray">Nenhuma vitoria registrada por cor.</p>
     <% } else { %>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <% const colorMap = { Amarelo: "#facc15", Azul: "#3b82f6", Preto: "#111827", Vermelho: "#ef4444" }; %>
+        <% const colorMap = { Amarelo: "#facc15", Azul: "#3b82f6", Preto: "#6b7280", Vermelho: "#ef4444" }; %>
+        <% const sponsorMap = { Amarelo: "Natureza em Flores", Vermelho: "Matheus Gomes Barbearia", Azul: "Carrocerias Santana", Preto: "Advance Compressores" }; %>
         <% colorWins.forEach((c, idx) => { %>
+          <% const label = (c.name || "").trim(); %>
+          <% const displayName = sponsorMap[label] || c.name; %>
           <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <span
@@ -247,7 +250,7 @@
                 style="background:<%= colorMap[c.name] || '#f97316' %>"
               ></span>
               <div>
-                <p class="text-horriver-light font-semibold"><%= c.name %></p>
+                <p class="text-horriver-light font-semibold" style="color:<%= colorMap[c.name] || '#f97316' %>"><%= displayName %></p>
                 <p class="text-[11px] text-horriver-gray">#<%= idx + 1 %></p>
               </div>
             </div>

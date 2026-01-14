@@ -346,7 +346,115 @@ function parsePlayedAt({ playedAt, playedDate, playedTime }) {
   }
 
   return null;
-}// ==============================
+}
+
+function buildRoundRobinSchedule(teamIds) {
+  if (!Array.isArray(teamIds) || teamIds.length !== 4) return [];
+  const [t1, t2, t3, t4] = teamIds;
+  return [
+    { stage: "GROUP", round: 1, homeTeamId: t1, awayTeamId: t4 },
+    { stage: "GROUP", round: 1, homeTeamId: t2, awayTeamId: t3 },
+    { stage: "GROUP", round: 2, homeTeamId: t4, awayTeamId: t3 },
+    { stage: "GROUP", round: 2, homeTeamId: t1, awayTeamId: t2 },
+    { stage: "GROUP", round: 3, homeTeamId: t2, awayTeamId: t4 },
+    { stage: "GROUP", round: 3, homeTeamId: t3, awayTeamId: t1 },
+  ];
+}
+
+function shuffleSchedule(items) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function shuffleTeams(teamIds) {
+  const arr = [...teamIds];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+async function computeTournamentStandings(tournamentId) {
+  const id = Number(tournamentId);
+  if (Number.isNaN(id)) return [];
+
+  const [teams, games] = await Promise.all([
+    prisma.tournamentTeam.findMany({
+      where: { tournamentId: id },
+      orderBy: { id: "asc" },
+    }),
+    prisma.tournamentGame.findMany({
+      where: { tournamentId: id, stage: "GROUP" },
+    }),
+  ]);
+
+  const table = new Map();
+  teams.forEach((team) => {
+    table.set(team.id, {
+      teamId: team.id,
+      name: team.name,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      gf: 0,
+      ga: 0,
+      gd: 0,
+      pts: 0,
+    });
+  });
+
+  games.forEach((game) => {
+    if (game.homeGoals == null || game.awayGoals == null) return;
+    const home = table.get(game.homeTeamId);
+    const away = table.get(game.awayTeamId);
+    if (!home || !away) return;
+
+    home.played += 1;
+    away.played += 1;
+    home.gf += game.homeGoals;
+    home.ga += game.awayGoals;
+    away.gf += game.awayGoals;
+    away.ga += game.homeGoals;
+
+    if (game.homeGoals > game.awayGoals) {
+      home.wins += 1;
+      away.losses += 1;
+      home.pts += 3;
+    } else if (game.homeGoals < game.awayGoals) {
+      away.wins += 1;
+      home.losses += 1;
+      away.pts += 3;
+    } else {
+      home.draws += 1;
+      away.draws += 1;
+      home.pts += 1;
+      away.pts += 1;
+    }
+  });
+
+  table.forEach((row) => {
+    row.gd = row.gf - row.ga;
+  });
+
+  const standings = Array.from(table.values()).sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.teamId - b.teamId;
+  });
+
+  standings.forEach((row, idx) => {
+    row.position = idx + 1;
+  });
+
+  return standings;
+}
 
 // Criar nova pelada
 router.post("/matches", requireAdmin, async (req, res) => {
@@ -398,6 +506,516 @@ router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
   } catch (err) {
     console.error("Erro ao editar pelada:", err);
     res.redirect("/admin");
+  }
+});
+
+// Criar torneio vinculado a uma pelada (4 times)
+router.post("/matches/:id/tournament/create", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+    if (!prisma.tournament || !prisma.tournamentTeam || !prisma.tournamentGame) {
+      return res.redirect(`/admin/matches/${matchId}?error=tournamentModelMissing`);
+    }
+
+    const rawTeams = Array.isArray(req.body.teams) ? req.body.teams : null;
+    const teamsFromFields = rawTeams
+      ? rawTeams
+      : [1, 2, 3, 4].map((idx) => ({
+          name: req.body[`team${idx}Name`],
+          color: req.body[`team${idx}Color`],
+        }));
+
+    const teams = teamsFromFields
+      .map((team) => ({
+        name: team?.name ? String(team.name).trim() : "",
+        color: team?.color ? String(team.color).trim() : null,
+      }))
+      .filter((team) => team.name);
+
+    if (teams.length !== 4) {
+      return res.redirect(`/admin/matches/${matchId}?error=tournamentTeams`);
+    }
+
+    const match = await prisma.match.findUnique({ where: { id: matchId } });
+    if (!match) {
+      return res.redirect("/admin");
+    }
+
+    const existing = await prisma.tournament.findUnique({
+      where: { matchId },
+      select: { id: true },
+    });
+    if (existing) {
+      return res.redirect(`/admin/matches/${matchId}?error=tournamentExists`);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const tournament = await tx.tournament.create({
+        data: {
+          match: { connect: { id: matchId } },
+          teams: {
+            create: teams.map((team) => ({
+              name: team.name,
+              color: team.color || null,
+            })),
+          },
+        },
+        include: { teams: true },
+      });
+
+      const teamIds = tournament.teams.map((team) => team.id);
+      const shuffledTeams = shuffleTeams(teamIds);
+      const schedule = shuffleSchedule(buildRoundRobinSchedule(shuffledTeams));
+      if (schedule.length) {
+        await tx.tournamentGame.createMany({
+          data: schedule.map((game) => ({
+            tournamentId: tournament.id,
+            stage: game.stage,
+            round: game.round,
+            homeTeamId: game.homeTeamId,
+            awayTeamId: game.awayTeamId,
+          })),
+        });
+      }
+    });
+
+    return res.redirect(`/admin/matches/${matchId}?tournamentCreated=true`);
+  } catch (err) {
+    console.error("Erro ao criar torneio:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=tournamentCreate`);
+  }
+});
+
+// Importar times do sorteador para o torneio
+router.post("/matches/:id/tournament/import-from-draw", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+    if (!prisma.tournament || !prisma.tournamentTeam || !prisma.tournamentGame) {
+      return res.redirect(`/admin/matches/${matchId}?error=tournamentModelMissing`);
+    }
+
+    const normalizeTeamLabel = (value) => {
+      const raw = value ? String(value).trim().toLowerCase() : "";
+      if (raw.includes("preto")) return "Preto";
+      if (raw.includes("vermelho")) return "Vermelho";
+      if (raw.includes("azul")) return "Azul";
+      if (raw.includes("amarelo")) return "Amarelo";
+      return "Preto";
+    };
+    const sponsorNameByLabel = {
+      Amarelo: "Natureza em Flores",
+      Vermelho: "Matheus Gomes Barbearia",
+      Azul: "Carrocerias Santana",
+      Preto: "Advance Compressores",
+    };
+    const normalizeArray = (value) => {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") {
+        return Object.keys(value)
+          .sort((a, b) => Number(a) - Number(b))
+          .map((key) => value[key]);
+      }
+      return value != null ? [value] : [];
+    };
+
+    const bodyNamesRaw = normalizeArray(req.body.teamNames);
+    const bodyColorsRaw = normalizeArray(req.body.teamColors);
+
+    let drawTeams = null;
+    if (bodyNamesRaw.length === 4 && bodyColorsRaw.length === 4) {
+      drawTeams = bodyColorsRaw.map((color, idx) => {
+        const colorRaw = color ? String(color).trim() : "";
+        const label = normalizeTeamLabel(colorRaw || bodyNamesRaw[idx]);
+        return {
+          name: sponsorNameByLabel[label] || `Time ${label}`,
+          color: colorRaw || null,
+        };
+      });
+    } else {
+      const lastLineupDraw = await prisma.lineupDraw.findFirst({
+        where: { matchId },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const drawTeamsRaw = lastLineupDraw?.result?.teams || [];
+      if (!Array.isArray(drawTeamsRaw) || drawTeamsRaw.length !== 4) {
+        return res.redirect(`/admin/matches/${matchId}?error=drawTeamsInvalid`);
+      }
+
+      drawTeams = drawTeamsRaw.map((team) => {
+        const colorName = team?.colorName ? String(team.colorName).trim() : "";
+        const colorValue = team?.colorValue ? String(team.colorValue).trim() : "";
+        const label = normalizeTeamLabel(colorName || colorValue);
+        return {
+          name: sponsorNameByLabel[label] || `Time ${label}`,
+          color: colorValue || colorName || null,
+        };
+      });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const tournament = await tx.tournament.findUnique({
+        where: { matchId },
+        include: { teams: true },
+      });
+
+      if (!tournament) {
+        const created = await tx.tournament.create({
+          data: {
+            match: { connect: { id: matchId } },
+            teams: { create: drawTeams },
+          },
+          include: { teams: true },
+        });
+
+        const teamIds = created.teams.map((t) => t.id);
+        const shuffledTeams = shuffleTeams(teamIds);
+        const schedule = shuffleSchedule(buildRoundRobinSchedule(shuffledTeams));
+        if (schedule.length) {
+          await tx.tournamentGame.createMany({
+            data: schedule.map((game) => ({
+              tournamentId: created.id,
+              stage: game.stage,
+              round: game.round,
+              homeTeamId: game.homeTeamId,
+              awayTeamId: game.awayTeamId,
+            })),
+          });
+        }
+        return;
+      }
+
+      const existingTeams = [...(tournament.teams || [])].sort((a, b) => a.id - b.id);
+      if (existingTeams.length !== 4) {
+        throw new Error("tournamentTeamsInvalid");
+      }
+
+      await Promise.all(
+        existingTeams.map((team, idx) =>
+          tx.tournamentTeam.update({
+            where: { id: team.id },
+            data: {
+              name: drawTeams[idx]?.name || team.name,
+              color: drawTeams[idx]?.color || null,
+            },
+          })
+        )
+      );
+    });
+
+    return res.redirect(`/admin/matches/${matchId}?tournamentImported=true`);
+  } catch (err) {
+    if (err && err.message === "tournamentTeamsInvalid") {
+      return res.redirect(`/admin/matches/${req.params.id}?error=tournamentTeamsInvalid`);
+    }
+    console.error("Erro ao importar times do sorteador:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=importFromDraw`);
+  }
+});
+
+// Salvar resultado de jogo do torneio (fase de grupos)
+router.post("/tournament/game/:gameId/result", requireAdmin, async (req, res) => {
+  try {
+    const gameId = Number(req.params.gameId);
+    if (Number.isNaN(gameId)) {
+      return res.redirect("/admin");
+    }
+
+    const homeGoalsRaw = req.body.homeGoals;
+    const awayGoalsRaw = req.body.awayGoals;
+    const homeGoals = Number.isFinite(Number(homeGoalsRaw)) ? Number(homeGoalsRaw) : null;
+    const awayGoals = Number.isFinite(Number(awayGoalsRaw)) ? Number(awayGoalsRaw) : null;
+
+    if (homeGoals == null || awayGoals == null) {
+      return res.redirect("/admin");
+    }
+
+    const game = await prisma.tournamentGame.findUnique({
+      where: { id: gameId },
+      select: {
+        id: true,
+        homeTeamId: true,
+        awayTeamId: true,
+        tournamentId: true,
+        stage: true,
+        tournament: { select: { matchId: true } },
+      },
+    });
+
+    if (!game) {
+      return res.redirect("/admin");
+    }
+
+    let winnerTeamId = null;
+    let decidedBy = null;
+
+    if (homeGoals > awayGoals) {
+      winnerTeamId = game.homeTeamId;
+    } else if (awayGoals > homeGoals) {
+      winnerTeamId = game.awayTeamId;
+    } else if (game.stage === "SEMI") {
+      const standings = await computeTournamentStandings(game.tournamentId);
+      const positionByTeamId = new Map(
+        standings.map((row, idx) => [row.teamId, idx + 1])
+      );
+      const homePos = positionByTeamId.get(game.homeTeamId) ?? 99;
+      const awayPos = positionByTeamId.get(game.awayTeamId) ?? 99;
+      winnerTeamId = homePos <= awayPos ? game.homeTeamId : game.awayTeamId;
+      decidedBy = "ADVANTAGE";
+    }
+
+    await prisma.tournamentGame.update({
+      where: { id: gameId },
+      data: {
+        homeGoals,
+        awayGoals,
+        winnerTeamId,
+        decidedBy,
+        homePenalties: null,
+        awayPenalties: null,
+      },
+    });
+
+    const matchId = game.tournament?.matchId;
+    const referer = req.get("referer");
+    return res.redirect(referer || (matchId ? `/admin/matches/${matchId}` : "/admin"));
+  } catch (err) {
+    console.error("Erro ao salvar resultado do jogo do torneio:", err);
+    return res.redirect("/admin");
+  }
+});
+
+// Gerar semifinais
+router.post("/matches/:id/tournament/generate-semis", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+
+    const tournament = await prisma.tournament.findUnique({
+      where: { matchId },
+      include: {
+        teams: { select: { id: true } },
+        games: { select: { id: true, stage: true, homeGoals: true, awayGoals: true } },
+      },
+    });
+
+    if (!tournament) {
+      return res.redirect(`/admin/matches/${matchId}?error=noTournament`);
+    }
+
+    const groupGames = tournament.games.filter((g) => g.stage === "GROUP");
+    const existingSemis = tournament.games.filter((g) => g.stage === "SEMI");
+    const allGroupScored = groupGames.length > 0 && groupGames.every(
+      (g) => g.homeGoals != null && g.awayGoals != null
+    );
+
+    if (!allGroupScored) {
+      return res.redirect(`/admin/matches/${matchId}?error=groupNotComplete`);
+    }
+
+    if (existingSemis.length > 0) {
+      return res.redirect(`/admin/matches/${matchId}?error=semisExists`);
+    }
+
+    const standings = await computeTournamentStandings(tournament.id);
+    if (standings.length < 4) {
+      return res.redirect(`/admin/matches/${matchId}?error=standingsIncomplete`);
+    }
+
+    await prisma.tournamentGame.createMany({
+      data: [
+        {
+          tournamentId: tournament.id,
+          stage: "SEMI",
+          round: 1,
+          homeTeamId: standings[0].teamId,
+          awayTeamId: standings[3].teamId,
+        },
+        {
+          tournamentId: tournament.id,
+          stage: "SEMI",
+          round: 2,
+          homeTeamId: standings[1].teamId,
+          awayTeamId: standings[2].teamId,
+        },
+      ],
+    });
+
+    return res.redirect(`/admin/matches/${matchId}?semisCreated=true`);
+  } catch (err) {
+    console.error("Erro ao gerar semifinais:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=generateSemis`);
+  }
+});
+
+// Gerar final
+router.post("/matches/:id/tournament/generate-final", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+
+    const tournament = await prisma.tournament.findUnique({
+      where: { matchId },
+      include: {
+        games: {
+          select: {
+            id: true,
+            stage: true,
+            winnerTeamId: true,
+            homeTeamId: true,
+            awayTeamId: true,
+          },
+        },
+      },
+    });
+
+    if (!tournament) {
+      return res.redirect(`/admin/matches/${matchId}?error=noTournament`);
+    }
+
+    const semis = tournament.games.filter((g) => g.stage === "SEMI");
+    const finalExists = tournament.games.some((g) => g.stage === "FINAL");
+
+    if (finalExists) {
+      return res.redirect(`/admin/matches/${matchId}?error=finalExists`);
+    }
+
+    if (semis.length !== 2 || semis.some((g) => !g.winnerTeamId)) {
+      return res.redirect(`/admin/matches/${matchId}?error=semisIncomplete`);
+    }
+
+    const semiOneLoser =
+      semis[0].winnerTeamId === semis[0].homeTeamId ? semis[0].awayTeamId : semis[0].homeTeamId;
+    const semiTwoLoser =
+      semis[1].winnerTeamId === semis[1].homeTeamId ? semis[1].awayTeamId : semis[1].homeTeamId;
+
+    await prisma.tournamentGame.createMany({
+      data: [
+        {
+          tournamentId: tournament.id,
+          stage: "FINAL",
+          round: 1,
+          homeTeamId: semis[0].winnerTeamId,
+          awayTeamId: semis[1].winnerTeamId,
+        },
+        {
+          tournamentId: tournament.id,
+          stage: "FINAL",
+          round: 2,
+          homeTeamId: semiOneLoser,
+          awayTeamId: semiTwoLoser,
+        },
+      ],
+    });
+
+    return res.redirect(`/admin/matches/${matchId}?finalCreated=true`);
+  } catch (err) {
+    console.error("Erro ao gerar final:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=generateFinal`);
+  }
+});
+
+// Salvar penaltis da final
+router.post("/tournament/game/:gameId/pens", requireAdmin, async (req, res) => {
+  try {
+    const gameId = Number(req.params.gameId);
+    if (Number.isNaN(gameId)) {
+      return res.redirect("/admin");
+    }
+
+    const homePensRaw = req.body.homePens;
+    const awayPensRaw = req.body.awayPens;
+    const homePens = Number.isFinite(Number(homePensRaw)) ? Number(homePensRaw) : null;
+    const awayPens = Number.isFinite(Number(awayPensRaw)) ? Number(awayPensRaw) : null;
+
+    if (homePens == null || awayPens == null) {
+      return res.redirect("/admin");
+    }
+
+    const game = await prisma.tournamentGame.findUnique({
+      where: { id: gameId },
+      select: {
+        id: true,
+        stage: true,
+        homeGoals: true,
+        awayGoals: true,
+        homeTeamId: true,
+        awayTeamId: true,
+        tournament: { select: { matchId: true } },
+      },
+    });
+
+    if (!game || game.stage !== "FINAL") {
+      return res.redirect("/admin");
+    }
+
+    if (game.homeGoals == null || game.awayGoals == null || game.homeGoals !== game.awayGoals) {
+      return res.redirect("/admin");
+    }
+
+    let winnerTeamId = null;
+    if (homePens > awayPens) {
+      winnerTeamId = game.homeTeamId;
+    } else if (awayPens > homePens) {
+      winnerTeamId = game.awayTeamId;
+    }
+
+    await prisma.tournamentGame.update({
+      where: { id: gameId },
+      data: {
+        homePenalties: homePens,
+        awayPenalties: awayPens,
+        winnerTeamId,
+        decidedBy: "PENALTIES",
+      },
+    });
+
+    const matchId = game.tournament?.matchId;
+    const referer = req.get("referer");
+    return res.redirect(referer || (matchId ? `/admin/matches/${matchId}` : "/admin"));
+  } catch (err) {
+    console.error("Erro ao salvar penaltis da final:", err);
+    return res.redirect("/admin");
+  }
+});
+
+// Resetar torneio de uma pelada
+router.post("/matches/:id/tournament/reset", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+
+    const tournament = await prisma.tournament.findUnique({
+      where: { matchId },
+      select: { id: true },
+    });
+
+    if (!tournament) {
+      return res.redirect(`/admin/matches/${matchId}?error=noTournament`);
+    }
+
+    await prisma.$transaction([
+      prisma.tournamentGame.deleteMany({ where: { tournamentId: tournament.id } }),
+      prisma.tournamentTeam.deleteMany({ where: { tournamentId: tournament.id } }),
+      prisma.tournament.delete({ where: { id: tournament.id } }),
+    ]);
+
+    return res.redirect(`/admin/matches/${matchId}?tournamentReset=true`);
+  } catch (err) {
+    console.error("Erro ao resetar torneio:", err);
+    return res.redirect(`/admin/matches/${req.params.id}?error=tournamentReset`);
   }
 });
 // Excluir pelada (apaga stats primeiro)
@@ -1003,6 +1621,38 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
+    const tournament = prisma.tournament
+      ? await prisma.tournament.findUnique({
+          where: { matchId: id },
+          include: {
+            teams: true,
+            games: {
+              include: {
+                homeTeam: true,
+                awayTeam: true,
+                winnerTeam: true,
+              },
+            },
+          },
+        })
+      : null;
+    const tournamentStandings = tournament
+      ? await computeTournamentStandings(tournament.id)
+      : [];
+    const stageOrder = { GROUP: 1, SEMI: 2, FINAL: 3 };
+    const tournamentGames = tournament
+      ? [...(tournament.games || [])].sort((a, b) => {
+          const sa = stageOrder[a.stage] || 99;
+          const sb = stageOrder[b.stage] || 99;
+          if (sa !== sb) return sa - sb;
+          const ra = a.round != null ? a.round : 999;
+          const rb = b.round != null ? b.round : 999;
+          if (ra !== rb) return ra - rb;
+          return (a.id || 0) - (b.id || 0);
+        })
+      : [];
+    const tournamentTeams = tournament ? tournament.teams || [] : [];
+
     let displayStats = match.stats || [];
     try {
       const result = await computeMatchRatingsAndAwards(id);
@@ -1031,6 +1681,11 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       match,
       players: playersWithOverall,
       stats: displayStats,
+      tournament: tournament ? { ...tournament, games: tournamentGames } : null,
+      tournamentTeams,
+      tournamentGames,
+      standings: tournamentStandings,
+      tournamentStandings,
       voteSession, // Passando a sessão de votação para a view
       voteBaseUrl,
       req,

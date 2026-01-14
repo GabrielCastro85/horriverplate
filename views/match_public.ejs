@@ -1,4 +1,4 @@
-<%
+﻿<%
   const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString("pt-BR") : "-";
 
@@ -34,6 +34,196 @@
     </div>
   </header>
 
+  <!-- Torneio (publico) -->
+  <%
+    const tournamentData = typeof tournament !== "undefined" ? tournament : null;
+    const standings = Array.isArray(tournamentStandings) ? tournamentStandings : [];
+    const games = tournamentData && Array.isArray(tournamentData.games) ? tournamentData.games : [];
+    const tournamentTeamList = Array.isArray(tournamentTeams) ? tournamentTeams : [];
+    const stages = ["GROUP", "SEMI", "FINAL"];
+    const stageLabels = {
+      GROUP: "Fase de grupos",
+      SEMI: "Semifinais",
+      FINAL: "Final",
+    };
+    const sponsorNameByLabel = {
+      Amarelo: "Natureza em Flores",
+      Vermelho: "Matheus Gomes Barbearia",
+      Azul: "Carrocerias Santana",
+      Preto: "Advance Compressores",
+    };
+    const sponsorStyleByLabel = {
+      Amarelo: "color: #facc15;",
+      Vermelho: "color: #ef4444;",
+      Azul: "color: #3b82f6;",
+      Preto: "color: #6b7280;",
+    };
+    const normalizeSponsorLabel = (value) => {
+      const raw = value ? String(value).trim().toLowerCase() : "";
+      if (raw.includes("amarelo")) return "Amarelo";
+      if (raw.includes("vermelho")) return "Vermelho";
+      if (raw.includes("azul")) return "Azul";
+      if (raw.includes("preto")) return "Preto";
+      if (raw.includes("#facc15")) return "Amarelo";
+      if (raw.includes("#ef4444")) return "Vermelho";
+      if (raw.includes("#3b82f6")) return "Azul";
+      if (raw.includes("#18181b") || raw.includes("#111827")) return "Preto";
+      return null;
+    };
+    const sortByRoundOrId = (a, b) => {
+      const ar = a.round != null ? a.round : 999;
+      const br = b.round != null ? b.round : 999;
+      if (ar !== br) return ar - br;
+      return (a.id || 0) - (b.id || 0);
+    };
+    const gamesByStage = stages.reduce((acc, stage) => {
+      acc[stage] = games.filter((g) => g.stage === stage).sort(sortByRoundOrId);
+      return acc;
+    }, {});
+    const teamById = new Map(tournamentTeamList.map((team) => [team.id, team]));
+    const formatTeamName = (team) => {
+      if (!team) return "Time";
+      const label = normalizeSponsorLabel(team.color || team.name);
+      return sponsorNameByLabel[label] || team.name || "Time";
+    };
+    const renderTeamName = (team, fallbackName) => {
+      if (!team) return fallbackName || "Time";
+      const label = normalizeSponsorLabel(team.color || team.name);
+      const name = sponsorNameByLabel[label] || team.name || fallbackName || "Time";
+      const style = sponsorStyleByLabel[label] || "";
+      return `<span style="${style}">${name}</span>`;
+    };
+    const teamNameFromRow = (row) => {
+      const team = teamById.get(row.teamId);
+      if (team) return formatTeamName(team);
+      const label = normalizeSponsorLabel(row.name);
+      return sponsorNameByLabel[label] || row.name || "Time";
+    };
+    const statVal = (row, primary, fallback) => {
+      if (row && row[primary] != null) return row[primary];
+      if (fallback && row && row[fallback] != null) return row[fallback];
+      return 0;
+    };
+  %>
+
+  <% if (!tournamentData) { %>
+    <p class="text-xs text-horriver-gray">
+      Sem torneio nesta pelada.
+    </p>
+  <% } else { %>
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-title text-xl text-horriver-light">Torneio</h2>
+          <p class="text-[11px] text-horriver-gray">
+            Classificacao e jogos do torneio.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-2">
+        <div class="rounded-2xl border border-horriver-red/50 bg-black/60 p-4">
+          <h3 class="text-sm font-semibold text-horriver-light mb-2">
+            Classificacao
+          </h3>
+          <% if (!standings.length) { %>
+            <p class="text-xs text-horriver-gray">Sem dados de classificacao.</p>
+          <% } else { %>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-[11px] sm:text-xs">
+                <thead class="bg-black/60">
+                  <tr>
+                    <th class="px-3 py-2 text-left text-horriver-gray">Time</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">J</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">V</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">E</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">D</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">GP</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">GC</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">SG</th>
+                    <th class="px-3 py-2 text-center text-horriver-gray">Pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% standings.forEach((row) => { %>
+                    <tr class="border-t border-horriver-red/30">
+                      <td class="px-3 py-2 text-horriver-light"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "played") %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "wins") %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "draws") %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "losses") %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "gf", "goalsFor") %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "ga", "goalsAgainst") %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "gd", "goalDiff") %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "pts", "points") %></td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="space-y-3">
+          <% stages.forEach((stage) => { %>
+            <div class="rounded-2xl border border-horriver-red/50 bg-black/60 p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-horriver-light">
+                  <%= stageLabels[stage] || stage %>
+                </h3>
+                <span class="text-[11px] text-horriver-gray">
+                  <%= (gamesByStage[stage] || []).length %> jogo(s)
+                </span>
+              </div>
+
+              <% const stageGames = gamesByStage[stage] || []; %>
+              <% if (!stageGames.length) { %>
+                <p class="text-xs text-horriver-gray">Sem jogos.</p>
+              <% } else { %>
+                <div class="space-y-2 text-[11px] sm:text-xs">
+                  <% stageGames.forEach((game) => { %>
+                    <% const homeName = renderTeamName(game.homeTeam, "Casa"); %>
+                    <% const awayName = renderTeamName(game.awayTeam, "Visitante"); %>
+                    <% const hasScore = game.homeGoals != null && game.awayGoals != null; %>
+                    <% const scoreLabel = hasScore ? `${game.homeGoals} x ${game.awayGoals}` : "-"; %>
+                    <% const isFinal = stage === "FINAL"; %>
+                    <% const hasPens = game.homePenalties != null && game.awayPenalties != null; %>
+                    <div class="border border-horriver-red/30 rounded-xl px-3 py-2">
+                      <div class="text-horriver-light">
+                        <span class="text-horriver-orange text-[10px] uppercase mr-2">
+                          <%= stage === "GROUP" && game.round ? `R${game.round}` : stage %>
+                        </span>
+                        <%- homeName %> x <%- awayName %> —
+                        <span class="text-horriver-light font-semibold"><%= scoreLabel %></span>
+                      </div>
+                      <div class="text-horriver-gray mt-1">
+                        <% if (game.winnerTeam) { %>
+                          Vencedor: <span class="text-horriver-light"><%- renderTeamName(game.winnerTeam, "Time") %></span>
+                        <% } else if (hasScore) { %>
+                          Empate
+                        <% } else { %>
+                          -
+                        <% } %>
+                        <% if (game.decidedBy === "ADVANTAGE") { %>
+                          <span class="ml-2 text-[10px] uppercase text-horriver-orange">Vantagem do melhor colocado</span>
+                        <% } %>
+                        <% if (isFinal && hasPens) { %>
+                          <span class="ml-2 text-[10px] text-horriver-gray">
+                            Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
+                          </span>
+                        <% } %>
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </section>
+  <% } %>
+
   <!-- Card grande -->
   <section
     class="relative mt-4 rounded-3xl border border-horriver-red/60 overflow-hidden
@@ -68,17 +258,17 @@
         <div class="overflow-x-auto md:overflow-x-visible">
 
           <!-- TABELA COM MIN WIDTH PRA MOBILE -->
-          <table class="min-w-[620px] w-full text-[11px] sm:text-xs">
+          <table class="min-w-[620px] w-full text-[11px] sm:text-xs" data-sortable="match-stats">
             <thead class="bg-gradient-to-r from-horriver-red/70 via-horriver-red/60 to-horriver-orange/70">
               <tr>
                 <th class="px-3 py-2 text-left w-10">#</th>
-                <th class="px-3 py-2 text-left">Jogador</th>
+                <th class="px-3 py-2 text-left cursor-pointer select-none" data-sort="name">Jogador</th>
                 <th class="px-3 py-2 text-left">Posição</th>
-                <th class="px-3 py-2 text-center">Presente</th>
-                <th class="px-3 py-2 text-center">Gols</th>
-                <th class="px-3 py-2 text-center">Assist.</th>
-                <th class="px-3 py-2 text-center">Nota</th>
-                <th class="px-3 py-2 text-center">Foto</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="present">Presente</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="goals">Gols</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="assists">Assist.</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="rating">Nota</th>
+                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="photo">Foto</th>
               </tr>
             </thead>
 
@@ -91,7 +281,7 @@
                 </tr>
               <% } else { %>
                 <% safeStats.forEach((s, idx) => { %>
-                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors">
+                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors" data-name="<%= (s.player.name || '').toLowerCase() %>" data-position="<%= (s.player.position || '').toLowerCase() %>" data-present="<%= s.present ? 1 : 0 %>" data-goals="<%= s.goals || 0 %>" data-assists="<%= s.assists || 0 %>" data-rating="<%= s.rating != null ? s.rating : 0 %>" data-photo="<%= s.appearedInPhoto ? 1 : 0 %>">
 
                     <!-- # -->
                     <td class="px-3 py-2 text-[11px] text-horriver-gray"><%= idx + 1 %></td>
@@ -167,6 +357,68 @@
         </a>
       </div>
 
-    </div>
-  </section>
+    </div>  <script>
+    (() => {
+      const table = document.querySelector('table[data-sortable="match-stats"]');
+      if (!table) return;
+      const tbody = table.querySelector('tbody');
+      const headers = Array.from(table.querySelectorAll('th[data-sort]'));
+
+      const getValue = (row, key) => {
+        switch (key) {
+          case 'name':
+            return row.dataset.name || '';
+          case 'position':
+            return row.dataset.position || '';
+          case 'present':
+            return Number(row.dataset.present || 0);
+          case 'goals':
+            return Number(row.dataset.goals || 0);
+          case 'assists':
+            return Number(row.dataset.assists || 0);
+          case 'rating':
+            return Number(row.dataset.rating || 0);
+          case 'photo':
+            return Number(row.dataset.photo || 0);
+          default:
+            return '';
+        }
+      };
+
+      const sortRows = (key, direction) => {
+        const rows = Array.from(tbody.querySelectorAll('tr')).filter((tr) => tr.dataset.name);
+        rows.sort((a, b) => {
+          const av = getValue(a, key);
+          const bv = getValue(b, key);
+          if (typeof av === 'number' && typeof bv === 'number') {
+            return direction === 'asc' ? av - bv : bv - av;
+          }
+          return direction === 'asc'
+            ? String(av).localeCompare(String(bv))
+            : String(bv).localeCompare(String(av));
+        });
+        rows.forEach((row, idx) => {
+          tbody.appendChild(row);
+          const indexCell = row.querySelector('td');
+          if (indexCell) indexCell.textContent = idx + 1;
+        });
+      };
+
+      let currentKey = null;
+      let currentDir = 'desc';
+
+      headers.forEach((th) => {
+        th.addEventListener('click', () => {
+          const key = th.dataset.sort;
+          if (!key) return;
+          const dir = currentKey === key && currentDir === 'desc' ? 'asc' : 'desc';
+          currentKey = key;
+          currentDir = dir;
+          sortRows(key, dir);
+        });
+      });
+    })();
+  </script>
+
+</section>
 </section>

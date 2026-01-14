@@ -65,6 +65,53 @@ model Match {
   VoteLink     VoteLink[]
   voteSessions VoteSession[]
   weeklyAwards WeeklyAward[] @relation("WeeklyMatch")
+  tournament   Tournament?
+}
+
+model Tournament {
+  id        Int              @id @default(autoincrement())
+  matchId   Int              @unique
+  title     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  match     Match            @relation(fields: [matchId], references: [id])
+  teams     TournamentTeam[]
+  games     TournamentGame[]
+}
+
+model TournamentTeam {
+  id           Int               @id @default(autoincrement())
+  tournamentId Int
+  name         String
+  color        String?
+  seed         Int?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  tournament   Tournament        @relation(fields: [tournamentId], references: [id])
+  homeGames    TournamentGame[]  @relation("HomeTeam")
+  awayGames    TournamentGame[]  @relation("AwayTeam")
+  winnerGames  TournamentGame[]  @relation("WinnerTeam")
+}
+
+model TournamentGame {
+  id              Int                      @id @default(autoincrement())
+  tournamentId    Int
+  stage           TournamentStage
+  round           Int?
+  homeTeamId      Int
+  awayTeamId      Int
+  homeGoals       Int?
+  awayGoals       Int?
+  homePenalties   Int?
+  awayPenalties   Int?
+  winnerTeamId    Int?
+  decidedBy       TournamentGameDecidedBy?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  tournament      Tournament               @relation(fields: [tournamentId], references: [id])
+  homeTeam        TournamentTeam           @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam        TournamentTeam           @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  winnerTeam      TournamentTeam?          @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
 }
 
 model PlayerStat {
@@ -261,4 +308,15 @@ enum VoteCategory {
   MEIA
   ATACANTE
   CRAQUE
+}
+
+enum TournamentStage {
+  GROUP
+  SEMI
+  FINAL
+}
+
+enum TournamentGameDecidedBy {
+  ADVANTAGE
+  PENALTIES
 }

@@ -1,4 +1,4 @@
-﻿<%
+<%
 // views/admin_match.ejs
 // Variáveis recebidas: match, players, stats
 // O layout.ejs já cuida de <html>, <body>, header, footer etc.
@@ -487,6 +487,27 @@
         </button>
         <span id="shareStatus" class="text-horriver-gray"></span>
       </div>
+    </form>
+
+      <form
+        id="importTournamentForm"
+        action="/admin/matches/<%= match.id %>/tournament/import-from-draw"
+        method="POST"
+        class="hidden flex flex-wrap items-center gap-2 text-[12px]"
+      >
+        <% for (let i = 0; i < 4; i += 1) { %>
+          <input type="hidden" name="teamNames[<%= i %>]" data-import-name data-index="<%= i %>" />
+          <input type="hidden" name="teamColors[<%= i %>]" data-import-color data-index="<%= i %>" />
+        <% } %>
+        <button
+          type="submit"
+          id="importTournamentBtn"
+          class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+        >
+          Importar times sorteados
+        </button>
+        <span id="importTournamentStatus" class="text-horriver-gray"></span>
+      </form>
     </div>
 <script>
   (() => {
@@ -520,6 +541,671 @@
   })();
 </script>
 
+</section>
+
+<!-- ========================= -->
+<!-- Torneio -->
+<!-- ========================= -->
+<section id="tournament" class="mt-10 space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
+        Torneio
+      </h2>
+      <p class="text-xs text-horriver-gray">
+        Classificacao e jogos do torneio desta pelada.
+      </p>
+    </div>
+  </div>
+
+  <%
+    const tournamentData = typeof tournament !== "undefined" ? tournament : null;
+    const standings = Array.isArray(tournamentStandings) ? tournamentStandings : [];
+    const games = tournamentData && Array.isArray(tournamentData.games) ? tournamentData.games : [];
+    const tournamentTeamList = Array.isArray(tournamentTeams) ? tournamentTeams : [];
+    const stages = ["GROUP", "SEMI", "FINAL"];
+    const stageLabels = {
+      GROUP: "Fase de grupos",
+      SEMI: "Semifinais",
+      FINAL: "Final",
+    };
+    const sponsorNameByLabel = {
+      Amarelo: "Natureza em Flores",
+      Vermelho: "Matheus Gomes Barbearia",
+      Azul: "Carrocerias Santana",
+      Preto: "Advance Compressores",
+    };
+    const sponsorStyleByLabel = {
+      Amarelo: "color: #facc15;",
+      Vermelho: "color: #ef4444;",
+      Azul: "color: #3b82f6;",
+      Preto: "color: #6b7280;",
+    };
+    const sponsorColorByLabel = {
+      Amarelo: "#facc15",
+      Vermelho: "#ef4444",
+      Azul: "#3b82f6",
+      Preto: "#111111",
+    };
+    const normalizeSponsorLabel = (value) => {
+      const raw = value ? String(value).trim().toLowerCase() : "";
+      if (raw.includes("amarelo")) return "Amarelo";
+      if (raw.includes("vermelho")) return "Vermelho";
+      if (raw.includes("azul")) return "Azul";
+      if (raw.includes("preto")) return "Preto";
+      if (raw.includes("#facc15")) return "Amarelo";
+      if (raw.includes("#ef4444")) return "Vermelho";
+      if (raw.includes("#3b82f6")) return "Azul";
+      if (raw.includes("#18181b") || raw.includes("#111827")) return "Preto";
+      return null;
+    };
+    const sortByRoundOrId = (a, b) => {
+      const ar = a.round != null ? a.round : 999;
+      const br = b.round != null ? b.round : 999;
+      if (ar !== br) return ar - br;
+      return (a.id || 0) - (b.id || 0);
+    };
+    const gamesByStage = stages.reduce((acc, stage) => {
+      acc[stage] = games.filter((g) => g.stage === stage).sort(sortByRoundOrId);
+      return acc;
+    }, {});
+    const groupGames = gamesByStage.GROUP || [];
+    const semiGames = gamesByStage.SEMI || [];
+    const finalGames = gamesByStage.FINAL || [];
+    const finalGame = finalGames.find((g) => g.round === 1) || finalGames[0] || null;
+    const thirdPlaceGame = finalGames.find((g) => g.round === 2) || null;
+    const groupComplete =
+      groupGames.length > 0 &&
+      groupGames.every((g) => g.homeGoals != null && g.awayGoals != null);
+    const semisExist = semiGames.length > 0;
+    const semisDecided = semisExist && semiGames.every((g) => g.winnerTeamId);
+    const finalExists = finalGames.length > 0;
+    const teamById = new Map(tournamentTeamList.map((team) => [team.id, team]));
+    const getLoserTeam = (game) => {
+      if (!game || !game.winnerTeamId) return null;
+      return game.homeTeamId === game.winnerTeamId ? game.awayTeam : game.homeTeam;
+    };
+    const formatTeamName = (team) => {
+      if (!team) return "Time";
+      const label = normalizeSponsorLabel(team.color || team.name);
+      return sponsorNameByLabel[label] || team.name || "Time";
+    };
+    const renderTeamName = (team, fallbackName) => {
+      if (!team) return fallbackName || "Time";
+      const label = normalizeSponsorLabel(team.color || team.name);
+      const name = sponsorNameByLabel[label] || team.name || fallbackName || "Time";
+      const style = sponsorStyleByLabel[label] || "";
+      return `<span style="${style}">${name}</span>`;
+    };
+    const getTeamLabel = (team) => normalizeSponsorLabel(team?.color || team?.name);
+    const getTeamColor = (team) => sponsorColorByLabel[getTeamLabel(team)] || "#f97316";
+    const teamNameFromRow = (row) => {
+      const team = teamById.get(row.teamId);
+      if (team) return formatTeamName(team);
+      const label = normalizeSponsorLabel(row.name);
+      return sponsorNameByLabel[label] || row.name || "Time";
+    };
+    const statVal = (row, primary, fallback) => {
+      if (row && row[primary] != null) return row[primary];
+      if (fallback && row && row[fallback] != null) return row[fallback];
+      return 0;
+    };
+    const canImportDraw =
+      lineupResult &&
+      Array.isArray(lineupResult.teams) &&
+      lineupResult.teams.length === 4;
+  %>
+
+  <% if (!tournamentData) { %>
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <p class="text-sm text-horriver-gray">
+          Nenhum torneio vinculado. Crie abaixo os 4 times do torneio.
+        </p>
+        <% if (canImportDraw) { %>
+          <span class="text-[11px] text-horriver-gray">
+            Use o botao no sorteador para importar.
+          </span>
+        <% } %>
+      </div>
+      <form
+        action="/admin/matches/<%= match.id %>/tournament/create"
+        method="POST"
+        class="grid gap-3 md:grid-cols-2"
+      >
+        <%
+          const sponsorDefaults = [
+            { name: "Natureza em Flores", color: "#facc15" },
+            { name: "Matheus Gomes Barbearia", color: "#ef4444" },
+            { name: "Carrocerias Santana", color: "#3b82f6" },
+            { name: "Advance Compressores", color: "#18181b" },
+          ];
+        %>
+        <% sponsorDefaults.forEach((sponsor, idx) => { %>
+          <div class="bg-black/30 border border-horriver-border rounded-xl p-3 space-y-2">
+            <div class="text-[11px] uppercase text-horriver-orange font-semibold">
+              Time <%= idx + 1 %>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-sm text-horriver-light">
+              <span><%= sponsor.name %></span>
+              <span class="w-3 h-3 rounded-full border border-white/10" style="background:<%= sponsor.color %>"></span>
+            </div>
+            <input type="hidden" name="team<%= idx + 1 %>Name" value="<%= sponsor.name %>" />
+            <input type="hidden" name="team<%= idx + 1 %>Color" value="<%= sponsor.color %>" />
+          </div>
+        <% }); %>
+        <div class="md:col-span-2 flex justify-end">
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+          >
+            Criar torneio
+          </button>
+        </div>
+      </form>
+    </div>
+  <% } else { %>
+    <% const finalWinnerId = finalGame?.winnerTeamId || null; %>
+    <% if (finalWinnerId && standings.length >= 4) { %>
+      <% const championTeam = finalGame?.winnerTeam || teamById.get(standings[0]?.teamId); %>
+      <% const runnerUpTeam = getLoserTeam(finalGame) || teamById.get(standings[1]?.teamId); %>
+      <% const thirdTeam = thirdPlaceGame?.winnerTeam || teamById.get(standings[2]?.teamId); %>
+      <% const fourthTeam = getLoserTeam(thirdPlaceGame) || teamById.get(standings[3]?.teamId); %>
+        <div
+          class="border border-horriver-border rounded-2xl p-5 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
+          id="tournamentResultCard"
+          style="background: radial-gradient(120% 140% at 50% 0%, rgba(255,140,0,0.12), transparent 55%), linear-gradient(180deg, rgba(7,7,7,0.95), rgba(0,0,0,0.96));"
+        >
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <h3 class="text-base md:text-lg font-semibold text-horriver-light tracking-[0.12em] uppercase">
+            Resultado do campeonato
+          </h3>
+        </div>
+        <div class="grid gap-6 md:grid-cols-3 items-center mt-4">
+          <% const podiumTeams = [runnerUpTeam, championTeam, thirdTeam]; %>
+          <% [2, 1, 3].forEach((pos, idx) => { %>
+            <% const team = podiumTeams[idx]; %>
+            <% const circleSize = pos === 1 ? 148 : 110; %>
+            <% const badgeHeight = 28; %>
+            <% const badgeGap = 8; %>
+            <% const circleTop = badgeHeight + badgeGap; %>
+            <% const podiumBoxHeight = 220; %>
+            <div class="flex flex-col items-center text-center gap-2 justify-center h-full <%= pos === 1 ? 'md:-translate-y-6' : '' %>">
+              <div class="relative flex items-center justify-center" style="width:<%= circleSize %>px; height:<%= podiumBoxHeight %>px;">
+                <span
+                  class="podium-badge px-4 h-7 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold inline-flex items-center justify-center text-center min-w-[150px] shadow-[0_6px_14px_rgba(0,0,0,0.35)] absolute left-1/2 -translate-x-1/2"
+                  style="top:0; line-height:<%= badgeHeight %>px;"
+                >
+                  <% if (pos === 1) { %>🏆<% } else if (pos === 2) { %>🥈<% } else { %>🥉<% } %>
+                  <span class="ml-2"><%= pos %>&ordm; Colocado</span>
+                </span>
+                <div
+                  class="rounded-full <%= pos === 1 ? 'border-4' : 'border-2' %> border-horriver-orange/80"
+                  style="width:<%= circleSize %>px; height:<%= circleSize %>px; background:<%= getTeamColor(team) %>; box-shadow:<%= pos === 1 ? '0 0 0 4px rgba(255,140,0,0.22), 0 0 22px rgba(255,140,0,0.35), 0 16px 32px rgba(0,0,0,0.45)' : '0 10px 22px rgba(0,0,0,0.35)' %>; position:absolute; top:<%= circleTop %>px; left:50%; transform:translateX(-50%);"
+                ></div>
+              </div>
+              <div class="<%= pos === 1 ? 'text-base md:text-lg' : 'text-sm md:text-base' %> font-semibold text-horriver-light tracking-wide">
+                <%- renderTeamName(team, "Time") %>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+        <div class="mt-4 flex items-center justify-center text-sm text-horriver-light">
+          <div class="flex flex-col items-center gap-2 text-center">
+            <span class="podium-badge px-3 h-6 rounded-full border border-horriver-border text-[11px] inline-flex items-center justify-center text-center min-w-[120px] leading-none">
+              4&ordm; Colocado
+            </span>
+            <span
+              class="rounded-full border-2 border-horriver-orange/80"
+              style="width:34px; height:34px; background:<%= getTeamColor(fourthTeam) %>;"
+            ></span>
+            <span class="font-semibold"><%- renderTeamName(fourthTeam, "Time") %></span>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm md:text-base font-semibold text-horriver-light">
+            Classificacao
+          </h3>
+          <% if (canImportDraw) { %>
+            <span class="text-[11px] text-horriver-gray">
+              Use o botao no sorteador para importar.
+            </span>
+          <% } %>
+        </div>
+        <% if (!standings.length) { %>
+          <p class="text-xs text-horriver-gray">
+            Sem dados de classificacao ainda.
+          </p>
+        <% } else { %>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-xs md:text-sm">
+              <thead class="bg-black/60">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-horriver-gray">Time</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">J</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">V</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">E</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">D</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">GP</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">GC</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">SG</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% standings.forEach((row) => { %>
+                  <tr class="border-t border-horriver-border/40">
+                    <td class="px-3 py-2 text-horriver-light"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "played") %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "wins") %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "draws") %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "losses") %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "gf", "goalsFor") %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "ga", "goalsAgainst") %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "gd", "goalDiff") %></td>
+                    <td class="px-3 py-2 text-center text-horriver-orange font-semibold"><%= statVal(row, "pts", "points") %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="space-y-3">
+        <div class="flex flex-wrap gap-2">
+          <form action="/admin/matches/<%= match.id %>/tournament/generate-semis" method="POST">
+            <button
+              type="submit"
+              class="px-3 py-2 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition <%= (!groupComplete || semisExist) ? 'opacity-50 cursor-not-allowed' : '' %>"
+              <%= (!groupComplete || semisExist) ? "disabled" : "" %>
+            >
+              Gerar Semifinais
+            </button>
+          </form>
+          <form action="/admin/matches/<%= match.id %>/tournament/generate-final" method="POST">
+            <button
+              type="submit"
+              class="px-3 py-2 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition <%= (!semisDecided || finalExists) ? 'opacity-50 cursor-not-allowed' : '' %>"
+              <%= (!semisDecided || finalExists) ? "disabled" : "" %>
+            >
+              Gerar Final
+            </button>
+          </form>
+          <form
+            action="/admin/matches/<%= match.id %>/tournament/reset"
+            method="POST"
+            onsubmit="return confirm('Tem certeza que deseja resetar o torneio?');"
+          >
+            <button
+              type="submit"
+              class="px-3 py-2 rounded-full border border-horriver-border text-horriver-light text-[11px] font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+            >
+              Resetar Torneio
+            </button>
+          </form>
+        </div>
+
+        <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm md:text-base font-semibold text-horriver-light">
+              <%= stageLabels.GROUP %>
+            </h3>
+            <span class="text-[11px] text-horriver-gray">
+              <%= (gamesByStage.GROUP || []).length %> jogo(s)
+            </span>
+          </div>
+
+          <% const stageGamesGroup = gamesByStage.GROUP || []; %>
+          <% if (!stageGamesGroup.length) { %>
+            <p class="text-xs text-horriver-gray">Sem jogos.</p>
+          <% } else { %>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-xs md:text-sm">
+                <thead class="bg-black/60">
+                  <tr>
+                    <th class="px-3 py-2 text-left font-semibold text-horriver-gray">Jogo</th>
+                    <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Placar</th>
+                    <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Vencedor</th>
+                    <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Lancar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% stageGamesGroup.forEach((game) => { %>
+                    <% const homeName = renderTeamName(game.homeTeam, "Casa"); %>
+                    <% const awayName = renderTeamName(game.awayTeam, "Visitante"); %>
+                    <% const hasScore = game.homeGoals != null && game.awayGoals != null; %>
+                    <% const scoreLabel = hasScore ? `${game.homeGoals} x ${game.awayGoals}` : "-"; %>
+                    <tr class="border-t border-horriver-border/40">
+                      <td class="px-3 py-2 text-horriver-light">
+                        <span class="text-horriver-orange text-[10px] uppercase mr-2">
+                          <%= game.round ? `R${game.round}` : "GROUP" %>
+                        </span>
+                        <%- homeName %> x <%- awayName %>
+                      </td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= scoreLabel %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light">
+                        <% if (game.winnerTeam) { %>
+                          Vencedor: <%- renderTeamName(game.winnerTeam, "Time") %>
+                        <% } else if (hasScore) { %>
+                          Empate
+                        <% } else { %>
+                          -
+                        <% } %>
+                      </td>
+                      <td class="px-3 py-2 text-center">
+                        <form
+                          action="/admin/tournament/game/<%= game.id %>/result"
+                          method="POST"
+                          class="flex items-center justify-center gap-2"
+                        >
+                          <input
+                            type="number"
+                            name="homeGoals"
+                            min="0"
+                            step="1"
+                            class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                            value="<%= game.homeGoals != null ? game.homeGoals : '' %>"
+                            placeholder="0"
+                          />
+                          <span class="text-horriver-gray text-[11px]">x</span>
+                          <input
+                            type="number"
+                            name="awayGoals"
+                            min="0"
+                            step="1"
+                            class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                            value="<%= game.awayGoals != null ? game.awayGoals : '' %>"
+                            placeholder="0"
+                          />
+                          <button
+                            type="submit"
+                            class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition"
+                          >
+                            Salvar
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <div class="grid gap-4 mt-4 lg:grid-cols-2">
+      <% ["SEMI", "THIRD"].forEach((stage) => { %>
+        <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm md:text-base font-semibold text-horriver-light">
+              <%= stage === "THIRD" ? "Terceiro lugar" : (stageLabels[stage] || stage) %>
+            </h3>
+            <span class="text-[11px] text-horriver-gray">
+              <%= stage === "THIRD" ? (thirdPlaceGame ? 1 : 0) : (gamesByStage[stage] || []).length %> jogo(s)
+            </span>
+          </div>
+
+          <% const stageGamesKnockout = stage === "THIRD" ? (thirdPlaceGame ? [thirdPlaceGame] : []) : (gamesByStage[stage] || []); %>
+          <% if (!stageGamesKnockout.length) { %>
+            <p class="text-xs text-horriver-gray">Sem jogos.</p>
+          <% } else { %>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-xs md:text-sm">
+                <thead class="bg-black/60">
+                  <tr>
+                    <th class="px-3 py-2 text-left font-semibold text-horriver-gray">Jogo</th>
+                    <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Placar</th>
+                    <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Vencedor</th>
+                    <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Lancar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% stageGamesKnockout.forEach((game) => { %>
+                    <% const homeName = renderTeamName(game.homeTeam, "Casa"); %>
+                    <% const awayName = renderTeamName(game.awayTeam, "Visitante"); %>
+                    <% const hasScore = game.homeGoals != null && game.awayGoals != null; %>
+                    <% const scoreLabel = hasScore ? `${game.homeGoals} x ${game.awayGoals}` : "-"; %>
+                    <% const isFinal = stage === "FINAL"; %>
+                    <% const isSemi = stage === "SEMI"; %>
+                    <% const isDraw = hasScore && game.homeGoals === game.awayGoals; %>
+                    <% const hasPens = game.homePenalties != null && game.awayPenalties != null; %>
+                    <tr class="border-t border-horriver-border/40">
+                      <td class="px-3 py-2 text-horriver-light">
+                        <span class="text-horriver-orange text-[10px] uppercase mr-2">
+                          <%= stage === "THIRD" ? "3º" : stage %>
+                        </span>
+                        <%- homeName %> x <%- awayName %>
+                        <% if (isSemi && game.decidedBy === "ADVANTAGE") { %>
+                          <span class="ml-2 text-[10px] text-horriver-orange uppercase">Vantagem do melhor colocado</span>
+                        <% } %>
+                      </td>
+                      <td class="px-3 py-2 text-center text-horriver-light"><%= scoreLabel %></td>
+                      <td class="px-3 py-2 text-center text-horriver-light">
+                        <% if (game.winnerTeam) { %>
+                          Vencedor: <%- renderTeamName(game.winnerTeam, "Time") %>
+                        <% } else if (hasScore) { %>
+                          Empate
+                        <% } else { %>
+                          -
+                        <% } %>
+                        <% if (isFinal && hasPens) { %>
+                          <span class="text-[11px] text-horriver-gray">
+                            (Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>)
+                          </span>
+                        <% } %>
+                      </td>
+                      <td class="px-3 py-2 text-center">
+                        <form
+                          action="/admin/tournament/game/<%= game.id %>/result"
+                          method="POST"
+                          class="flex items-center justify-center gap-2"
+                        >
+                          <input
+                            type="number"
+                            name="homeGoals"
+                            min="0"
+                            step="1"
+                            class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                            value="<%= game.homeGoals != null ? game.homeGoals : '' %>"
+                            placeholder="0"
+                          />
+                          <span class="text-horriver-gray text-[11px]">x</span>
+                          <input
+                            type="number"
+                            name="awayGoals"
+                            min="0"
+                            step="1"
+                            class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                            value="<%= game.awayGoals != null ? game.awayGoals : '' %>"
+                            placeholder="0"
+                          />
+                          <button
+                            type="submit"
+                            class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition"
+                          >
+                            Salvar
+                          </button>
+                        </form>
+                        <% if (isFinal && isDraw) { %>
+                          <form
+                            action="/admin/tournament/game/<%= game.id %>/pens"
+                            method="POST"
+                            class="mt-2 flex items-center justify-center gap-2"
+                          >
+                            <input
+                              type="number"
+                              name="homePens"
+                              min="0"
+                              step="1"
+                              class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                              value="<%= game.homePenalties != null ? game.homePenalties : '' %>"
+                              placeholder="0"
+                            />
+                            <span class="text-horriver-gray text-[11px]">x</span>
+                            <input
+                              type="number"
+                              name="awayPens"
+                              min="0"
+                              step="1"
+                              class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                              value="<%= game.awayPenalties != null ? game.awayPenalties : '' %>"
+                              placeholder="0"
+                            />
+                            <button
+                              type="submit"
+                              class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light text-[11px] font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+                            >
+                              Salvar penaltis
+                            </button>
+                          </form>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+    <div class="grid gap-4 mt-4 lg:grid-cols-1">
+      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm md:text-base font-semibold text-horriver-light">
+            <%= stageLabels.FINAL %>
+          </h3>
+          <span class="text-[11px] text-horriver-gray">
+            <%= finalGame ? 1 : 0 %> jogo(s)
+          </span>
+        </div>
+
+        <% const stageGamesFinal = finalGame ? [finalGame] : []; %>
+        <% if (!stageGamesFinal.length) { %>
+          <p class="text-xs text-horriver-gray">Sem jogos.</p>
+        <% } else { %>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-xs md:text-sm">
+              <thead class="bg-black/60">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-horriver-gray">Jogo</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Placar</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Vencedor</th>
+                  <th class="px-3 py-2 text-center font-semibold text-horriver-gray">Lancar</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% stageGamesFinal.forEach((game) => { %>
+                  <% const homeName = renderTeamName(game.homeTeam, "Casa"); %>
+                  <% const awayName = renderTeamName(game.awayTeam, "Visitante"); %>
+                  <% const hasScore = game.homeGoals != null && game.awayGoals != null; %>
+                  <% const scoreLabel = hasScore ? `${game.homeGoals} x ${game.awayGoals}` : "-"; %>
+                  <% const isDraw = hasScore && game.homeGoals === game.awayGoals; %>
+                  <% const hasPens = game.homePenalties != null && game.awayPenalties != null; %>
+                  <tr class="border-t border-horriver-border/40">
+                    <td class="px-3 py-2 text-horriver-light">
+                      <span class="text-horriver-orange text-[10px] uppercase mr-2">FINAL</span>
+                      <%- homeName %> x <%- awayName %>
+                    </td>
+                    <td class="px-3 py-2 text-center text-horriver-light"><%= scoreLabel %></td>
+                    <td class="px-3 py-2 text-center text-horriver-light">
+                      <% if (game.winnerTeam) { %>
+                        Vencedor: <%- renderTeamName(game.winnerTeam, "Time") %>
+                      <% } else if (hasScore) { %>
+                        Empate
+                      <% } else { %>
+                        -
+                      <% } %>
+                      <% if (hasPens) { %>
+                        <span class="text-[11px] text-horriver-gray">
+                          (Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>)
+                        </span>
+                      <% } %>
+                    </td>
+                    <td class="px-3 py-2 text-center">
+                      <form
+                        action="/admin/tournament/game/<%= game.id %>/result"
+                        method="POST"
+                        class="flex items-center justify-center gap-2"
+                      >
+                        <input
+                          type="number"
+                          name="homeGoals"
+                          min="0"
+                          step="1"
+                          class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                          value="<%= game.homeGoals != null ? game.homeGoals : '' %>"
+                          placeholder="0"
+                        />
+                        <span class="text-horriver-gray text-[11px]">x</span>
+                        <input
+                          type="number"
+                          name="awayGoals"
+                          min="0"
+                          step="1"
+                          class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                          value="<%= game.awayGoals != null ? game.awayGoals : '' %>"
+                          placeholder="0"
+                        />
+                        <button
+                          type="submit"
+                          class="px-3 py-1 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold hover:bg-orange-500 transition"
+                        >
+                          Salvar
+                        </button>
+                      </form>
+                      <% if (isDraw) { %>
+                        <form
+                          action="/admin/tournament/game/<%= game.id %>/pens"
+                          method="POST"
+                          class="mt-2 flex items-center justify-center gap-2"
+                        >
+                          <input
+                            type="number"
+                            name="homePens"
+                            min="0"
+                            step="1"
+                            class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                            value="<%= game.homePenalties != null ? game.homePenalties : '' %>"
+                            placeholder="0"
+                          />
+                          <span class="text-horriver-gray text-[11px]">x</span>
+                          <input
+                            type="number"
+                            name="awayPens"
+                            min="0"
+                            step="1"
+                            class="w-14 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+                            value="<%= game.awayPenalties != null ? game.awayPenalties : '' %>"
+                            placeholder="0"
+                          />
+                          <button
+                            type="submit"
+                            class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light text-[11px] font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+                          >
+                            Salvar penaltis
+                          </button>
+                        </form>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</section>
+
 <style>
   /* Feedback suave para drag-and-drop */
   li.dragging {
@@ -537,6 +1223,9 @@
     margin-top: 4px;
     background: rgba(255, 255, 255, 0.04);
   }
+  #sorterResults.teams-4 {
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+  }
 </style>
 
 <script>
@@ -552,6 +1241,11 @@
     const saveBtn = document.getElementById("saveTeamsBtn");
     const sortBtn = document.getElementById("sortBtn");
     const shareStatus = document.getElementById("shareStatus");
+    const importForm = document.getElementById("importTournamentForm");
+    const importBtn = document.getElementById("importTournamentBtn");
+    const importStatus = document.getElementById("importTournamentStatus");
+    const importNameInputs = Array.from(document.querySelectorAll("[data-import-name]"));
+    const importColorInputs = Array.from(document.querySelectorAll("[data-import-color]"));
     const benchBox = document.getElementById("benchBox");
     const goalkeeperBenchBox = document.getElementById("goalkeeperBenchBox");
     const availableBox = document.getElementById("availableBox");
@@ -711,8 +1405,21 @@
       { name: "Vermelho", value: "#ef4444" },
       { name: "Branco", value: "#e5e7eb" },
     ];
+    const sponsorNameByLabel = {
+      Amarelo: "Natureza em Flores",
+      Vermelho: "Matheus Gomes Barbearia",
+      Azul: "Carrocerias Santana",
+      Preto: "Advance Compressores",
+    };
 
     function renderTeams(teams, bench) {
+      if (resultsEl) {
+        if (teams && teams.length === 4) {
+          resultsEl.classList.add("teams-4");
+        } else {
+          resultsEl.classList.remove("teams-4");
+        }
+      }
       const goalkeepers = (bench || []).filter((p) => {
         const pos = (p.position || "").toLowerCase();
         return pos.includes("goleiro") || pos.includes("gol");
@@ -728,12 +1435,13 @@
           const power = players.reduce((sum, p) => sum + Number(p.strength || 0), 0);
           const selectedColor = t.colorName || teamColors[idx % teamColors.length].name;
           const selectedDef = teamColors.find((c) => c.name === selectedColor) || teamColors[0];
+          const sponsorName = sponsorNameByLabel[selectedDef.name] || t.name || `Time ${selectedDef.name}`;
           return `
             <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30" data-team="${idx}" data-team-id="${idx}" data-team-color="${selectedDef.value}" data-team-color-name="${selectedDef.name}">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full" data-color-indicator style="background:${selectedDef.value}"></span>
-                  <span data-team-name>${t.name}</span>
+                  <span data-team-name>${sponsorName}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <select data-color-select class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-[11px] text-horriver-light">
@@ -786,7 +1494,11 @@
           if (nameEl) nameEl.style.color = select.value;
           teamEl.setAttribute("data-team-color", select.value);
           const selectedText = select.options[select.selectedIndex]?.text || "";
-          if (selectedText) teamEl.setAttribute("data-team-color-name", selectedText);
+          if (selectedText) {
+            teamEl.setAttribute("data-team-color-name", selectedText);
+            const sponsorName = sponsorNameByLabel[selectedText] || `Time ${selectedText}`;
+            if (nameEl) nameEl.textContent = sponsorName;
+          }
         };
         select.addEventListener("change", applyColor);
         applyColor();
@@ -846,6 +1558,66 @@
       updateAvailableList();
       recalculatePower();
       setupDragAndDrop();
+      updateImportFormVisibility(teams);
+    }
+
+    function normalizeTeamLabel(value) {
+      const raw = value ? String(value).trim().toLowerCase() : "";
+      if (raw.includes("preto")) return "Preto";
+      if (raw.includes("vermelho")) return "Vermelho";
+      if (raw.includes("azul")) return "Azul";
+      if (raw.includes("amarelo")) return "Amarelo";
+      return "Preto";
+    }
+
+    function updateImportFormVisibility(teams = []) {
+      if (!importForm) return;
+      const hasTeams = Array.isArray(teams) && teams.length === 4;
+      if (hasTeams) {
+        importForm.classList.remove("hidden");
+      } else {
+        importForm.classList.add("hidden");
+      }
+    }
+
+    function fillImportInputs() {
+      if (!resultsEl) return false;
+      const requiredLabels = ["preto", "vermelho", "azul", "amarelo"];
+      const allSelects = Array.from(resultsEl.querySelectorAll("select"));
+      const colorSelects = allSelects.filter((select) => {
+        const optionLabels = Array.from(select.options).map((opt) =>
+          (opt.text || "").toLowerCase()
+        );
+        return requiredLabels.every((label) =>
+          optionLabels.some((optLabel) => optLabel.includes(label))
+        );
+      });
+      if (colorSelects.length === 4) {
+        colorSelects.forEach((select, idx) => {
+          const rawValue = select.value || "";
+          const selectedText = select.options[select.selectedIndex]?.text || "";
+          const normalized = normalizeTeamLabel(selectedText || rawValue);
+          const nameInput = importNameInputs[idx];
+          const colorInput = importColorInputs[idx];
+        if (nameInput) nameInput.value = sponsorNameByLabel[normalized] || `Time ${normalized}`;
+          if (colorInput) colorInput.value = normalized;
+        });
+      } else if (initialLineup && Array.isArray(initialLineup.teams) && initialLineup.teams.length === 4) {
+        initialLineup.teams.forEach((team, idx) => {
+          const raw = team?.colorName || team?.colorValue || "";
+          const normalized = normalizeTeamLabel(raw);
+          const nameInput = importNameInputs[idx];
+          const colorInput = importColorInputs[idx];
+          if (nameInput) nameInput.value = sponsorNameByLabel[normalized] || `Time ${normalized}`;
+          if (colorInput) colorInput.value = normalized;
+        });
+      } else {
+        if (importStatus) importStatus.textContent = "Gere 4 times antes de importar.";
+        return false;
+      }
+
+      if (importStatus) importStatus.textContent = "";
+      return true;
     }
 
     function recalculatePower() {
@@ -1011,8 +1783,10 @@
               guest: li.dataset.playerGuest === "true",
             }));
           const power = players.reduce((sum, p) => sum + (p.strength || 0), 0);
+          const colorLabel = teamEl.getAttribute("data-team-color-name") || "";
+          const fallbackName = sponsorNameByLabel[colorLabel] || `Time ${idx + 1}`;
           return {
-            name: teamEl.querySelector("[data-team-name]")?.textContent?.trim() || `Time ${idx + 1}` ,
+            name: teamEl.querySelector("[data-team-name]")?.textContent?.trim() || fallbackName ,
             colorName,
             colorValue,
             power,
@@ -1121,6 +1895,13 @@
     saveBtn?.addEventListener("click", () => {
       persistLineup("manual-save");
     });
+    if (importForm) {
+      importForm.addEventListener("submit", (e) => {
+        if (!fillImportInputs()) {
+          e.preventDefault();
+        }
+      });
+    }
 
     if (copyBtn) {
       copyBtn.addEventListener("click", () => {
@@ -1153,7 +1934,8 @@
             Branco: "⚪",
           };
           const emoji = colorEmojiMap[colorName] || "🎨";
-          const name = colorName ? `${emoji} Time ${colorName}` : rawName;
+          const sponsorName = sponsorNameByLabel[colorName] || `Time ${colorName}`;
+          const name = colorName ? `${emoji} ${sponsorName}` : rawName;
           const lines = Array.from(box.querySelectorAll("li")).map((li) => {
             const spans = li.querySelectorAll("span");
             const nome = spans[0]?.textContent?.trim() || "";
@@ -1226,7 +2008,8 @@
               box.getAttribute("data-team-color-name") ||
               selectEl?.selectedOptions?.[0]?.text ||
               rawName;
-            const displayName = nomeCor ? `Time ${nomeCor}` : rawName;
+            const sponsorName = sponsorNameByLabel[nomeCor] || rawName;
+            const displayName = sponsorName || rawName;
             return { name: displayName, color, players };
           });
 
@@ -1236,6 +2019,15 @@
             const pos = spans[1]?.textContent?.trim() || "";
             return { nome, pos };
           });
+
+          const getLuminance = (hex) => {
+            if (!hex || !hex.startsWith("#") || hex.length < 7) return 0.5;
+            const r = parseInt(hex.slice(1, 3), 16) / 255;
+            const g = parseInt(hex.slice(3, 5), 16) / 255;
+            const b = parseInt(hex.slice(5, 7), 16) / 255;
+            const lin = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+            return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+          };
 
           if (!teamsForShare.length) {
             shareStatus.textContent = "Sorteie os times antes de gerar imagem.";
@@ -1258,7 +2050,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
               <div style="display:flex;flex-direction:column;gap:6px;">
                 <span style="font-size:12px;color:#f97316;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;">Craque da semana - Times</span>
-                <span style="font-size:26px;font-weight:900;letter-spacing:-0.5px;">Pelada ${matchDateLabel}</span>
+                <span style="font-size:28px;font-weight:900;letter-spacing:-0.5px;">Pelada ${matchDateLabel}</span>
               </div>
               <div style="width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid #f97316;background:#0f0f15;display:flex;align-items:center;justify-content:center;">
                 <img src="/img/logo-32x32.svg" alt="Horriver Plate" style="width:auto;height:auto;max-width:80%;max-height:80%;object-fit:contain;display:block;opacity:0.95;" />
@@ -1267,26 +2059,35 @@
           `;
 
           const colors = ["#facc15", "#3b82f6", "#1f2937", "#10b981"];
+          const gridColumns = teamsForShare.length === 4 ? 2 : 3;
           const teamsHtml = `
-            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+            <div style="display:grid;grid-template-columns:repeat(${gridColumns},minmax(0,1fr));gap:12px;">
               ${teamsForShare
                 .map((t, idx) => {
                   const headerBg = t.color || colors[idx % colors.length];
+                  const isDark = getLuminance(headerBg) < 0.45 || t.name.toLowerCase().includes("preto");
+                  const headerText = isDark ? "#f8fafc" : "#0b0b0b";
+                  const bodyText = "#f8fafc";
+                  const subText = isDark ? "#e2e8f0" : "#cbd5e1";
+                  const lineColor = isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.08)";
+                  const panelBg = isDark
+                    ? `linear-gradient(145deg, ${headerBg}40 0%, rgba(15,15,20,0.95) 70%)`
+                    : `linear-gradient(145deg, ${headerBg}33 0%, rgba(15,15,20,0.9) 70%)`;
                   return `
-                    <div style="position:relative;border:1px solid ${headerBg}40;border-radius:18px;overflow:hidden;background:linear-gradient(145deg, ${headerBg}26 0%, rgba(15,15,20,0.9) 70%);">
+                    <div style="position:relative;border:1px solid ${headerBg}45;border-radius:18px;overflow:hidden;background:${panelBg};">
                       <div style="position:absolute;right:-26px;bottom:-26px;width:110px;height:110px;opacity:0.08;background:url('/img/logo.jpg') center/contain no-repeat;"></div>
-                      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:${headerBg};color:#0b0b0b;font-weight:800;letter-spacing:0.5px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:${headerBg};color:${headerText};font-weight:800;letter-spacing:0.5px;font-size:14px;">
                         <span>${t.name}</span>
                         <span style="font-size:11px;">${t.players.length} jogadores</span>
                       </div>
-                      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+                      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;color:${bodyText};">
                         ${t.players
                           .map(
                             (p) => `
-                              <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+                              <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid ${lineColor};">
                                 <div style="display:flex;flex-direction:column;gap:2px;">
-                                  <span style="font-weight:800;font-size:13px;">${p.nome}</span>
-                                  <span style="font-size:11px;color:#cbd5e1;text-transform:uppercase;letter-spacing:0.4px;">${p.pos}</span>
+                                  <span style="font-weight:800;font-size:16px;letter-spacing:0.1px;">${p.nome}</span>
+                                  <span style="font-size:12px;color:${subText};text-transform:uppercase;letter-spacing:0.4px;">${p.pos}</span>
                                 </div>
                                 <span style="font-size:13px;color:#fbd38d;font-weight:800;"></span>
                               </div>
