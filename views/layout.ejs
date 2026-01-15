@@ -51,59 +51,57 @@
     <link rel="stylesheet" href="/css/custom.css?v=<%= assetVersion %>" />
     <link rel="stylesheet" href="/css/theme.css?v=<%= assetVersion %>" />
 
-    <% if (!_isProdLayout) { %>
-      <!-- Tailwind (dev only) -->
-      <script src="https://cdn.tailwindcss.com"></script>
-      <script>
-        tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                "horriver-dark": "#050509",
-                "horriver-bg": "#050509",
-                "horriver-light": "#f5f5f5",
-                "horriver-red": "#8b1320",
-                "horriver-orange": "#ff7a1a",
-                "horriver-gray": "#b2b8c2",
-                "horriver-border": "rgba(148,163,184,0.35)",
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "horriver-dark": "#050509",
+              "horriver-bg": "#050509",
+              "horriver-light": "#f5f5f5",
+              "horriver-red": "#8b1320",
+              "horriver-orange": "#ff7a1a",
+              "horriver-gray": "#b2b8c2",
+              "horriver-border": "rgba(148,163,184,0.35)",
+            },
+            fontFamily: {
+              sans: ["Manrope", "system-ui", "ui-sans-serif", "sans-serif"],
+              title: ["Bebas Neue", "Oswald", "system-ui", "sans-serif"],
+            },
+            keyframes: {
+              fadeIn: {
+                "0%": { opacity: 0, transform: "translateY(8px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
               },
-              fontFamily: {
-                sans: ["Manrope", "system-ui", "ui-sans-serif", "sans-serif"],
-                title: ["Bebas Neue", "Oswald", "system-ui", "sans-serif"],
+              skeletonShimmer: {
+                "0%": { backgroundPosition: "-200% 0" },
+                "100%": { backgroundPosition: "200% 0" },
               },
-              keyframes: {
-                fadeIn: {
-                  "0%": { opacity: 0, transform: "translateY(8px)" },
-                  "100%": { opacity: 1, transform: "translateY(0)" },
-                },
-                skeletonShimmer: {
-                  "0%": { backgroundPosition: "-200% 0" },
-                  "100%": { backgroundPosition: "200% 0" },
-                },
-                slideDown: {
-                  "0%": { opacity: 0, transform: "translateY(-12px)" },
-                  "100%": { opacity: 1, transform: "translateY(0)" },
-                },
-                slideUp: {
-                  "0%": { opacity: 1, transform: "translateY(0)" },
-                  "100%": { opacity: 0, transform: "translateY(-12px)" },
-                },
+              slideDown: {
+                "0%": { opacity: 0, transform: "translateY(-12px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
               },
-              animation: {
-                fadeIn: "fadeIn .35s ease-out",
-                skeletonShimmer: "skeletonShimmer 1.2s ease-in-out infinite",
-                slideDown: "slideDown .22s ease-out",
-                slideUp: "slideUp .18s ease-in forwards",
-              },
-              boxShadow: {
-                card: "0 14px 30px rgba(15,23,42,.7)",
-                "card-soft": "0 12px 24px rgba(15,23,42,.55)",
+              slideUp: {
+                "0%": { opacity: 1, transform: "translateY(0)" },
+                "100%": { opacity: 0, transform: "translateY(-12px)" },
               },
             },
+            animation: {
+              fadeIn: "fadeIn .35s ease-out",
+              skeletonShimmer: "skeletonShimmer 1.2s ease-in-out infinite",
+              slideDown: "slideDown .22s ease-out",
+              slideUp: "slideUp .18s ease-in forwards",
+            },
+            boxShadow: {
+              card: "0 14px 30px rgba(15,23,42,.7)",
+              "card-soft": "0 12px 24px rgba(15,23,42,.55)",
+            },
           },
-        };
-      </script>
-    <% } %>
+        },
+      };
+    </script>
 
     <style>
       body {
