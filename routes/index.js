@@ -5,6 +5,24 @@ const prisma = require("../utils/db");
 const { getAchievementsStats } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
+const cache = new Map();
+const CACHE_TTL_MS = 60 * 1000;
+
+function getCache(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCache(key, value) {
+  cache.set(key, { value, timestamp: Date.now() });
+}
+
+
 // ==============================
 // Helpers de datas
 // ==============================
@@ -26,12 +44,60 @@ function monthKey(date) {
   return `${y}-${m}`;
 }
 
+function getNextTuesdayAtHour(baseDate, hour = 20) {
+  const base = new Date(baseDate);
+  const day = base.getDay(); // 0=Sun, 1=Mon, 2=Tue
+  let diff = (2 - day + 7) % 7;
+  const target = new Date(base);
+  if (diff === 0) {
+    const sameDay = new Date(base);
+    sameDay.setHours(hour, 0, 0, 0);
+    if (base.getTime() < sameDay.getTime()) {
+      return sameDay;
+    }
+    diff = 7;
+  }
+  target.setDate(base.getDate() + diff);
+  target.setHours(hour, 0, 0, 0);
+  return target;
+}
+
+async function ensureNextTuesdayMatch(baseDate) {
+  const target = getNextTuesdayAtHour(baseDate, 20);
+  const dayStart = startOfDay(target);
+  const dayEnd = endOfDay(target);
+
+  const existing = await prisma.match.findFirst({
+    where: { playedAt: { gte: dayStart, lte: dayEnd } },
+  });
+
+  if (existing) return { match: existing, created: false };
+
+  const created = await prisma.match.create({
+    data: {
+      playedAt: target,
+      description: "Pelada da terca",
+    },
+  });
+
+  return { match: created, created: true };
+}
+
 // ==============================
 // HOME /
 // ==============================
 router.get("/", async (req, res) => {
   try {
     const now = new Date();
+    const scheduleResult = await ensureNextTuesdayMatch(now);
+    if (scheduleResult.created) {
+      cache.delete("home");
+    }
+
+    const cached = getCache("home");
+    if (cached) {
+      return res.render("index", cached);
+    }
 
     // Janela em que o carrossel da temporada aparece na home
     // (29/11/2024 às 15h até 31/12/2024 23:59:59 - horário local do servidor)
@@ -215,8 +281,18 @@ router.get("/", async (req, res) => {
     });
 
     // =====================================================
-    // ÚLTIMAS PELADAS
+    // ULTIMAS / PROXIMAS PELADAS
     // =====================================================
+    const lastMatch = await prisma.match.findFirst({
+      where: { playedAt: { lte: now } },
+      orderBy: { playedAt: "desc" },
+    });
+
+    const nextMatch = await prisma.match.findFirst({
+      where: { playedAt: { gt: now } },
+      orderBy: { playedAt: "asc" },
+    });
+
     const recentMatches = await prisma.match.findMany({
       orderBy: { playedAt: "desc" },
       take: 10,
@@ -225,7 +301,7 @@ router.get("/", async (req, res) => {
     // =====================================================
     // RENDER
     // =====================================================
-    res.render("index", {
+    const payload = {
       title: "Home",
       activePage: "home",
 
@@ -243,8 +319,13 @@ router.get("/", async (req, res) => {
       photoKings,
 
       players,
+      lastMatch,
+      nextMatch,
       recentMatches,
-    });
+    };
+
+    setCache("home", payload);
+    res.render("index", payload);
   } catch (err) {
     console.error("Erro ao carregar home:", err);
     res.status(500).send("Erro ao carregar a página inicial.");
@@ -271,6 +352,13 @@ router.get("/matches/:id", async (req, res) => {
 
     if (!match) return res.status(404).render("404");
 
+    const weeklyPhoto = await prisma.weeklyAward.findFirst({
+      where: { winningMatchId: id, teamPhotoUrl: { not: null } },
+      orderBy: { weekStart: "desc" },
+      select: { teamPhotoUrl: true },
+    });
+
+
     let publicStats = match.stats || [];
     try {
       const result = await computeMatchRatingsAndAwards(id);
@@ -290,11 +378,30 @@ router.get("/matches/:id", async (req, res) => {
       console.warn("Falha ao calcular nota final p£blica:", calcErr);
     }
 
+    const baseUrl =
+      process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
+    const matchDateLabel = new Date(match.playedAt).toLocaleDateString("pt-BR");
+    const matchDesc = match.description
+      ? `Pelada em ${matchDateLabel}. ${match.description}`
+      : `Pelada em ${matchDateLabel}.`;
+    const shareImagePath = weeklyPhoto?.teamPhotoUrl || "/img/logo.jpg";
+    const shareImageUrl = `${baseUrl}${req.app.locals.thumbUrl(
+      shareImagePath,
+      1200
+    )}`;
+
+    res.locals.metaDescription = matchDesc;
+    res.locals.metaImage = shareImageUrl;
+    res.locals.ogTitle = `Pelada ${matchDateLabel} | Horriver Plate`;
+
     res.render("match_public", {
       title: "Estat¡sticas da pelada",
       activePage: "home",
       match,
       stats: publicStats,
+      tournament: null,
+      tournamentStandings: [],
+      tournamentTeams: [],
     });
   } catch (err) {
     console.error("Erro ao carregar pelada pública:", err);
@@ -391,6 +498,13 @@ router.get("/peladas", async (req, res) => {
       return true;
     });
 
+    const monthLabel =
+      selectedMonth !== "all"
+        ? monthNames[Number(selectedMonth) - 1] || "todos"
+        : "todos";
+    const yearLabel = selectedYear !== "all" ? selectedYear : "todos";
+    res.locals.metaDescription = `Peladas do mes ${monthLabel} e ano ${yearLabel}.`;
+
     res.render("peladas", {
       title: "Peladas",
       activePage: "peladas",
@@ -451,6 +565,10 @@ router.get("/hall-da-fama", async (req, res) => {
         midfielder: byCategory("MELHOR_MEIA"),
         forward: byCategory("MELHOR_ATACANTE"),
       };
+
+    setCache("home", payload);
+    res.render("index", payload);
+
 
       // pega o ano anterior (se existir) para histórico
       const otherYear = seasonAwards.find((a) => a.year < latestSeasonYear);
@@ -534,3 +652,4 @@ router.get("/achievements", async (req, res) => {
 });
 
 module.exports = router;
+

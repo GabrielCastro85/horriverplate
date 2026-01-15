@@ -2,7 +2,12 @@
   <header class="flex flex-col md:flex-row gap-4 items-center md:items-start">
     <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange shadow-card-soft">
       <% if (player.photoUrl) { %>
-        <img src="<%= player.photoUrl %>" class="w-full h-full object-cover" />
+        <img
+          src="<%= thumbUrl(player.photoUrl, 320) %>"
+          srcset="<%= thumbUrl(player.photoUrl, 320) %> 1x, <%= thumbUrl(player.photoUrl, 640) %> 2x"
+          sizes="128px"
+          class="w-full h-full object-cover"
+        />
       <% } else { %>
         <div class="w-full h-full bg-black/40 flex items-center justify-center text-horriver-gray">Sem foto</div>
       <% } %>

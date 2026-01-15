@@ -14,20 +14,42 @@ function computeOverall(ratings) {
 // Página de elenco (pública)
 router.get("/", async (req, res) => {
   try {
-    // Busca jogadores sem OVR (público)
+    const query = (req.query.q || "").toString().trim();
+    const position = (req.query.position || "all").toString().trim().toLowerCase();
+    const positionMap = {
+      goleiro: "Goleiro",
+      zagueiro: "Zagueiro",
+      meia: "Meia",
+      atacante: "Atacante",
+    };
+
+    const where = {};
+    if (position && position !== "all") {
+      where.position = positionMap[position] || position;
+    }
+    if (query) {
+      where.OR = [
+        { name: { contains: query, mode: "insensitive" } },
+        { nickname: { contains: query, mode: "insensitive" } },
+      ];
+    }
+
     const players = await prisma.player.findMany({
+      where,
       orderBy: { name: "asc" },
     });
 
     res.render("elenco", {
       title: "Elenco",
-      activePage: "elenco", // deixa o menu "Elenco" marcado no header
+      activePage: "elenco",
       players,
+      query,
+      position,
     });
   } catch (err) {
     console.error("Erro ao carregar elenco:", err);
-    res.status(500).send("Erro ao carregar a página de elenco.");
+    res.status(500).send("Erro ao carregar a pagina de elenco.");
   }
 });
-
 module.exports = router;
+

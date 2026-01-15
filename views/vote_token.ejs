@@ -48,13 +48,13 @@
           <ul class="space-y-2" data-rank-list>
             <% list.forEach((p, idx) => { %>
               <li
-                class="flex items-center gap-3 text-sm text-horriver-light bg-white/5 rounded-xl px-3 py-2 cursor-move transition-transform duration-150 ease-out"
+                class="flex flex-col sm:flex-row sm:items-center gap-3 text-sm text-horriver-light bg-white/5 rounded-xl px-3 py-2 cursor-move transition-transform duration-150 ease-out"
                 draggable="true"
                 data-player-id="<%= p.id %>"
                 data-position="<%= p.position %>"
               >
                 <span class="rank-index w-7 text-center text-horriver-orange font-semibold"><%= idx + 1 %>.</span>
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                   <p class="font-semibold"><%= p.name %></p>
                   <% if (p.nickname) { %>
                     <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
@@ -96,7 +96,8 @@
       <div class="text-right">
         <button
           type="submit"
-          class="inline-flex items-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+          data-submit-label="Enviando..."
+          class="inline-flex items-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
         >
           Enviar voto
         </button>

@@ -3,6 +3,7 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../utils/db");
+const { scheduleBackup } = require("../utils/backup");
 const {
   uploadPlayerPhoto,
   uploadWeeklyTeamPhoto,
@@ -80,6 +81,16 @@ async function recomputeTotalsForPlayers(playerIds) {
 // ==============================
 // 🧭 Painel principal /admin
 // ==============================
+router.use((req, res, next) => {
+  if (req.method === "GET" || req.method === "HEAD") return next();
+  res.on("finish", () => {
+    if (res.statusCode >= 200 && res.statusCode < 400) {
+      scheduleBackup({ reason: `${req.method} ${req.originalUrl}` });
+    }
+  });
+  next();
+});
+
 router.get("/", requireAdmin, async (req, res) => {
   try {
     const matches = await prisma.match.findMany({
@@ -134,6 +145,70 @@ router.get("/", requireAdmin, async (req, res) => {
       orderBy: [{ year: "desc" }, { category: "asc" }],
     });
 
+    const latestMatch = matches && matches.length ? matches[0] : null;
+    const referenceDate = latestMatch ? new Date(latestMatch.playedAt) : new Date();
+    const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+    const monthEnd = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 1);
+
+    const monthStats = await prisma.playerStat.findMany({
+      where: {
+        match: {
+          playedAt: {
+            gte: monthStart,
+            lt: monthEnd,
+          },
+        },
+      },
+      include: {
+        player: true,
+      },
+    });
+
+    const monthAgg = new Map();
+    monthStats.forEach((stat) => {
+      const id = stat.playerId;
+      if (!monthAgg.has(id)) {
+        monthAgg.set(id, {
+          player: stat.player,
+          goals: 0,
+          assists: 0,
+          ratingSum: 0,
+          ratingCount: 0,
+        });
+      }
+      const entry = monthAgg.get(id);
+      entry.goals += stat.goals || 0;
+      entry.assists += stat.assists || 0;
+      if (stat.rating != null) {
+        entry.ratingSum += stat.rating;
+        entry.ratingCount += 1;
+      }
+    });
+
+    const monthRows = Array.from(monthAgg.values()).map((row) => ({
+      player: row.player,
+      goals: row.goals,
+      assists: row.assists,
+      avgRating: row.ratingCount ? row.ratingSum / row.ratingCount : null,
+    }));
+
+    const monthTopGoals = [...monthRows]
+      .sort((a, b) => b.goals - a.goals)
+      .slice(0, 5);
+    const monthTopAssists = [...monthRows]
+      .sort((a, b) => b.assists - a.assists)
+      .slice(0, 5);
+    const monthTopRatings = monthRows
+      .filter((row) => row.avgRating != null)
+      .sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0))
+      .slice(0, 5);
+
+    const monthNames = [
+      "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+      "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    ];
+    const monthLabel = `${monthNames[referenceDate.getMonth()]} ${referenceDate.getFullYear()}`;
+
     res.render("admin", {
       title: "Painel do Admin",
       matches,
@@ -142,6 +217,10 @@ router.get("/", requireAdmin, async (req, res) => {
       weeklyAwards,
       monthlyAwards,
       seasonAwards,
+      monthTopGoals,
+      monthTopAssists,
+      monthTopRatings,
+      monthLabel,
     });
   } catch (err) {
     console.error("Erro ao carregar painel admin:", err);

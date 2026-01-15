@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
   <%
     // Flags de ambiente e admin para usar no layout todo
@@ -9,11 +9,18 @@
     <meta charset="UTF-8" />
     <title><%= typeof title !== 'undefined' ? title : 'Home' %> | Horriver Plate</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Pelada, stats e resenha do Horriver Plate.' %>" />
 
-    <!-- Favicon / ícones -->
-    <!-- Ícone principal em SVG (aba do navegador) -->
+    <!-- Favicon / Icones -->
+    <!-- Icone principal em SVG (aba do navegador) -->
     <link rel="icon" type="image/svg+xml" href="/img/logo-32x32.svg" />
-    <!-- Fallbacks em tamanhos diferentes (a maioria dos navegadores ignora a distorção
+    <!-- Fallbacks em tamanhos diferentes (a maioria dos navegadores ignora a distorcao
          e respeita o aspect ratio do SVG) -->
     <link rel="icon" sizes="16x16" href="/img/logo-16x16.svg" />
     <link rel="icon" sizes="32x32" href="/img/logo-32x32.svg" />
@@ -28,70 +35,86 @@
     <meta name="theme-color" content="#050509" />
 
     <!-- Open Graph (compartilhamento em redes sociais) -->
-    <meta property="og:title" content="Horriver Plate" />
+    <meta property="og:title" content="<%= typeof ogTitle !== 'undefined' ? ogTitle : (typeof title !== 'undefined' ? `${title} | Horriver Plate` : 'Horriver Plate') %>" />
     <meta
       property="og:description"
-      content="Pelada • Stats • Resenha — Estatísticas detalhadas da pelada da rapaziada."
+      content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Pelada, stats e resenha do Horriver Plate.' %>"
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://horriverplate.onrender.com/" />
-    <!-- Usa a imagem JPG grande que você mandou -->
-    <meta property="og:image" content="https://horriverplate.onrender.com/img/logo.jpg" />
+    <meta property="og:url" content="<%= typeof metaUrl !== 'undefined' ? metaUrl : 'https://horriverplate.onrender.com/' %>" />
+    <!-- Usa a imagem JPG grande que voce mandou -->
+    <meta property="og:image" content="<%= typeof metaImage !== 'undefined' ? metaImage : 'https://horriverplate.onrender.com/img/logo.jpg' %>" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              "horriver-dark": "#050509",
-              "horriver-bg": "#050509",
-              "horriver-light": "#f5f5f5",
-              "horriver-red": "#8b1320",
-              "horriver-orange": "#ff7a1a",
-              "horriver-gray": "#9ca3af",
-              "horriver-border": "rgba(148,163,184,0.35)",
-            },
-            fontFamily: {
-              sans: ["system-ui", "ui-sans-serif", "sans-serif"],
-              title: ["Oswald", "system-ui", "sans-serif"],
-            },
-            keyframes: {
-              fadeIn: {
-                "0%": { opacity: 0, transform: "translateY(8px)" },
-                "100%": { opacity: 1, transform: "translateY(0)" },
+    <link rel="stylesheet" href="/css/output.css?v=<%= assetVersion %>" />
+    <link rel="stylesheet" href="/css/custom.css?v=<%= assetVersion %>" />
+    <link rel="stylesheet" href="/css/theme.css?v=<%= assetVersion %>" />
+
+    <% if (!_isProdLayout) { %>
+      <!-- Tailwind (dev only) -->
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                "horriver-dark": "#050509",
+                "horriver-bg": "#050509",
+                "horriver-light": "#f5f5f5",
+                "horriver-red": "#8b1320",
+                "horriver-orange": "#ff7a1a",
+                "horriver-gray": "#b2b8c2",
+                "horriver-border": "rgba(148,163,184,0.35)",
               },
-              slideDown: {
-                "0%": { opacity: 0, transform: "translateY(-12px)" },
-                "100%": { opacity: 1, transform: "translateY(0)" },
+              fontFamily: {
+                sans: ["Manrope", "system-ui", "ui-sans-serif", "sans-serif"],
+                title: ["Bebas Neue", "Oswald", "system-ui", "sans-serif"],
               },
-              slideUp: {
-                "0%": { opacity: 1, transform: "translateY(0)" },
-                "100%": { opacity: 0, transform: "translateY(-12px)" },
+              keyframes: {
+                fadeIn: {
+                  "0%": { opacity: 0, transform: "translateY(8px)" },
+                  "100%": { opacity: 1, transform: "translateY(0)" },
+                },
+                skeletonShimmer: {
+                  "0%": { backgroundPosition: "-200% 0" },
+                  "100%": { backgroundPosition: "200% 0" },
+                },
+                slideDown: {
+                  "0%": { opacity: 0, transform: "translateY(-12px)" },
+                  "100%": { opacity: 1, transform: "translateY(0)" },
+                },
+                slideUp: {
+                  "0%": { opacity: 1, transform: "translateY(0)" },
+                  "100%": { opacity: 0, transform: "translateY(-12px)" },
+                },
               },
-            },
-            animation: {
-              fadeIn: "fadeIn .35s ease-out",
-              slideDown: "slideDown .22s ease-out",
-              slideUp: "slideUp .18s ease-in forwards",
-            },
-            boxShadow: {
-              card: "0 18px 45px rgba(15,23,42,.85)",
-              "card-soft": "0 18px 35px rgba(15,23,42,.7)",
+              animation: {
+                fadeIn: "fadeIn .35s ease-out",
+                skeletonShimmer: "skeletonShimmer 1.2s ease-in-out infinite",
+                slideDown: "slideDown .22s ease-out",
+                slideUp: "slideUp .18s ease-in forwards",
+              },
+              boxShadow: {
+                card: "0 14px 30px rgba(15,23,42,.7)",
+                "card-soft": "0 12px 24px rgba(15,23,42,.55)",
+              },
             },
           },
-        },
-      };
-    </script>
+        };
+      </script>
+    <% } %>
 
     <style>
       body {
         background-color: #050509;
         color: #f5f5f5;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0.01em;
+      }
+      :focus-visible {
+        outline: 2px solid #ff7a1a;
+        outline-offset: 2px;
       }
 
       .layout-bg {
@@ -101,7 +124,15 @@
           #120106 35%,
           #050509 70%,
           #000000 100%
+        ),
+        repeating-linear-gradient(
+          135deg,
+          rgba(255, 122, 26, 0.035) 0,
+          rgba(255, 122, 26, 0.035) 1px,
+          transparent 1px,
+          transparent 8px
         );
+        background-attachment: fixed;
       }
 
       .card-highlight {
@@ -125,7 +156,202 @@
         background:
           radial-gradient(circle at top left, rgba(255, 122, 26, 0.12), transparent 55%),
           radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 1));
-        box-shadow: 0 24px 55px rgba(15, 23, 42, 0.95);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.75);
+      }
+      .card-unified {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 1.5rem;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+        transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+      [data-skeleton] {
+        position: relative;
+        overflow: hidden;
+      }
+      [data-skeleton]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0) 0%,
+          rgba(255, 255, 255, 0.07) 45%,
+          rgba(255, 255, 255, 0) 70%
+        );
+        background-size: 200% 100%;
+        animation: skeletonShimmer 1.2s ease-in-out infinite;
+        pointer-events: none;
+        opacity: 0.6;
+        transition: opacity 0.25s ease;
+      }
+      html.skeleton-ready [data-skeleton]::after {
+        opacity: 0;
+        animation: none;
+      }
+      .card-unified::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(255, 122, 26, 0), rgba(255, 122, 26, 0.8), rgba(255, 122, 26, 0));
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      .card-unified:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 122, 26, 0.55);
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.45);
+      }
+      .card-unified:hover::before {
+        opacity: 1;
+      }
+      .card-unified:focus-visible,
+      a.card-unified:focus-visible,
+      button.card-unified:focus-visible {
+        outline: 2px solid #ff7a1a;
+        outline-offset: 3px;
+      }
+      .avatar-glow {
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+      }
+      .card-unified:hover .avatar-glow {
+        box-shadow: 0 0 0 2px rgba(255, 122, 26, 0.45);
+        transform: scale(1.02);
+      }
+      .page-hero {
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 1.75rem;
+        padding: 1.5rem;
+        background:
+          radial-gradient(circle at top left, rgba(255, 122, 26, 0.16), transparent 55%),
+          linear-gradient(135deg, rgba(0, 0, 0, 0.75), rgba(5, 5, 9, 0.9));
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      }
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.8rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 122, 26, 0.45);
+        background: rgba(0, 0, 0, 0.5);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+      }
+      .hero-icon {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(255, 122, 26, 0.15);
+        border: 1px solid rgba(255, 122, 26, 0.4);
+        font-size: 10px;
+        color: #ff7a1a;
+      }
+      .table-sticky thead th {
+        position: sticky;
+        top: 0;
+        background: rgba(5, 5, 9, 0.95);
+        backdrop-filter: blur(6px);
+        z-index: 1;
+      }
+      table thead th {
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 10px;
+        color: rgba(226, 232, 240, 0.75);
+      }
+      table tbody tr {
+        transition: background-color 0.15s ease;
+      }
+      table tbody tr:hover {
+        background-color: rgba(255, 255, 255, 0.03);
+      }
+      table tbody tr:nth-child(even) {
+        background-color: rgba(255, 255, 255, 0.02);
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: rgba(255, 122, 26, 0.8);
+        box-shadow: 0 0 0 2px rgba(255, 122, 26, 0.2);
+      }
+      .rk-home-btn {
+        transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+      }
+      .rk-home-btn:active {
+        transform: translateY(1px);
+      }
+      .rk-home-btn.bg-horriver-red {
+        box-shadow: 0 10px 22px rgba(139, 19, 32, 0.35);
+      }
+      .footer-links a {
+        color: rgba(156, 163, 175, 0.9);
+        transition: color 0.2s ease;
+      }
+      .footer-links a:hover {
+        color: #ff7a1a;
+      }
+      .section-badge {
+        position: relative;
+        overflow: hidden;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+      }
+      .section-badge::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+      }
+      .section-badge:hover::after {
+        transform: translateX(100%);
+      }
+      .mini-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 122, 26, 0.55);
+        color: #ff7a1a;
+        font-size: 9px;
+        text-transform: uppercase;
+        background: rgba(0, 0, 0, 0.4);
+      }
+
+      a.bg-horriver-orange,
+      button.bg-horriver-orange,
+      a.bg-gradient-horriver,
+      button.bg-gradient-horriver {
+        box-shadow: 0 12px 24px rgba(255, 122, 26, 0.25);
+        transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      }
+      a.bg-horriver-orange:hover,
+      button.bg-horriver-orange:hover,
+      a.bg-gradient-horriver:hover,
+      button.bg-gradient-horriver:hover {
+        filter: brightness(1.05);
+        box-shadow: 0 14px 28px rgba(255, 122, 26, 0.35);
+      }
+      a.bg-horriver-orange:active,
+      button.bg-horriver-orange:active,
+      a.bg-gradient-horriver:active,
+      button.bg-gradient-horriver:active {
+        transform: translateY(1px) scale(0.99);
       }
 
       .hamburger-line {
@@ -145,9 +371,24 @@
       .hamburger-active .line-3 {
         transform: translateY(-6px) rotate(-45deg);
       }
+      .scroll-top {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 60;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(6px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .scroll-top.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
     </style>
 
-    <% if (_isProdLayout && !_isAdminLayout) { %>
+    <% if (!_isAdminLayout) { %>
       <!-- Google tag (gtag.js) -->
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-0JGR9T4CY9"></script>
       <script>
@@ -185,7 +426,12 @@
               <img
                 src="/img/logo-128x128.svg"
                 alt="Horriver Plate"
+                width="36"
+                height="36"
                 class="w-full h-full object-contain"
+                loading="eager"
+                decoding="async"
+                data-eager="true"
               />
             </div>
 
@@ -193,15 +439,16 @@
               <span class="font-title text-sm md:text-base text-horriver-orange tracking-wide">
                 Horriver Plate
               </span>
-              <span class="text-[10px] text-horriver-gray">Pelada • Stats • Resenha</span>
+              <span class="text-[10px] text-horriver-gray">Pelada - Stats - Resenha</span>
             </div>
           </a>
 
-          <!-- MENU DESKTOP -->
+          <!-- ACOES DESKTOP -->
           <ul class="hidden md:flex items-center gap-5 text-[11px] md:text-xs">
             <li>
               <a
                 href="/"
+                <%= currentPage==='home' ? 'aria-current="page"' : '' %>
                 class="<%= currentPage==='home' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
               >
                 Home
@@ -210,6 +457,7 @@
             <li>
               <a
                 href="/rankings"
+                <%= currentPage==='rankings' ? 'aria-current="page"' : '' %>
                 class="<%= currentPage==='rankings' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
               >
                 Rankings
@@ -218,6 +466,7 @@
             <li>
               <a
                 href="/peladas"
+                <%= currentPage==='peladas' ? 'aria-current="page"' : '' %>
                 class="<%= currentPage==='peladas' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
               >
                 Peladas
@@ -226,6 +475,7 @@
             <li>
               <a
                 href="/elenco"
+                <%= currentPage==='elenco' ? 'aria-current="page"' : '' %>
                 class="<%= currentPage==='elenco' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
               >
                 Elenco
@@ -236,6 +486,7 @@
               <li>
                 <a
                   href="/hall-da-fama"
+                  <%= currentPage==='hall' ? 'aria-current="page"' : '' %>
                   class="<%= currentPage==='hall' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
                 >
                   Hall da Fama
@@ -246,6 +497,7 @@
             <li>
               <a
                 href="/sobre"
+                <%= currentPage==='sobre' ? 'aria-current="page"' : '' %>
                 class="<%= currentPage==='sobre' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
               >
                 Sobre
@@ -253,7 +505,7 @@
             </li>
           </ul>
 
-          <!-- AÇÕES DESKTOP -->
+          <!-- ACOES DESKTOP -->
           <div class="hidden md:flex items-center gap-2">
             <a
               href="https://www.instagram.com/_hpfrc/"
@@ -328,32 +580,34 @@
 
       <!-- MENU MOBILE -->
       <div id="mobileMenu" class="fixed inset-0 z-50 hidden">
-        <button id="mobileBackdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></button>
+        <button
+          id="mobileBackdrop"
+          aria-label="Fechar menu"
+          class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        ></button>
         <div
           id="mobilePanel"
           class="relative mx-auto mt-2 w-[92%] max-w-sm rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown"
         >
           <div class="p-3 border-b border-horriver-border/60 flex justify-between items-center">
-            <span class="font-title text-horriver-orange text-sm">Navegação</span>
+            <span class="font-title text-horriver-orange text-sm">Navegacao</span>
             <button
               id="mobileClose"
               class="w-8 h-8 inline-flex items-center justify-center rounded-full border border-horriver-orange/60 text-horriver-orange"
-            >
-              ×
-            </button>
+            >X</button>
           </div>
 
           <nav class="p-2 text-[13px]">
-            <a href="/" class="block px-3 py-2 rounded-lg hover:bg-white/5">Home</a>
-            <a href="/rankings" class="block px-3 py-2 rounded-lg hover:bg-white/5">Rankings</a>
-            <a href="/peladas" class="block px-3 py-2 rounded-lg hover:bg-white/5">Peladas</a>
-            <a href="/elenco" class="block px-3 py-2 rounded-lg hover:bg-white/5">Elenco</a>
+            <a href="/" <%= currentPage==='home' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Home</a>
+            <a href="/rankings" <%= currentPage==='rankings' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Rankings</a>
+            <a href="/peladas" <%= currentPage==='peladas' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Peladas</a>
+            <a href="/elenco" <%= currentPage==='elenco' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Elenco</a>
 
             <% if (showHallLink) { %>
-              <a href="/hall-da-fama" class="block px-3 py-2 rounded-lg hover:bg-white/5">Hall da Fama</a>
+              <a href="/hall-da-fama" <%= currentPage==='hall' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Hall da Fama</a>
             <% } %>
 
-            <a href="/sobre" class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
+            <a href="/sobre" <%= currentPage==='sobre' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
 
             <div class="mt-2 flex items-center gap-2 px-2">
               <a
@@ -414,59 +668,52 @@
         </div>
       </div>
 
-      <!-- CONTEÚDO -->
-      <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      <!-- CONTEUDO -->
+      <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-10 md:py-12">
         <%- body %>
       </main>
 
       <!-- FOOTER -->
       <footer class="mt-8 border-t border-horriver-border text-[10px] md:text-xs text-horriver-gray/80">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-2">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
           <p>&copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os direitos reservados.</p>
+          <nav class="footer-links flex flex-wrap items-center gap-3">
+            <a href="/">Home</a>
+            <span class="text-horriver-gray/40">|</span>
+            <a href="/rankings">Rankings</a>
+            <span class="text-horriver-gray/40">|</span>
+            <a href="/peladas">Peladas</a>
+            <span class="text-horriver-gray/40">|</span>
+            <a href="/elenco">Elenco</a>
+            <span class="text-horriver-gray/40">|</span>
+            <a href="/sobre">Sobre</a>
+          </nav>
           <p>
             Projeto feito com
             <span class="text-horriver-orange font-semibold">futebol raiz</span>
-            e muita resenha. ⚽
+            e muita resenha.
           </p>
         </div>
       </footer>
     </div>
 
-    <!-- Script do menu mobile -->
-    <script>
-      (function () {
-        const btn = document.getElementById("mobileMenuBtn");
-        const menu = document.getElementById("mobileMenu");
-        const panel = document.getElementById("mobilePanel");
-        const closeBtn = document.getElementById("mobileClose");
-        const backdrop = document.getElementById("mobileBackdrop");
-
-        function openMenu() {
-          menu.classList.remove("hidden");
-          requestAnimationFrame(() => {
-            panel.classList.remove("animate-slideUp");
-            panel.classList.add("animate-slideDown");
-            btn.classList.add("hamburger-active");
-          });
-          document.body.style.overflow = "hidden";
-        }
-        function closeMenu() {
-          panel.classList.remove("animate-slideDown");
-          panel.classList.add("animate-slideUp");
-          btn.classList.remove("hamburger-active");
-          setTimeout(() => {
-            menu.classList.add("hidden");
-          }, 180);
-          document.body.style.overflow = "";
-        }
-
-        btn && btn.addEventListener("click", openMenu);
-        closeBtn && closeBtn.addEventListener("click", closeMenu);
-        backdrop && backdrop.addEventListener("click", closeMenu);
-        window.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && !menu.classList.contains("hidden")) closeMenu();
-        });
-      })();
-    </script>
+    <button
+      id="scrollTopBtn"
+      type="button"
+      class="scroll-top px-4 py-2 rounded-full border border-horriver-orange/70 bg-black/70 text-[11px] text-horriver-orange"
+      aria-label="Voltar ao topo"
+    >
+      Topo
+    </button>
+    <script src="/js/site.js?v=<%= assetVersion %>" defer></script>
   </body>
 </html>
+
+
+
+
+
+
+
+
+

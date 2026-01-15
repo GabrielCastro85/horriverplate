@@ -1,5 +1,7 @@
 <%
   const hasPlayers = Array.isArray(players) && players.length > 0;
+  const selectedPosition = typeof position !== "undefined" ? position : "all";
+  const queryValue = typeof query !== "undefined" ? query : "";
 
   const positions = [
     "Todas",
@@ -11,20 +13,24 @@
 %>
 
 <section class="space-y-6 animate-fadeIn">
-  <!-- Cabeçalho -->
-  <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+  <!-- Cabecalho -->
+  <header class="page-hero flex flex-col md:flex-row md:items-end md:justify-between gap-4">
     <div class="space-y-2">
-      <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
+      <span class="hero-badge text-horriver-gray">
+        <span class="hero-icon">HP</span>
         Elenco
+      </span>
+      <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
+        Elenco completo
       </h1>
       <p class="text-sm text-horriver-gray max-w-xl">
-        Todos os jogadores cadastrados no Horriver Plate. Acompanhe posição,
-        apelido e um resumo rápido das estatísticas gerais.
+        Todos os jogadores cadastrados no Horriver Plate. Acompanhe posicao,
+        apelido e um resumo rapido das estatisticas gerais.
       </p>
     </div>
 
     <!-- Filtros -->
-    <div class="flex flex-col sm:flex-row gap-3 text-[11px]">
+    <form id="player-filter-form" class="flex flex-col sm:flex-row gap-3 text-[11px]" method="GET" action="/elenco">
       <div class="flex-1 min-w-[180px]">
         <label class="block text-horriver-gray mb-1">
           Buscar jogador
@@ -32,29 +38,34 @@
         <input
           id="player-search"
           type="text"
+          name="q"
           placeholder="Digite um nome ou apelido..."
           class="w-full px-3 py-2 rounded-full bg-black/60 border border-horriver-border
                  text-horriver-light placeholder:text-horriver-gray/60
                  focus:outline-none focus:border-horriver-orange text-xs"
+          value="<%= queryValue %>"
         />
       </div>
 
       <div class="w-full sm:w-40">
         <label class="block text-horriver-gray mb-1">
-          Filtrar por posição
+          Filtrar por posicao
         </label>
         <select
           id="player-position-filter"
+          name="position"
           class="w-full px-3 py-2 rounded-full bg-black/60 border border-horriver-border
                  text-horriver-light text-xs focus:outline-none focus:border-horriver-orange"
         >
           <% positions.forEach((pos) => { %>
             <% const val = pos === "Todas" ? "all" : pos.toLowerCase(); %>
-            <option value="<%= val %>"><%= pos %></option>
+            <option value="<%= val %>" <%= selectedPosition === val ? "selected" : "" %>><%= pos %></option>
           <% }) %>
         </select>
       </div>
-    </div>
+    </form>
+
+    <div id="active-filters" class="flex flex-wrap items-center gap-2 text-[10px] text-horriver-gray"></div>
   </header>
 
   <!-- Lista de jogadores -->
@@ -64,15 +75,13 @@
         Nenhum jogador cadastrado ainda.
       </p>
     <% } else { %>
-      <div class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" data-skeleton="list" id="player-grid">
         <% players.forEach((p) => { %>
           <a
             href="/jogador/<%= p.id %>"
-            class="player-card group relative rounded-3xl overflow-hidden
-                   border border-horriver-red/40 bg-gradient-to-br
-                   from-black/80 via-horriver-dark to-black
-                   shadow-card-soft transition-transform hover:-translate-y-1
-                   hover:shadow-card"
+            class="player-card card-unified group relative rounded-3xl overflow-hidden
+                   bg-gradient-to-br from-black/80 via-horriver-dark to-black
+                   transition-transform hover:-translate-y-1"
             data-name="<%= (p.name + ' ' + (p.nickname || '')).toLowerCase() %>"
             data-position="<%= (p.position || '').toLowerCase() %>"
           >
@@ -86,7 +95,7 @@
               ></div>
             </div>
 
-            <!-- Conteúdo -->
+            <!-- Conteudo -->
             <div class="relative z-10 p-4 flex flex-col gap-3">
               <!-- Topo: avatar + nome -->
               <div class="flex items-center gap-3">
@@ -96,8 +105,12 @@
                 >
                   <% if (p.photoUrl) { %>
                     <img
-                      src="<%= p.photoUrl %>"
+                      src="<%= thumbUrl(p.photoUrl, 96) %>"
+                      srcset="<%= thumbUrl(p.photoUrl, 96) %> 1x, <%= thumbUrl(p.photoUrl, 192) %> 2x"
+                      sizes="48px"
                       alt="<%= p.name %>"
+                      width="48"
+                      height="48"
                       class="h-full w-full object-cover"
                     />
                   <% } else { %>
@@ -122,16 +135,19 @@
                 </div>
               </div>
 
-              <!-- Linha divisória -->
+              <!-- Linha divisoria -->
               <div class="h-px bg-gradient-to-r from-transparent via-horriver-red/60 to-transparent"></div>
 
-              <!-- Stats rápidos -->
+              <!-- Stats rapidos -->
               <div class="grid grid-cols-2 gap-2 text-[10px]">
                 <div
                   class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
                          flex flex-col items-center"
                 >
-                  <p class="text-horriver-gray">Gols</p>
+                  <p class="text-horriver-gray flex items-center gap-1">
+                    <span class="mini-icon">G</span>
+                    Gols
+                  </p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalGoals || 0 %>
                   </p>
@@ -141,7 +157,10 @@
                   class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
                          flex flex-col items-center"
                 >
-                  <p class="text-horriver-gray">Assistências</p>
+                  <p class="text-horriver-gray flex items-center gap-1">
+                    <span class="mini-icon">A</span>
+                    Assistencias
+                  </p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalAssists || 0 %>
                   </p>
@@ -151,7 +170,10 @@
                   class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-border
                          flex flex-col items-center"
                 >
-                  <p class="text-horriver-gray">Presenças</p>
+                  <p class="text-horriver-gray flex items-center gap-1">
+                    <span class="mini-icon">P</span>
+                    Presencas
+                  </p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalMatches || 0 %>
                   </p>
@@ -161,7 +183,10 @@
                   class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-border
                          flex flex-col items-center"
                 >
-                  <p class="text-horriver-gray">Fotos</p>
+                  <p class="text-horriver-gray flex items-center gap-1">
+                    <span class="mini-icon">F</span>
+                    Fotos
+                  </p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalPhotos || 0 %>
                   </p>
@@ -170,6 +195,13 @@
             </div>
           </a>
         <% }) %>
+      </div>
+      <p id="player-empty" class="text-sm text-horriver-gray mt-4 hidden">
+        Nenhum jogador encontrado com esses filtros.
+      </p>
+      <div class="text-[11px] text-horriver-gray mt-4">
+        Exibindo <span id="player-count"><%= players.length %></span> de
+        <span id="player-total"><%= players.length %></span> jogadores
       </div>
     <% } %>
   </section>
@@ -180,10 +212,53 @@
     const searchInput = document.getElementById("player-search");
     const positionSelect = document.getElementById("player-position-filter");
     const cards = Array.from(document.querySelectorAll(".player-card"));
+    const countEl = document.getElementById("player-count");
+    const totalEl = document.getElementById("player-total");
+    const emptyEl = document.getElementById("player-empty");
+    const chipsEl = document.getElementById("active-filters");
+
+    if (totalEl) totalEl.textContent = String(cards.length);
+
+    function renderChips(term, posLabel) {
+      if (!chipsEl) return;
+      chipsEl.innerHTML = "";
+      if (!term && (!posLabel || posLabel.toLowerCase() === "todas")) {
+        chipsEl.classList.add("hidden");
+        return;
+      }
+      chipsEl.classList.remove("hidden");
+      const label = document.createElement("span");
+      label.textContent = "Filtros ativos:";
+      chipsEl.appendChild(label);
+
+      if (term) {
+        const chip = document.createElement("span");
+        chip.className = "px-2 py-1 rounded-full bg-black/60 border border-horriver-border";
+        chip.textContent = `Busca: ${term}`;
+        chipsEl.appendChild(chip);
+      }
+      if (posLabel && posLabel.toLowerCase() !== "todas") {
+        const chip = document.createElement("span");
+        chip.className = "px-2 py-1 rounded-full bg-black/60 border border-horriver-border";
+        chip.textContent = `Posicao: ${posLabel}`;
+        chipsEl.appendChild(chip);
+      }
+    }
+
+    function syncUrl(term, pos) {
+      const params = new URLSearchParams();
+      if (term) params.set("q", term);
+      if (pos && pos !== "all") params.set("position", pos);
+      const queryString = params.toString();
+      const nextUrl = queryString ? `${location.pathname}?${queryString}` : location.pathname;
+      history.replaceState(null, "", nextUrl);
+    }
 
     function applyFilters() {
       const term = (searchInput.value || "").toLowerCase().trim();
       const pos = (positionSelect.value || "all").toLowerCase();
+      const posLabel = positionSelect.options[positionSelect.selectedIndex]?.textContent || "";
+      let visibleCount = 0;
 
       cards.forEach((card) => {
         const name = card.dataset.name || "";
@@ -194,17 +269,31 @@
 
         if (matchesName && matchesPos) {
           card.classList.remove("hidden");
+          visibleCount += 1;
         } else {
           card.classList.add("hidden");
         }
       });
+
+      if (countEl) countEl.textContent = String(visibleCount);
+      if (emptyEl) {
+        emptyEl.classList.toggle("hidden", visibleCount > 0);
+      }
+      renderChips(term, posLabel);
+      syncUrl(term, pos);
     }
 
     if (searchInput) {
-      searchInput.addEventListener("input", applyFilters);
+      searchInput.addEventListener("input", () => {
+        applyFilters();
+      });
     }
     if (positionSelect) {
-      positionSelect.addEventListener("change", applyFilters);
+      positionSelect.addEventListener("change", () => {
+        applyFilters();
+      });
     }
+
+    applyFilters();
   });
 </script>

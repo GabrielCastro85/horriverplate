@@ -4,13 +4,63 @@
     <meta charset="UTF-8" />
     <title><%= title %> | Painel Horriver Plate</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/css/output.css" />
+    <link rel="stylesheet" href="/css/output.css?v=<%= assetVersion %>" />
+    <style>
+      :focus-visible {
+        outline: 2px solid #ff7a1a;
+        outline-offset: 2px;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: rgba(255, 122, 26, 0.8);
+        box-shadow: 0 0 0 2px rgba(255, 122, 26, 0.2);
+      }
+      .admin-toast {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 70;
+        min-width: 220px;
+        max-width: 360px;
+        padding: 0.75rem 1rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 122, 26, 0.6);
+        background: rgba(0, 0, 0, 0.85);
+        color: #ff7a1a;
+        font-size: 12px;
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .admin-toast.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .admin-toast.error {
+        border-color: rgba(248, 113, 113, 0.8);
+        color: #fca5a5;
+      }
+      .field-invalid {
+        border-color: rgba(248, 113, 113, 0.8) !important;
+        box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.18);
+      }
+    </style>
   </head>
   <body class="bg-horriver-dark text-horriver-light">
     <header class="fixed top-0 left-0 right-0 z-50 bg-horriver-dark border-b border-horriver-red/40">
       <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
         <div class="flex items-center gap-2">
-          <img src="/img/logo.png" alt="Horriver Plate" class="h-8 w-8 object-contain" />
+          <img
+            src="/img/logo.png"
+            alt="Horriver Plate"
+            class="h-8 w-8 object-contain"
+            loading="eager"
+            decoding="async"
+            data-eager="true"
+          />
           <div class="flex flex-col leading-tight">
             <span class="font-title text-lg text-horriver-orange">
               Painel do Admin
@@ -49,6 +99,8 @@
       </div>
     </main>
 
+    <div id="adminToast" class="admin-toast" role="status" aria-live="polite"></div>
+
     <script>
       // Scroll suave para âncoras internas
       document.querySelectorAll('a[href^="#"]').forEach((link) => {
@@ -64,6 +116,245 @@
           }
         });
       });
+    </script>
+    <script>
+      (function () {
+        const images = document.querySelectorAll("img");
+        images.forEach((img) => {
+          if (img.dataset.eager === "true") return;
+          if (!img.hasAttribute("loading")) img.loading = "lazy";
+          if (!img.hasAttribute("decoding")) img.decoding = "async";
+        });
+      })();
+    </script>
+    <script>
+      (function () {
+        document.addEventListener(
+          "submit",
+          (event) => {
+            const form = event.target;
+            if (!form || form.tagName !== "FORM") return;
+            if (form.dataset.noSubmitLock === "true") return;
+            const buttons = form.querySelectorAll("button[type='submit']");
+            buttons.forEach((button) => {
+              if (button.disabled) return;
+              const label = button.dataset.submitLabel;
+              if (label) button.textContent = label;
+              button.disabled = true;
+              button.setAttribute("aria-busy", "true");
+              button.classList.add("opacity-70", "cursor-not-allowed");
+            });
+          },
+          true
+        );
+      })();
+    </script>
+    <script>
+      (function () {
+        const toastEl = document.getElementById("adminToast");
+        const showToast = (message, tone = "success") => {
+          if (!toastEl || !message) return;
+          toastEl.textContent = message;
+          toastEl.classList.toggle("error", tone === "error");
+          toastEl.classList.add("is-visible");
+          clearTimeout(showToast._timer);
+          showToast._timer = setTimeout(() => {
+            toastEl.classList.remove("is-visible");
+          }, 3200);
+        };
+
+        const storedToast = sessionStorage.getItem("adminToast");
+        if (storedToast) {
+          try {
+            const payload = JSON.parse(storedToast);
+            showToast(payload.message, payload.tone || "success");
+          } catch (err) {
+            // ignore
+          }
+          sessionStorage.removeItem("adminToast");
+        }
+
+        const getDraftKey = (form) =>
+          `draft:${location.pathname}:${form.getAttribute("action") || ""}`;
+
+        const serializeForm = (form) => {
+          const data = {};
+          const fields = form.querySelectorAll("input, select, textarea");
+          fields.forEach((field) => {
+            if (!field.name) return;
+            const type = field.type;
+            if (type === "file" || type === "password") return;
+            if (type === "checkbox") {
+              data[field.name] = field.checked;
+              return;
+            }
+            if (type === "radio") {
+              if (field.checked) data[field.name] = field.value;
+              return;
+            }
+            data[field.name] = field.value;
+          });
+          return data;
+        };
+
+        const restoreForm = (form) => {
+          const key = getDraftKey(form);
+          const raw = localStorage.getItem(key);
+          if (!raw) return;
+          let data = null;
+          try {
+            data = JSON.parse(raw);
+          } catch (err) {
+            return;
+          }
+          if (!data || typeof data !== "object") return;
+          const fields = form.querySelectorAll("input, select, textarea");
+          let restored = false;
+          fields.forEach((field) => {
+            if (!field.name || !(field.name in data)) return;
+            const type = field.type;
+            if (type === "file" || type === "password") return;
+            const stored = data[field.name];
+            if (type === "checkbox") {
+              if (!field.checked && stored) {
+                field.checked = true;
+                restored = true;
+              }
+              return;
+            }
+            if (type === "radio") {
+              if (stored === field.value && !field.checked) {
+                field.checked = true;
+                restored = true;
+              }
+              return;
+            }
+            if (!field.value && stored) {
+              field.value = stored;
+              restored = true;
+            }
+          });
+          if (restored) {
+            showToast("Rascunho restaurado.", "success");
+          }
+        };
+
+        const autosaveForms = document.querySelectorAll("form[data-autosave='true']");
+        autosaveForms.forEach((form) => {
+          restoreForm(form);
+          let timer = null;
+          form.addEventListener("input", () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+              const key = getDraftKey(form);
+              localStorage.setItem(key, JSON.stringify(serializeForm(form)));
+            }, 300);
+          });
+        });
+
+        document.addEventListener(
+          "submit",
+          (event) => {
+            const form = event.target;
+            if (!form || form.tagName !== "FORM") return;
+            const submitter = event.submitter;
+            const message =
+              (submitter && submitter.dataset.toast) ||
+              form.dataset.toast ||
+              "";
+            const tone =
+              (submitter && submitter.dataset.toastTone) ||
+              form.dataset.toastTone ||
+              "success";
+            if (message) {
+              sessionStorage.setItem(
+                "adminToast",
+                JSON.stringify({ message, tone })
+              );
+              showToast(message, tone);
+            }
+
+            if (form.dataset.autosave === "true") {
+              localStorage.removeItem(getDraftKey(form));
+            }
+          },
+          true
+        );
+
+        const markInvalid = (field) => {
+          if (!field) return;
+          const parent = field.closest("label") || field.parentElement;
+          if (!parent) return;
+          field.classList.add("field-invalid");
+          if (!parent.querySelector(".field-error")) {
+            const error = document.createElement("span");
+            error.className = "field-error text-[10px] text-red-400 mt-1";
+            error.textContent = "Campo obrigatorio.";
+            parent.appendChild(error);
+          }
+        };
+
+        const clearInvalid = (field) => {
+          if (!field) return;
+          field.classList.remove("field-invalid");
+          const parent = field.closest("label") || field.parentElement;
+          const error = parent ? parent.querySelector(".field-error") : null;
+          if (error) error.remove();
+        };
+
+        document.querySelectorAll("input[required], select[required], textarea[required]").forEach((field) => {
+          field.addEventListener("blur", () => {
+            if (!field.value) {
+              markInvalid(field);
+            } else {
+              clearInvalid(field);
+            }
+          });
+          field.addEventListener("input", () => {
+            if (field.value) clearInvalid(field);
+          });
+        });
+      })();
+    </script>
+    <script>
+      (function () {
+        const endpoint = "/monitoring/frontend-error";
+        const send = (payload) => {
+          const body = JSON.stringify(payload);
+          if (navigator.sendBeacon) {
+            const blob = new Blob([body], { type: "application/json" });
+            navigator.sendBeacon(endpoint, blob);
+          } else {
+            fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body,
+              keepalive: true,
+            }).catch(() => {});
+          }
+        };
+
+        window.addEventListener("error", (event) => {
+          send({
+            type: "error",
+            message: event.message,
+            url: location.href,
+            stack: event.error && event.error.stack ? String(event.error.stack).slice(0, 1500) : undefined,
+            userAgent: navigator.userAgent,
+          });
+        });
+
+        window.addEventListener("unhandledrejection", (event) => {
+          const reason = event.reason || {};
+          send({
+            type: "unhandledrejection",
+            message: reason.message ? String(reason.message) : String(reason),
+            url: location.href,
+            stack: reason.stack ? String(reason.stack).slice(0, 1500) : undefined,
+            userAgent: navigator.userAgent,
+          });
+        });
+      })();
     </script>
   </body>
 </html>

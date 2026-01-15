@@ -29,10 +29,28 @@
   </a>
 </div>
 
+<div class="sticky top-20 z-40 bg-black/70 border border-horriver-border rounded-2xl px-4 py-2 mb-4">
+  <div class="flex flex-wrap items-center justify-between gap-3 text-[11px]">
+    <span class="text-horriver-gray uppercase tracking-[0.2em]">Acoes rapidas</span>
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="#stats" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Stats</a>
+      <a href="#votacao" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Votacao</a>
+      <a href="#sorteador" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Sorteador</a>
+      <button type="submit" form="statsForm" class="px-3 py-1 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Salvar stats</button>
+      <a href="/admin" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Cancelar</a>
+    </div>
+  </div>
+</div>
+
+<div id="stats" class="scroll-mt-20"></div>
+
 <form
   action="/admin/matches/<%= match.id %>/stats/bulk"
   method="POST"
+  id="statsForm"
   class="space-y-4"
+  data-autosave="true"
+  data-toast="Estatisticas salvas."
 >
   <div class="bg-black/40 border border-horriver-border rounded-xl p-3 text-[12px] text-horriver-gray">
     <label class="flex flex-col gap-1 max-w-[240px]">
@@ -229,6 +247,8 @@
       action="/admin/matches/<%= match.id %>/vote-session"
       method="POST"
       class="flex items-center gap-2 text-[11px]"
+      data-autosave="true"
+      data-toast="Links de votacao gerados."
     >
       <label class="flex items-center gap-1 text-horriver-gray">
         Expira em (horas):
@@ -259,6 +279,7 @@
         action="/admin/matches/<%= match.id %>/apply-votes"
         method="POST"
         class="flex items-center gap-2"
+        data-toast="Votos aplicados."
         onsubmit="return confirm('Aplicar notas baseadas na votação? Não sobrescreve notas já lançadas.');"
       >
         <button
@@ -276,6 +297,7 @@
         action="/admin/matches/<%= match.id %>/close-votes"
         method="POST"
         class="flex items-center gap-2"
+        data-toast="Votacao encerrada."
         onsubmit="return confirm('Encerrar a votação agora? Links restantes serão bloqueados.');"
       >
         <button
@@ -361,7 +383,7 @@
 
 <!-- ========================= -->
 <!-- Sorteador de times (beta) -->
-<section class="mt-10 space-y-4">
+<section id="sorteador" class="mt-10 space-y-4">
   <div class="flex items-center justify-between">
     <div>
       <h2 class="text-lg md:text-xl font-semibold text-horriver-light">

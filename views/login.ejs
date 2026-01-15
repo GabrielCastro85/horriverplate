@@ -7,6 +7,9 @@
         src="/img/logo.jpg"
         alt="Horriver Plate"
         class="h-14 w-14 rounded-full border border-horriver-red/60 object-contain"
+        loading="eager"
+        decoding="async"
+        data-eager="true"
       />
       <h1 class="font-title text-2xl text-horriver-orange">
         Painel Admin
@@ -47,7 +50,8 @@
 
       <button
         type="submit"
-        class="w-full mt-2 py-2 text-xs rounded-full bg-gradient-horriver text-horriver-light hover:opacity-90 transition"
+        data-submit-label="Entrando..."
+        class="w-full mt-2 py-2 text-xs rounded-full bg-gradient-horriver text-horriver-light hover:opacity-90 transition active:scale-[0.98]"
       >
         Entrar
       </button>

@@ -3,6 +3,20 @@ const router = express.Router();
 const prisma = require("../utils/db");
 const bcrypt = require("bcryptjs");
 const { generateToken } = require("../utils/auth");
+const rateLimit = require("express-rate-limit");
+
+const loginLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).render("login", {
+      title: "Login",
+      error: "Muitas tentativas. Tente novamente em alguns minutos.",
+    });
+  },
+});
 
 // ===============================
 // GET /login  → tela de login
@@ -22,7 +36,7 @@ router.get("/login", (req, res) => {
 // ===============================
 // POST /login  → autenticação
 // ===============================
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {

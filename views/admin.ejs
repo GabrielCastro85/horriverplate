@@ -11,6 +11,63 @@
     <!-- Botões de reset removidos para este admin -->
   </header>
 
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-2">
+      <h3 class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5</h3>
+      <p class="text-sm text-horriver-light font-semibold">Artilheiros do mes</p>
+      <p class="text-[11px] text-horriver-gray">Mes: <%= monthLabel %></p>
+      <% if (monthTopGoals && monthTopGoals.length) { %>
+        <div class="space-y-2 text-xs text-horriver-gray">
+          <% monthTopGoals.forEach((row, idx) => { %>
+            <div class="flex items-center justify-between">
+              <span><%= idx + 1 %>. <%= row.player.name %></span>
+              <span class="text-horriver-orange"><%= row.goals || 0 %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="text-xs text-horriver-gray">Sem dados neste mes.</p>
+      <% } %>
+    </div>
+
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-2">
+      <h3 class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5</h3>
+      <p class="text-sm text-horriver-light font-semibold">Assistencias do mes</p>
+      <p class="text-[11px] text-horriver-gray">Mes: <%= monthLabel %></p>
+      <% if (monthTopAssists && monthTopAssists.length) { %>
+        <div class="space-y-2 text-xs text-horriver-gray">
+          <% monthTopAssists.forEach((row, idx) => { %>
+            <div class="flex items-center justify-between">
+              <span><%= idx + 1 %>. <%= row.player.name %></span>
+              <span class="text-horriver-orange"><%= row.assists || 0 %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="text-xs text-horriver-gray">Sem dados neste mes.</p>
+      <% } %>
+    </div>
+
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-2">
+      <h3 class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5</h3>
+      <p class="text-sm text-horriver-light font-semibold">Notas do mes</p>
+      <p class="text-[11px] text-horriver-gray">Mes: <%= monthLabel %></p>
+      <% const fmtRating = (val) => (val || val === 0 ? Number(val).toFixed(2).replace(".", ",") : "0,00"); %>
+      <% if (monthTopRatings && monthTopRatings.length) { %>
+        <div class="space-y-2 text-xs text-horriver-gray">
+          <% monthTopRatings.forEach((row, idx) => { %>
+            <div class="flex items-center justify-between">
+              <span><%= idx + 1 %>. <%= row.player.name %></span>
+              <span class="text-horriver-orange"><%= fmtRating(row.avgRating) %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="text-xs text-horriver-gray">Sem dados neste mes.</p>
+      <% } %>
+    </div>
+  </section>
+
   <!-- Peladas -->
   <section id="peladas" class="scroll-mt-16 space-y-4">
     <div class="flex items-center justify-between">
@@ -22,7 +79,7 @@
       <!-- Nova pelada -->
       <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold text-lg text-horriver-light">Nova Pelada</h3>
-        <form id="newMatchForm" action="/admin/matches" method="POST" class="space-y-3">
+        <form id="newMatchForm" action="/admin/matches" method="POST" class="space-y-3" data-autosave="true" data-toast="Pelada criada.">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label class="flex flex-col gap-1 text-sm text-horriver-gray">
               Data
@@ -92,6 +149,14 @@
           <h3 class="font-semibold text-lg text-horriver-light">Historico de Peladas</h3>
           <span class="text-xs text-horriver-gray">Role para ver meses anteriores</span>
         </div>
+        <div class="mb-2">
+          <input
+            id="matchSearch"
+            type="text"
+            placeholder="Buscar pelada..."
+            class="w-full bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light text-xs"
+          />
+        </div>
         <div class="space-y-3 max-h-[520px] overflow-y-auto pr-1 text-sm">
           <% if (groupedMatches.length > 0) { %>
             <% groupedMatches.forEach(group => { %>
@@ -99,7 +164,7 @@
                 <p class="text-horriver-gray uppercase text-[11px] tracking-wide"><%= group.group %></p>
                 <div class="space-y-2">
                   <% group.matches.forEach(match => { %>
-                    <div class="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-horriver-border/60">
+                    <div class="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-horriver-border/60" data-match-item>
                       <div>
                         <p class="text-horriver-light font-semibold">
                           <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }) %>
@@ -140,7 +205,7 @@
       <!-- Craque da semana -->
       <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold text-lg text-horriver-light">Craque da Semana</h3>
-        <form action="/admin/weekly-awards" method="POST" enctype="multipart/form-data" class="space-y-3">
+        <form action="/admin/weekly-awards" method="POST" enctype="multipart/form-data" class="space-y-3" data-autosave="true" data-toast="Destaque da semana salvo.">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-horriver-gray">
             <label class="flex flex-col gap-1">
               Data de inicio
@@ -189,7 +254,7 @@
       <!-- Craque do mes -->
       <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold text-lg text-horriver-light">Craque do Mes</h3>
-        <form action="/admin/monthly-awards" method="POST" class="space-y-3">
+        <form action="/admin/monthly-awards" method="POST" class="space-y-3" data-autosave="true" data-toast="Craque do mes salvo.">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-horriver-gray">
             <label class="flex flex-col gap-1">
               Mes
@@ -317,7 +382,7 @@
       <!-- novo jogador -->
       <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold text-lg text-horriver-light">Novo Jogador</h3>
-        <form action="/admin/players" method="POST" enctype="multipart/form-data" class="space-y-3 text-sm text-horriver-gray">
+        <form action="/admin/players" method="POST" enctype="multipart/form-data" class="space-y-3 text-sm text-horriver-gray" data-autosave="true" data-toast="Jogador adicionado.">
           <label class="flex flex-col gap-1">
             Nome completo
             <input type="text" name="name" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
@@ -354,10 +419,25 @@
           <h3 class="font-semibold text-lg text-horriver-light">Jogadores cadastrados</h3>
           <span class="text-xs text-horriver-gray"><%= players.length %> total</span>
         </div>
+        <div class="mb-2 space-y-2">
+          <input
+            id="playerSearch"
+            type="text"
+            placeholder="Buscar jogador..."
+            class="w-full bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light text-xs"
+          />
+          <div class="flex flex-wrap gap-2 text-[11px]">
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light bg-horriver-orange text-black" data-pos="all">Todos</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="GOL">GOL</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="ZAG">ZAG</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="MEI">MEI</button>
+            <button type="button" class="player-filter px-3 py-1 rounded-full border border-horriver-border text-horriver-light" data-pos="ATA">ATA</button>
+          </div>
+        </div>
         <div class="space-y-2 max-h-[520px] overflow-y-auto pr-1 text-sm">
           <% if (players.length > 0) { %>
             <% players.forEach(player => { %>
-              <div class="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-horriver-border/60">
+              <div class="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-horriver-border/60" data-player-item>
                 <div class="flex items-center gap-3">
                   <img src="<%= player.photoUrl || '/img/logo-64x64.svg' %>" class="w-10 h-10 rounded-full object-cover bg-horriver-dark" />
                   <div>
@@ -366,7 +446,7 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <span class="text-[11px] px-2 py-1 rounded-full bg-horriver-dark text-horriver-light uppercase"><%= player.position %></span>
+                  <span class="text-[11px] px-2 py-1 rounded-full bg-horriver-dark text-horriver-light uppercase" data-player-position="<%= player.position %>"><%= player.position %></span>
                   <a href="/admin/players/<%= player.id %>/edit" class="text-[12px] text-horriver-orange hover:underline">Editar</a>
                   <form action="/admin/players/<%= player.id %>/delete" method="POST" onsubmit="return confirm('Excluir jogador e todo o histórico?');">
                     <button type="submit" class="text-red-500 hover:text-red-300 text-[12px]">Excluir</button>
@@ -400,3 +480,51 @@
   })();
 </script>
 
+
+<script>
+  (function () {
+    const matchSearch = document.getElementById("matchSearch");
+    const matchItems = Array.from(document.querySelectorAll("[data-match-item]"));
+
+    const applyMatchFilter = () => {
+      const term = (matchSearch?.value || "").toLowerCase().trim();
+      matchItems.forEach((item) => {
+        const hay = item.textContent.toLowerCase();
+        item.classList.toggle("hidden", term && !hay.includes(term));
+      });
+    };
+
+    if (matchSearch) {
+      matchSearch.addEventListener("input", applyMatchFilter);
+    }
+
+    const playerSearch = document.getElementById("playerSearch");
+    const playerItems = Array.from(document.querySelectorAll("[data-player-item]"));
+    const playerFilters = Array.from(document.querySelectorAll(".player-filter"));
+    let activePos = "all";
+
+    const applyPlayerFilters = () => {
+      const term = (playerSearch?.value || "").toLowerCase().trim();
+      playerItems.forEach((item) => {
+        const hay = item.textContent.toLowerCase();
+        const pos = item.querySelector("[data-player-position]")?.getAttribute("data-player-position") || "";
+        const matchTerm = !term || hay.includes(term);
+        const matchPos = activePos === "all" || pos === activePos;
+        item.classList.toggle("hidden", !(matchTerm && matchPos));
+      });
+    };
+
+    playerFilters.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activePos = btn.dataset.pos || "all";
+        playerFilters.forEach((b) => b.classList.remove("bg-horriver-orange", "text-black"));
+        btn.classList.add("bg-horriver-orange", "text-black");
+        applyPlayerFilters();
+      });
+    });
+
+    if (playerSearch) {
+      playerSearch.addEventListener("input", applyPlayerFilters);
+    }
+  })();
+</script>

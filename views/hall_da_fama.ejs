@@ -86,7 +86,12 @@
           <div class="absolute -inset-4 bg-horriver-orange/15 blur-3xl rounded-full"></div>
           <div class="relative w-full h-64 md:h-80 overflow-hidden rounded-2xl border-2 border-horriver-orange shadow-card-soft bg-black/60">
             <% if (hero.photoUrl) { %>
-              <img src="<%= hero.photoUrl %>" class="w-full h-full object-cover object-top" />
+              <img
+                src="<%= thumbUrl(hero.photoUrl, 480) %>"
+                srcset="<%= thumbUrl(hero.photoUrl, 480) %> 1x, <%= thumbUrl(hero.photoUrl, 960) %> 2x"
+                sizes="240px"
+                class="w-full h-full object-cover object-top"
+              />
             <% } else { %>
               <div class="w-full h-full bg-black/50"></div>
             <% } %>
@@ -107,7 +112,12 @@
           <div class="mt-3 flex items-center gap-3">
             <div class="w-14 h-14 rounded-xl overflow-hidden border border-horriver-orange/70">
               <% if (award.player.photoUrl) { %>
-                <img src="<%= award.player.photoUrl %>" class="w-full h-full object-cover" />
+                <img
+                  src="<%= thumbUrl(award.player.photoUrl, 240) %>"
+                  srcset="<%= thumbUrl(award.player.photoUrl, 240) %> 1x, <%= thumbUrl(award.player.photoUrl, 480) %> 2x"
+                  sizes="120px"
+                  class="w-full h-full object-cover"
+                />
               <% } else { %>
                 <div class="w-full h-full bg-black/40"></div>
               <% } %>
@@ -138,7 +148,12 @@
       <div class="card-inner rounded-3xl p-5 border border-horriver-border/60 bg-black/40 shadow-card-soft flex items-center gap-4">
         <div class="w-16 h-16 rounded-xl overflow-hidden border border-horriver-orange/60">
           <% if (award && award.player && award.player.photoUrl) { %>
-            <img src="<%= award.player.photoUrl %>" class="w-full h-full object-cover" />
+            <img
+              src="<%= thumbUrl(award.player.photoUrl, 280) %>"
+              srcset="<%= thumbUrl(award.player.photoUrl, 280) %> 1x, <%= thumbUrl(award.player.photoUrl, 560) %> 2x"
+              sizes="140px"
+              class="w-full h-full object-cover"
+            />
           <% } else { %>
             <div class="w-full h-full bg-black/40"></div>
           <% } %>
@@ -209,7 +224,12 @@
           <div class="card-inner rounded-3xl p-4 border border-horriver-border/60 bg-black/40 shadow-card-soft flex gap-3">
             <div class="w-16 h-16 rounded-xl overflow-hidden border border-horriver-orange/50 bg-black/50">
               <% if (p.photoUrl) { %>
-                <img src="<%= p.photoUrl %>" class="w-full h-full object-cover" />
+                <img
+                  src="<%= thumbUrl(p.photoUrl, 200) %>"
+                  srcset="<%= thumbUrl(p.photoUrl, 200) %> 1x, <%= thumbUrl(p.photoUrl, 400) %> 2x"
+                  sizes="100px"
+                  class="w-full h-full object-cover"
+                />
               <% } else { %>
                 <div class="w-full h-full flex items-center justify-center text-horriver-gray text-xs">Sem foto</div>
               <% } %>

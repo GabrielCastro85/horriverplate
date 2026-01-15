@@ -1,11 +1,11 @@
-ï»¿<!-- CSS do Cropper (somente usado no admin) -->
+<!-- CSS do Cropper (somente usado no admin) -->
 <link
   rel="stylesheet"
   href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css"
 />
 
 <%
-  // controla exibiÃÂ§ÃÂ£o do botÃÂ£o de recalcular (virÃÂ¡ da rota /admin)
+  // controla exibicao do botao de recalcular (vira da rota /admin)
   const showResetButton =
     typeof showReset !== "undefined" ? !!showReset : false;
 %>
@@ -21,13 +21,13 @@
           Painel do Administrador
         </h1>
         <p class="text-[11px] md:text-xs text-horriver-gray/80 mt-1">
-          Gerencie peladas, jogadores, destaques da semana, craque do mÃÂªs e a premiaÃÂ§ÃÂ£o da temporada.
+          Gerencie peladas, jogadores, destaques da semana, craque do mes e a premiacao da temporada.
         </p>
       </div>
 
       <div class="flex items-center gap-2 text-[11px] md:text-xs">
         <span class="px-3 py-1 rounded-full border border-horriver-border bg-black/50 text-horriver-gray">
-          Ambiente restrito Ã¢â¬Â¢ Admin
+          Ambiente restrito - Admin
         </span>
       </div>
     </div>
@@ -45,7 +45,7 @@
             Nova pelada
           </h2>
           <span class="text-[11px] text-horriver-gray/70">
-            Use este card em toda terÃÂ§a.
+            Use este card em toda terca.
           </span>
         </div>
 
@@ -64,12 +64,12 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
-              DescriÃÂ§ÃÂ£o (opcional)
+              Descricao (opcional)
             </label>
             <input
               type="text"
               name="description"
-              placeholder="ex: Pelada da terÃÂ§a ÃÂ  noite"
+              placeholder="ex: Pelada da terca a noite"
               class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
             />
           </div>
@@ -111,7 +111,7 @@
             type="button"
             class="hidden text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
           >
-            Cancelar ediÃÂ§ÃÂ£o
+            Cancelar edicao
           </button>
         </div>
 
@@ -155,7 +155,7 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
-              PosiÃÂ§ÃÂ£o
+              Posicao
             </label>
             <select
               name="position"
@@ -184,7 +184,7 @@
               class="block w-full text-[11px] md:text-xs text-horriver-gray"
             />
             <p class="text-[10px] text-horriver-gray/70">
-              Aceita JPG/PNG, atÃÂ© 5MB. Deixe vazio para manter a foto atual.
+              Aceita JPG/PNG, ate 5MB. Deixe vazio para manter a foto atual.
             </p>
           </div>
 
@@ -214,9 +214,7 @@
           class="inline-flex items-center gap-1 text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
           data-collapse-trigger="players-list"
         >
-          <span
-            class="inline-block w-4 text-center"
-          >Ã¢âÂ¼</span>
+          <span class="inline-block w-4 text-center">v</span>
           <span data-collapse-label-players>Mostrar lista</span>
         </button>
       <% } %>
@@ -239,8 +237,8 @@
                 <tr class="border-b border-horriver-border/70 text-horriver-gray/80">
                   <th class="py-2 pr-3 text-left font-normal">Jogador</th>
                   <th class="py-2 pr-3 text-left font-normal">Apelido</th>
-                  <th class="py-2 pr-3 text-left font-normal">PosiÃÂ§ÃÂ£o</th>
-                  <th class="py-2 pr-3 text-left font-normal">AÃÂ§ÃÂµes</th>
+                  <th class="py-2 pr-3 text-left font-normal">Posicao</th>
+                  <th class="py-2 pr-3 text-left font-normal">Acoes</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,7 +285,7 @@
                         <form
                           action="/admin/players/<%= p.id %>/delete"
                           method="POST"
-                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estatÃÂ­sticas.');"
+                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estatisticas.');"
                         >
                           <button
                             type="submit"
@@ -322,7 +320,7 @@
           class="inline-flex items-center gap-1 text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
           data-collapse-trigger="matches-list"
         >
-          <span class="inline-block w-4 text-center">Ã¢âÂ¼</span>
+            <span class="inline-block w-4 text-center">v</span>
           <span data-collapse-label-matches>Mostrar lista</span>
         </button>
       <% } %>
@@ -352,9 +350,9 @@
                   <thead>
                     <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
                       <th class="py-2 pr-4 text-left font-normal">Data</th>
-                      <th class="py-2 pr-4 text-left font-normal">DescriÃÂ§ÃÂ£o</th>
+                      <th class="py-2 pr-4 text-left font-normal">Descricao</th>
                       <th class="py-2 pr-4 text-left font-normal">Vencedor</th>
-                      <th class="py-2 pr-4 text-left font-normal">AÃÂ§ÃÂµes</th>
+                      <th class="py-2 pr-4 text-left font-normal">Acoes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -376,7 +374,7 @@
                             href="/admin/matches/<%= match.id %>"
                             class="text-[11px] text-horriver-orange hover:underline"
                           >
-                            EstatÃÂ­sticas
+                            Estatisticas
                           </a>
 
                           <form
@@ -406,7 +404,7 @@
   </section>
 
   <!-- =====================================================
-       DESTAQUE DA SEMANA & CRAQUE DO MÃÅ S
+       DESTAQUE DA SEMANA & CRAQUE DO MES
   ====================================================== -->
   <section class="grid lg:grid-cols-2 gap-8">
     <!-- DESTAQUE DA SEMANA -->
@@ -426,7 +424,7 @@
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Semana (data de inÃÂ­cio)
+            Semana (data de inicio)
           </label>
           <input
             id="weekly_weekStart"
@@ -486,10 +484,10 @@
             class="block w-full text-[11px] md:text-xs text-horriver-gray"
           />
           <p class="text-[10px] text-horriver-gray/70">
-            Assim que vocÃÂª escolher uma imagem, o editor de corte aparece logo abaixo.
+            Assim que voce escolher uma imagem, o editor de corte aparece logo abaixo.
           </p>
 
-          <!-- ÃÂrea de crop -->
+          <!-- Area de crop -->
           <div
             id="teamPhotoCropContainer"
             class="mt-2 hidden space-y-2"
@@ -503,7 +501,7 @@
               <img
                 id="teamPhotoCropImage"
                 class="max-w-full block"
-                alt="PrÃÂ©-visualizaÃÂ§ÃÂ£o do corte"
+                alt="Pre-visualizacao do corte"
               />
             </div>
             <button
@@ -517,7 +515,7 @@
               id="teamPhotoCropDone"
               class="text-[10px] text-horriver-gray/70 hidden"
             >
-              Corte aplicado! A imagem serÃÂ¡ enviada jÃÂ¡ recortada.
+              Corte aplicado! A imagem sera enviada ja recortada.
             </p>
           </div>
         </div>
@@ -530,10 +528,10 @@
         </button>
       </form>
 
-      <!-- Lista ÃÂºltimos destaques -->
+      <!-- Lista Ultimos destaques -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          ÃÅ¡ltimos destaques
+          Ultimos destaques
         </h3>
 
         <% if (!weeklyAwards.length) { %>
@@ -558,7 +556,7 @@
                     <span class="text-horriver-light">
                       <%= w.bestPlayer
                         ? w.bestPlayer.name + (w.bestPlayer.nickname ? " (" + w.bestPlayer.nickname + ")" : "")
-                        : "Ã¢â¬â"
+                        : "-"
                       %>
                     </span>
                   </p>
@@ -596,11 +594,11 @@
       </div>
     </div>
 
-    <!-- CRAQUE DO MÃÅ S -->
+    <!-- CRAQUE DO MES -->
     <div class="card-inner rounded-2xl p-6 md:p-7 space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-          Craque do mÃÂªs
+          Craque do mes
         </h2>
       </div>
 
@@ -612,7 +610,7 @@
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            MÃÂªs
+            mes
           </label>
           <select
             id="monthly_month"
@@ -623,7 +621,7 @@
             <option value="">Selecione</option>
             <option value="1">Janeiro</option>
             <option value="2">Fevereiro</option>
-            <option value="3">MarÃÂ§o</option>
+            <option value="3">Marco</option>
             <option value="4">Abril</option>
             <option value="5">Maio</option>
             <option value="6">Junho</option>
@@ -652,7 +650,7 @@
 
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Craque do mÃÂªs (opcional)
+            Craque do mes (opcional)
           </label>
           <select
             id="monthly_craque"
@@ -672,19 +670,19 @@
           type="submit"
           class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Salvar craque do mÃÂªs
+          Salvar craque do mes
         </button>
       </form>
 
-      <!-- Lista ÃÂºltimos craques do mÃÂªs -->
+      <!-- Lista Ultimos craques do mes -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          ÃÅ¡ltimos craques do mÃÂªs
+          Ultimos craques do mes
         </h3>
 
         <% if (!monthlyAwards.length) { %>
           <p class="text-[11px] text-horriver-gray/70">
-            Nenhum craque do mÃÂªs cadastrado.
+            Nenhum craque do mes cadastrado.
           </p>
         <% } else { %>
           <ul class="space-y-2 text-[11px] md:text-xs">
@@ -703,7 +701,7 @@
                     <span class="text-horriver-light">
                       <%= m.craque
                         ? m.craque.name + (m.craque.nickname ? " (" + m.craque.nickname + ")" : "")
-                        : "Ã¢â¬â"
+                        : "-"
                       %>
                     </span>
                   </p>
@@ -724,7 +722,7 @@
                   <form
                     action="/admin/monthly-awards/<%= m.id %>/delete"
                     method="POST"
-                    onsubmit="return confirm('Remover esse craque do mÃÂªs?');"
+                    onsubmit="return confirm('Remover esse craque do mes?');"
                   >
                     <button
                       type="submit"
@@ -743,24 +741,24 @@
   </section>
 
   <!-- =====================================================
-       PREMIAÃâ¡ÃÆO DA TEMPORADA
+       PREMIACAO DA TEMPORADA
   ====================================================== -->
   <section class="pt-4 border-t border-horriver-border/60">
     <div class="card-inner rounded-2xl p-5 md:p-6 space-y-4">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-            PremiaÃÂ§ÃÂ£o da temporada
+            premiacao da temporada
           </h2>
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Cadastre os prÃÂªmios de fim de ano (melhor jogador, artilheiro, por posiÃÂ§ÃÂ£o, etc).
+            Cadastre os premios de fim de ano (melhor jogador, artilheiro, por posicao, etc).
           </p>
         </div>
         <a
           href="/admin/premiacao"
           class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Gerenciar premiaÃÂ§ÃÂ£o da temporada
+          Gerenciar premiacao da temporada
         </a>
       </div>
 
@@ -781,7 +779,7 @@
       <% if (hasSeasonAwards && latestAwards.length) { %>
         <div class="mt-2 space-y-3">
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            CampeÃÂµes atuais da temporada
+            Campeoes atuais da temporada
             <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
           </p>
           <div class="overflow-x-auto text-[11px] md:text-xs">
@@ -802,7 +800,7 @@
                       <% if (a.player) { %>
                         <%= a.player.name %><% if (a.player.nickname) { %> (<%= a.player.nickname %>)<% } %>
                       <% } else { %>
-                        Ã¢â¬â
+                        -
                       <% } %>
                     </td>
                   </tr>
@@ -813,15 +811,15 @@
         </div>
       <% } else { %>
         <p class="text-[11px] md:text-xs text-horriver-gray/80">
-          Nenhuma premiaÃÂ§ÃÂ£o cadastrada ainda. Clique em "Gerenciar premiaÃÂ§ÃÂ£o da temporada" para comeÃÂ§ar.
+          Nenhuma premiacao cadastrada ainda. Clique em "Gerenciar premiacao da temporada" para comecar.
         </p>
       <% } %>
     </div>
   </section>
 
   <!-- =====================================================
-       BOTÃÆO OCULTO: REINICIAR TOTAIS
-       (sÃÂ³ aparece se showReset === true vindo da rota)
+       BOTAO OCULTO: REINICIAR TOTAIS
+       (so aparece se showReset === true vindo da rota)
   ====================================================== -->
   <% if (showResetButton) { %>
     <section class="pt-4 border-t border-horriver-border/60">
@@ -829,7 +827,7 @@
         method="POST"
         action="/admin/recalculate-totals"
         class="inline"
-        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estatÃÂ­sticas.');"
+        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estatisticas.');"
       >
         <button
           type="submit"
@@ -846,7 +844,7 @@
 </div>
 
 <!-- =====================================================
-     SCRIPTS: CROPPER + LÃâGICA DO PAINEL
+     SCRIPTS: CROPPER + LOGICA DO PAINEL
 ====================================================== -->
 <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 
@@ -886,8 +884,8 @@
       playerForm.setAttribute("action", "/admin/players/" + id + "/edit");
       
       playerFormTitle.textContent = "Editar jogador";
-      playerFormHint.textContent = "Editando o jogador selecionado. Envie nova foto se quiser trocar; deixe vazio para manter a atual. Clique em \"Cancelar ediÃ§Ã£o\" para voltar ao modo de cadastro.";
-      playerSubmit.textContent = "Salvar alteraÃÂ§ÃÂµes";
+      playerFormHint.textContent = "Editando o jogador selecionado. Envie nova foto se quiser trocar; deixe vazio para manter a atual. Clique em \"Cancelar edi��o\" para voltar ao modo de cadastro.";
+      playerSubmit.textContent = "Salvar alteracoes";
       playerCancelEdit.classList.remove("hidden");
       if (playerPhotoBlock) playerPhotoBlock.classList.remove("hidden");
 
@@ -914,7 +912,7 @@
       setCreateMode();
     });
 
-    // comeÃÂ§a em modo criar
+    // comeca em modo criar
     setCreateMode();
 
     // ============ EDITAR WEEKLY ============
@@ -989,7 +987,7 @@
 
           if (typeof Cropper === "undefined") {
             alert(
-              "Ferramenta de corte nÃÂ£o carregou. Verifique sua conexÃÂ£o com a internet."
+              "Ferramenta de corte nao carregou. Verifique sua conexao com a internet."
             );
             return;
           }
@@ -1060,7 +1058,7 @@
         labelEl.textContent = hidden ? "Mostrar lista" : "Esconder lista";
         const iconSpan = trigger.querySelector("span:first-child");
         if (iconSpan) {
-          iconSpan.textContent = hidden ? "Ã¢âÂ¼" : "Ã¢âÂ²";
+          iconSpan.textContent = hidden ? "v" : "^";
         }
       }
 
@@ -1076,4 +1074,11 @@
     setupCollapse("matches-list", "matches");
   })();
 </script>
+
+
+
+
+
+
+
 

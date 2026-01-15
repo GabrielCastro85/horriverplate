@@ -5,6 +5,24 @@ const prisma = require("../utils/db");
 const { computeOverallFromEntries } = require("../utils/overall");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
+const cache = new Map();
+const CACHE_TTL_MS = 60 * 1000;
+
+function getCache(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCache(key, value) {
+  cache.set(key, { value, timestamp: Date.now() });
+}
+
+
 // Calcula o intervalo de datas com base em year/month
 function getDateRange(year, month) {
   // "Todos os anos" => sem filtro de data
@@ -43,15 +61,19 @@ router.get("/", async (req, res) => {
     if (!month) month = "0"; // 0 = todos os meses
     const selPosition = position && position !== "all" ? position : "all";
 
+    const cacheKey = `rankings:${year}:${month}:${selPosition}`;
+    const cached = getCache(cacheKey);
+    if (cached) {
+      return res.render("rankings", cached);
+    }
+
     const { from, to } = getDateRange(year, month);
 
-    // Filtro de posi├º├úo nos jogadores
     const playerWhere =
       selPosition !== "all"
         ? { position: selPosition }
         : {};
 
-    // Filtro de data via Match.playedAt
     const statsWhere = {};
     if (from && to) {
       statsWhere.match = {
@@ -62,7 +84,6 @@ router.get("/", async (req, res) => {
       };
     }
 
-    // Puxa jogadores + stats filtradas
     const players = await prisma.player.findMany({
       where: playerWhere,
       include: {
@@ -470,6 +491,12 @@ router.get("/", async (req, res) => {
       last10Score: e.recentScore,
     }));
 
+    const periodLabel = year === "all"
+      ? "todos os anos"
+      : (Number(month) > 0 ? `mes ${month} de ${year}` : `ano ${year}`);
+    const posLabel = selPosition === "all" ? "todas as posicoes" : selPosition;
+    const metaDescription = `Rankings ${periodLabel}, ${posLabel}.`;
+
     const rankings = {
       goals: goalsRanking,
       assists: assistsRanking,
@@ -486,14 +513,20 @@ router.get("/", async (req, res) => {
       colorWins,
     };
 
-    return res.render("rankings", {
+    const payload = {
       title: "Rankings",
       rankings,
-      year,                // pode ser "all" ou n├║mero em string
+      year,
       month: Number(month),
       selPosition,
       currentYear,
-    });
+      metaDescription,
+      ogTitle: `Rankings ${periodLabel} | Horriver Plate`,
+    };
+
+    setCache(cacheKey, payload);
+    return res.render("rankings", payload);
+
   } catch (err) {
     console.error("Erro ao carregar rankings:", err);
     return res.status(500).send("Erro ao carregar rankings.");

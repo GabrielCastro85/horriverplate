@@ -28,64 +28,65 @@
 </style>
 
 <section class="space-y-8 animate-fadeIn">
-  <header class="space-y-3">
-    <p class="uppercase tracking-[0.3em] text-[11px] text-horriver-orange">
-      Peladas
-    </p>
+  <header class="page-hero space-y-4">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-      <div>
+      <div class="space-y-2">
+        <span class="hero-badge text-horriver-gray">
+          <span class="hero-icon">PL</span>
+          Peladas
+        </span>
         <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
           Todas as peladas
         </h1>
         <p class="text-sm text-horriver-gray/80">
-  Filtre por ano e mês ou veja todas as peladas cadastradas.
-</p>
-</div>
+          Filtre por ano e mes ou veja todas as peladas cadastradas.
+        </p>
+      </div>
 
-<form
-  action="/peladas"
-  method="GET"
-  class="flex flex-wrap items-center gap-2 bg-black/50 border border-horriver-border rounded-xl px-3 py-2"
->
-  <label for="year" class="text-[12px] text-horriver-gray/80">Ano</label>
-  <select
-    id="year"
-    name="year"
-    class="bg-transparent text-sm text-horriver-light focus:outline-none"
-    onchange="this.form.submit()"
-  >
-    <% safeYears.forEach((y) => { %>
-      <option value="<%= y %>" <%= String(y) === String(selYear) ? 'selected' : '' %>>
-        <%= y === 'all' ? 'Todos os anos' : y %>
-      </option>
-    <% }) %>
-  </select>
+      <form
+        action="/peladas"
+        method="GET"
+        class="card-unified flex flex-wrap items-center gap-2 px-3 py-2"
+      >
+        <label for="year" class="text-[12px] text-horriver-gray/80">Ano</label>
+        <select
+          id="year"
+          name="year"
+          class="bg-transparent text-sm text-horriver-light focus:outline-none"
+          onchange="this.form.submit()"
+        >
+          <% safeYears.forEach((y) => { %>
+            <option value="<%= y %>" <%= String(y) === String(selYear) ? 'selected' : '' %>>
+              <%= y === 'all' ? 'Todos os anos' : y %>
+            </option>
+          <% }) %>
+        </select>
 
-  <label for="month" class="text-[12px] text-horriver-gray/80">Mês</label>
-  <select
-    id="month"
-    name="month"
-    class="bg-transparent text-sm text-horriver-light focus:outline-none"
-    onchange="this.form.submit()"
-  >
-    <% safeMonths.forEach((m) => { %>
-      <option value="<%= m.value %>" <%= m.value === selMonth ? 'selected' : '' %>>
-        <%= m.label %>
-      </option>
-    <% }) %>
-  </select>
-</form>
+        <label for="month" class="text-[12px] text-horriver-gray/80">Mes</label>
+        <select
+          id="month"
+          name="month"
+          class="bg-transparent text-sm text-horriver-light focus:outline-none"
+          onchange="this.form.submit()"
+        >
+          <% safeMonths.forEach((m) => { %>
+            <option value="<%= m.value %>" <%= m.value === selMonth ? 'selected' : '' %>>
+              <%= m.label %>
+            </option>
+          <% }) %>
+        </select>
+      </form>
     </div>
   </header>
 
   <% if (!safeMatches.length) { %>
     <div class="rounded-2xl border border-horriver-border/60 bg-black/40 px-4 py-5 text-sm text-horriver-gray">
-      Nenhuma pelada encontrada para este mês.
+      Nenhuma pelada encontrada para este mes.
     </div>
   <% } else { %>
     <div class="grid gap-4 md:gap-5 md:grid-cols-2 xl:grid-cols-3">
       <% safeMatches.forEach((m) => { %>
-        <div class="relative overflow-hidden rounded-2xl border border-horriver-border/60 bg-gradient-to-b from-black/70 via-horriver-dark to-black/90 shadow-card">
+        <div class="card-unified relative overflow-hidden rounded-2xl bg-gradient-to-b from-black/70 via-horriver-dark to-black/90 shadow-card">
           <div class="absolute inset-0 pointer-events-none opacity-60">
             <div class="absolute -top-16 right-[-60px] w-52 h-52 bg-horriver-orange/20 blur-3xl rounded-full"></div>
             <div class="absolute bottom-[-80px] left-[-40px] w-64 h-64 bg-horriver-red/25 blur-3xl rounded-full"></div>
@@ -103,16 +104,16 @@
 
             <div class="space-y-1 text-sm text-horriver-gray">
               <p>
-                <span class="text-horriver-light/80 font-medium">Descrição:</span>
-                <%= m.description || "Sem descrição" %>
+                <span class="text-horriver-light/80 font-medium">Descricao:</span>
+                <%= m.description || "Sem descricao" %>
               </p>
               <p>
                 <span class="text-horriver-light/80 font-medium">Time vencedor:</span>
-                <%= m.winnerTeam || "Ainda não definido" %>
+                <%= m.winnerTeam || "Ainda nao definido" %>
               </p>
               <p class="text-[12px] text-horriver-gray/80">
                 <span class="text-horriver-orange font-semibold"><%= m._count?.stats || 0 %></span>
-                registros de estatísticas
+                registros de estatisticas
               </p>
             </div>
 
@@ -121,8 +122,8 @@
                 href="/matches/<%= m.id %>"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
               >
-                Ver estatísticas
-                <span class="text-[13px]">➜</span>
+                Ver estatisticas
+                <span class="text-[13px]">-></span>
               </a>
               <span class="text-[12px] text-horriver-gray/70">
                 ID #<%= m.id %>
@@ -134,5 +135,8 @@
     </div>
   <% } %>
 </section>
+
+
+
 
 

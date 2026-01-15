@@ -207,6 +207,23 @@ router.get("/:id", async (req, res) => {
       return true;
     });
 
+    const baseUrl =
+      process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
+    const playerImagePath = player.photoUrl || "/img/logo.jpg";
+    const playerImageUrl = `${baseUrl}${req.app.locals.thumbUrl(
+      playerImagePath,
+      1200
+    )}`;
+    const descParts = [
+      `Jogador ${player.name}.`,
+      player.position ? `Posicao ${player.position}.` : null,
+      `Gols ${totals.goals}, assistencias ${totals.assists}, presencas ${totals.matches}.`,
+    ].filter(Boolean);
+
+    res.locals.metaDescription = descParts.join(" ");
+    res.locals.metaImage = playerImageUrl;
+    res.locals.ogTitle = `${player.name} | Horriver Plate`;
+
     res.render("player_profile", {
       title: player.name,
       activePage: "elenco",

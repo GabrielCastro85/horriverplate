@@ -1,7 +1,7 @@
-﻿<%
+<%
   const currentYear = new Date().getFullYear();
 
-  // Ô¡É Categorias devem ser exatamente iguais ao ENUM do Prisma
+  // Categorias devem ser exatamente iguais ao ENUM do Prisma
   const categoryList = [
     { key: "ARTILHEIRO", label: "Artilheiro da temporada" },
     { key: "ASSISTENTE", label: "Assistente da temporada" },
@@ -22,26 +22,26 @@
 
 <div class="space-y-8 animate-fadeIn">
 
-  <!-- Cabe├ºalho -->
+  <!-- Cabecalho -->
   <header class="space-y-2">
     <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.18em]">
       Painel do administrador
     </p>
 
     <h1 class="text-2xl md:text-3xl font-title text-horriver-light">
-      Premiação da temporada
+      Premiacao da temporada
     </h1>
 
     <a href="/admin" 
        class="inline-flex items-center gap-1 text-[11px] text-horriver-gray hover:text-horriver-orange mt-2">
-      ÔåÉ Voltar para o painel
+      <- Voltar para o painel
     </a>
   </header>
 
-  <!-- Formul├írio -->
+  <!-- Formulario -->
   <section class="card-inner rounded-2xl p-6 md:p-7 space-y-4">
     <h2 class="text-lg md:text-xl font-semibold text-horriver-orange">
-      Cadastrar / editar prêmio
+      Cadastrar / editar premio
     </h2>
 
     <form
@@ -98,7 +98,7 @@
           type="submit"
           class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Salvar prêmio
+          Salvar premio
         </button>
       </div>
     </form>
@@ -107,12 +107,12 @@
   <!-- Lista -->
   <section class="space-y-4">
     <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-      Premiações cadastradas
+      Premiacoes cadastradas
     </h2>
 
     <% if (!yearKeys.length) { %>
       <p class="text-sm text-horriver-gray/80">
-        Nenhuma premiação cadastrada ainda.
+        Nenhuma premiacao cadastrada ainda.
       </p>
     <% } else { %>
 
@@ -130,7 +130,7 @@
 
             <% if (year === latestYear) { %>
               <span class="px-2 py-0.5 rounded-full bg-horriver-orange/15 border border-horriver-orange/60 text-[10px] text-horriver-orange">
-                Campeões atuais
+                Campeoes atuais
               </span>
             <% } %>
           </div>
@@ -163,13 +163,13 @@
                 <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
                   <th class="py-2 pr-3 text-left font-normal">Categoria</th>
                   <th class="py-2 pr-3 text-left font-normal">Jogador</th>
-                  <th class="py-2 pr-3 text-left font-normal">Ações</th>
+                  <th class="py-2 pr-3 text-left font-normal">Acoes</th>
                 </tr>
               </thead>
               <tbody>
                 <% list.forEach(a => {
 
-                     // N├úo duplicar os cards especiais
+                     // Nao duplicar os cards especiais
                      if (a.category === "ARTILHEIRO" || a.category === "ASSISTENTE") return;
 
                      const player = a.player;
@@ -182,7 +182,7 @@
                       <% if (player) { %>
                         <%= player.name %>
                         <% if (player.nickname) { %> (<%= player.nickname %>) <% } %>
-                      <% } else { %> ÔÇö <% } %>
+                      <% } else { %> ��� <% } %>
                     </td>
 
                     <td class="py-2 pr-3">
@@ -201,7 +201,7 @@
                         <form
                           action="/admin/season-awards/<%= a.id %>/delete"
                           method="POST"
-                          onsubmit="return confirm('Remover este prêmio?');"
+                          onsubmit="return confirm('Remover este premio?');"
                         >
                           <button 
                             type="submit" 
@@ -226,7 +226,7 @@
 </div>
 
 <script>
-  // Preenche automaticamente o formul├írio ao clicar em Editar
+  // Preenche automaticamente o formulario ao clicar em Editar
   (function () {
     const form = document.querySelector('form[action="/admin/season-awards"]');
     if (!form) return;
@@ -246,5 +246,7 @@
     });
   })();
 </script>
+
+
 
 
