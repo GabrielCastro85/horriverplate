@@ -72,6 +72,9 @@
         </div>
 
         <% if (admin) { %>
+          <span class="text-[11px] text-horriver-gray">
+            Logado como <span class="text-horriver-light font-semibold"><%= admin.email.split("@")[0] %></span>
+          </span>
           <nav class="flex items-center gap-4 text-xs">
             <a href="#fotos" class="hover:text-horriver-orange transition">
               Fotos / Destaques

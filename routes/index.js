@@ -566,10 +566,6 @@ router.get("/hall-da-fama", async (req, res) => {
         forward: byCategory("MELHOR_ATACANTE"),
       };
 
-    setCache("home", payload);
-    res.render("index", payload);
-
-
       // pega o ano anterior (se existir) para histórico
       const otherYear = seasonAwards.find((a) => a.year < latestSeasonYear);
       if (otherYear) {

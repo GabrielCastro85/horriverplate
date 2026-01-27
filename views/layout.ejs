@@ -428,6 +428,8 @@
     <%
       const currentPage = typeof activePage !== "undefined" ? activePage : "";
       const isAdmin = _isAdminLayout;
+      const adminLabel =
+        admin && admin.email ? String(admin.email).split("@")[0] : null;
 
       // Controle para exibir o link "Hall da Fama"
       const _nowLayout = new Date();
@@ -526,6 +528,11 @@
 
           <!-- ACOES DESKTOP -->
           <div class="hidden md:flex items-center gap-2">
+            <% if (adminLabel) { %>
+              <span class="text-[11px] md:text-xs text-horriver-gray">
+                Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
+              </span>
+            <% } %>
             <a
               href="https://www.instagram.com/_hpfrc/"
               target="_blank"
@@ -649,6 +656,11 @@
             <a href="/sobre" <%= currentPage==='sobre' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
 
             <div class="mt-2 flex items-center gap-2 px-2">
+              <% if (adminLabel) { %>
+                <span class="text-[12px] text-horriver-gray">
+                  Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
+                </span>
+              <% } %>
               <a
                 href="https://www.instagram.com/_hpfrc/"
                 target="_blank"
