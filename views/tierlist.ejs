@@ -1,0 +1,274 @@
+<section class="space-y-6 animate-fadeIn">
+  <header class="page-hero space-y-3">
+    <span class="hero-badge text-horriver-gray">
+      <span class="hero-icon">TL</span>
+      Tierlist
+    </span>
+    <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
+      Monte sua tierlist da pelada
+    </h1>
+    <p class="text-sm text-horriver-gray max-w-2xl">
+      Arraste os jogadores para os tiers. Você pode renomear e personalizar as cores.
+      Ao final, gere a imagem para compartilhar.
+    </p>
+  </header>
+
+  <div class="flex flex-col md:flex-row gap-4 md:items-end">
+    <label class="text-sm text-horriver-gray w-full md:w-80">
+      Título da tierlist
+      <input
+        type="text"
+        id="tierTitle"
+        value="Tierlist Horriver Plate"
+        class="mt-1 w-full rounded-xl bg-black/40 border border-horriver-border px-4 py-2 text-horriver-light"
+      />
+    </label>
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        id="addTierBtn"
+        class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold"
+      >
+        Adicionar tier
+      </button>
+      <button
+        type="button"
+        id="downloadTierBtn"
+        class="px-4 py-2 rounded-full border border-horriver-orange/70 text-horriver-orange text-sm font-semibold hover:bg-horriver-orange hover:text-black transition"
+      >
+        Baixar imagem
+      </button>
+    </div>
+  </div>
+
+  <div id="tier-board" class="space-y-3">
+    <div id="tiers" class="space-y-3"></div>
+
+    <section class="rounded-3xl border border-horriver-border bg-black/40 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-title text-xl text-horriver-light">Jogadores</h2>
+        <span class="text-[11px] text-horriver-gray"><%= players.length %> jogadores</span>
+      </div>
+      <ul id="tier-pool" class="tier-list grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></ul>
+    </section>
+  </div>
+</section>
+
+<style>
+  .tier-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 8px;
+  }
+  .tier-label {
+    border-radius: 14px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .tier-name {
+    background: transparent;
+    border: none;
+    color: #f8fafc;
+    font-weight: 800;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .tier-name:focus {
+    outline: none;
+  }
+  .tier-list {
+    min-height: 64px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(0, 0, 0, 0.35);
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .player-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(0, 0, 0, 0.6);
+    color: #f8fafc;
+    font-size: 11px;
+    cursor: grab;
+    user-select: none;
+  }
+  .player-item img {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    object-fit: cover;
+  }
+  .tier-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .tier-actions button {
+    font-size: 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.2);
+    color: #0b0b0b;
+    padding: 4px 6px;
+  }
+  @media (max-width: 640px) {
+    .tier-row {
+      grid-template-columns: 1fr;
+    }
+    .tier-label {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tier-actions {
+      margin-left: auto;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const tierContainer = document.getElementById("tiers");
+    const pool = document.getElementById("tier-pool");
+    const addTierBtn = document.getElementById("addTierBtn");
+    const downloadBtn = document.getElementById("downloadTierBtn");
+
+    const defaultTiers = [
+      { label: "S", color: "#ef4444" },
+      { label: "A", color: "#f97316" },
+      { label: "B", color: "#facc15" },
+      { label: "C", color: "#10b981" },
+      { label: "D", color: "#3b82f6" },
+    ];
+
+    const playerData = <%- JSON.stringify(
+      (players || []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        nickname: p.nickname,
+        avatar: thumbUrl(p.photoUrl || "/img/logo-128x128.svg", 48),
+      }))
+    ) %>;
+
+    const createTierRow = (tier) => {
+      const row = document.createElement("div");
+      row.className = "tier-row";
+      row.dataset.tier = tier.label;
+
+      const label = document.createElement("div");
+      label.className = "tier-label";
+      label.setAttribute("data-tier-handle", "true");
+      label.style.background = `${tier.color}33`;
+      label.style.borderColor = `${tier.color}80`;
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.className = "tier-name";
+      nameInput.value = tier.label;
+
+      const colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.value = tier.color;
+
+      const actions = document.createElement("div");
+      actions.className = "tier-actions";
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "Remover";
+      actions.appendChild(removeBtn);
+
+      label.appendChild(nameInput);
+      label.appendChild(colorInput);
+      label.appendChild(actions);
+
+      const list = document.createElement("ul");
+      list.className = "tier-list";
+      list.dataset.list = "tier";
+
+      row.appendChild(label);
+      row.appendChild(list);
+
+      colorInput.addEventListener("input", () => {
+        label.style.background = `${colorInput.value}33`;
+        label.style.borderColor = `${colorInput.value}80`;
+      });
+
+      removeBtn.addEventListener("click", () => {
+        const items = Array.from(list.querySelectorAll(".player-item"));
+        items.forEach((item) => pool.appendChild(item));
+        row.remove();
+      });
+
+      return row;
+    };
+
+    const setupSortable = (el) => {
+      new Sortable(el, {
+        group: "tiers",
+        animation: 150,
+        ghostClass: "bg-horriver-orange/30",
+        draggable: ".player-item",
+      });
+    };
+
+    defaultTiers.forEach((tier) => {
+      const row = createTierRow(tier);
+      tierContainer.appendChild(row);
+      setupSortable(row.querySelector(".tier-list"));
+    });
+
+    playerData.forEach((p) => {
+      const item = document.createElement("li");
+      item.className = "player-item";
+      item.dataset.playerId = p.id;
+      const img = document.createElement("img");
+      img.src = p.avatar;
+      const name = document.createElement("span");
+      name.textContent = p.nickname ? `${p.name} (${p.nickname})` : p.name;
+      item.appendChild(img);
+      item.appendChild(name);
+      pool.appendChild(item);
+    });
+
+    setupSortable(pool);
+
+    new Sortable(tierContainer, {
+      animation: 150,
+      handle: "[data-tier-handle]",
+      draggable: ".tier-row",
+      ghostClass: "bg-horriver-orange/20",
+    });
+
+    addTierBtn.addEventListener("click", () => {
+      const row = createTierRow({ label: "Novo", color: "#f97316" });
+      tierContainer.appendChild(row);
+      setupSortable(row.querySelector(".tier-list"));
+      row.querySelector(".tier-name").focus();
+    });
+
+    downloadBtn.addEventListener("click", async () => {
+      try {
+        const board = document.getElementById("tier-board");
+        if (!board) return;
+        if (typeof html2canvas === "undefined") return;
+        const canvas = await html2canvas(board, { backgroundColor: "#050509", scale: 2 });
+        const link = document.createElement("a");
+        link.download = "tierlist-horriver.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  })();
+</script>

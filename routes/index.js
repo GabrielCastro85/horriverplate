@@ -410,6 +410,26 @@ router.get("/matches/:id", async (req, res) => {
 });
 
 // ==============================
+// TIERLIST (publico)
+// ==============================
+router.get("/tierlist", async (req, res) => {
+  try {
+    const players = await prisma.player.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    res.render("tierlist", {
+      title: "Tierlist",
+      activePage: "tierlist",
+      players,
+    });
+  } catch (err) {
+    console.error("Erro ao carregar Tierlist:", err);
+    res.status(500).send("Erro ao carregar Tierlist.");
+  }
+});
+
+// ==============================
 // LISTA DE PELADAS COM FILTRO POR MÊS/ANO
 // ==============================
 router.get("/peladas", async (req, res) => {

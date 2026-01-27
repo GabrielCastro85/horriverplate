@@ -502,6 +502,15 @@
                 Elenco
               </a>
             </li>
+            <li>
+              <a
+                href="/tierlist"
+                <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %>
+                class="<%= currentPage==='tierlist' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+              >
+                Tierlist
+              </a>
+            </li>
 
             <% if (showHallLink) { %>
               <li>
@@ -652,6 +661,7 @@
             <% if (showHallLink) { %>
               <a href="/hall-da-fama" <%= currentPage==='hall' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Hall da Fama</a>
             <% } %>
+            <a href="/tierlist" <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Tierlist</a>
 
             <a href="/sobre" <%= currentPage==='sobre' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
 
