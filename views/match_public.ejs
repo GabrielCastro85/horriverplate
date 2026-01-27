@@ -121,105 +121,73 @@
         </div>
       </div>
 
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="rounded-2xl border border-horriver-red/50 bg-black/60 p-4">
-          <h3 class="text-sm font-semibold text-horriver-light mb-2">
-            Classificacao
-          </h3>
-          <% if (!standings.length) { %>
-            <p class="text-xs text-horriver-gray">Sem dados de classificacao.</p>
-          <% } else { %>
-            <div class="overflow-x-auto">
-              <table class="min-w-full text-[11px] sm:text-xs">
-                <thead class="bg-black/60">
-                  <tr>
-                    <th class="px-3 py-2 text-left text-horriver-gray">Time</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">J</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">V</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">E</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">D</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">GP</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">GC</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">SG</th>
-                    <th class="px-3 py-2 text-center text-horriver-gray">Pts</th>
+      <div class="grid gap-4">
+        <div class="rounded-2xl border border-horriver-border/60 bg-black/40 p-4">
+          <h3 class="text-sm font-semibold text-horriver-light mb-2">Classificacao</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-[520px] w-full text-[11px]">
+              <thead class="text-horriver-gray">
+                <tr>
+                  <th class="text-left py-2 pr-3">#</th>
+                  <th class="text-left py-2 pr-3">Time</th>
+                  <th class="text-center py-2">P</th>
+                  <th class="text-center py-2">V</th>
+                  <th class="text-center py-2">E</th>
+                  <th class="text-center py-2">D</th>
+                  <th class="text-center py-2">SG</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% standings.forEach((row, idx) => { %>
+                  <tr class="border-t border-horriver-border/40">
+                    <td class="py-2 pr-3 text-horriver-gray"><%= idx + 1 %></td>
+                    <td class="py-2 pr-3 text-horriver-light"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></td>
+                    <td class="py-2 text-center"><%= statVal(row, "points", "pts") %></td>
+                    <td class="py-2 text-center"><%= statVal(row, "wins", "v") %></td>
+                    <td class="py-2 text-center"><%= statVal(row, "draws", "e") %></td>
+                    <td class="py-2 text-center"><%= statVal(row, "losses", "d") %></td>
+                    <td class="py-2 text-center"><%= statVal(row, "goalDiff", "sg") %></td>
                   </tr>
-                </thead>
-                <tbody>
-                  <% standings.forEach((row) => { %>
-                    <tr class="border-t border-horriver-red/30">
-                      <td class="px-3 py-2 text-horriver-light"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "played") %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "wins") %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "draws") %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "losses") %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "gf", "goalsFor") %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "ga", "goalsAgainst") %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "gd", "goalDiff") %></td>
-                      <td class="px-3 py-2 text-center text-horriver-light"><%= statVal(row, "pts", "points") %></td>
-                    </tr>
-                  <% }); %>
-                </tbody>
-              </table>
-            </div>
-          <% } %>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="space-y-3">
-          <% stages.forEach((stage) => { %>
-            <div class="rounded-2xl border border-horriver-red/50 bg-black/60 p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-semibold text-horriver-light">
-                  <%= stageLabels[stage] || stage %>
-                </h3>
-                <span class="text-[11px] text-horriver-gray">
-                  <%= (gamesByStage[stage] || []).length %> jogo(s)
-                </span>
-              </div>
-
-              <% const stageGames = gamesByStage[stage] || []; %>
-              <% if (!stageGames.length) { %>
-                <p class="text-xs text-horriver-gray">Sem jogos.</p>
-              <% } else { %>
-                <div class="space-y-2 text-[11px] sm:text-xs">
-                  <% stageGames.forEach((game) => { %>
-                    <% const homeName = renderTeamName(game.homeTeam, "Casa"); %>
-                    <% const awayName = renderTeamName(game.awayTeam, "Visitante"); %>
-                    <% const hasScore = game.homeGoals != null && game.awayGoals != null; %>
-                    <% const scoreLabel = hasScore ? `${game.homeGoals} x ${game.awayGoals}` : "-"; %>
-                    <% const isFinal = stage === "FINAL"; %>
-                    <% const hasPens = game.homePenalties != null && game.awayPenalties != null; %>
-                    <div class="border border-horriver-red/30 rounded-xl px-3 py-2">
-                      <div class="text-horriver-light">
-                        <span class="text-horriver-orange text-[10px] uppercase mr-2">
-                          <%= stage === "GROUP" && game.round ? `R${game.round}` : stage %>
-                        </span>
-                        <%- homeName %> x <%- awayName %> —
-                        <span class="text-horriver-light font-semibold"><%= scoreLabel %></span>
-                      </div>
-                      <div class="text-horriver-gray mt-1">
-                        <% if (game.winnerTeam) { %>
-                          Vencedor: <span class="text-horriver-light"><%- renderTeamName(game.winnerTeam, "Time") %></span>
-                        <% } else if (hasScore) { %>
-                          Empate
-                        <% } else { %>
-                          -
-                        <% } %>
-                        <% if (game.decidedBy === "ADVANTAGE") { %>
-                          <span class="ml-2 text-[10px] uppercase text-horriver-orange">Vantagem do melhor colocado</span>
-                        <% } %>
-                        <% if (isFinal && hasPens) { %>
-                          <span class="ml-2 text-[10px] text-horriver-gray">
-                            Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
-                          </span>
-                        <% } %>
-                      </div>
+        <% stages.forEach((stage) => {
+            const stageGames = gamesByStage[stage] || [];
+            if (!stageGames.length) return;
+        %>
+          <div class="rounded-2xl border border-horriver-border/60 bg-black/40 p-4">
+            <h3 class="text-sm font-semibold text-horriver-light mb-2"><%= stageLabels[stage] || stage %></h3>
+            <div class="grid gap-3">
+              <% stageGames.forEach((game) => { %>
+                <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3">
+                  <div class="flex items-center justify-between gap-3 text-[11px]">
+                    <div class="text-horriver-light">
+                      <%- renderTeamName(teamById.get(game.homeTeamId), "Time") %>
+                      <span class="text-horriver-gray">x</span>
+                      <%- renderTeamName(teamById.get(game.awayTeamId), "Time") %>
                     </div>
-                  <% }); %>
+                    <div class="text-horriver-orange font-semibold">
+                      <%= game.homeGoals ?? "-" %> x <%= game.awayGoals ?? "-" %>
+                    </div>
+                  </div>
+                  <% if (game.decidedBy === "PENALTIES") { %>
+                    <div class="text-[10px] text-horriver-gray mt-1">
+                      Decidido nos pênaltis
+                      <% if (game.homePenalties != null && game.awayPenalties != null) { %>
+                        <span class="ml-2 text-[10px] text-horriver-gray">
+                          Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
+                        </span>
+                      <% } %>
+                    </div>
+                  <% } %>
                 </div>
-              <% } %>
+              <% }); %>
             </div>
-          <% }); %>
-        </div>
+          </div>
+        <% }); %>
       </div>
     </section>
   <% } %>
@@ -261,8 +229,8 @@
           <table class="min-w-[620px] w-full text-[11px] sm:text-xs" data-sortable="match-stats">
             <thead class="bg-gradient-to-r from-horriver-red/70 via-horriver-red/60 to-horriver-orange/70">
               <tr>
-                <th class="px-3 py-2 text-left w-10">#</th>
-                <th class="px-3 py-2 text-left cursor-pointer select-none" data-sort="name">Jogador</th>
+                <th class="px-3 py-2 text-left w-10 sticky left-0 z-20 bg-horriver-red/70">#</th>
+                <th class="px-3 py-2 text-left cursor-pointer select-none sticky left-10 z-20 bg-horriver-red/70" data-sort="name">Jogador</th>
                 <th class="px-3 py-2 text-left">Posição</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="present">Presente</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="goals">Gols</th>
@@ -284,10 +252,10 @@
                   <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors" data-name="<%= (s.player.name || '').toLowerCase() %>" data-position="<%= (s.player.position || '').toLowerCase() %>" data-present="<%= s.present ? 1 : 0 %>" data-goals="<%= s.goals || 0 %>" data-assists="<%= s.assists || 0 %>" data-rating="<%= s.rating != null ? s.rating : 0 %>" data-photo="<%= s.appearedInPhoto ? 1 : 0 %>">
 
                     <!-- # -->
-                    <td class="px-3 py-2 text-[11px] text-horriver-gray"><%= idx + 1 %></td>
+                    <td class="px-3 py-2 text-[11px] text-horriver-gray sticky left-0 z-10 bg-black/90"><%= idx + 1 %></td>
 
                     <!-- Nome -->
-                    <td class="px-3 py-2 whitespace-nowrap">
+                    <td class="px-3 py-2 whitespace-nowrap sticky left-10 z-10 bg-black/90">
                       <span class="text-horriver-light text-[13px]">
                         <%= s.player.name %>
                       </span>
@@ -368,57 +336,3 @@
         switch (key) {
           case 'name':
             return row.dataset.name || '';
-          case 'position':
-            return row.dataset.position || '';
-          case 'present':
-            return Number(row.dataset.present || 0);
-          case 'goals':
-            return Number(row.dataset.goals || 0);
-          case 'assists':
-            return Number(row.dataset.assists || 0);
-          case 'rating':
-            return Number(row.dataset.rating || 0);
-          case 'photo':
-            return Number(row.dataset.photo || 0);
-          default:
-            return '';
-        }
-      };
-
-      const sortRows = (key, direction) => {
-        const rows = Array.from(tbody.querySelectorAll('tr')).filter((tr) => tr.dataset.name);
-        rows.sort((a, b) => {
-          const av = getValue(a, key);
-          const bv = getValue(b, key);
-          if (typeof av === 'number' && typeof bv === 'number') {
-            return direction === 'asc' ? av - bv : bv - av;
-          }
-          return direction === 'asc'
-            ? String(av).localeCompare(String(bv))
-            : String(bv).localeCompare(String(av));
-        });
-        rows.forEach((row, idx) => {
-          tbody.appendChild(row);
-          const indexCell = row.querySelector('td');
-          if (indexCell) indexCell.textContent = idx + 1;
-        });
-      };
-
-      let currentKey = null;
-      let currentDir = 'desc';
-
-      headers.forEach((th) => {
-        th.addEventListener('click', () => {
-          const key = th.dataset.sort;
-          if (!key) return;
-          const dir = currentKey === key && currentDir === 'desc' ? 'asc' : 'desc';
-          currentKey = key;
-          currentDir = dir;
-          sortRows(key, dir);
-        });
-      });
-    })();
-  </script>
-
-</section>
-</section>

@@ -1,14 +1,14 @@
-<%
+﻿<%
 // views/admin_match.ejs
-// Variáveis recebidas: match, players, stats
-// O layout.ejs já cuida de <html>, <body>, header, footer etc.
-// Aqui é só o conteúdo interno do <main>.
+// VariÃ¡veis recebidas: match, players, stats
+// O layout.ejs jÃ¡ cuida de <html>, <body>, header, footer etc.
+// Aqui Ã© sÃ³ o conteÃºdo interno do <main>.
 %>
 
-<div class="mb-6 flex items-center justify-between gap-3">
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
   <div>
     <h1 class="text-xl md:text-2xl font-semibold text-horriver-light">
-      Estatísticas da pelada
+      EstatÃ­sticas da pelada
     </h1>
     <p class="text-xs md:text-sm text-horriver-gray mt-1">
       Data:
@@ -16,23 +16,23 @@
         <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
       </span>
       <% if (match.description) { %>
-      · <%= match.description %>
+      Â· <%= match.description %>
       <% } %>
     </p>
   </div>
 
   <a
     href="/admin"
-    class="px-3 py-1 rounded-full border border-horriver-orange text-[11px] md:text-xs text-horriver-orange hover:bg-horriver-orange hover:text-horriver-bg transition"
+    class="w-full sm:w-auto text-center px-3 py-2 rounded-full border border-horriver-orange text-[11px] md:text-xs text-horriver-orange hover:bg-horriver-orange hover:text-horriver-bg transition"
   >
     Voltar ao painel
   </a>
 </div>
 
-<div class="sticky top-20 z-40 bg-black/70 border border-horriver-border rounded-2xl px-4 py-2 mb-4">
-  <div class="flex flex-wrap items-center justify-between gap-3 text-[11px]">
+<div class="sticky top-20 z-40 bg-black/70 border border-horriver-border rounded-2xl px-4 py-3 mb-4">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-[11px]">
     <span class="text-horriver-gray uppercase tracking-[0.2em]">Acoes rapidas</span>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:overflow-visible overflow-x-auto whitespace-nowrap pb-1">
       <a href="#stats" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Stats</a>
       <a href="#votacao" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Votacao</a>
       <a href="#sorteador" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Sorteador</a>
@@ -53,7 +53,7 @@
   data-toast="Estatisticas salvas."
 >
   <div class="bg-black/40 border border-horriver-border rounded-xl p-3 text-[12px] text-horriver-gray">
-    <label class="flex flex-col gap-1 max-w-[240px]">
+    <label class="flex flex-col gap-1 w-full sm:max-w-[240px]">
       Cor do time vencedor (opcional)
       <select
         name="winnerColor"
@@ -79,70 +79,40 @@
     </label>
     <span id="presentCount"></span>
   </div>
-  <div
-    class="overflow-x-auto rounded-2xl border border-horriver-border bg-black/50"
-  >
-        <table class="min-w-full text-xs md:text-sm">
-          <thead class="bg-black/60">
-            <tr>
-              <th class="px-3 py-3 text-left font-semibold text-horriver-gray">
-                Jogador
-              </th>
-              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-                OVR
-              </th>
-              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-                Presente
-              </th>
-              <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-                Gols
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Assistências
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Nota
-          </th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">
-            Foto
-          </th>
+  <div class="hidden sm:block overflow-x-auto rounded-2xl border border-horriver-border bg-black/50">
+    <table class="min-w-full text-xs md:text-sm">
+      <thead class="bg-black/60">
+        <tr>
+          <th class="px-3 py-3 text-left font-semibold text-horriver-gray">Jogador</th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">OVR</th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Presente</th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Gols</th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">AssistÃªncias</th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Nota</th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Foto</th>
         </tr>
       </thead>
       <tbody>
         <% players.forEach(function(player) { 
              const stat = stats.find(s => s.playerId === player.id);
         %>
-        <tr
-          class="border-t border-horriver-border/40 hover:bg-white/5 transition"
-        >
-          <!-- Jogador -->
+        <tr class="border-t border-horriver-border/40 hover:bg-white/5 transition">
           <td class="px-3 py-2">
             <div class="flex flex-col">
-              <span class="font-medium text-horriver-light">
-                <%= player.name %>
-              </span>
+              <span class="font-medium text-horriver-light"><%= player.name %></span>
               <% if (player.nickname) { %>
-              <span class="text-[11px] text-horriver-gray">
-                "<%= player.nickname %>"
-              </span>
+                <span class="text-[11px] text-horriver-gray">"<%= player.nickname %>"</span>
               <% } %>
-              <span class="text-[10px] uppercase text-horriver-orange mt-1">
-                <%= player.position %>
-              </span>
+              <span class="text-[10px] uppercase text-horriver-orange mt-1"><%= player.position %></span>
             </div>
           </td>
-          <!-- OVR -->
           <td class="px-3 py-2 text-center align-middle">
             <% if (player.overall != null) { %>
-              <span class="px-2 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold">
-                <%= player.overall %>
-              </span>
+              <span class="px-2 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold"><%= player.overall %></span>
             <% } else { %>
               <span class="text-horriver-gray text-[11px]">-</span>
             <% } %>
           </td>
-
-          <!-- PRESENTE (checkbox) -->
           <td class="px-3 py-2 text-center align-middle">
             <input
               type="checkbox"
@@ -150,53 +120,50 @@
               data-player-name="<%= player.name %>"
               data-player-position="<%= player.position %>"
               data-player-strength="<%= player.overall != null ? player.overall : '' %>"
-              class="w-4 h-4 accent-horriver-orange"
+              data-input-scope="desktop"
+              class="w-5 h-5 sm:w-4 sm:h-4 accent-horriver-orange"
               <%= stat && stat.present ? 'checked' : '' %>
             />
           </td>
-
-          <!-- GOLS -->
           <td class="px-3 py-2 text-center align-middle">
             <input
               type="number"
               name="goals_<%= player.id %>"
               min="0"
               step="1"
-              class="w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
+              data-input-scope="desktop"
+              class="w-20 sm:w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
               value="<%= stat && stat.goals ? stat.goals : '' %>"
             />
           </td>
-
-          <!-- ASSISTÊNCIAS -->
           <td class="px-3 py-2 text-center align-middle">
             <input
               type="number"
               name="assists_<%= player.id %>"
               min="0"
               step="1"
-              class="w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
+              data-input-scope="desktop"
+              class="w-20 sm:w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
               value="<%= stat && stat.assists ? stat.assists : '' %>"
             />
           </td>
-
-          <!-- NOTA (texto, 2 casas decimais, aceita vírgula) -->
           <td class="px-3 py-2 text-center align-middle">
             <input
               type="text"
               name="rating_<%= player.id %>"
               inputmode="decimal"
-              class="w-20 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
+              data-input-scope="desktop"
+              class="w-24 sm:w-20 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
               placeholder="7,50"
               value="<%= stat && (stat.finalRating != null || stat.rating != null) ? (stat.finalRating != null ? stat.finalRating : stat.rating).toFixed(2).replace('.', ',') : '' %>"
             />
           </td>
-
-          <!-- FOTO -->
           <td class="px-3 py-2 text-center align-middle">
             <input
               type="checkbox"
               name="photo_<%= player.id %>"
-              class="w-4 h-4 accent-horriver-orange"
+              data-input-scope="desktop"
+              class="w-5 h-5 sm:w-4 sm:h-4 accent-horriver-orange"
               <%= stat && stat.appearedInPhoto ? 'checked' : '' %>
             />
           </td>
@@ -206,47 +173,138 @@
     </table>
   </div>
 
+  <div class="sm:hidden space-y-3">
+    <% players.forEach(function(player) { 
+         const stat = stats.find(s => s.playerId === player.id);
+    %>
+      <div class="rounded-2xl border border-horriver-border bg-black/50 p-3" data-player-card>
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-sm font-semibold text-horriver-light"><%= player.name %></p>
+            <% if (player.nickname) { %>
+              <p class="text-[11px] text-horriver-gray">"<%= player.nickname %>"</p>
+            <% } %>
+            <p class="text-[10px] uppercase text-horriver-orange mt-1"><%= player.position %></p>
+          </div>
+          <div>
+            <% if (player.overall != null) { %>
+              <span class="px-2 py-1 rounded-full bg-horriver-orange text-black text-[11px] font-semibold"><%= player.overall %></span>
+            <% } else { %>
+              <span class="text-horriver-gray text-[11px]">-</span>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+          <label class="flex items-center justify-between gap-2 rounded-xl border border-horriver-border/60 bg-black/40 px-3 py-2">
+            <span>Presente</span>
+            <input
+              type="checkbox"
+              name="present_<%= player.id %>"
+              data-player-name="<%= player.name %>"
+              data-player-position="<%= player.position %>"
+              data-player-strength="<%= player.overall != null ? player.overall : '' %>"
+              data-input-scope="mobile"
+              class="w-5 h-5 accent-horriver-orange"
+              <%= stat && stat.present ? 'checked' : '' %>
+            />
+          </label>
+
+          <label class="flex items-center justify-between gap-2 rounded-xl border border-horriver-border/60 bg-black/40 px-3 py-2">
+            <span>Foto</span>
+            <input
+              type="checkbox"
+              name="photo_<%= player.id %>"
+              data-input-scope="mobile"
+              class="w-5 h-5 accent-horriver-orange"
+              <%= stat && stat.appearedInPhoto ? 'checked' : '' %>
+            />
+          </label>
+
+          <label class="flex flex-col gap-1 rounded-xl border border-horriver-border/60 bg-black/40 px-3 py-2">
+            <span>Gols</span>
+            <input
+              type="number"
+              name="goals_<%= player.id %>"
+              min="0"
+              step="1"
+              data-input-scope="mobile"
+              class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+              value="<%= stat && stat.goals ? stat.goals : '' %>"
+            />
+          </label>
+
+          <label class="flex flex-col gap-1 rounded-xl border border-horriver-border/60 bg-black/40 px-3 py-2">
+            <span>Assist.</span>
+            <input
+              type="number"
+              name="assists_<%= player.id %>"
+              min="0"
+              step="1"
+              data-input-scope="mobile"
+              class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+              value="<%= stat && stat.assists ? stat.assists : '' %>"
+            />
+          </label>
+
+          <label class="col-span-2 flex flex-col gap-1 rounded-xl border border-horriver-border/60 bg-black/40 px-3 py-2">
+            <span>Nota</span>
+            <input
+              type="text"
+              name="rating_<%= player.id %>"
+              inputmode="decimal"
+              data-input-scope="mobile"
+              class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
+              placeholder="7,50"
+              value="<%= stat && (stat.finalRating != null || stat.rating != null) ? (stat.finalRating != null ? stat.finalRating : stat.rating).toFixed(2).replace('.', ',') : '' %>"
+            />
+          </label>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+
   <div class="flex justify-end mt-4">
-    <div class="flex items-center gap-3">
+    <div class="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-3">
       <a
         href="/admin/matches/<%= match.id %>/votes"
-        class="px-4 py-2 rounded-full border border-horriver-border text-horriver-light text-xs md:text-sm font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
+        class="w-full sm:w-auto text-center px-4 py-2 rounded-full border border-horriver-border text-horriver-light text-xs md:text-sm font-semibold hover:border-horriver-orange hover:text-horriver-orange transition"
       >
         Ver votos
       </a>
       <a
         href="/admin/matches/<%= match.id %>/awards"
-        class="px-4 py-2 rounded-full border border-horriver-orange/60 text-horriver-orange text-xs md:text-sm font-semibold hover:bg-horriver-orange hover:text-black transition shadow-card-soft"
+        class="w-full sm:w-auto text-center px-4 py-2 rounded-full border border-horriver-orange/60 text-horriver-orange text-xs md:text-sm font-semibold hover:bg-horriver-orange hover:text-black transition shadow-card-soft"
       >
-        Ver prêmios / baixar imagem
+        Ver prÃªmios / baixar imagem
       </a>
       <button
         type="submit"
-        class="px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+        class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
       >
-        Salvar estatísticas
+        Salvar estatÃ­sticas
       </button>
     </div>
   </div>
 </form>
 
 <!-- ========================= -->
-<!-- Votação: geração de links -->
+<!-- VotaÃ§Ã£o: geraÃ§Ã£o de links -->
 <!-- ========================= -->
 <section id="votacao" class="mt-10 space-y-4">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-        Votação da pelada
+        VotaÃ§Ã£o da pelada
       </h2>
       <p class="text-xs text-horriver-gray">
-        Gera links únicos para os jogadores presentes votarem (via WhatsApp).
+        Gera links Ãºnicos para os jogadores presentes votarem (via WhatsApp).
       </p>
     </div>
     <form
       action="/admin/matches/<%= match.id %>/vote-session"
       method="POST"
-      class="flex items-center gap-2 text-[11px]"
+      class="flex flex-col sm:flex-row sm:items-center gap-2 text-[11px] w-full sm:w-auto"
       data-autosave="true"
       data-toast="Links de votacao gerados."
     >
@@ -257,12 +315,12 @@
           name="expiresHours"
           min="0"
           value="24"
-          class="w-16 bg-black/50 border border-horriver-border rounded px-2 py-1 text-horriver-light"
+          class="w-full sm:w-16 bg-black/50 border border-horriver-border rounded px-2 py-1 text-horriver-light"
         />
       </label>
       <button
         type="submit"
-        class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+        class="w-full sm:w-auto px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
       >
         Gerar links
       </button>
@@ -271,7 +329,7 @@
 
   <% if (!voteSession || !voteSession.tokens || !voteSession.tokens.length) { %>
     <p class="text-sm text-horriver-gray">
-      Nenhuma sessão de votação criada ainda. Gere os links após marcar os presentes.
+      Nenhuma sessÃ£o de votaÃ§Ã£o criada ainda. Gere os links apÃ³s marcar os presentes.
     </p>
   <% } else { %>
     <div class="flex flex-col md:flex-row md:items-center gap-2 mb-3 text-[12px]">
@@ -280,7 +338,7 @@
         method="POST"
         class="flex items-center gap-2"
         data-toast="Votos aplicados."
-        onsubmit="return confirm('Aplicar notas baseadas na votação? Não sobrescreve notas já lançadas.');"
+        onsubmit="return confirm('Aplicar notas baseadas na votaÃ§Ã£o? NÃ£o sobrescreve notas jÃ¡ lanÃ§adas.');"
       >
         <button
           type="submit"
@@ -289,7 +347,7 @@
           Aplicar votos como notas
         </button>
         <span class="text-horriver-gray text-[11px]">
-          Calcula notas para presentes (não altera notas já preenchidas).
+          Calcula notas para presentes (nÃ£o altera notas jÃ¡ preenchidas).
         </span>
       </form>
 
@@ -298,27 +356,27 @@
         method="POST"
         class="flex items-center gap-2"
         data-toast="Votacao encerrada."
-        onsubmit="return confirm('Encerrar a votação agora? Links restantes serão bloqueados.');"
+        onsubmit="return confirm('Encerrar a votaÃ§Ã£o agora? Links restantes serÃ£o bloqueados.');"
       >
         <button
           type="submit"
           class="px-3 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-500 transition"
         >
-          Encerrar votação
+          Encerrar votaÃ§Ã£o
         </button>
         <span class="text-horriver-gray text-[11px]">
-          Expira a sessão e bloqueia links não usados.
+          Expira a sessÃ£o e bloqueia links nÃ£o usados.
         </span>
       </form>
     </div>
 
     <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
       <p class="text-xs text-horriver-gray mb-2">
-        Sessão criada em <%= new Date(voteSession.createdAt).toLocaleString('pt-BR') %>
+        SessÃ£o criada em <%= new Date(voteSession.createdAt).toLocaleString('pt-BR') %>
         <% if (voteSession.expiresAt) { %>
-          · expira em <%= new Date(voteSession.expiresAt).toLocaleString('pt-BR') %>
+          Â· expira em <%= new Date(voteSession.expiresAt).toLocaleString('pt-BR') %>
         <% } else { %>
-          · sem expiração
+          Â· sem expiraÃ§Ã£o
         <% } %>
       </p>
 
@@ -327,7 +385,7 @@
           <thead>
             <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
               <th class="py-2 pr-3 text-left font-normal">Jogador</th>
-              <th class="py-2 pr-3 text-left font-normal">Posição</th>
+              <th class="py-2 pr-3 text-left font-normal">PosiÃ§Ã£o</th>
               <th class="py-2 pr-3 text-left font-normal">Link</th>
               <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
             </tr>
@@ -337,7 +395,7 @@
                  const link = `${voteBaseUrl}/vote/${t.token}`;
                  const waRaw = t.player.whatsapp || "";
                  const waDigits = waRaw.replace(/\\D/g, "");
-                 const msg = `Fala ${t.player.name}! Seu link de votação da pelada: ${link}`;
+                 const msg = `Fala ${t.player.name}! Seu link de votaÃ§Ã£o da pelada: ${link}`;
                  const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
             %>
               <tr class="border-b border-horriver-border/40 last:border-0">
@@ -369,7 +427,7 @@
                       Mandar link
                     </a>
                   <% } else { %>
-                    <span class="text-horriver-gray">Sem número</span>
+                    <span class="text-horriver-gray">Sem nÃºmero</span>
                   <% } %>
                 </td>
               </tr>
@@ -384,13 +442,13 @@
 <!-- ========================= -->
 <!-- Sorteador de times (beta) -->
 <section id="sorteador" class="mt-10 space-y-4">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
         Sorteador inteligente de times
       </h2>
       <p class="text-xs text-horriver-gray">
-        Usa o mesmo overall do ranking e trava 6 jogadores por time. Convidados entram só no sorteio (não salvam no banco).
+        Usa o mesmo overall do ranking e trava 6 jogadores por time. Convidados entram sÃ³ no sorteio (nÃ£o salvam no banco).
       </p>
     </div>
   </div>
@@ -399,9 +457,9 @@
     <form id="sorterForm" class="space-y-3 text-[12px]">
       <div class="grid md:grid-cols-2 gap-3">
         <div class="space-y-2">
-          <p class="text-horriver-gray text-[12px]">Convidados (só para este sorteio)</p>
+          <p class="text-horriver-gray text-[12px]">Convidados (sÃ³ para este sorteio)</p>
           <div class="bg-black/30 border border-horriver-border rounded-xl p-3 space-y-2">
-            <div class="grid sm:grid-cols-2 gap-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label class="flex flex-col gap-1 text-horriver-gray">
                 Nome
                 <input
@@ -412,7 +470,7 @@
                 />
               </label>
               <label class="flex flex-col gap-1 text-horriver-gray">
-                Posição
+                PosiÃ§Ã£o
                 <select
                   id="guestPos"
                   class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light"
@@ -426,20 +484,20 @@
               </label>
             </div>
             <label class="flex flex-col gap-1 text-horriver-gray">
-              Força (40-100)
+              ForÃ§a (40-100)
               <input
                 type="number"
                 id="guestStr"
                 min="40"
                 max="100"
                 value="60"
-                class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light w-24"
+                class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light w-full sm:w-24"
               />
             </label>
             <button
               type="button"
               id="addGuestBtn"
-              class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+              class="w-full sm:w-auto px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
             >
               Adicionar convidado
             </button>
@@ -450,25 +508,25 @@
 
                 <div class="flex flex-col gap-2">
           <p class="text-horriver-gray text-[12px]">
-            Sorteio automático usando os presentes marcados acima. Se tiver mais de 12 presentes, cria 2, 3 ou 4 times com 6 em cada; extras vão para o banco.
+            Sorteio automÃ¡tico usando os presentes marcados acima. Se tiver mais de 12 presentes, cria 2, 3 ou 4 times com 6 em cada; extras vÃ£o para o banco.
           </p>
           <div class="space-y-1 text-[11px]">
             <p class="text-horriver-gray">
-              Marque os cabeças de chave (entre os presentes) para travar um em cada time.
+              Marque os cabeÃ§as de chave (entre os presentes) para travar um em cada time.
             </p>
             <div
               id="seedList"
               class="bg-black/30 border border-horriver-border rounded-xl p-2 flex flex-wrap gap-2 min-h-[46px]"
             ></div>
             <p class="text-horriver-gray text-[10px]">
-              Atualiza automaticamente ao marcar/desmarcar presença.
+              Atualiza automaticamente ao marcar/desmarcar presenÃ§a.
             </p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               id="sortBtn"
-              class="px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+              class="w-full sm:w-auto px-3 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
             >
               Sortear times
             </button>
@@ -477,7 +535,7 @@
         </div>
 
     <div class="space-y-3 w-full md:col-span-2">
-      <div class="grid gap-3 text-[12px] w-full [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]" id="sorterResults"></div>
+      <div class="grid gap-3 text-[12px] w-full [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]" id="sorterResults"></div>
 
       <div class="grid gap-3">
         <div id="goalkeeperBenchBox" class="hidden w-full text-[12px] border border-horriver-border/60 rounded-xl p-3 bg-black/30"></div>
@@ -538,16 +596,22 @@
     if (!filterToggle || !countEl) return;
 
     const rows = Array.from(document.querySelectorAll("tbody tr"));
-    const entries = rows
-      .map((row) => ({
+    const cards = Array.from(document.querySelectorAll("[data-player-card]"));
+    const entries = [
+      ...rows.map((row) => ({
         row,
         checkbox: row.querySelector('input[name^="present_"]'),
-      }))
-      .filter((item) => item.checkbox);
+      })),
+      ...cards.map((card) => ({
+        row: card,
+        checkbox: card.querySelector('input[name^="present_"]'),
+      })),
+    ].filter((item) => item.checkbox);
 
     const update = () => {
       let count = 0;
       entries.forEach(({ row, checkbox }) => {
+        if (checkbox.disabled) return;
         const isPresent = checkbox.checked;
         if (isPresent) count += 1;
         row.classList.toggle("hidden", filterToggle.checked && !isPresent);
@@ -563,13 +627,34 @@
   })();
 </script>
 
+<script>
+  (function () {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const toggleInputs = () => {
+      const isMobile = mq.matches;
+      document.querySelectorAll("[data-input-scope='desktop']").forEach((el) => {
+        el.disabled = isMobile;
+      });
+      document.querySelectorAll("[data-input-scope='mobile']").forEach((el) => {
+        el.disabled = !isMobile;
+      });
+    };
+    toggleInputs();
+    if (mq.addEventListener) {
+      mq.addEventListener("change", toggleInputs);
+    } else {
+      mq.addListener(toggleInputs);
+    }
+  })();
+</script>
+
 </section>
 
 <!-- ========================= -->
 <!-- Torneio -->
 <!-- ========================= -->
 <section id="tournament" class="mt-10 space-y-4">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
         Torneio
@@ -719,7 +804,7 @@
         <div class="md:col-span-2 flex justify-end">
           <button
             type="submit"
-            class="px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+            class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
           >
             Criar torneio
           </button>
@@ -758,7 +843,7 @@
                   class="podium-badge px-4 h-7 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold inline-flex items-center justify-center text-center min-w-[150px] shadow-[0_6px_14px_rgba(0,0,0,0.35)] absolute left-1/2 -translate-x-1/2"
                   style="top:0; line-height:<%= badgeHeight %>px;"
                 >
-                  <% if (pos === 1) { %>🏆<% } else if (pos === 2) { %>🥈<% } else { %>🥉<% } %>
+                  <% if (pos === 1) { %>ðŸ†<% } else if (pos === 2) { %>ðŸ¥ˆ<% } else { %>ðŸ¥‰<% } %>
                   <span class="ml-2"><%= pos %>&ordm; Colocado</span>
                 </span>
                 <div
@@ -1001,7 +1086,7 @@
                     <tr class="border-t border-horriver-border/40">
                       <td class="px-3 py-2 text-horriver-light">
                         <span class="text-horriver-orange text-[10px] uppercase mr-2">
-                          <%= stage === "THIRD" ? "3º" : stage %>
+                          <%= stage === "THIRD" ? "3Âº" : stage %>
                         </span>
                         <%- homeName %> x <%- awayName %>
                         <% if (isSemi && game.decidedBy === "ADVANTAGE") { %>
@@ -1248,6 +1333,17 @@
   #sorterResults.teams-4 {
     grid-template-columns: repeat(2, minmax(320px, 1fr));
   }
+  #sorterResults [data-team] {
+    min-width: 0;
+  }
+  @media (max-width: 639px) {
+    #sorterResults {
+      grid-template-columns: 1fr !important;
+    }
+    #sorterResults.teams-4 {
+      grid-template-columns: 1fr !important;
+    }
+  }
 </style>
 
 <script>
@@ -1320,7 +1416,7 @@
         if (!allowedIds.has(id)) seedIds.delete(id);
       });
       if (!presentPlayers.length) {
-        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenças para escolher os cabeças de chave.</span>`;
+        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenÃ§as para escolher os cabeÃ§as de chave.</span>`;
         return;
       }
       seedList.innerHTML = presentPlayers
@@ -1366,7 +1462,7 @@
         .map(
           (g, idx) => `
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-light">
-              ${g.name} • ${g.position} • ${g.strength}
+              ${g.name} â€¢ ${g.position} â€¢ ${g.strength}
               <button type="button" data-remove="${idx}" class="text-horriver-orange hover:text-white">x</button>
             </span>
           `
@@ -1885,7 +1981,7 @@
 
       const presentIds = getPresentIdsFromForm();
       if (!presentIds.length) {
-        statusEl.textContent = "Sorteando com os presentes já salvos (marque acima se quiser alterar).";
+        statusEl.textContent = "Sorteando com os presentes jÃ¡ salvos (marque acima se quiser alterar).";
       }
 
       syncGuestsField();
@@ -1949,13 +2045,13 @@
             "";
           const rawName = box.querySelector("[data-team-name]")?.textContent || "Time";
           const colorEmojiMap = {
-            Amarelo: "🟡",
-            Azul: "🔵",
-            Preto: "⚫",
-            Vermelho: "🔴",
-            Branco: "⚪",
+            Amarelo: "ðŸŸ¡",
+            Azul: "ðŸ”µ",
+            Preto: "âš«",
+            Vermelho: "ðŸ”´",
+            Branco: "âšª",
           };
-          const emoji = colorEmojiMap[colorName] || "🎨";
+          const emoji = colorEmojiMap[colorName] || "ðŸŽ¨";
           const sponsorName = sponsorNameByLabel[colorName] || `Time ${colorName}`;
           const name = colorName ? `${emoji} ${sponsorName}` : rawName;
           const lines = Array.from(box.querySelectorAll("li")).map((li) => {
@@ -1969,7 +2065,7 @@
         });
         const gkItems = goalkeeperBenchBox ? goalkeeperBenchBox.querySelectorAll("li") : [];
         if (gkItems.length) {
-          text += "\n🧤 Goleiros\n";
+          text += "\nðŸ§¤ Goleiros\n";
           gkItems.forEach((li) => {
             const spans = li.querySelectorAll("span");
             const nome = spans[0]?.textContent?.trim() || "";
@@ -1990,7 +2086,7 @@
         }
         try {
           navigator.clipboard.writeText(text);
-          if (shareStatus) shareStatus.textContent = "Times copiados para a área de transferência.";
+          if (shareStatus) shareStatus.textContent = "Times copiados para a Ã¡rea de transferÃªncia.";
         } catch (err) {
           if (shareStatus) shareStatus.textContent = "Falha ao copiar. Copie manualmente.";
         }
@@ -2001,7 +2097,7 @@
       imgBtn.addEventListener("click", async () => {
         shareStatus.textContent = "Gerando imagem...";
         try {
-          // carrega html2canvas se ainda não estiver presente
+          // carrega html2canvas se ainda nÃ£o estiver presente
           if (typeof html2canvas === "undefined") {
             await new Promise((resolve, reject) => {
               const s = document.createElement("script");

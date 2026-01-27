@@ -1,4 +1,4 @@
-<%# views/vote_page.ejs %>
+﻿<%# views/vote_page.ejs %>
 
 <% if (error) { %>
   <div class="text-center p-8 bg-red-900/20 rounded-lg">
@@ -19,10 +19,10 @@
 
   <form id="vote-form" method="POST" action="/vote/match/<%= match.id %>?token=<%= token %>" class="space-y-8">
     <% const blocks = (groupedOrder && groupedOrder.length) ? groupedOrder : Object.keys(grouped || {}).map(k => ({label:k, list: grouped[k]})); %>
-    <% blocks.forEach(({label, list}) => { if (!list || !list.length) return; %>
+    <% blocks.forEach(({label, list}) => { if (!list || !list.length) return; const labelId = String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); %>
       <div class="p-4 bg-black/30 rounded-lg border border-horriver-border">
         <h2 class="text-lg font-semibold mb-3 text-horriver-light">Arraste para rankear - <span class="text-horriver-orange"><%= label %></span></h2>
-        <ul id="rank-<%= label %>" class="space-y-2 player-list">
+        <ul id="rank-<%= labelId %>" class="space-y-2 player-list" data-label="<%= label %>" data-input-id="input-rank-<%= labelId %>" aria-live="polite">
           <% list.forEach(player => { %>
             <li id="<%= player.id %>" data-id="<%= player.id %>" class="p-3 bg-horriver-dark rounded-md cursor-grab flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
               <div class="flex items-center gap-3 min-w-0">
@@ -32,6 +32,8 @@
                   sizes="40px"
                   class="w-10 h-10 rounded-full object-cover"
                   alt="<%= player.name %>"
+                  width="40"
+                  height="40"
                 >
                 <div class="min-w-0">
                   <span class="font-medium text-horriver-light"><%= player.name %></span>
@@ -45,13 +47,19 @@
                   </p>
                 </div>
               </div>
-              <div class="text-xs text-horriver-gray">
-                Pos: <span class="text-horriver-orange"><%= player.positionLabel || player.position %></span>
+              <div class="flex items-center gap-2">
+                <div class="text-xs text-horriver-gray">
+                  Pos: <span class="text-horriver-orange"><%= player.positionLabel || player.position %></span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" class="px-2 py-1 text-[10px] rounded-md border border-horriver-border text-horriver-gray hover:text-horriver-orange" data-move="up" aria-label="Mover para cima">▲</button>
+                  <button type="button" class="px-2 py-1 text-[10px] rounded-md border border-horriver-border text-horriver-gray hover:text-horriver-orange" data-move="down" aria-label="Mover para baixo">▼</button>
+                </div>
               </div>
             </li>
           <% }) %>
         </ul>
-        <input type="hidden" name="rank-<%= label %>" id="input-rank-<%= label %>">
+        <input type="hidden" name="rank-<%= label %>" id="input-rank-<%= labelId %>">
       </div>
     <% }) %>
 
@@ -76,7 +84,6 @@
     </div>
   </form>
 
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const form = document.getElementById('vote-form');
@@ -91,11 +98,27 @@
 
       form.addEventListener('submit', function () {
         playerLists.forEach(list => {
-          const position = list.id.replace('rank-', '');
-          const hiddenInput = document.getElementById('input-rank-' + position);
+          const inputId = list.dataset.inputId;
+          const hiddenInput = inputId ? document.getElementById(inputId) : null;
+          if (!hiddenInput) return;
           const sortableInstance = Sortable.get(list);
           const playerIds = sortableInstance.toArray();
           hiddenInput.value = playerIds.join(',');
+        });
+      });
+
+      playerLists.forEach((list) => {
+        list.addEventListener("click", (event) => {
+          const btn = event.target.closest("button[data-move]");
+          if (!btn) return;
+          const item = btn.closest("li");
+          if (!item) return;
+          const direction = btn.dataset.move;
+          if (direction === "up" && item.previousElementSibling) {
+            list.insertBefore(item, item.previousElementSibling);
+          } else if (direction === "down" && item.nextElementSibling) {
+            list.insertBefore(item.nextElementSibling, item);
+          }
         });
       });
     });

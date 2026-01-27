@@ -13,6 +13,23 @@ model Admin {
   email        String        @unique
   passwordHash String
   voteSessions VoteSession[] @relation("AdminVoteSessions")
+  auditLogs    AuditLog[]
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int?
+  adminEmail String?
+  method     String
+  path       String
+  action     String
+  summary    String?
+  details    Json?
+  createdAt  DateTime @default(now())
+  admin      Admin?   @relation(fields: [adminId], references: [id])
+
+  @@index([createdAt])
+  @@index([adminId])
 }
 
 model Player {

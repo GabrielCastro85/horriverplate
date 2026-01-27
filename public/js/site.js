@@ -4,15 +4,20 @@
   const panel = document.getElementById("mobilePanel");
   const closeBtn = document.getElementById("mobileClose");
   const backdrop = document.getElementById("mobileBackdrop");
+  let lastActiveElement = null;
 
   if (!btn || !menu || !panel) return;
 
   function openMenu() {
+    lastActiveElement = document.activeElement;
     menu.classList.remove("hidden");
+    menu.setAttribute("aria-hidden", "false");
+    btn.setAttribute("aria-expanded", "true");
     requestAnimationFrame(() => {
       panel.classList.remove("animate-slideUp");
       panel.classList.add("animate-slideDown");
       btn.classList.add("hamburger-active");
+      panel.focus();
     });
     document.body.style.overflow = "hidden";
   }
@@ -20,10 +25,15 @@
     panel.classList.remove("animate-slideDown");
     panel.classList.add("animate-slideUp");
     btn.classList.remove("hamburger-active");
+    menu.setAttribute("aria-hidden", "true");
+    btn.setAttribute("aria-expanded", "false");
     setTimeout(() => {
       menu.classList.add("hidden");
     }, 180);
     document.body.style.overflow = "";
+    if (lastActiveElement && typeof lastActiveElement.focus === "function") {
+      lastActiveElement.focus();
+    }
   }
 
   btn.addEventListener("click", openMenu);

@@ -3,6 +3,7 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../utils/db");
+const bcrypt = require("bcryptjs");
 const { scheduleBackup } = require("../utils/backup");
 const {
   uploadPlayerPhoto,
@@ -22,6 +23,174 @@ function requireAdmin(req, res, next) {
   }
   next();
 }
+
+function sanitizeAuditPayload(input) {
+  const MAX_STRING = 300;
+  const MAX_ARRAY = 50;
+  const SENSITIVE_KEYS = ["password", "senha", "token", "adminToken"];
+
+  const trimString = (value) => {
+    if (typeof value !== "string") return value;
+    return value.length > MAX_STRING ? `${value.slice(0, MAX_STRING)}...` : value;
+  };
+
+  const walk = (value, depth = 0) => {
+    if (value == null) return value;
+    if (typeof value === "string") return trimString(value);
+    if (typeof value === "number" || typeof value === "boolean") return value;
+    if (Array.isArray(value)) {
+      return value.slice(0, MAX_ARRAY).map((item) => walk(item, depth + 1));
+    }
+    if (typeof value === "object") {
+      if (depth > 2) return "[obj]";
+      const out = {};
+      Object.entries(value).forEach(([key, val]) => {
+        if (SENSITIVE_KEYS.some((k) => key.toLowerCase().includes(k))) return;
+        out[key] = walk(val, depth + 1);
+      });
+      return out;
+    }
+    return String(value);
+  };
+
+  return walk(input);
+}
+
+// ==============================
+// 🧾 Auditoria: loga ações de mutação
+// ==============================
+router.use((req, res, next) => {
+  if (!req.admin) return next();
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
+
+  const auditData = {
+    adminId: req.admin.id,
+    adminEmail: req.admin.email,
+    method: req.method,
+    path: req.originalUrl,
+    action: req.path,
+    summary: `${req.method} ${req.originalUrl}`,
+    details: sanitizeAuditPayload(req.body || {}),
+  };
+
+  res.on("finish", async () => {
+    if (res.statusCode >= 400) return;
+    try {
+      await prisma.auditLog.create({ data: auditData });
+    } catch (err) {
+      console.warn("Falha ao gravar auditoria:", err && err.message ? err.message : err);
+    }
+  });
+
+  next();
+});
+
+// ==============================
+// 🔐 Trocar senha do admin logado
+// ==============================
+router.get("/senha", requireAdmin, (req, res) => {
+  res.render("admin_password", {
+    title: "Trocar senha",
+    error: null,
+    success: req.query.success === "1",
+  });
+});
+
+router.post("/senha", requireAdmin, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body || {};
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.render("admin_password", {
+        title: "Trocar senha",
+        error: "Preencha todos os campos.",
+        success: false,
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.render("admin_password", {
+        title: "Trocar senha",
+        error: "A nova senha deve ter pelo menos 6 caracteres.",
+        success: false,
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.render("admin_password", {
+        title: "Trocar senha",
+        error: "A confirmação da senha não confere.",
+        success: false,
+      });
+    }
+
+    const admin = await prisma.admin.findUnique({ where: { id: req.admin.id } });
+    if (!admin) {
+      return res.redirect("/login");
+    }
+
+    const ok = await bcrypt.compare(currentPassword, admin.passwordHash);
+    if (!ok) {
+      return res.render("admin_password", {
+        title: "Trocar senha",
+        error: "Senha atual incorreta.",
+        success: false,
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.admin.update({
+      where: { id: admin.id },
+      data: { passwordHash },
+    });
+
+    return res.redirect("/admin/senha?success=1");
+  } catch (err) {
+    console.error("Erro ao trocar senha:", err);
+    return res.render("admin_password", {
+      title: "Trocar senha",
+      error: "Erro ao tentar trocar a senha. Tente novamente.",
+      success: false,
+    });
+  }
+});
+
+// ==============================
+// 📜 Auditoria (apenas admin principal)
+// ==============================
+router.get("/auditoria", requireAdmin, async (req, res) => {
+  try {
+    if (!req.admin || req.admin.email !== "admin@horriver.com") {
+      return res.redirect("/admin");
+    }
+
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const pageSize = 50;
+    const skip = (page - 1) * pageSize;
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.auditLog.count(),
+    ]);
+
+    const totalPages = Math.max(Math.ceil(total / pageSize), 1);
+
+    return res.render("admin_audit", {
+      title: "Auditoria",
+      logs,
+      page,
+      totalPages,
+      total,
+    });
+  } catch (err) {
+    console.error("Erro ao carregar auditoria:", err);
+    return res.redirect("/admin");
+  }
+});
 
 // ==============================
 // 🔢 Helper: recomputar totais de jogadores (para alguns IDs)

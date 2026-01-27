@@ -1,0 +1,83 @@
+<section class="space-y-6 animate-fadeIn">
+  <header class="page-hero space-y-2">
+    <span class="hero-badge text-horriver-gray">
+      <span class="hero-icon">AU</span>
+      Auditoria
+    </span>
+    <h1 class="font-title text-3xl text-horriver-light">Log de ações</h1>
+    <p class="text-sm text-horriver-gray">
+      Registro das alterações feitas no painel admin.
+    </p>
+  </header>
+
+  <div class="flex flex-wrap items-center justify-between gap-3 text-[11px] text-horriver-gray">
+    <span>Total: <strong class="text-horriver-light"><%= total %></strong></span>
+    <div class="flex items-center gap-2">
+      <% const prevPage = page > 1 ? page - 1 : null; %>
+      <% const nextPage = page < totalPages ? page + 1 : null; %>
+      <a
+        href="<%= prevPage ? `/admin/auditoria?page=${prevPage}` : '#' %>"
+        class="px-3 py-1 rounded-full border border-horriver-border <%= prevPage ? 'hover:border-horriver-orange hover:text-horriver-orange' : 'opacity-50 pointer-events-none' %>"
+      >
+        Anterior
+      </a>
+      <span>Página <%= page %> de <%= totalPages %></span>
+      <a
+        href="<%= nextPage ? `/admin/auditoria?page=${nextPage}` : '#' %>"
+        class="px-3 py-1 rounded-full border border-horriver-border <%= nextPage ? 'hover:border-horriver-orange hover:text-horriver-orange' : 'opacity-50 pointer-events-none' %>"
+      >
+        Próxima
+      </a>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto rounded-2xl border border-horriver-border bg-black/40">
+    <table class="min-w-full text-sm">
+      <thead class="bg-black/60">
+        <tr>
+          <th class="text-left px-3 py-2">Data</th>
+          <th class="text-left px-3 py-2">Admin</th>
+          <th class="text-left px-3 py-2">Ação</th>
+          <th class="text-left px-3 py-2">Caminho</th>
+          <th class="text-left px-3 py-2">Detalhes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!logs || !logs.length) { %>
+          <tr>
+            <td class="px-3 py-3 text-horriver-gray" colspan="5">
+              Nenhuma ação registrada ainda.
+            </td>
+          </tr>
+        <% } else { %>
+          <% logs.forEach((log) => { %>
+            <tr class="border-t border-horriver-border/60">
+              <td class="px-3 py-2 text-[11px] text-horriver-gray">
+                <%= new Date(log.createdAt).toLocaleString("pt-BR") %>
+              </td>
+              <td class="px-3 py-2 text-[12px] text-horriver-light">
+                <%= log.adminEmail || "admin" %>
+              </td>
+              <td class="px-3 py-2 text-[12px] text-horriver-orange">
+                <%= log.summary || `${log.method} ${log.path}` %>
+              </td>
+              <td class="px-3 py-2 text-[11px] text-horriver-gray">
+                <%= log.path %>
+              </td>
+              <td class="px-3 py-2 text-[11px] text-horriver-gray">
+                <% if (log.details) { %>
+                  <details class="cursor-pointer">
+                    <summary class="text-horriver-orange">Ver</summary>
+                    <pre class="mt-2 text-[10px] text-horriver-gray whitespace-pre-wrap"><%= JSON.stringify(log.details, null, 2) %></pre>
+                  </details>
+                <% } else { %>
+                  -
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</section>

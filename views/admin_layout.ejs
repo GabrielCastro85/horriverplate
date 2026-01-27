@@ -82,12 +82,22 @@
             <a href="#jogadores" class="hover:text-horriver-orange transition">
               Jogadores
             </a>
-            <a
-              href="/login/logout"
-              class="px-3 py-1 rounded-full border border-horriver-orange text-horriver-orange hover:bg-horriver-orange hover:text-horriver-dark transition"
-            >
-              Sair
+            <% if (admin && admin.email === "admin@horriver.com") { %>
+              <a href="/admin/auditoria" class="hover:text-horriver-orange transition">
+                Auditoria
+              </a>
+            <% } %>
+            <a href="/admin/senha" class="hover:text-horriver-orange transition">
+              Trocar senha
             </a>
+            <form method="POST" action="/logout">
+              <button
+                type="submit"
+                class="px-3 py-1 rounded-full border border-horriver-orange text-horriver-orange hover:bg-horriver-orange hover:text-horriver-dark transition"
+              >
+                Sair
+              </button>
+            </form>
           </nav>
         <% } %>
       </div>
