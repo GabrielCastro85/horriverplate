@@ -154,7 +154,10 @@ router.post("/:token", async (req, res) => {
         : null;
     const validBest =
       bestOverallId &&
-      players.find((p) => p.id === bestOverallId) ? bestOverallId : null;
+      players.find((p) => p.id === bestOverallId) &&
+      (!ctx.token?.player || bestOverallId !== ctx.token.player.id)
+        ? bestOverallId
+        : null;
 
     await prisma.$transaction(async (tx) => {
       await tx.voteBallot.create({

@@ -229,7 +229,7 @@ async function recomputeTotalsForPlayers(playerIds) {
 
     const avgRating = ratingCount > 0 ? ratingSum / ratingCount : 0;
 
-    // Overall din�mico: mant�m override manual (se existir), arredondado; n�o recalcula automaticamente
+    // Overall dinâmico: mantém override manual (se existir), arredondado; não recalcula automaticamente
     const overallDynamic = (player?.overallDynamic != null) ? Math.round(player.overallDynamic) : null;
 
     await prisma.player.update({
@@ -2723,6 +2723,8 @@ router.post("/rebuild-achievements", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
+
 
 
 

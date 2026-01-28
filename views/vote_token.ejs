@@ -21,6 +21,9 @@
       <p class="text-xs text-horriver-gray">
         Link gerado para: <span class="text-horriver-light"><%= voter.name %></span>
       </p>
+      <p class="text-[11px] text-horriver-gray">
+        Você não pode votar em si mesmo.
+      </p>
     <% } %>
   </header>
 
@@ -85,7 +88,7 @@
           required
         >
           <option value="">Escolha</option>
-          <% (players || []).forEach((p) => { %>
+          <% (players || []).forEach((p) => { if (voter && p.id === voter.id) { return; } %>
             <option value="<%= p.id %>">
               <%= p.name %><% if (p.nickname) { %> (<%= p.nickname %>)<% } %>
             </option>
