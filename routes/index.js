@@ -415,6 +415,9 @@ router.get("/matches/:id", async (req, res) => {
 router.get("/tierlist", async (req, res) => {
   try {
     const players = await prisma.player.findMany({
+      where: {
+        OR: [{ hallReason: null }, { hallReason: { not: "Aposentado" } }],
+      },
       orderBy: { name: "asc" },
     });
 
