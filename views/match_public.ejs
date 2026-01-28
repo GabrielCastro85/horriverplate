@@ -111,6 +111,101 @@
       Sem torneio nesta pelada.
     </p>
   <% } else { %>
+    <style>
+      .tournament-export {
+        background: linear-gradient(180deg, #0f1115 0%, #050608 100%);
+        border: 1px solid rgba(255, 122, 26, 0.2);
+        border-radius: 24px;
+        padding: 28px 32px;
+        color: #f1f5f9;
+      }
+      .tournament-export .export-only {
+        display: none;
+      }
+      .tournament-export.is-exporting {
+        width: 1600px;
+        max-width: 1600px;
+      }
+      body.is-exporting .tournament-export .export-only {
+        display: flex;
+      }
+      body.is-exporting .tournament-export .no-export {
+        display: none !important;
+      }
+      body.is-exporting {
+        height: auto !important;
+      }
+      body.is-exporting .tournament-export {
+        overflow: visible !important;
+        height: auto !important;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+      }
+      body.is-exporting .tournament-export .export-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        margin-bottom: 16px;
+      }
+      body.is-exporting .tournament-export .export-title {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      body.is-exporting .tournament-export .export-subtitle {
+        font-size: 14px;
+        color: rgba(148, 163, 184, 0.9);
+        margin-top: 4px;
+      }
+      body.is-exporting .tournament-export .export-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 122, 26, 0.6);
+        background: #0b0c0f;
+        display: grid;
+        place-items: center;
+      }
+      body.is-exporting .tournament-export .export-logo img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+      }
+      body.is-exporting .tournament-export .export-footer {
+        margin-top: 20px;
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      body.is-exporting .tournament-export .export-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+      }
+      body.is-exporting .tournament-export .export-card h3 {
+        font-size: 18px;
+      }
+      body.is-exporting .tournament-export table th,
+      body.is-exporting .tournament-export table td {
+        font-size: 14px;
+      }
+      body.is-exporting .tournament-export .game-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 14px 16px;
+      }
+      body.is-exporting .tournament-export .score {
+        font-size: 18px;
+        font-weight: 700;
+        color: #ff7a1a;
+      }
+    </style>
     <section class="space-y-4">
       <div class="flex items-center justify-between">
         <div>
@@ -119,75 +214,121 @@
             Classificacao e jogos do torneio.
           </p>
         </div>
+        <div class="no-export flex items-center gap-2">
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-full border border-horriver-border text-[11px] text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition"
+            data-export-target="tournament-standings-export"
+            data-export-name="tournament-classificacao"
+          >
+            Exportar classificacao
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-full border border-horriver-border text-[11px] text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition"
+            data-export-target="tournament-games-export"
+            data-export-name="tournament-jogos"
+          >
+            Exportar jogos
+          </button>
+        </div>
       </div>
 
       <div class="grid gap-4">
-        <div class="rounded-2xl border border-horriver-border/60 bg-black/40 p-4">
-          <h3 class="text-sm font-semibold text-horriver-light mb-2">Classificacao</h3>
-          <div class="overflow-x-auto">
-            <table class="min-w-[520px] w-full text-[11px]">
-              <thead class="text-horriver-gray">
-                <tr>
-                  <th class="text-left py-2 pr-3">#</th>
-                  <th class="text-left py-2 pr-3">Time</th>
-                  <th class="text-center py-2">P</th>
-                  <th class="text-center py-2">V</th>
-                  <th class="text-center py-2">E</th>
-                  <th class="text-center py-2">D</th>
-                  <th class="text-center py-2">SG</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% standings.forEach((row, idx) => { %>
-                  <tr class="border-t border-horriver-border/40">
-                    <td class="py-2 pr-3 text-horriver-gray"><%= idx + 1 %></td>
-                    <td class="py-2 pr-3 text-horriver-light"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></td>
-                    <td class="py-2 text-center"><%= statVal(row, "points", "pts") %></td>
-                    <td class="py-2 text-center"><%= statVal(row, "wins", "v") %></td>
-                    <td class="py-2 text-center"><%= statVal(row, "draws", "e") %></td>
-                    <td class="py-2 text-center"><%= statVal(row, "losses", "d") %></td>
-                    <td class="py-2 text-center"><%= statVal(row, "goalDiff", "sg") %></td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <% stages.forEach((stage) => {
-            const stageGames = gamesByStage[stage] || [];
-            if (!stageGames.length) return;
-        %>
-          <div class="rounded-2xl border border-horriver-border/60 bg-black/40 p-4">
-            <h3 class="text-sm font-semibold text-horriver-light mb-2"><%= stageLabels[stage] || stage %></h3>
-            <div class="grid gap-3">
-              <% stageGames.forEach((game) => { %>
-                <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3">
-                  <div class="flex items-center justify-between gap-3 text-[11px]">
-                    <div class="text-horriver-light">
-                      <%- renderTeamName(teamById.get(game.homeTeamId), "Time") %>
-                      <span class="text-horriver-gray">x</span>
-                      <%- renderTeamName(teamById.get(game.awayTeamId), "Time") %>
-                    </div>
-                    <div class="text-horriver-orange font-semibold">
-                      <%= game.homeGoals ?? "-" %> x <%= game.awayGoals ?? "-" %>
-                    </div>
-                  </div>
-                  <% if (game.decidedBy === "PENALTIES") { %>
-                    <div class="text-[10px] text-horriver-gray mt-1">
-                      Decidido nos pênaltis
-                      <% if (game.homePenalties != null && game.awayPenalties != null) { %>
-                        <span class="ml-2 text-[10px] text-horriver-gray">
-                          Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
-                        </span>
-                      <% } %>
-                    </div>
-                  <% } %>
-                </div>
-              <% }); %>
+        <div id="tournament-standings-export" class="tournament-export">
+          <div class="export-header export-only">
+            <div>
+              <div class="export-title">HORRIVER PLATE — TORNEIO</div>
+              <div class="export-subtitle">Classificacao da pelada</div>
+            </div>
+            <div class="export-logo">
+              <img src="/img/logo-64x64.svg" alt="Horriver Plate" />
             </div>
           </div>
-        <% }); %>
+
+          <div class="export-card rounded-2xl border border-horriver-border/60 bg-black/40 p-4">
+            <h3 class="text-sm font-semibold text-horriver-light mb-2">Classificacao</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-[520px] w-full text-[11px]">
+                <thead class="text-horriver-gray">
+                  <tr>
+                    <th class="text-left py-2 pr-3">#</th>
+                    <th class="text-left py-2 pr-3">Time</th>
+                    <th class="text-center py-2">P</th>
+                    <th class="text-center py-2">V</th>
+                    <th class="text-center py-2">E</th>
+                    <th class="text-center py-2">D</th>
+                    <th class="text-center py-2">SG</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% standings.forEach((row, idx) => { %>
+                    <tr class="border-t border-horriver-border/40">
+                      <td class="py-2 pr-3 text-horriver-gray"><%= idx + 1 %></td>
+                      <td class="py-2 pr-3 text-horriver-light"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "points", "pts") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "wins", "v") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "draws", "e") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "losses", "d") %></td>
+                      <td class="py-2 text-center"><%= statVal(row, "goalDiff", "sg") %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="export-footer export-only">@horriverplate</div>
+        </div>
+
+        <div id="tournament-games-export" class="tournament-export">
+          <div class="export-header export-only">
+            <div>
+              <div class="export-title">HORRIVER PLATE — TORNEIO</div>
+              <div class="export-subtitle">Jogos e resultados</div>
+            </div>
+            <div class="export-logo">
+              <img src="/img/logo-64x64.svg" alt="Horriver Plate" />
+            </div>
+          </div>
+
+          <% stages.forEach((stage) => {
+              const stageGames = gamesByStage[stage] || [];
+              if (!stageGames.length) return;
+          %>
+            <div class="export-card rounded-2xl border border-horriver-border/60 bg-black/40 p-4 mb-4 last:mb-0">
+              <h3 class="text-sm font-semibold text-horriver-light mb-2"><%= stageLabels[stage] || stage %></h3>
+              <div class="grid gap-3">
+                <% stageGames.forEach((game) => { %>
+                  <div class="game-card rounded-xl border border-horriver-border/60 bg-black/50 p-3">
+                    <div class="flex items-center justify-between gap-3 text-[11px]">
+                      <div class="text-horriver-light">
+                        <%- renderTeamName(teamById.get(game.homeTeamId), "Time") %>
+                        <span class="text-horriver-gray">x</span>
+                        <%- renderTeamName(teamById.get(game.awayTeamId), "Time") %>
+                      </div>
+                      <div class="score text-horriver-orange font-semibold">
+                        <%= game.homeGoals ?? "-" %> x <%= game.awayGoals ?? "-" %>
+                      </div>
+                    </div>
+                    <% if (game.decidedBy === "PENALTIES") { %>
+                      <div class="text-[10px] text-horriver-gray mt-1">
+                        Decidido nos pênaltis
+                        <% if (game.homePenalties != null && game.awayPenalties != null) { %>
+                          <span class="ml-2 text-[10px] text-horriver-gray">
+                            Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
+                          </span>
+                        <% } %>
+                      </div>
+                    <% } %>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+          <% }); %>
+
+          <div class="export-footer export-only">@horriverplate</div>
+        </div>
       </div>
     </section>
   <% } %>
@@ -325,14 +466,106 @@
         </a>
       </div>
 
-    </div>  <script>
-    (() => {
-      const table = document.querySelector('table[data-sortable="match-stats"]');
-      if (!table) return;
-      const tbody = table.querySelector('tbody');
-      const headers = Array.from(table.querySelectorAll('th[data-sort]'));
+    </div>
+  </section>
+</section>
 
-      const getValue = (row, key) => {
-        switch (key) {
-          case 'name':
-            return row.dataset.name || '';
+<script>
+  (() => {
+    const table = document.querySelector('table[data-sortable="match-stats"]');
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    const headers = Array.from(table.querySelectorAll('th[data-sort]'));
+    let currentSort = { key: 'name', dir: 'asc' };
+
+    const getValue = (row, key) => {
+      switch (key) {
+        case 'name':
+          return row.dataset.name || '';
+        case 'present':
+        case 'goals':
+        case 'assists':
+        case 'rating':
+        case 'photo':
+          return Number(row.dataset[key] || 0);
+        case 'position':
+          return row.dataset.position || '';
+        default:
+          return row.dataset[key] || '';
+      }
+    };
+
+    const sortRows = (key) => {
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const dir = currentSort.key === key && currentSort.dir === 'asc' ? 'desc' : 'asc';
+      currentSort = { key, dir };
+      rows.sort((a, b) => {
+        const av = getValue(a, key);
+        const bv = getValue(b, key);
+        if (typeof av === 'number' && typeof bv === 'number') {
+          return dir === 'asc' ? av - bv : bv - av;
+        }
+        return dir === 'asc'
+          ? String(av).localeCompare(String(bv))
+          : String(bv).localeCompare(String(av));
+      });
+      rows.forEach((row) => tbody.appendChild(row));
+    };
+
+    headers.forEach((th) => {
+      th.addEventListener('click', () => sortRows(th.dataset.sort));
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    const buttons = Array.from(document.querySelectorAll('[data-export-target]'));
+    if (!buttons.length) return;
+
+    const loadHtml2Canvas = () =>
+      new Promise((resolve, reject) => {
+        if (typeof html2canvas !== 'undefined') return resolve();
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Falha ao carregar html2canvas'));
+        document.body.appendChild(s);
+      });
+
+    const runExport = async (targetId, name) => {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      try {
+        await loadHtml2Canvas();
+        document.body.classList.add('is-exporting');
+        el.classList.add('is-exporting');
+        await (document.fonts?.ready || Promise.resolve());
+
+        const exportHeight = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height || 0);
+        const canvas = await html2canvas(el, {
+          backgroundColor: '#0f1115',
+          scale: 2,
+          height: exportHeight,
+          windowHeight: exportHeight,
+        });
+
+        const link = document.createElement('a');
+        link.download = `${name}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        el.classList.remove('is-exporting');
+        document.body.classList.remove('is-exporting');
+      }
+    };
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        runExport(btn.dataset.exportTarget, btn.dataset.exportName || 'tournament');
+      });
+    });
+  })();
+</script>

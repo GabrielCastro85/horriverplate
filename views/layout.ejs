@@ -428,8 +428,25 @@
     <%
       const currentPage = typeof activePage !== "undefined" ? activePage : "";
       const isAdmin = _isAdminLayout;
-      const adminLabel =
-        admin && admin.email ? String(admin.email).split("@")[0] : null;
+      const adminEmail =
+        admin && admin.email ? String(admin.email).toLowerCase() : null;
+      const adminNameMap = {
+        "coxinha@hp.com": "Coxinha",
+        "jv@horriver.com": "João Vitor",
+        "pablo@horriver.com": "Pablo",
+        "gabriel@horriver.com": "Gabriel",
+        "admin@horriver.com": "Admin",
+      };
+      const adminLabel = (() => {
+        if (!adminEmail) return null;
+        if (adminNameMap[adminEmail]) return adminNameMap[adminEmail];
+        const raw = adminEmail.split("@")[0] || "";
+        return raw
+          .split(/[._-]+/)
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join(" ");
+      })();
 
       // Controle para exibir o link "Hall da Fama"
       const _nowLayout = new Date();

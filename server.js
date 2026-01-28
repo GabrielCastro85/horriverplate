@@ -19,6 +19,7 @@ const sobreRouter = require("./routes/sobre");
 const awardsRouter = require("./routes/awards"); // ✅ NOVO: rota da premiação
 const playerRouter = require("./routes/player");
 const voteRouter = require("./routes/vote");
+const monthlyVoteRouter = require("./routes/monthly_vote");
 
 let sharp = null;
 try {
@@ -260,6 +261,7 @@ app.use("/premiacao", awardsRouter); // ✅ NOVO: página de premiação
 app.use("/jogador", playerRouter);
 app.use("/admin", adminRouter);
 app.use("/vote", voteRouter);
+app.use("/monthly-vote", monthlyVoteRouter);
 
 
 // ==============================

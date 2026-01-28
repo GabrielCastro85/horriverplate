@@ -388,6 +388,7 @@
               <th class="py-2 pr-3 text-left font-normal">Posição</th>
               <th class="py-2 pr-3 text-left font-normal">Link</th>
               <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
+              <th class="py-2 pr-3 text-left font-normal">Votou</th>
             </tr>
           </thead>
           <tbody>
@@ -398,7 +399,7 @@
                  const msg = `Fala ${t.player.name}! Seu link de votação da pelada: ${link}`;
                  const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
             %>
-              <tr class="border-b border-horriver-border/40 last:border-0">
+                <tr class="border-b border-horriver-border/40 last:border-0">
                 <td class="py-2 pr-3 text-horriver-light">
                   <%= t.player.name %>
                   <% if (t.player.nickname) { %>
@@ -428,6 +429,13 @@
                     </a>
                   <% } else { %>
                     <span class="text-horriver-gray">Sem número</span>
+                  <% } %>
+                </td>
+                <td class="py-2 pr-3">
+                  <% if (t.usedAt) { %>
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">✓</span>
+                  <% } else { %>
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/10 text-horriver-gray text-[11px]">—</span>
                   <% } %>
                 </td>
               </tr>
@@ -627,6 +635,59 @@
   })();
 </script>
 
+
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    const buttons = Array.from(document.querySelectorAll("[data-export-target]"));
+    if (!buttons.length) return;
+
+    const loadHtml2Canvas = () =>
+      new Promise((resolve, reject) => {
+        if (typeof html2canvas !== "undefined") return resolve();
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+        s.onload = resolve;
+        s.onerror = () => reject(new Error("Falha ao carregar html2canvas"));
+        document.body.appendChild(s);
+      });
+
+    const runExport = async (targetId, name) => {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      try {
+        await loadHtml2Canvas();
+        document.body.classList.add("is-exporting");
+        el.classList.add("is-exporting");
+        await (document.fonts?.ready || Promise.resolve());
+
+        const exportHeight = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height || 0);
+        const canvas = await html2canvas(el, {
+          backgroundColor: "#0f1115",
+          scale: 2,
+          height: exportHeight,
+          windowHeight: exportHeight,
+        });
+
+        const link = document.createElement("a");
+        link.download = `${name}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        el.classList.remove("is-exporting");
+        document.body.classList.remove("is-exporting");
+      }
+    };
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        runExport(btn.dataset.exportTarget, btn.dataset.exportName || "tournament");
+      });
+    });
+  });
+</script>
+
 <script>
   (function () {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -654,6 +715,7 @@
 <!-- Torneio -->
 <!-- ========================= -->
 <section id="tournament" class="mt-10 space-y-4">
+  <% const hasTournament = typeof tournament !== "undefined" && tournament; %>
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
@@ -663,6 +725,26 @@
         Classificacao e jogos do torneio desta pelada.
       </p>
     </div>
+    <% if (hasTournament) { %>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-full border border-horriver-border text-[11px] text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition"
+          data-export-target="tournament-standings-export-admin"
+          data-export-name="tournament-classificacao"
+        >
+          Exportar classificacao
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-full border border-horriver-border text-[11px] text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition"
+          data-export-target="tournament-games-export-admin"
+          data-export-name="tournament-jogos"
+        >
+          Exportar jogos
+        </button>
+      </div>
+    <% } %>
   </div>
 
   <%
@@ -812,6 +894,412 @@
       </form>
     </div>
   <% } else { %>
+    <style>
+      .tournament-export {
+        display: none;
+        background: linear-gradient(180deg, #0f1115 0%, #050608 100%);
+        border: 2px solid rgba(255, 122, 26, 0.25);
+        border-radius: 24px;
+        padding: 18px 22px;
+        color: #f1f5f9;
+      }
+      .tournament-export .export-only {
+        display: none;
+      }
+      body.is-exporting .tournament-export {
+        display: block;
+      }
+      .tournament-export.is-exporting {
+        width: 1600px;
+        max-width: 1600px;
+      }
+      body.is-exporting .tournament-export .export-only {
+        display: flex;
+      }
+      body.is-exporting {
+        height: auto !important;
+      }
+      body.is-exporting .tournament-export {
+        overflow: visible !important;
+        height: auto !important;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+      }
+      body.is-exporting .tournament-export .export-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 6px;
+      }
+      body.is-exporting .tournament-export .export-title {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      body.is-exporting .tournament-export .export-subtitle {
+        font-size: 12px;
+        color: rgba(148, 163, 184, 0.9);
+        margin-top: 2px;
+      }
+      body.is-exporting .tournament-export .export-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 122, 26, 0.6);
+        background: #0b0c0f;
+        display: grid;
+        place-items: center;
+      }
+      body.is-exporting .tournament-export .export-logo img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+      }
+      body.is-exporting .tournament-export .export-footer {
+        margin-top: 8px;
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      body.is-exporting .tournament-export .export-card .overflow-x-auto {
+        overflow: visible;
+      }
+      body.is-exporting .tournament-export table {
+        min-width: 0;
+        width: 100%;
+        table-layout: fixed;
+      }
+      body.is-exporting .tournament-export .export-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 2px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+      }
+      body.is-exporting .tournament-export .export-section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #f8fafc;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        position: relative;
+        padding-left: 12px;
+      }
+      body.is-exporting .tournament-export .export-section-title::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 3px;
+        bottom: 3px;
+        width: 4px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #ff7a1a, #ffb455);
+      }
+      body.is-exporting .tournament-export .export-section-sub {
+        font-size: 12px;
+        color: rgba(148, 163, 184, 0.9);
+        margin-top: 2px;
+      }
+      body.is-exporting .tournament-export .export-card h3 {
+        font-size: 18px;
+      }
+      body.is-exporting .tournament-export table th,
+      body.is-exporting .tournament-export table td {
+        font-size: 14px;
+      }
+      body.is-exporting .tournament-export table thead th {
+        color: #f8fafc;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      body.is-exporting .tournament-export .standings-table .col-rank {
+        padding-left: 14px;
+      }
+      body.is-exporting .tournament-export .standings-table .col-rank .rank-number {
+        display: inline-block;
+        transform: translateX(6px);
+      }
+      body.is-exporting .tournament-export .team-cell {
+        max-width: 320px;
+      }
+      body.is-exporting .tournament-export .team-cell span {
+        line-height: 1.2;
+      }
+      body.is-exporting .tournament-export table tbody tr.rank-1 {
+        border-left: 4px solid #f5b942;
+        box-shadow: inset 0 0 0 9999px rgba(245, 185, 66, 0.05);
+      }
+      body.is-exporting .tournament-export table tbody tr.rank-2 {
+        border-left: 4px solid #ef8f2f;
+        box-shadow: inset 0 0 0 9999px rgba(239, 143, 47, 0.05);
+      }
+      body.is-exporting .tournament-export table tbody tr td.pts-cell {
+        color: #d8dee9;
+        font-weight: 600;
+      }
+      body.is-exporting .tournament-export table tbody tr.rank-1 td.pts-cell {
+        color: #f5b942;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      body.is-exporting .tournament-export table tbody tr.rank-2 td.pts-cell {
+        color: #ef8f2f;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      body.is-exporting .tournament-export .game-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        padding: 10px 14px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 10px;
+      }
+      body.is-exporting .tournament-export .game-card.game-pending {
+        opacity: 0.7;
+      }
+      body.is-exporting .tournament-export .team-name {
+        font-size: 16px;
+        font-weight: 700;
+      }
+      body.is-exporting .tournament-export .team-name span {
+        opacity: 0.9;
+      }
+      body.is-exporting .tournament-export .team-side {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      body.is-exporting .tournament-export .team-line {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      body.is-exporting .tournament-export .team-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        flex: 0 0 auto;
+      }
+      body.is-exporting .tournament-export .team-meta {
+        font-size: 12px;
+        color: rgba(148, 163, 184, 0.75);
+      }
+      body.is-exporting .tournament-export .score {
+        font-size: 18px;
+        font-weight: 800;
+        color: #0b0b0b;
+        background: linear-gradient(90deg, #ff7a1a, #ffb455);
+        padding: 0 12px;
+        border-radius: 999px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 34px;
+        line-height: 1;
+      }
+      body.is-exporting .tournament-export .score-note {
+        margin-top: 4px;
+        font-size: 11px;
+        color: rgba(148, 163, 184, 0.9);
+      }
+    </style>
+
+    <div id="tournament-standings-export-admin" class="tournament-export" data-export-root>
+      <div class="export-header export-only">
+        <div>
+          <div class="export-title">HORRIVER PLATE — TORNEIO</div>
+          <div class="export-subtitle">Classificacao</div>
+        </div>
+        <div class="export-logo">
+          <img src="/img/logo-64x64.svg" alt="Horriver Plate" />
+        </div>
+      </div>
+
+      <div class="export-card rounded-2xl border border-horriver-border/60 bg-black/40 p-2">
+        <h3 class="text-sm font-semibold text-horriver-light mb-2">Classificacao</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[11px] standings-table">
+            <thead class="text-horriver-gray">
+              <tr>
+                <th class="text-left py-2 pr-3">#</th>
+                <th class="text-left py-2 pr-3">Time</th>
+                <th class="text-center py-2">J</th>
+                <th class="text-center py-2">V</th>
+                <th class="text-center py-2">E</th>
+                <th class="text-center py-2">D</th>
+                <th class="text-center py-2">GP</th>
+                <th class="text-center py-2">GC</th>
+                <th class="text-center py-2">SG</th>
+                <th class="text-center py-2">Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% standings.forEach((row, idx) => { const isFirst = idx === 0; const isSecond = idx === 1; %>
+                <tr class="border-t border-horriver-border/40 <%= (idx % 2 === 0) ? 'bg-white/5' : 'bg-white/10' %> <%= isFirst ? 'rank-1' : '' %> <%= isSecond ? 'rank-2' : '' %>">
+                  <td class="py-2 pr-3 text-horriver-gray col-rank">
+                    <span class="rank-number"><%= idx + 1 %></span>
+                  </td>
+                  <td class="py-2 pr-3 text-horriver-light team-cell">
+                    <span class="inline-flex items-center gap-2">
+                      <span class="team-dot" style="background:<%= getTeamColor(teamById.get(row.teamId)) %>;"></span>
+                      <span class="font-semibold"><%- renderTeamName(teamById.get(row.teamId), teamNameFromRow(row)) %></span>
+                    </span>
+                  </td>
+                  <td class="py-2 text-center"><%= statVal(row, "played") %></td>
+                  <td class="py-2 text-center"><%= statVal(row, "wins", "v") %></td>
+                  <td class="py-2 text-center"><%= statVal(row, "draws", "e") %></td>
+                  <td class="py-2 text-center"><%= statVal(row, "losses", "d") %></td>
+                  <td class="py-2 text-center"><%= statVal(row, "gf", "goalsFor") %></td>
+                  <td class="py-2 text-center"><%= statVal(row, "ga", "goalsAgainst") %></td>
+                  <td class="py-2 text-center"><%= statVal(row, "gd", "goalDiff") %></td>
+                  <td class="py-2 text-center text-horriver-orange font-semibold pts-cell"><%= statVal(row, "pts", "points") %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="export-footer export-only">@HORRIVERPLATE</div>
+    </div>
+
+    <div id="tournament-games-export-admin" class="tournament-export" data-export-root>
+      <div class="export-header export-only">
+        <div>
+          <div class="export-title">HORRIVER PLATE — TORNEIO</div>
+          <div class="export-subtitle">Jogos e resultados</div>
+        </div>
+        <div class="export-logo">
+          <img src="/img/logo-64x64.svg" alt="Horriver Plate" />
+        </div>
+      </div>
+
+      <% stages.forEach((stage) => {
+          const stageGames = gamesByStage[stage] || [];
+          if (!stageGames.length) return;
+      %>
+        <div class="export-card rounded-2xl border border-horriver-border/60 bg-black/40 p-3 mb-4 last:mb-0">
+          <div class="mb-2">
+            <div class="export-section-title"><%= stageLabels[stage] || stage %></div>
+          <div class="export-section-sub"><%= stageGames.length %> jogo(s)</div>
+          </div>
+          <div class="grid gap-3">
+            <% if (stage === "FINAL") { %>
+              <% if (thirdPlaceGame) { const home = teamById.get(thirdPlaceGame.homeTeamId); const away = teamById.get(thirdPlaceGame.awayTeamId); const played = thirdPlaceGame.homeGoals != null && thirdPlaceGame.awayGoals != null; %>
+                <div class="export-card rounded-xl border border-white/10 bg-black/40 p-3">
+                  <div class="export-section-sub mb-2">Disputa 3º lugar</div>
+                  <div class="game-card <%= played ? '' : 'game-pending' %>">
+                    <div class="team-side">
+                      <div class="team-name text-horriver-light">
+                        <span class="team-line">
+                          <span class="team-dot" style="background:<%= getTeamColor(home) %>;"></span>
+                          <%- renderTeamName(home, "Time") %>
+                        </span>
+                      </div>
+                      <div class="team-meta">Mandante</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="score"><%= thirdPlaceGame.homeGoals ?? "—" %> x <%= thirdPlaceGame.awayGoals ?? "—" %></div>
+                      <% if (thirdPlaceGame.decidedBy === "PENALTIES") { %>
+                        <div class="score-note">
+                          Pênaltis: <%= thirdPlaceGame.homePenalties %>-<%= thirdPlaceGame.awayPenalties %>
+                        </div>
+                      <% } %>
+                    </div>
+                    <div class="team-side text-right">
+                      <div class="team-name text-horriver-light">
+                        <span class="team-line" style="justify-content:flex-end;">
+                          <%- renderTeamName(away, "Time") %>
+                          <span class="team-dot" style="background:<%= getTeamColor(away) %>;"></span>
+                        </span>
+                      </div>
+                      <div class="team-meta">Visitante</div>
+                    </div>
+                  </div>
+                </div>
+              <% } %>
+              <% if (finalGame) { const home = teamById.get(finalGame.homeTeamId); const away = teamById.get(finalGame.awayTeamId); const played = finalGame.homeGoals != null && finalGame.awayGoals != null; %>
+                <div class="export-card rounded-xl border border-white/10 bg-black/40 p-3">
+                  <div class="export-section-sub mb-2">Final</div>
+                  <div class="game-card <%= played ? '' : 'game-pending' %>">
+                    <div class="team-side">
+                      <div class="team-name text-horriver-light">
+                        <span class="team-line">
+                          <span class="team-dot" style="background:<%= getTeamColor(home) %>;"></span>
+                          <%- renderTeamName(home, "Time") %>
+                        </span>
+                      </div>
+                      <div class="team-meta">Mandante</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="score"><%= finalGame.homeGoals ?? "—" %> x <%= finalGame.awayGoals ?? "—" %></div>
+                      <% if (finalGame.decidedBy === "PENALTIES") { %>
+                        <div class="score-note">
+                          Pênaltis: <%= finalGame.homePenalties %>-<%= finalGame.awayPenalties %>
+                        </div>
+                      <% } %>
+                    </div>
+                    <div class="team-side text-right">
+                      <div class="team-name text-horriver-light">
+                        <span class="team-line" style="justify-content:flex-end;">
+                          <%- renderTeamName(away, "Time") %>
+                          <span class="team-dot" style="background:<%= getTeamColor(away) %>;"></span>
+                        </span>
+                      </div>
+                      <div class="team-meta">Visitante</div>
+                    </div>
+                  </div>
+                </div>
+              <% } %>
+            <% } else { %>
+              <% stageGames.forEach((game) => { const home = teamById.get(game.homeTeamId); const away = teamById.get(game.awayTeamId); const played = game.homeGoals != null && game.awayGoals != null; %>
+                <div class="game-card <%= played ? '' : 'game-pending' %>">
+                  <div class="team-side">
+                    <div class="team-name text-horriver-light">
+                      <span class="team-line">
+                        <span class="team-dot" style="background:<%= getTeamColor(home) %>;"></span>
+                        <%- renderTeamName(home, "Time") %>
+                      </span>
+                    </div>
+                    <div class="team-meta">Mandante</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="score"><%= game.homeGoals ?? "—" %> x <%= game.awayGoals ?? "—" %></div>
+                    <% if (game.decidedBy === "PENALTIES") { %>
+                      <div class="score-note">
+                        Pênaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
+                      </div>
+                    <% } %>
+                  </div>
+                  <div class="team-side text-right">
+                    <div class="team-name text-horriver-light">
+                      <span class="team-line" style="justify-content:flex-end;">
+                        <%- renderTeamName(away, "Time") %>
+                        <span class="team-dot" style="background:<%= getTeamColor(away) %>;"></span>
+                      </span>
+                    </div>
+                    <div class="team-meta">Visitante</div>
+                  </div>
+                </div>
+              <% }); %>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+
+      <div class="export-footer export-only">@HORRIVERPLATE</div>
+    </div>
     <% const finalWinnerId = finalGame?.winnerTeamId || null; %>
     <% if (finalWinnerId && standings.length >= 4) { %>
       <% const championTeam = finalGame?.winnerTeam || teamById.get(standings[0]?.teamId); %>
@@ -843,8 +1331,7 @@
                   class="podium-badge px-4 h-7 rounded-full bg-horriver-orange text-horriver-bg text-[11px] font-semibold inline-flex items-center justify-center text-center min-w-[150px] shadow-[0_6px_14px_rgba(0,0,0,0.35)] absolute left-1/2 -translate-x-1/2"
                   style="top:0; line-height:<%= badgeHeight %>px;"
                 >
-                  <% if (pos === 1) { %>ðŸ†<% } else if (pos === 2) { %>ðŸ¥ˆ<% } else { %>ðŸ¥‰<% } %>
-                  <span class="ml-2"><%= pos %>&ordm; Colocado</span>
+                  <span><%= pos %>&ordm; Colocado</span>
                 </span>
                 <div
                   class="rounded-full <%= pos === 1 ? 'border-4' : 'border-2' %> border-horriver-orange/80"
@@ -2045,13 +2532,13 @@
             "";
           const rawName = box.querySelector("[data-team-name]")?.textContent || "Time";
           const colorEmojiMap = {
-            Amarelo: "ðŸŸ¡",
-            Azul: "ðŸ”µ",
-            Preto: "âš«",
-            Vermelho: "ðŸ”´",
-            Branco: "âšª",
+            Amarelo: "AMARELO",
+            Azul: "AZUL",
+            Preto: "PRETO",
+            Vermelho: "VERMELHO",
+            Branco: "BRANCO",
           };
-          const emoji = colorEmojiMap[colorName] || "ðŸŽ¨";
+          const emoji = colorEmojiMap[colorName] || "";
           const sponsorName = sponsorNameByLabel[colorName] || `Time ${colorName}`;
           const name = colorName ? `${emoji} ${sponsorName}` : rawName;
           const lines = Array.from(box.querySelectorAll("li")).map((li) => {
@@ -2065,7 +2552,7 @@
         });
         const gkItems = goalkeeperBenchBox ? goalkeeperBenchBox.querySelectorAll("li") : [];
         if (gkItems.length) {
-          text += "\nðŸ§¤ Goleiros\n";
+          text += "\nGoleiros\n";
           gkItems.forEach((li) => {
             const spans = li.querySelectorAll("span");
             const nome = spans[0]?.textContent?.trim() || "";

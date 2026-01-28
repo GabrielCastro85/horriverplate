@@ -14,6 +14,7 @@ model Admin {
   passwordHash String
   voteSessions VoteSession[] @relation("AdminVoteSessions")
   auditLogs    AuditLog[]
+  monthlyVoteSessions MonthlyVoteSession[]
 }
 
 model AuditLog {
@@ -64,6 +65,8 @@ model Player {
   VoteLink           VoteLink[]
   voteRankings       VoteRanking[]
   voteTokens         VoteToken[]
+  monthlyVoteTokens  MonthlyVoteToken[]
+  monthlyVoteChoices MonthlyVoteBallot[] @relation("MonthlyVoteCandidate")
   weeklyAwards       WeeklyAward[]       @relation("WeeklyBest")
 }
 
@@ -241,6 +244,43 @@ model VoteLink {
   VoteChoice VoteChoice[]
   Match      Match        @relation(fields: [matchId], references: [id])
   Player     Player       @relation(fields: [playerId], references: [id])
+}
+
+model MonthlyVoteSession {
+  id               Int                @id @default(autoincrement())
+  month            Int
+  year             Int
+  candidates       Json
+  createdAt        DateTime           @default(now())
+  expiresAt        DateTime?
+  createdByAdminId Int?
+  createdByAdmin   Admin?             @relation(fields: [createdByAdminId], references: [id])
+  tokens           MonthlyVoteToken[]
+
+  @@unique([month, year])
+}
+
+model MonthlyVoteToken {
+  id         Int                @id @default(autoincrement())
+  token      String             @unique
+  sessionId  Int
+  playerId   Int
+  usedAt     DateTime?
+  createdAt  DateTime           @default(now())
+  ballot     MonthlyVoteBallot?
+  session    MonthlyVoteSession @relation(fields: [sessionId], references: [id])
+  player     Player             @relation(fields: [playerId], references: [id])
+
+  @@unique([sessionId, playerId])
+}
+
+model MonthlyVoteBallot {
+  id          Int               @id @default(autoincrement())
+  tokenId     Int               @unique
+  candidateId Int
+  createdAt   DateTime          @default(now())
+  token       MonthlyVoteToken  @relation(fields: [tokenId], references: [id])
+  candidate   Player            @relation("MonthlyVoteCandidate", fields: [candidateId], references: [id])
 }
 
 model VoteChoice {

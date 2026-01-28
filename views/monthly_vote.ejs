@@ -1,0 +1,77 @@
+﻿<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+  <header class="text-center space-y-2">
+    <h1 class="font-title text-3xl text-horriver-light">Votação do melhor do mês</h1>
+    <% if (monthLabel) { %>
+      <p class="text-sm text-horriver-gray">Mês: <span class="text-horriver-orange"><%= monthLabel %></span></p>
+    <% } %>
+    <% if (voter) { %>
+      <p class="text-xs text-horriver-gray">Link gerado para: <span class="text-horriver-light"><%= voter.name %></span></p>
+    <% } %>
+  </header>
+
+  <% if (error) { %>
+    <div class="bg-red-900/40 border border-red-600/60 text-red-100 rounded-2xl p-4 text-sm">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-100 rounded-2xl p-4 text-sm">
+      Voto registrado com sucesso. Obrigado!
+    </div>
+  <% } %>
+
+  <% if (!error && !success) { %>
+    <form method="POST" class="space-y-4">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <% candidates.forEach((c) => { %>
+          <label class="rounded-2xl border border-horriver-border bg-black/40 p-4 cursor-pointer hover:border-horriver-orange transition peer-checked:border-horriver-orange peer-checked:shadow-[0_0_0_1px_rgba(255,122,26,0.6),0_10px_30px_rgba(0,0,0,0.35)]">
+            <input type="radio" name="candidateId" value="<%= c.id %>" class="hidden peer" required />
+            <div class="flex items-center gap-3">
+              <img
+                src="<%= thumbUrl(c.photoUrl || '/img/logo-128x128.svg', 96) %>"
+                alt="<%= c.name %>"
+                class="w-16 h-16 rounded-full object-cover border border-horriver-orange/60 peer-checked:ring-2 peer-checked:ring-horriver-orange/70"
+              />
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-horriver-light truncate"><%= c.name %></p>
+                <% if (c.nickname) { %>
+                  <p class="text-[11px] text-horriver-gray truncate">"<%= c.nickname %>"</p>
+                <% } %>
+                <p class="text-[11px] text-horriver-gray">Peladas no mês: <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span></p>
+              </div>
+            </div>
+            <div class="mt-3 grid grid-cols-3 gap-2 text-[11px] text-horriver-gray">
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= (c.goals ?? c.avgGoals ?? 0) %></p>
+                <p>Gols</p>
+              </div>
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= (c.assists ?? c.avgAssists ?? 0) %></p>
+                <p>Assist.</p>
+              </div>
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= (c.avgRating ?? 0).toFixed ? c.avgRating.toFixed(2).replace('.', ',') : c.avgRating %></p>
+                <p>Nota</p>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center gap-2 text-[11px] text-horriver-gray">
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-horriver-orange text-horriver-orange">★</span>
+              <span class="peer-checked:text-horriver-orange">Selecionar este jogador</span>
+            </div>
+          </label>
+        <% }) %>
+      </div>
+
+      <div class="text-right">
+        <button
+          type="submit"
+          data-submit-label="Enviando..."
+          class="inline-flex items-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
+        >
+          Enviar voto
+        </button>
+      </div>
+    </form>
+  <% } %>
+</section>
