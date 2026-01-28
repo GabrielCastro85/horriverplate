@@ -23,24 +23,6 @@
         class="mt-1 w-full rounded-xl bg-black/40 border border-horriver-border px-4 py-2 text-horriver-light"
       />
     </label>
-    <label class="text-sm text-horriver-gray w-full md:w-56">
-      Rodada
-      <input
-        type="text"
-        id="tierRound"
-        placeholder="Rodada X"
-        class="mt-1 w-full rounded-xl bg-black/40 border border-horriver-border px-4 py-2 text-horriver-light"
-      />
-    </label>
-    <label class="text-sm text-horriver-gray w-full md:w-56">
-      Mês/Ano
-      <input
-        type="text"
-        id="tierMonthYear"
-        placeholder="Mês/Ano"
-        class="mt-1 w-full rounded-xl bg-black/40 border border-horriver-border px-4 py-2 text-horriver-light"
-      />
-    </label>
     <div class="flex flex-wrap items-center gap-2">
       <button
         type="button"
@@ -63,7 +45,6 @@
   <div class="tier-export-header export-only">
     <div class="tier-export-title">
       <span class="tier-export-title-text">HORRIVER PLATE — TIER LIST</span>
-      <span class="tier-export-subtitle" id="exportSubtitle">Rodada X • Mês/Ano</span>
     </div>
     <div class="tier-export-logo">
       <img src="/img/logo-128x128.svg" alt="Horriver Plate" />
@@ -291,9 +272,6 @@
     const addTierBtn = document.getElementById("addTierBtn");
     const downloadBtn = document.getElementById("downloadTierBtn");
     const titleInput = document.getElementById("tierTitle");
-    const roundInput = document.getElementById("tierRound");
-    const monthYearInput = document.getElementById("tierMonthYear");
-    const exportSubtitle = document.getElementById("exportSubtitle");
 
     const defaultTiers = [
       { label: "S", color: "#c62828" },
@@ -435,15 +413,6 @@
       row.querySelector(".tier-name").focus();
     });
 
-    const updateSubtitle = () => {
-      if (!exportSubtitle) return;
-      const round = (roundInput?.value || "").trim();
-      const monthYear = (monthYearInput?.value || "").trim();
-      exportSubtitle.textContent = `${round || "Rodada X"} • ${monthYear || "Mês/Ano"}`;
-    };
-    roundInput?.addEventListener("input", updateSubtitle);
-    monthYearInput?.addEventListener("input", updateSubtitle);
-    updateSubtitle();
     downloadBtn.addEventListener("click", async () => {
       let board = null;
       try {
