@@ -44,31 +44,26 @@ async function loadContext(tokenValue) {
     return { error: "Nenhum jogador presente registrado para esta pelada." };
   }
 
-  const players = stats.map((s) => {
+  const playersRaw = stats.map((s) => {
     const label = normalizePosition(s.player.position);
     return {
-      ...s.player,
+      id: s.player.id,
+      name: s.player.name,
+      nickname: s.player.nickname,
+      position: s.player.position,
       positionLabel: label,
+      photoUrl: s.player.photoUrl || null,
       goals: s.goals || 0,
       assists: s.assists || 0,
+      rating: s.rating,
       appearedInPhoto: !!s.appearedInPhoto,
     };
   });
-
-  const grouped = {};
-  const groupedOrder = [];
-  const order = ["Goleiro", "Zagueiro", "Meia", "Atacante"];
-  order.forEach((label) => {
-    const list = players.filter((p) => p.positionLabel === label);
-    if (list.length) {
-      grouped[label] = list;
-      groupedOrder.push({ label, list });
-    }
-  });
-  const others = players.filter((p) => !order.includes(p.positionLabel));
-  if (others.length) {
-    grouped.Outros = others;
-    groupedOrder.push({ label: "Outros", list: others });
+  const players = token.player
+    ? playersRaw.filter((p) => p.id !== token.player.id)
+    : playersRaw;
+  if (!players.length) {
+    return { error: "Nenhum jogador disponivel para votar." };
   }
 
   return {
@@ -76,8 +71,6 @@ async function loadContext(tokenValue) {
     match: token.session.match,
     voter: token.player,
     players,
-    grouped,
-    groupedOrder,
   };
 }
 
@@ -90,8 +83,6 @@ router.get("/:token", async (req, res) => {
       title: "Votação",
       error: ctx.error,
       success: false,
-      grouped: {},
-      groupedOrder: [],
       players: [],
       voter: null,
       match: null,
@@ -103,8 +94,6 @@ router.get("/:token", async (req, res) => {
     title: "Votação",
     error: null,
     success: false,
-    grouped: ctx.grouped,
-    groupedOrder: ctx.groupedOrder,
     players: ctx.players,
     voter: ctx.voter,
     match: ctx.match,
@@ -121,8 +110,6 @@ router.post("/:token", async (req, res) => {
       title: "Votação",
       error: ctx.error,
       success: false,
-      grouped: {},
-      groupedOrder: [],
       players: [],
       voter: null,
       match: null,
@@ -132,40 +119,42 @@ router.post("/:token", async (req, res) => {
 
   try {
     const players = ctx.players;
-    const rankings = [];
+    const ratings = [];
+    let missing = false;
 
     players.forEach((p) => {
-      const key = `rank_${p.position}_${p.id}`;
+      const key = `rating_${p.id}`;
       const raw = req.body[key];
-      if (raw == null || raw === "") return;
-      const rank = parseInt(raw, 10);
-      if (Number.isNaN(rank) || rank <= 0) return;
-      rankings.push({
-        position: p.position || "Outros",
-        playerId: p.id,
-        rank,
-      });
+      if (raw == null || raw === "") {
+        missing = true;
+        return;
+      }
+      const rating = parseInt(raw, 10);
+      if (Number.isNaN(rating) || rating < 1 || rating > 5) {
+        missing = true;
+        return;
+      }
+      ratings.push({ playerId: p.id, rating });
     });
 
-    const bestOverallRaw = req.body.bestOverall;
-    const bestOverallId =
-      bestOverallRaw && bestOverallRaw !== ""
-        ? parseInt(bestOverallRaw, 10)
-        : null;
-    const validBest =
-      bestOverallId &&
-      players.find((p) => p.id === bestOverallId) &&
-      (!ctx.token?.player || bestOverallId !== ctx.token.player.id)
-        ? bestOverallId
-        : null;
+    if (missing || ratings.length !== players.length) {
+      return res.render("vote_token", {
+        title: "VotaÃ§Ã£o",
+        error: "Preencha todas as notas de 1 a 5 para continuar.",
+        success: false,
+        players: ctx.players,
+        voter: ctx.voter,
+        match: ctx.match,
+        tokenValue,
+      });
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.voteBallot.create({
         data: {
           voteTokenId: ctx.token.id,
-          bestOverallPlayerId: validBest,
-          rankings: {
-            create: rankings,
+          ratings: {
+            create: ratings,
           },
         },
       });
@@ -180,8 +169,6 @@ router.post("/:token", async (req, res) => {
       title: "Votação",
       error: null,
       success: true,
-      grouped: ctx.grouped,
-      groupedOrder: ctx.groupedOrder,
       players: ctx.players,
       voter: ctx.voter,
       match: ctx.match,
@@ -193,8 +180,6 @@ router.post("/:token", async (req, res) => {
       title: "Votação",
       error: "Erro ao registrar o voto. Tente novamente.",
       success: false,
-      grouped: ctx.grouped,
-      groupedOrder: ctx.groupedOrder,
       players: ctx.players,
       voter: ctx.voter,
       match: ctx.match,

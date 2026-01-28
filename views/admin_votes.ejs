@@ -59,36 +59,25 @@
             </div>
           </div>
 
-          <% if (b.bestOverallPlayer) { %>
-            <p class="text-[12px] text-horriver-light">
-              Melhor da pelada: <span class="text-horriver-orange font-semibold"><%= b.bestOverallPlayer.name %></span>
-              <% if (b.bestOverallPlayer.nickname) { %>
-                (<%= b.bestOverallPlayer.nickname %>)
-              <% } %>
-            </p>
-          <% } %>
-
-          <div class="grid md:grid-cols-2 gap-3 text-[12px]">
-            <% const grouped = {}; (b.rankings || []).forEach((r) => {
-              const pos = r.position || 'Outros';
-              if (!grouped[pos]) grouped[pos] = [];
-              grouped[pos].push(r);
-            });
-            Object.entries(grouped).forEach(([pos, ranks]) => { %>
-              <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30">
-                <p class="text-horriver-orange font-semibold mb-2"><%= pos %></p>
-                <ul class="space-y-1">
-                  <% ranks.sort((a,b)=>a.rank-b.rank).forEach((r) => { %>
-                    <li class="flex items-center justify-between">
-                      <span class="text-horriver-light"><%= r.rank %>. <%= r.player?.name || 'Jogador' %></span>
+          <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30 text-[12px]">
+            <p class="text-horriver-orange font-semibold mb-2">Notas (1-5)</p>
+            <% if (!b.ratings || !b.ratings.length) { %>
+              <p class="text-horriver-gray">Sem notas registradas.</p>
+            <% } else { %>
+              <ul class="space-y-1">
+                <% b.ratings.sort((a, b) => (a.player?.name || '').localeCompare(b.player?.name || '')).forEach((r) => { %>
+                  <li class="flex items-center justify-between">
+                    <span class="text-horriver-light">
+                      <%= r.player?.name || 'Jogador' %>
                       <% if (r.player?.nickname) { %>
                         <span class="text-horriver-gray">("<%= r.player.nickname %>")</span>
                       <% } %>
-                    </li>
-                  <% }) %>
-                </ul>
-              </div>
-            <% }); %>
+                    </span>
+                    <span class="text-horriver-orange font-semibold"><%= r.rating %></span>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } %>
           </div>
         </div>
       <% }) %>

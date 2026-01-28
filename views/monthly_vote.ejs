@@ -41,7 +41,7 @@
                 <p class="text-[11px] text-horriver-gray">Peladas no mês: <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span></p>
               </div>
             </div>
-            <div class="mt-3 grid grid-cols-3 gap-2 text-[11px] text-horriver-gray">
+            <div class="mt-3 grid grid-cols-4 gap-2 text-[11px] text-horriver-gray">
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
                 <p class="text-horriver-orange font-semibold"><%= (c.goals ?? c.avgGoals ?? 0) %></p>
                 <p>Gols</p>
@@ -53,6 +53,10 @@
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
                 <p class="text-horriver-orange font-semibold"><%= (c.avgRating ?? 0).toFixed ? c.avgRating.toFixed(2).replace('.', ',') : c.avgRating %></p>
                 <p>Nota</p>
+              </div>
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= c.photos ?? 0 %></p>
+                <p>Fotos</p>
               </div>
             </div>
             <div class="mt-3 flex items-center gap-2 text-[11px] text-horriver-gray">

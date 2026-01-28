@@ -65,6 +65,7 @@ model Player {
   VoteLink           VoteLink[]
   voteRankings       VoteRanking[]
   voteTokens         VoteToken[]
+  voteRatings        VoteRating[]
   monthlyVoteTokens  MonthlyVoteToken[]
   monthlyVoteChoices MonthlyVoteBallot[] @relation("MonthlyVoteCandidate")
   weeklyAwards       WeeklyAward[]       @relation("WeeklyBest")
@@ -218,6 +219,20 @@ model VoteBallot {
   bestOverallPlayer   Player?       @relation("BestOverallPlayer", fields: [bestOverallPlayerId], references: [id])
   token               VoteToken     @relation(fields: [voteTokenId], references: [id])
   rankings            VoteRanking[]
+  ratings             VoteRating[]
+}
+
+model VoteRating {
+  id           Int        @id @default(autoincrement())
+  voteBallotId Int
+  playerId     Int
+  rating       Int
+  createdAt    DateTime   @default(now())
+  player       Player     @relation(fields: [playerId], references: [id])
+  ballot       VoteBallot @relation(fields: [voteBallotId], references: [id])
+
+  @@unique([voteBallotId, playerId])
+  @@index([playerId])
 }
 
 model VoteRanking {

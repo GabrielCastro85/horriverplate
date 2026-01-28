@@ -57,12 +57,14 @@ async function computeMonthlyVoteData(month, year) {
         assists: 0,
         ratingSum: 0,
         ratingCount: 0,
+        photos: 0,
       });
     }
     const row = agg.get(stat.playerId);
     row.matches += 1;
     row.goals += stat.goals || 0;
     row.assists += stat.assists || 0;
+    row.photos += stat.appearedInPhoto ? 1 : 0;
     if (stat.rating != null) {
       row.ratingSum += stat.rating;
       row.ratingCount += 1;
@@ -82,6 +84,7 @@ async function computeMonthlyVoteData(month, year) {
       matches: row.matches,
       goals: row.goals,
       assists: row.assists,
+      photos: row.photos,
       avgGoals,
       avgAssists,
       avgRating,
@@ -102,6 +105,7 @@ async function computeMonthlyVoteData(month, year) {
       matches: r.matches,
       goals: r.goals,
       assists: r.assists,
+      photos: r.photos,
       avgGoals: Number(r.avgGoals.toFixed(2)),
       avgAssists: Number(r.avgAssists.toFixed(2)),
       avgRating: Number(r.avgRating.toFixed(2)),
@@ -499,8 +503,20 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
       "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
     ];
 
-    const mvMonth = Number(req.query.mvMonth) || referenceDate.getMonth() + 1;
-    const mvYear = Number(req.query.mvYear) || referenceDate.getFullYear();
+    const hasMonthParam = req.query.mvMonth != null;
+    const hasYearParam = req.query.mvYear != null;
+    let mvMonth = Number(req.query.mvMonth) || referenceDate.getMonth() + 1;
+    let mvYear = Number(req.query.mvYear) || referenceDate.getFullYear();
+
+    if (!hasMonthParam && !hasYearParam) {
+      const latestSession = await prisma.monthlyVoteSession.findFirst({
+        orderBy: { createdAt: "desc" },
+      });
+      if (latestSession) {
+        mvMonth = latestSession.month;
+        mvYear = latestSession.year;
+      }
+    }
 
     const monthlyVoteSession = await prisma.monthlyVoteSession.findUnique({
       where: { month_year: { month: mvMonth, year: mvYear } },
@@ -1497,6 +1513,11 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
           })
         : prisma.$executeRaw`SELECT 1`,
       ballotIds.length
+        ? prisma.voteRating.deleteMany({
+            where: { voteBallotId: { in: ballotIds } },
+          })
+        : prisma.$executeRaw`SELECT 1`,
+      ballotIds.length
         ? prisma.voteBallot.deleteMany({ where: { id: { in: ballotIds } } })
         : prisma.$executeRaw`SELECT 1`,
       tokenIds.length
@@ -1566,8 +1587,7 @@ router.get("/matches/:id/votes", requireAdmin, async (req, res) => {
       where: { token: { session: { matchId: id } } },
       include: {
         token: { include: { player: true } },
-        bestOverallPlayer: true,
-        rankings: { include: { player: true } },
+        ratings: { include: { player: true } },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -2297,7 +2317,7 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
     const ballots = await prisma.voteBallot.findMany({
       where: { token: { voteSessionId: session.id } },
       include: {
-        rankings: true,
+        ratings: true,
         token: true,
       },
     });
@@ -2315,85 +2335,22 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
       return res.redirect(`/admin/matches/${matchId}?error=noPresentPlayers`);
     }
 
-    // Mapa de quantos jogadores por posição (para normalizar ranking)
-    const posCounts = new Map();
-    stats.forEach((s) => {
-      const pos = (s.player.position || "Outros").toLowerCase();
-      posCounts.set(pos, (posCounts.get(pos) || 0) + 1);
-    });
-
-    // Score de ranking por jogador
-    const rankScores = new Map(); // playerId -> [scores]
+    const ratingMap = new Map(); // playerId -> { sum, count }
     ballots.forEach((b) => {
-      const byPos = new Map();
-      (b.rankings || []).forEach((r) => {
-        const pos = (r.position || "Outros").toLowerCase();
-        if (!byPos.has(pos)) byPos.set(pos, []);
-        byPos.get(pos).push(r);
-      });
-      byPos.forEach((list, pos) => {
-        const totalInPos = posCounts.get(pos) || list.length || 1;
-        list.forEach((r) => {
-          const denom = Math.max(totalInPos - 1, 1);
-          const score = (totalInPos - r.rank) / denom; // 1 para 1º, 0 para último
-          if (!rankScores.has(r.playerId)) rankScores.set(r.playerId, []);
-          rankScores.get(r.playerId).push(score);
-        });
+      (b.ratings || []).forEach((r) => {
+        if (!ratingMap.has(r.playerId)) ratingMap.set(r.playerId, { sum: 0, count: 0 });
+        const entry = ratingMap.get(r.playerId);
+        entry.sum += r.rating;
+        entry.count += 1;
       });
     });
-
-    // Contagem de votos para "melhor da pelada"
-    const mvpCounts = new Map();
-    ballots.forEach((b) => {
-      if (b.bestOverallPlayerId) {
-        mvpCounts.set(
-          b.bestOverallPlayerId,
-          (mvpCounts.get(b.bestOverallPlayerId) || 0) + 1
-        );
-      }
-    });
-    const maxMvp = mvpCounts.size ? Math.max(...mvpCounts.values()) : 0;
-    const mvpWinners = new Set(
-      Array.from(mvpCounts.entries())
-        .filter(([, v]) => v === maxMvp)
-        .map(([id]) => id)
-    );
 
     const updates = [];
     stats.forEach((stat) => {
-      const pos = (stat.player.position || "Outros").toLowerCase();
-      const rankList = rankScores.get(stat.playerId) || [];
-      const rankAvg =
-        rankList.length > 0
-          ? rankList.reduce((a, b) => a + b, 0) / rankList.length // 0..1
-          : 0;
-
-      const mvpScore = mvpCounts.has(stat.playerId)
-        ? mvpWinners.has(stat.playerId)
-          ? 1 // campeão de MVP
-          : 0.5 // recebeu votos de MVP
-        : 0;
-
-      const isGoalkeeper = pos.includes("goleiro");
-      const goalWeight = isGoalkeeper ? 0.2 : 0.5;
-      const assistWeight = isGoalkeeper ? 0.15 : 0.35;
-      const photoWeight = isGoalkeeper ? 0.25 : 0.2;
-      const statsRaw =
-        (stat.goals || 0) * goalWeight +
-        (stat.assists || 0) * assistWeight +
-        (stat.appearedInPhoto ? photoWeight : 0);
-      const maxStats = isGoalkeeper ? 1.0 : 1.5;
-      const statsScore = Math.min(statsRaw / maxStats, 1); // 0..1
-
-      // Peso total soma 1.0. Só dá 10 se rank for perfeito e for MVP de todos.
-      const weighted =
-        rankAvg * 0.6 +
-        mvpScore * 0.3 +
-        statsScore * 0.1;
-
-      // Base fixa de 2.0
-      let finalRating = Math.max(0, Math.min(10, 2 + weighted * 8));
-
+      const entry = ratingMap.get(stat.playerId);
+      if (!entry || entry.count === 0) return;
+      const avg = entry.sum / entry.count; // 1..5
+      const finalRating = Math.max(0, Math.min(10, avg * 2));
       updates.push(
         prisma.playerStat.update({
           where: { id: stat.id },

@@ -98,20 +98,40 @@
                 <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
                   <th class="py-2 pr-3 text-left font-normal">Jogador</th>
                   <th class="py-2 pr-3 text-left font-normal">Link</th>
-                    <th class="py-2 pr-3 text-left font-normal">Status</th>
-                    <th class="py-2 pr-3 text-left font-normal">Votou</th>
+                  <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
+                  <th class="py-2 pr-3 text-left font-normal">Status</th>
+                  <th class="py-2 pr-3 text-left font-normal">Votou</th>
                 </tr>
               </thead>
               <tbody>
-                  <% monthlyVoteTokens.forEach((t) => { const link = `${voteBaseUrl}/monthly-vote/${t.token}`; %>
+                  <% monthlyVoteTokens.forEach((t) => {
+                       const link = `${voteBaseUrl}/monthly-vote/${t.token}`;
+                       const waRaw = t.player?.whatsapp || "";
+                       const waDigits = waRaw.replace(/\\D/g, "");
+                       const msg = `Fala ${t.player?.name || "jogador"}! Seu link de votação do mês: ${link}`;
+                       const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
+                  %>
                     <tr class="border-b border-horriver-border/40 last:border-0">
-                    <td class="py-2 pr-3 text-horriver-light"><%= t.player?.name || "Jogador" %></td>
-                    <td class="py-2 pr-3">
-                      <a href="<%= link %>" target="_blank" class="text-horriver-orange hover:underline break-all"><%= link %></a>
-                    </td>
-                    <td class="py-2 pr-3 text-horriver-gray">
-                      <%= t.usedAt ? "Votou" : "Pendente" %>
-                    </td>
+                      <td class="py-2 pr-3 text-horriver-light"><%= t.player?.name || "Jogador" %></td>
+                      <td class="py-2 pr-3">
+                        <a href="<%= link %>" target="_blank" class="text-horriver-orange hover:underline break-all"><%= link %></a>
+                      </td>
+                      <td class="py-2 pr-3">
+                        <% if (waUrl) { %>
+                          <a
+                            href="<%= waUrl %>"
+                            target="_blank"
+                            class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red text-white hover:bg-horriver-orange transition"
+                          >
+                            Mandar link
+                          </a>
+                        <% } else { %>
+                          <span class="text-horriver-gray">Sem numero</span>
+                        <% } %>
+                      </td>
+                      <td class="py-2 pr-3 text-horriver-gray">
+                        <%= t.usedAt ? "Votou" : "Pendente" %>
+                      </td>
                     <td class="py-2 pr-3">
                       <% if (t.usedAt) { %>
                         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">✓</span>

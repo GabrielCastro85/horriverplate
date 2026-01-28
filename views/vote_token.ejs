@@ -1,16 +1,24 @@
-<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+<section class="space-y-6 max-w-3xl mx-auto animate-fadeIn">
   <style>
-    /* Drag feedback */
-    [data-rank-list] li {
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    .vote-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 16px;
     }
-    [data-rank-list] li.dragging {
-      transform: scale(1.02);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    .rating-pill input:checked + span {
+      background: #ff7a1a;
+      color: #0b0b0b;
+      border-color: #ff7a1a;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+    }
+    .rating-row {
+      justify-content: center;
     }
   </style>
+
   <header class="text-center space-y-2">
-    <h1 class="font-title text-3xl text-horriver-light">Votação da pelada</h1>
+    <h1 class="font-title text-3xl text-horriver-light">Votacao da pelada</h1>
     <% if (match) { %>
       <p class="text-sm text-horriver-gray">
         Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR") %></span>
@@ -22,7 +30,7 @@
         Link gerado para: <span class="text-horriver-light"><%= voter.name %></span>
       </p>
       <p class="text-[11px] text-horriver-gray">
-        Você não pode votar em si mesmo.
+        Voce nao pode votar em si mesmo.
       </p>
     <% } %>
   </header>
@@ -40,150 +48,151 @@
   <% } %>
 
   <% if (!error && !success) { %>
-    <form method="POST" class="space-y-6">
-      <% const blocks = (groupedOrder && groupedOrder.length) ? groupedOrder : Object.entries(grouped || {}).map(([label, list]) => ({ label, list })); %>
-      <% blocks.forEach(({label, list}) => { if (!list || !list.length) { return; } %>
-        <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3" data-rank-block data-position="<%= label %>">
-          <div class="flex items-center justify-between">
-            <h2 class="font-title text-xl text-horriver-light"><%= label %></h2>
-            <p class="text-[11px] text-horriver-gray">Arraste ou use as setas (mobile) para ordenar.</p>
-          </div>
-          <ul class="space-y-2" data-rank-list>
-            <% list.forEach((p, idx) => { %>
-              <li
-                class="flex flex-col sm:flex-row sm:items-center gap-3 text-sm text-horriver-light bg-white/5 rounded-xl px-3 py-2 cursor-move transition-transform duration-150 ease-out"
-                draggable="true"
-                data-player-id="<%= p.id %>"
-                data-position="<%= p.position %>"
-              >
-                <span class="rank-index w-7 text-center text-horriver-orange font-semibold"><%= idx + 1 %>.</span>
-                <div class="flex-1 min-w-0">
-                  <p class="font-semibold"><%= p.name %></p>
-                  <% if (p.nickname) { %>
-                    <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
-                  <% } %>
-                  <p class="text-[11px] text-horriver-gray">
-                    Gols: <%= p.goals || 0 %> · Assist: <%= p.assists || 0 %>
-                    <% if (p.appearedInPhoto) { %>
-                      · 📸
-                    <% } %>
-                  </p>
-                </div>
-                <div class="flex items-center gap-1 md:hidden">
-                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-up>↑</button>
-                  <button type="button" class="text-[11px] px-2 py-1 rounded bg-black/40 border border-horriver-border text-horriver-light" data-move-down>↓</button>
-                </div>
-                <input type="hidden" name="rank_<%= p.position %>_<%= p.id %>" value="<%= idx + 1 %>" />
-              </li>
-            <% }) %>
-          </ul>
-        </div>
-      <% }) %>
-
-      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-2">
-        <h3 class="font-title text-lg text-horriver-light">Melhor da pelada</h3>
-        <select
-          name="bestOverall"
-          class="w-full bg-black/50 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
-          required
-        >
-          <option value="">Escolha</option>
-          <% (players || []).forEach((p) => { if (voter && p.id === voter.id) { return; } %>
-            <option value="<%= p.id %>">
-              <%= p.name %><% if (p.nickname) { %> (<%= p.nickname %>)<% } %>
-            </option>
-          <% }); %>
-        </select>
+    <form method="POST" class="space-y-4" id="vote-flow-form">
+      <div class="flex items-center justify-between text-xs text-horriver-gray">
+        <span id="vote-progress">Jogador 1 de <%= players.length %></span>
+        <span>Notas de 1 a 5 (obrigatorio)</span>
       </div>
 
-      <div class="text-right">
+      <div id="vote-alert" class="hidden text-xs text-red-300 bg-red-900/30 border border-red-700/40 rounded-lg px-3 py-2"></div>
+
+      <div class="space-y-4">
+        <% players.forEach((p, idx) => { %>
+          <div class="vote-card <%= idx === 0 ? '' : 'hidden' %>" data-vote-card data-index="<%= idx %>">
+            <div class="flex items-center gap-4">
+              <img
+                src="<%= p.photoUrl || '/img/logo-64x64.svg' %>"
+                alt="<%= p.name %>"
+                class="w-16 h-16 rounded-full object-cover border border-horriver-orange/60 bg-horriver-dark"
+              />
+              <div class="min-w-0">
+                <p class="text-horriver-light font-semibold text-lg truncate"><%= p.name %></p>
+                <% if (p.nickname) { %>
+                  <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
+                <% } %>
+                <p class="text-[11px] text-horriver-gray">
+                  Posicao: <span class="text-horriver-light"><%= p.positionLabel || p.position || "Outros" %></span>
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-2 text-[11px] text-horriver-gray">
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= p.goals || 0 %></p>
+                <p>Gols</p>
+              </div>
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= p.assists || 0 %></p>
+                <p>Assist.</p>
+              </div>
+              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                <p class="text-horriver-orange font-semibold"><%= p.appearedInPhoto ? "SIM" : "NAO" %></p>
+                <p>Foto</p>
+              </div>
+            </div>
+
+            <div class="mt-4 flex items-center gap-2 rating-row">
+              <% for (let r = 1; r <= 5; r++) { %>
+                <label class="rating-pill">
+                  <input type="radio" name="rating_<%= p.id %>" value="<%= r %>" class="hidden" />
+                  <span class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-horriver-border text-horriver-light text-sm font-semibold hover:border-horriver-orange transition leading-none">
+                    <%= r %>
+                  </span>
+                </label>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
         <button
-          type="submit"
-          data-submit-label="Enviando..."
-          class="inline-flex items-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
+          type="button"
+          id="vote-prev"
+          class="px-4 py-2 rounded-full border border-horriver-border text-horriver-gray text-sm hover:border-horriver-orange hover:text-horriver-orange transition disabled:opacity-40"
+          disabled
         >
-          Enviar voto
+          Anterior
         </button>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="vote-next"
+            class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
+          >
+            Proximo
+          </button>
+          <button
+            type="submit"
+            id="vote-submit"
+            class="hidden px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
+          >
+            Enviar votos
+          </button>
+        </div>
       </div>
     </form>
-  <% } else if (error && !success) { %>
-    <div class="bg-red-900/40 border border-red-600/60 text-red-100 rounded-2xl p-4 text-sm">
-      <%= error %>
-    </div>
-  <% } else if (success) { %>
-    <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-100 rounded-2xl p-4 text-sm">
-      Seu voto foi registrado. Este link não pode ser usado novamente.
-    </div>
   <% } %>
 </section>
 
 <script>
   (() => {
-    const blocks = document.querySelectorAll("[data-rank-block]");
-    blocks.forEach((block) => {
-      const list = block.querySelector("[data-rank-list]");
-      if (!list) return;
+    const cards = Array.from(document.querySelectorAll("[data-vote-card]"));
+    const alertBox = document.getElementById("vote-alert");
+    const progress = document.getElementById("vote-progress");
+    const prevBtn = document.getElementById("vote-prev");
+    const nextBtn = document.getElementById("vote-next");
+    const submitBtn = document.getElementById("vote-submit");
+    const form = document.getElementById("vote-flow-form");
+    if (!cards.length || !form) return;
 
-      let dragEl = null;
-      let dragOverTimeout = null;
+    let index = 0;
 
-      const updateIndexes = () => {
-        list.querySelectorAll("li").forEach((li, idx) => {
-          const idxSpan = li.querySelector(".rank-index");
-          if (idxSpan) idxSpan.textContent = `${idx + 1}.`;
-          const input = li.querySelector("input[type='hidden']");
-          if (input) input.value = idx + 1;
-        });
-      };
+    const showCard = (idx) => {
+      cards.forEach((card, i) => card.classList.toggle("hidden", i !== idx));
+      progress.textContent = `Jogador ${idx + 1} de ${cards.length}`;
+      prevBtn.disabled = idx === 0;
+      nextBtn.classList.toggle("hidden", idx === cards.length - 1);
+      submitBtn.classList.toggle("hidden", idx !== cards.length - 1);
+      if (alertBox) {
+        alertBox.classList.add("hidden");
+        alertBox.textContent = "";
+      }
+    };
 
-      list.addEventListener("dragstart", (e) => {
-        const target = e.target.closest("li");
-        if (!target) return;
-        dragEl = target;
-        target.classList.add("ring-2", "ring-horriver-orange");
-        target.classList.add("dragging");
-        e.dataTransfer.effectAllowed = "move";
-      });
+    const currentHasRating = () => {
+      const current = cards[index];
+      if (!current) return false;
+      return !!current.querySelector('input[type="radio"]:checked');
+    };
 
-      list.addEventListener("dragend", (e) => {
-        const target = e.target.closest("li");
-        if (target) target.classList.remove("ring-2", "ring-horriver-orange", "dragging");
-        dragEl = null;
-      });
+    const ensureAllRated = () => {
+      return cards.every((card) => !!card.querySelector('input[type="radio"]:checked'));
+    };
 
-      list.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        const target = e.target.closest("li");
-        if (!target || target === dragEl) return;
-        const rect = target.getBoundingClientRect();
-        const before = (e.clientY - rect.top) < (rect.height / 2);
-        if (before) {
-          list.insertBefore(dragEl, target);
-        } else {
-          list.insertBefore(dragEl, target.nextSibling);
-        }
-        updateIndexes();
-      });
-
-      // Mobile fallback: botões ↑ ↓
-      list.querySelectorAll("li").forEach((li) => {
-        const upBtn = li.querySelector("[data-move-up]");
-        const downBtn = li.querySelector("[data-move-down]");
-        const move = (dir) => {
-          const current = li;
-          if (dir === "up" && current.previousElementSibling) {
-            list.insertBefore(current, current.previousElementSibling);
-          } else if (dir === "down" && current.nextElementSibling) {
-            list.insertBefore(current.nextElementSibling, current);
-          }
-          updateIndexes();
-          current.classList.add("scale-[1.02]");
-          clearTimeout(dragOverTimeout);
-          dragOverTimeout = setTimeout(() => current.classList.remove("scale-[1.02]"), 150);
-        };
-        if (upBtn) upBtn.addEventListener("click", () => move("up"));
-        if (downBtn) downBtn.addEventListener("click", () => move("down"));
-      });
+    nextBtn.addEventListener("click", () => {
+      if (!currentHasRating()) {
+        alertBox.textContent = "Selecione uma nota de 1 a 5 para continuar.";
+        alertBox.classList.remove("hidden");
+        return;
+      }
+      index = Math.min(index + 1, cards.length - 1);
+      showCard(index);
     });
+
+    prevBtn.addEventListener("click", () => {
+      index = Math.max(index - 1, 0);
+      showCard(index);
+    });
+
+    form.addEventListener("submit", (e) => {
+      if (!ensureAllRated()) {
+        e.preventDefault();
+        alertBox.textContent = "Preencha todas as notas antes de enviar.";
+        alertBox.classList.remove("hidden");
+      }
+    });
+
+    showCard(index);
   })();
 </script>
