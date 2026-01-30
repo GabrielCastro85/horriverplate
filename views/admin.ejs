@@ -8,7 +8,22 @@
       <h1 class="font-title text-2xl text-horriver-light">Admin Horriver Plate</h1>
       <p class="text-sm text-horriver-gray">Gerencie peladas, jogadores e destaques.</p>
     </div>
-    <!-- Botões de reset removidos para este admin -->
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <% if (admin) { %>
+        <a
+          href="/admin/auditoria"
+          class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+        >
+          Auditoria
+        </a>
+        <a
+          href="/admin/senha"
+          class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+        >
+          Trocar senha
+        </a>
+      <% } %>
+    </div>
   </header>
 
       <section class="grid grid-cols-1 md:grid-cols-3 gap-4">

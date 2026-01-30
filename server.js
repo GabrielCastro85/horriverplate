@@ -9,6 +9,7 @@ const compression = require("compression");
 
 const prisma = require("./utils/db");
 const { verifyToken } = require("./utils/auth");
+const { scheduleBackup } = require("./utils/backup");
 
 const indexRouter = require("./routes/index");
 const adminRouter = require("./routes/admin");
@@ -42,6 +43,8 @@ const ASSET_VERSION =
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.disable("x-powered-by");
 
 // ==============================
 // 🔧 View engine (EJS + layouts)
@@ -107,6 +110,10 @@ app.use(
     maxAge: "7d",
     setHeaders: (res, filePath) => {
       if (filePath.includes(`${path.sep}.thumbs${path.sep}`)) {
+        res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
+        return;
+      }
+      if (/\.(css|js|png|jpe?g|webp|svg)$/i.test(filePath)) {
         res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
       }
     },
@@ -284,6 +291,14 @@ app.listen(PORT, () => {
   console.log(`🔥 Servidor rodando na porta ${PORT}`);
   console.log(`🌍 http://localhost:${PORT}`);
 });
+
+// ==============================
+// 🔄 Backup automático (1x por dia)
+// ==============================
+scheduleBackup({ reason: "startup" });
+setInterval(() => {
+  scheduleBackup({ reason: "auto" });
+}, 24 * 60 * 60 * 1000);
 
 
 

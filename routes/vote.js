@@ -36,7 +36,21 @@ async function loadContext(tokenValue) {
 
   const stats = await prisma.playerStat.findMany({
     where: { matchId: token.session.matchId, present: true },
-    include: { player: true },
+    select: {
+      playerId: true,
+      goals: true,
+      assists: true,
+      appearedInPhoto: true,
+      player: {
+        select: {
+          id: true,
+          name: true,
+          nickname: true,
+          position: true,
+          photoUrl: true,
+        },
+      },
+    },
     orderBy: { player: { name: "asc" } },
   });
 
@@ -139,7 +153,7 @@ router.post("/:token", async (req, res) => {
 
     if (missing || ratings.length !== players.length) {
       return res.render("vote_token", {
-        title: "VotaÃ§Ã£o",
+        title: "Votacao",
         error: "Preencha todas as notas de 1 a 5 para continuar.",
         success: false,
         players: ctx.players,
@@ -217,7 +231,22 @@ async function loadPublicVoteContext(matchId, token) {
 
   const stats = await prisma.playerStat.findMany({
     where: { matchId: match.id, present: true },
-    include: { player: true },
+    select: {
+      playerId: true,
+      goals: true,
+      assists: true,
+      rating: true,
+      appearedInPhoto: true,
+      player: {
+        select: {
+          id: true,
+          name: true,
+          nickname: true,
+          position: true,
+          photoUrl: true,
+        },
+      },
+    },
     orderBy: { player: { name: "asc" } },
   });
 

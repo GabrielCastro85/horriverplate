@@ -51,31 +51,52 @@
   </head>
   <body class="bg-horriver-dark text-horriver-light">
     <header class="fixed top-0 left-0 right-0 z-50 bg-horriver-dark border-b border-horriver-red/40">
-      <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-        <div class="flex items-center gap-2">
-          <img
-            src="/img/logo.png"
-            alt="Horriver Plate"
-            class="h-8 w-8 object-contain"
-            loading="eager"
-            decoding="async"
-            data-eager="true"
-          />
-          <div class="flex flex-col leading-tight">
-            <span class="font-title text-lg text-horriver-orange">
-              Painel do Admin
-            </span>
-            <span class="text-[11px] text-horriver-gray">
-              Horriver Plate
-            </span>
+      <div class="max-w-6xl mx-auto px-4 py-3 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <img
+              src="/img/logo.png"
+              alt="Horriver Plate"
+              class="h-8 w-8 object-contain"
+              loading="eager"
+              decoding="async"
+              data-eager="true"
+            />
+            <div class="flex flex-col leading-tight">
+              <span class="font-title text-lg text-horriver-orange">
+                Painel do Admin
+              </span>
+              <span class="text-[11px] text-horriver-gray">
+                Horriver Plate
+              </span>
+            </div>
           </div>
+
+          <% if (admin) { %>
+            <div class="flex flex-wrap items-center justify-end gap-2 text-xs">
+              <span class="text-[11px] text-horriver-gray">
+                Logado como <span class="text-horriver-light font-semibold"><%= admin.email.split("@")[0] %></span>
+              </span>
+              <a href="/admin/auditoria" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">
+                Auditoria
+              </a>
+              <a href="/admin/senha" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">
+                Trocar senha
+              </a>
+              <form method="POST" action="/logout">
+                <button
+                  type="submit"
+                  class="px-3 py-1 rounded-full border border-horriver-orange text-horriver-orange hover:bg-horriver-orange hover:text-horriver-dark transition"
+                >
+                  Sair
+                </button>
+              </form>
+            </div>
+          <% } %>
         </div>
 
         <% if (admin) { %>
-          <span class="text-[11px] text-horriver-gray">
-            Logado como <span class="text-horriver-light font-semibold"><%= admin.email.split("@")[0] %></span>
-          </span>
-          <nav class="flex items-center gap-4 text-xs">
+          <nav class="flex flex-wrap items-center gap-4 text-xs">
             <a href="#fotos" class="hover:text-horriver-orange transition">
               Fotos / Destaques
             </a>
@@ -85,28 +106,12 @@
             <a href="#jogadores" class="hover:text-horriver-orange transition">
               Jogadores
             </a>
-            <% if (admin && admin.email === "admin@horriver.com") { %>
-              <a href="/admin/auditoria" class="hover:text-horriver-orange transition">
-                Auditoria
-              </a>
-            <% } %>
-            <a href="/admin/senha" class="hover:text-horriver-orange transition">
-              Trocar senha
-            </a>
-            <form method="POST" action="/logout">
-              <button
-                type="submit"
-                class="px-3 py-1 rounded-full border border-horriver-orange text-horriver-orange hover:bg-horriver-orange hover:text-horriver-dark transition"
-              >
-                Sair
-              </button>
-            </form>
           </nav>
         <% } %>
       </div>
     </header>
 
-    <main class="pt-20 pb-10">
+    <main class="pt-24 pb-10">
       <div class="max-w-6xl mx-auto px-4">
         <%- body %>
       </div>

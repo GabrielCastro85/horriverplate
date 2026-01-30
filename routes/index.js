@@ -544,6 +544,146 @@ router.get("/peladas", async (req, res) => {
 });
 
 // ==============================
+// FOTOS / HISTORIA (time vencedor + craques)
+// ==============================
+router.get("/fotos", async (req, res) => {
+  try {
+    const buildStats = (stats) => {
+      let goals = 0,
+        assists = 0,
+        matches = 0,
+        photos = 0,
+        ratingSum = 0,
+        ratingCount = 0;
+
+      stats.forEach((s) => {
+        goals += s.goals || 0;
+        assists += s.assists || 0;
+        if (s.present) matches++;
+        if (s.appearedInPhoto) photos++;
+        if (s.rating != null) {
+          ratingSum += s.rating;
+          ratingCount++;
+        }
+      });
+
+      return {
+        goals,
+        assists,
+        matches,
+        photos,
+        avgRating: ratingCount ? ratingSum / ratingCount : 0,
+      };
+    };
+
+    const weeklyAwards = await prisma.weeklyAward.findMany({
+      orderBy: { weekStart: "desc" },
+      include: { bestPlayer: true, winningMatch: true },
+    });
+
+    const weeklyEntries = await Promise.all(
+      (weeklyAwards || []).map(async (award) => {
+        if (!award.bestPlayerId) {
+          return {
+            award,
+            stats: null,
+          };
+        }
+        const weekStart = startOfDay(award.weekStart);
+        const weekEnd = endOfDay(
+          new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+        );
+        const stats = await prisma.playerStat.findMany({
+          where: {
+            playerId: award.bestPlayerId,
+            match: { playedAt: { gte: weekStart, lte: weekEnd } },
+          },
+        });
+
+        return {
+          award,
+          stats: buildStats(stats),
+        };
+      })
+    );
+
+    const monthlyAwards = await prisma.monthlyAward.findMany({
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+      include: { craque: true },
+    });
+
+    const monthlyEntries = await Promise.all(
+      (monthlyAwards || []).map(async (award) => {
+        if (!award.craqueId) {
+          return { award, stats: null };
+        }
+        const monthStart = new Date(award.year, award.month - 1, 1);
+        const monthEnd = new Date(award.year, award.month, 0);
+        monthStart.setHours(0, 0, 0, 0);
+        monthEnd.setHours(23, 59, 59, 999);
+
+        const stats = await prisma.playerStat.findMany({
+          where: {
+            playerId: award.craqueId,
+            match: { playedAt: { gte: monthStart, lte: monthEnd } },
+          },
+        });
+
+        return {
+          award,
+          stats: buildStats(stats),
+        };
+      })
+    );
+
+    const monthlyByKey = new Map(
+      monthlyEntries.map((entry) => [
+        `${entry.award.year}-${String(entry.award.month).padStart(2, "0")}`,
+        entry,
+      ])
+    );
+
+    const insertedMonthly = new Set();
+    const timeline = [];
+
+    for (let i = 0; i < weeklyEntries.length; i++) {
+      const current = weeklyEntries[i];
+      timeline.push({ type: "weekly", entry: current });
+      const currentKey = monthKey(current.award.weekStart);
+      const next = weeklyEntries[i + 1];
+      const nextKey = next ? monthKey(next.award.weekStart) : null;
+
+      if (currentKey !== nextKey) {
+        const monthlyEntry = monthlyByKey.get(currentKey);
+        if (monthlyEntry) {
+          timeline.push({ type: "monthly", entry: monthlyEntry });
+          insertedMonthly.add(currentKey);
+        }
+      }
+    }
+
+    monthlyEntries.forEach((entry) => {
+      const key = `${entry.award.year}-${String(entry.award.month).padStart(
+        2,
+        "0"
+      )}`;
+      if (!insertedMonthly.has(key)) {
+        timeline.push({ type: "monthly", entry });
+      }
+    });
+
+    res.render("fotos", {
+      title: "Fotos",
+      activePage: "fotos",
+      timeline,
+    });
+  } catch (err) {
+    console.error("Erro ao carregar fotos:", err);
+    res.status(500).send("Erro ao carregar fotos.");
+  }
+});
+
+// ==============================
 // HALL DA FAMA 2.0
 // ==============================
 router.get("/hall-da-fama", async (req, res) => {

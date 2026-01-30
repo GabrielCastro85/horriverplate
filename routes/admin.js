@@ -2347,6 +2347,7 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
 
     const updates = [];
     stats.forEach((stat) => {
+      if (stat.rating != null) return;
       const entry = ratingMap.get(stat.playerId);
       if (!entry || entry.count === 0) return;
       const avg = entry.sum / entry.count; // 1..5

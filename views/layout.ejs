@@ -457,10 +457,10 @@
     <div class="min-h-screen flex flex-col layout-bg">
       <!-- HEADER -->
       <header class="sticky top-0 z-40 bg-black/80 border-b border-horriver-border backdrop-blur">
-        <nav class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 gap-4">
-          <a href="/" class="flex items-center gap-2">
+        <nav class="max-w-6xl mx-auto flex items-center gap-4 px-4 py-3">
+          <!-- ESQUERDA -->
+          <a href="/" class="flex items-center gap-2 shrink-0">
             <div class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70">
-              <!-- Usa a logo em SVG, sem esticar (object-contain) -->
               <img
                 src="/img/logo-128x128.svg"
                 alt="Horriver Plate"
@@ -473,7 +473,7 @@
               />
             </div>
 
-            <div class="flex flex-col leading-tight">
+            <div class="flex flex-col leading-tight whitespace-nowrap">
               <span class="font-title text-sm md:text-base text-horriver-orange tracking-wide">
                 Horriver Plate
               </span>
@@ -481,8 +481,8 @@
             </div>
           </a>
 
-          <!-- ACOES DESKTOP -->
-          <ul class="hidden md:flex items-center gap-5 text-[11px] md:text-xs">
+          <!-- CENTRO -->
+          <ul class="hidden md:flex flex-1 flex-wrap items-center justify-center gap-5 text-[11px] md:text-xs whitespace-nowrap">
             <li>
               <a
                 href="/"
@@ -543,6 +543,16 @@
 
             <li>
               <a
+                href="/fotos"
+                <%= currentPage==='fotos' ? 'aria-current="page"' : '' %>
+                class="<%= currentPage==='fotos' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+              >
+                Fotos
+              </a>
+            </li>
+
+            <li>
+              <a
                 href="/sobre"
                 <%= currentPage==='sobre' ? 'aria-current="page"' : '' %>
                 class="<%= currentPage==='sobre' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
@@ -552,8 +562,8 @@
             </li>
           </ul>
 
-          <!-- ACOES DESKTOP -->
-          <div class="hidden md:flex items-center gap-2">
+          <!-- DIREITA -->
+          <div class="hidden md:flex items-center gap-2 shrink-0 whitespace-nowrap">
             <% if (adminLabel) { %>
               <span class="text-[11px] md:text-xs text-horriver-gray">
                 Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
@@ -604,20 +614,6 @@
               >
                 Painel
               </a>
-              <% if (admin && admin.email === "admin@horriver.com") { %>
-                <a
-                  href="/admin/auditoria"
-                  class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors"
-                >
-                  Auditoria
-                </a>
-              <% } %>
-              <a
-                href="/admin/senha"
-                class="px-3 py-1 rounded-full border border-horriver-border text-[11px] md:text-xs text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition-colors"
-              >
-                Trocar senha
-              </a>
               <form method="POST" action="/logout">
                 <button
                   type="submit"
@@ -659,7 +655,7 @@
           aria-modal="true"
           aria-label="Menu de navegação"
           tabindex="-1"
-          class="relative mx-auto mt-2 w-[92%] max-w-sm rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown"
+          class="relative mx-auto mt-2 w-[92%] max-w-sm max-h-[90vh] rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown flex flex-col"
         >
           <div class="p-3 border-b border-horriver-border/60 flex justify-between items-center">
             <span class="font-title text-horriver-orange text-sm">Navegacao</span>
@@ -669,7 +665,7 @@
             >X</button>
           </div>
 
-          <nav class="p-2 text-[13px]">
+          <nav class="p-2 text-[13px] overflow-y-auto">
             <a href="/" <%= currentPage==='home' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Home</a>
             <a href="/rankings" <%= currentPage==='rankings' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Rankings</a>
             <a href="/peladas" <%= currentPage==='peladas' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Peladas</a>
@@ -678,47 +674,47 @@
             <% if (showHallLink) { %>
               <a href="/hall-da-fama" <%= currentPage==='hall' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Hall da Fama</a>
             <% } %>
+            <a href="/fotos" <%= currentPage==='fotos' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Fotos</a>
             <a href="/tierlist" <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Tierlist</a>
 
             <a href="/sobre" <%= currentPage==='sobre' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
 
-            <div class="mt-2 flex items-center gap-2 px-2">
+            <div class="mt-2 flex flex-wrap items-center gap-2 px-2">
               <% if (adminLabel) { %>
                 <span class="text-[12px] text-horriver-gray">
                   Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
                 </span>
               <% } %>
-              <a
-                href="https://www.instagram.com/_hpfrc/"
-                target="_blank"
-                rel="noopener"
-                class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
-                       rounded-lg border border-horriver-orange/80 bg-black/40
-                       text-[12px] text-horriver-orange
-                       hover:bg-horriver-orange hover:text-horriver-bg
-                       transition-colors"
-              >
-                <span
-                  class="inline-flex items-center justify-center w-5 h-5 rounded-md
-                         bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
-                         text-[10px] text-black"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" class="w-3.5 h-3.5">
-                    <rect
-                      x="3" y="3" width="18" height="18" rx="5" ry="5"
-                      fill="none" stroke="currentColor" stroke-width="1.6"
-                    ></rect>
-                    <circle
-                      cx="12" cy="12" r="4"
-                      fill="none" stroke="currentColor" stroke-width="1.6"
-                    ></circle>
-                    <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
-                  </svg>
-                </span>
-                <span>Instagram</span>
-              </a>
-
               <% if (!isAdmin) { %>
+                <a
+                  href="https://www.instagram.com/_hpfrc/"
+                  target="_blank"
+                  rel="noopener"
+                  class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
+                         rounded-lg border border-horriver-orange/80 bg-black/40
+                         text-[12px] text-horriver-orange
+                         hover:bg-horriver-orange hover:text-horriver-bg
+                         transition-colors"
+                >
+                  <span
+                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
+                           bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
+                           text-[10px] text-black"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" class="w-3.5 h-3.5">
+                      <rect
+                        x="3" y="3" width="18" height="18" rx="5" ry="5"
+                        fill="none" stroke="currentColor" stroke-width="1.6"
+                      ></rect>
+                      <circle
+                        cx="12" cy="12" r="4"
+                        fill="none" stroke="currentColor" stroke-width="1.6"
+                      ></circle>
+                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
+                    </svg>
+                  </span>
+                  <span>Instagram</span>
+                </a>
                 <a
                   href="/login"
                   class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors"
@@ -732,20 +728,6 @@
                 >
                   Painel
                 </a>
-                <% if (admin && admin.email === "admin@horriver.com") { %>
-                  <a
-                    href="/admin/auditoria"
-                    class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors"
-                  >
-                    Auditoria
-                  </a>
-                <% } %>
-                <a
-                  href="/admin/senha"
-                  class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors"
-                >
-                  Trocar senha
-                </a>
                 <form method="POST" action="/logout" class="flex-1">
                   <button
                     type="submit"
@@ -754,6 +736,35 @@
                     Sair
                   </button>
                 </form>
+                <a
+                  href="https://www.instagram.com/_hpfrc/"
+                  target="_blank"
+                  rel="noopener"
+                  class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
+                         rounded-lg border border-horriver-orange/80 bg-black/40
+                         text-[12px] text-horriver-orange
+                         hover:bg-horriver-orange hover:text-horriver-bg
+                         transition-colors"
+                >
+                  <span
+                    class="inline-flex items-center justify-center w-5 h-5 rounded-md
+                           bg-gradient-to-tr from-horriver-red via-horriver-orange to-yellow-300
+                           text-[10px] text-black"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" class="w-3.5 h-3.5">
+                      <rect
+                        x="3" y="3" width="18" height="18" rx="5" ry="5"
+                        fill="none" stroke="currentColor" stroke-width="1.6"
+                      ></rect>
+                      <circle
+                        cx="12" cy="12" r="4"
+                        fill="none" stroke="currentColor" stroke-width="1.6"
+                      ></circle>
+                      <circle cx="17" cy="7" r="1.1" fill="currentColor"></circle>
+                    </svg>
+                  </span>
+                  <span>Instagram</span>
+                </a>
               <% } %>
             </div>
           </nav>
@@ -777,6 +788,8 @@
             <a href="/peladas">Peladas</a>
             <span class="text-horriver-gray/40">|</span>
             <a href="/elenco">Elenco</a>
+            <span class="text-horriver-gray/40">|</span>
+            <a href="/fotos">Fotos</a>
             <span class="text-horriver-gray/40">|</span>
             <a href="/sobre">Sobre</a>
           </nav>

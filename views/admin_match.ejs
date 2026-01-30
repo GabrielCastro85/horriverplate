@@ -381,7 +381,7 @@
       </p>
 
       <div class="overflow-x-auto text-[11px] md:text-xs">
-        <table class="min-w-full border-collapse">
+        <table class="min-w-[640px] border-collapse">
           <thead>
             <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
               <th class="py-2 pr-3 text-left font-normal">Jogador</th>
@@ -406,7 +406,7 @@
                     (<%= t.player.nickname %>)
                   <% } %>
                 </td>
-                <td class="py-2 pr-3 text-horriver-orange/90 text-[10px] uppercase">
+                <td class="py-2 pr-3 text-horriver-orange/90 text-[10px] uppercase whitespace-nowrap">
                   <%= t.player.position %>
                 </td>
                 <td class="py-2 pr-3">
@@ -418,7 +418,7 @@
                     <%= link %>
                   </a>
                 </td>
-                <td class="py-2 pr-3">
+                <td class="py-2 pr-3 whitespace-nowrap">
                   <% if (waUrl) { %>
                     <a
                       href="<%= waUrl %>"
@@ -1949,7 +1949,7 @@
         .map(
           (g, idx) => `
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-light">
-              ${g.name} â€¢ ${g.position} â€¢ ${g.strength}
+              ${g.name} - ${g.position} - ${g.strength}
               <button type="button" data-remove="${idx}" class="text-horriver-orange hover:text-white">x</button>
             </span>
           `
