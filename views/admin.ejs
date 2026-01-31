@@ -1,4 +1,4 @@
-ï»¿<% /* Painel do Admin - reorganizado para destacar as funcoes principais */ %>
+<% /* Painel do Admin - reorganizado para destacar as funcoes principais */ %>
 
 <div class="space-y-10">
   <!-- Header + acoes rapidas -->
@@ -198,7 +198,7 @@
                     <div class="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-horriver-border/60" data-match-item>
                       <div>
                         <p class="text-horriver-light font-semibold">
-                          <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }) %>
+                          <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit' }) %>
                         </p>
                         <p class="text-[12px] text-horriver-gray">
                           <%= match.description || 'Pelada Padrao' %>
@@ -257,7 +257,7 @@
             <select name="winningMatchId" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
               <option value="">Nenhuma</option>
               <% matches.forEach(m => { %>
-                <option value="<%= m.id %>"><%= new Date(m.playedAt).toLocaleDateString('pt-BR') %> - <%= m.description || 'Pelada' %></option>
+                <option value="<%= m.id %>"><%= new Date(m.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %> - <%= m.description || 'Pelada' %></option>
               <% }) %>
             </select>
           </label>
@@ -272,7 +272,7 @@
             <p class="font-semibold text-horriver-light">Ultimos destaques</p>
             <% weeklyAwards.forEach(award => { %>
               <div class="flex justify-between items-center bg-white/5 rounded-lg px-2 py-1">
-                <span><%= new Date(award.weekStart).toLocaleDateString('pt-BR') %> - <%= award.bestPlayer?.name || 'N/A' %></span>
+                <span><%= new Date(award.weekStart).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %> - <%= award.bestPlayer?.name || 'N/A' %></span>
                 <form action="/admin/weekly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir destaque?');">
                   <button type="submit" class="text-red-500 hover:text-red-300">Excluir</button>
                 </form>
@@ -291,7 +291,7 @@
               Mes
               <select name="month" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
                 <% for (let i = 1; i <= 12; i++) { %>
-                  <option value="<%= i %>"><%= new Date(2000, i - 1, 1).toLocaleString('pt-BR', { month: 'long' }) %></option>
+                  <option value="<%= i %>"><%= new Date(2000, i - 1, 1).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', month: 'long' }) %></option>
                 <% } %>
               </select>
             </label>
@@ -316,8 +316,8 @@
             <p class="font-semibold text-horriver-light">Ultimos premiados</p>
             <% monthlyAwards.forEach(award => { %>
               <div class="flex justify-between items-center bg-white/5 rounded-lg px-2 py-1">
-                <span><%= new Date(award.year, award.month - 1, 1).toLocaleString('pt-BR', { month: 'long' }) %>/<%= award.year %> - <%= award.craque?.name || 'N/A' %></span>
-                <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiaÃ§Ã£o?');">
+                <span><%= new Date(award.year, award.month - 1, 1).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', month: 'long' }) %>/<%= award.year %> - <%= award.craque?.name || 'N/A' %></span>
+                <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiação?');">
                   <button type="submit" class="text-red-500 hover:text-red-300">Excluir</button>
                 </form>
               </div>
@@ -328,23 +328,23 @@
     </div>
   </section>
 
-  <!-- PremiaÃ§Ã£o da temporada / Hall da Fama -->
+  <!-- Premiação da temporada / Hall da Fama -->
   <section class="pt-4 border-t border-horriver-border/60">
     <div class="card-inner rounded-2xl p-5 md:p-6 space-y-4">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-            PremiaÃ§Ã£o da temporada
+            Premiação da temporada
           </h2>
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Cadastre os prÃªmios de fim de ano (melhor jogador, artilheiro, por posiÃ§Ã£o, etc).
+            Cadastre os prêmios de fim de ano (melhor jogador, artilheiro, por posição, etc).
           </p>
         </div>
         <a
           href="/admin/premiacao"
           class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Gerenciar premiaÃ§Ã£o da temporada
+          Gerenciar premiação da temporada
         </a>
       </div>
 
@@ -365,7 +365,7 @@
       <% if (hasSeasonAwards && latestAwards.length) { %>
         <div class="mt-2 space-y-3">
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            CampeÃµes atuais da temporada
+            Campeões atuais da temporada
             <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
           </p>
           <div class="overflow-x-auto text-[11px] md:text-xs">
@@ -397,7 +397,7 @@
         </div>
       <% } else { %>
         <p class="text-[11px] md:text-xs text-horriver-gray/80">
-          Nenhuma premiaÃ§Ã£o cadastrada ainda. Clique em "Gerenciar premiaÃ§Ã£o da temporada" para comeÃ§ar.
+          Nenhuma premiação cadastrada ainda. Clique em "Gerenciar premiação da temporada" para começar.
         </p>
       <% } %>
     </div>
@@ -425,7 +425,7 @@
           <label class="flex flex-col gap-1">
             Telefone (opcional)
             <input type="tel" name="whatsapp" placeholder="21999998888" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
-            <span class="text-[11px] text-horriver-gray">Somente nÃºmeros; +55 adicionado automaticamente.</span>
+            <span class="text-[11px] text-horriver-gray">Somente números; +55 adicionado automaticamente.</span>
           </label>
           <label class="flex flex-col gap-1">
             Posicao principal
@@ -479,7 +479,7 @@
                 <div class="flex items-center gap-3">
                   <span class="text-[11px] px-2 py-1 rounded-full bg-horriver-dark text-horriver-light uppercase" data-player-position="<%= player.position %>"><%= player.position %></span>
                   <a href="/admin/players/<%= player.id %>/edit" class="text-[12px] text-horriver-orange hover:underline">Editar</a>
-                  <form action="/admin/players/<%= player.id %>/delete" method="POST" onsubmit="return confirm('Excluir jogador e todo o histÃ³rico?');">
+                  <form action="/admin/players/<%= player.id %>/delete" method="POST" onsubmit="return confirm('Excluir jogador e todo o histórico?');">
                     <button type="submit" class="text-red-500 hover:text-red-300 text-[12px]">Excluir</button>
                   </form>
                 </div>
@@ -495,7 +495,7 @@
 </div>
 
 <script>
-  // Define data padrÃ£o no formulÃ¡rio de nova pelada
+  // Define data padrão no formulário de nova pelada
   (function () {
     const form = document.getElementById("newMatchForm");
     const dateInput = document.getElementById("playedDate");
@@ -559,4 +559,5 @@
     }
   })();
 </script>
+
 

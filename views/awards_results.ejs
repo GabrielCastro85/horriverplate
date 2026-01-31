@@ -4,7 +4,7 @@
       <div>
         <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Resultados da pelada</p>
         <h1 class="text-2xl font-semibold text-horriver-orange">
-          <%= match.description || 'Pelada' %> — <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
+          <%= match.description || 'Pelada' %> — <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
         </h1>
       </div>
       <a
@@ -27,7 +27,7 @@
           </div>
           <div class="text-right text-xs text-horriver-gray">
             <p><%= match.description || 'Pelada' %></p>
-            <p><%= new Date(match.playedAt).toLocaleDateString('pt-BR') %></p>
+            <p><%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
           </div>
         </div>
 
@@ -129,3 +129,4 @@
     });
   }
 </script>
+

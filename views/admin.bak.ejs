@@ -1,11 +1,11 @@
-ï»¿<!-- CSS do Cropper (somente usado no admin) -->
+<!-- CSS do Cropper (somente usado no admin) -->
 <link
   rel="stylesheet"
   href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css"
 />
 
 <%
-  // controla exibiâ”œÂºâ”œÃºo do botâ”œÃºo de recalcular (virâ”œÃ­ da rota /admin)
+  // controla exibi+º+úo do bot+úo de recalcular (vir+í da rota /admin)
   const showResetButton =
     typeof showReset !== "undefined" ? !!showReset : false;
 %>
@@ -22,13 +22,13 @@
           Painel do Administrador
         </h1>
         <p class="text-[11px] md:text-xs text-horriver-gray/80 mt-1">
-          Gerencie peladas, jogadores, destaques da semana, craque do mÃªs e a premiaâ”œÂºâ”œÃºo da temporada.
+          Gerencie peladas, jogadores, destaques da semana, craque do mês e a premia+º+úo da temporada.
         </p>
       </div>
 
       <div class="flex items-center gap-2 text-[11px] md:text-xs">
         <span class="px-3 py-1 rounded-full border border-horriver-border bg-black/50 text-horriver-gray">
-          Ambiente restrito Ã”Ã‡Ã³ Admin
+          Ambiente restrito ÔÇó Admin
         </span>
       </div>
     </div>
@@ -46,7 +46,7 @@
             Nova pelada
           </h2>
           <span class="text-[11px] text-horriver-gray/70">
-            Use este card em toda terâ”œÂºa.
+            Use este card em toda ter+ºa.
           </span>
         </div>
 
@@ -65,12 +65,12 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
-              Descriâ”œÂºâ”œÃºo (opcional)
+              Descri+º+úo (opcional)
             </label>
             <input
               type="text"
               name="description"
-              placeholder="ex: Pelada da terâ”œÂºa â”œÃ¡ noite"
+              placeholder="ex: Pelada da ter+ºa +á noite"
               class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
             />
           </div>
@@ -112,7 +112,7 @@
             type="button"
             class="hidden text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
           >
-            Cancelar ediâ”œÂºâ”œÃºo
+            Cancelar edi+º+úo
           </button>
         </div>
 
@@ -156,7 +156,7 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
-              Posiâ”œÂºâ”œÃºo
+              Posi+º+úo
             </label>
             <select
               name="position"
@@ -185,7 +185,7 @@
               class="block w-full text-[11px] md:text-xs text-horriver-gray"
             />
             <p class="text-[10px] text-horriver-gray/70">
-              Aceita JPG/PNG, atâ”œÂ® 5MB. Usado apenas ao cadastrar um novo jogador.
+              Aceita JPG/PNG, at+® 5MB. Usado apenas ao cadastrar um novo jogador.
             </p>
           </div>
 
@@ -217,7 +217,7 @@
         >
           <span
             class="inline-block w-4 text-center"
-          >Ã”Ã»â•</span>
+          >Ôû+</span>
           <span data-collapse-label-players>Mostrar lista</span>
         </button>
       <% } %>
@@ -240,8 +240,8 @@
                 <tr class="border-b border-horriver-border/70 text-horriver-gray/80">
                   <th class="py-2 pr-3 text-left font-normal">Jogador</th>
                   <th class="py-2 pr-3 text-left font-normal">Apelido</th>
-                  <th class="py-2 pr-3 text-left font-normal">Posiâ”œÂºâ”œÃºo</th>
-                  <th class="py-2 pr-3 text-left font-normal">Aâ”œÂºâ”œÃes</th>
+                  <th class="py-2 pr-3 text-left font-normal">Posi+º+úo</th>
+                  <th class="py-2 pr-3 text-left font-normal">A+º+Áes</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,7 +315,7 @@
                         <form
                           action="/admin/players/<%= p.id %>/delete"
                           method="POST"
-                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estatâ”œÂ¡sticas.');"
+                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estat+¡sticas.');"
                         >
                           <button
                             type="submit"
@@ -354,7 +354,7 @@
                 class="bg-black/50 border border-horriver-border rounded-lg px-2 py-1 text-horriver-light"
                 onchange="this.form.submit()"
               >
-                <option value="default" <%= (skin === 'default') ? 'selected' : '' %>>PadrÃ£o</option>
+                <option value="default" <%= (skin === 'default') ? 'selected' : '' %>>Padrão</option>
                 <option value="game-day" <%= (skin === 'game-day') ? 'selected' : '' %>>Dia de Jogo</option>
               </select>
             </form>
@@ -364,7 +364,7 @@
               class="inline-flex items-center gap-1 text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
               data-collapse-trigger="matches-list"
             >
-          <span class="inline-block w-4 text-center">Ã”Ã»â•</span>
+          <span class="inline-block w-4 text-center">Ôû+</span>
           <span data-collapse-label-matches>Mostrar lista</span>
         </button>
       <% } %>
@@ -394,16 +394,16 @@
                   <thead>
                     <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
                       <th class="py-2 pr-4 text-left font-normal">Data</th>
-                      <th class="py-2 pr-4 text-left font-normal">Descriâ”œÂºâ”œÃºo</th>
+                      <th class="py-2 pr-4 text-left font-normal">Descri+º+úo</th>
                       <th class="py-2 pr-4 text-left font-normal">Vencedor</th>
-                      <th class="py-2 pr-4 text-left font-normal">Aâ”œÂºâ”œÃes</th>
+                      <th class="py-2 pr-4 text-left font-normal">A+º+Áes</th>
                     </tr>
                   </thead>
                   <tbody>
                     <% group.matches.forEach(match => { %>
                       <tr class="border-b border-horriver-border/40 last:border-0">
                         <td class="py-2 pr-4">
-                          <%= new Date(match.playedAt).toLocaleDateString("pt-BR") %>
+                          <%= new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %>
                         </td>
                         <td class="py-2 pr-4 text-horriver-gray/90">
                           <%= match.description || "-" %>
@@ -418,7 +418,7 @@
                             href="/admin/matches/<%= match.id %>"
                             class="text-[11px] text-horriver-orange hover:underline"
                           >
-                            Estatâ”œÂ¡sticas
+                            Estat+¡sticas
                           </a>
 
                           <form
@@ -448,7 +448,7 @@
   </section>
 
   <!-- =====================================================
-       DESTAQUE DA SEMANA & CRAQUE DO Mâ”œÃ¨S
+       DESTAQUE DA SEMANA & CRAQUE DO M+èS
   ====================================================== -->
   <section class="grid lg:grid-cols-2 gap-8">
     <!-- DESTAQUE DA SEMANA -->
@@ -468,7 +468,7 @@
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Semana (data de inâ”œÂ¡cio)
+            Semana (data de in+¡cio)
           </label>
           <input
             id="weekly_weekStart"
@@ -509,7 +509,7 @@
             <option value="">Nenhuma</option>
             <% matches.forEach(m => { %>
               <option value="<%= m.id %>">
-                <%= new Date(m.playedAt).toLocaleDateString("pt-BR") %>
+                <%= new Date(m.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %>
                 <% if (m.description) { %> - <%= m.description %><% } %>
               </option>
             <% }) %>
@@ -528,10 +528,10 @@
             class="block w-full text-[11px] md:text-xs text-horriver-gray"
           />
           <p class="text-[10px] text-horriver-gray/70">
-            Assim que vocÃª escolher uma imagem, o editor de corte aparece logo abaixo.
+            Assim que você escolher uma imagem, o editor de corte aparece logo abaixo.
           </p>
 
-          <!-- â”œÃ¼rea de crop -->
+          <!-- +ürea de crop -->
           <div
             id="teamPhotoCropContainer"
             class="mt-2 hidden space-y-2"
@@ -545,7 +545,7 @@
               <img
                 id="teamPhotoCropImage"
                 class="max-w-full block"
-                alt="Prâ”œÂ®-visualizaâ”œÂºâ”œÃºo do corte"
+                alt="Pr+®-visualiza+º+úo do corte"
               />
             </div>
             <button
@@ -559,7 +559,7 @@
               id="teamPhotoCropDone"
               class="text-[10px] text-horriver-gray/70 hidden"
             >
-              Corte aplicado! A imagem serâ”œÃ­ enviada jâ”œÃ­ recortada.
+              Corte aplicado! A imagem ser+í enviada j+í recortada.
             </p>
           </div>
         </div>
@@ -572,10 +572,10 @@
         </button>
       </form>
 
-      <!-- Lista â”œâ•‘ltimos destaques -->
+      <!-- Lista +¦ltimos destaques -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          â”œÃœltimos destaques
+          +Ültimos destaques
         </h3>
 
         <% if (!weeklyAwards.length) { %>
@@ -592,7 +592,7 @@
                   <p class="text-horriver-light/90">
                     Semana de
                     <span class="text-horriver-orange">
-                      <%= new Date(w.weekStart).toLocaleDateString("pt-BR") %>
+                      <%= new Date(w.weekStart).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %>
                     </span>
                   </p>
                   <p class="text-[11px] text-horriver-gray/80">
@@ -600,7 +600,7 @@
                     <span class="text-horriver-light">
                       <%= w.bestPlayer
                         ? w.bestPlayer.name + (w.bestPlayer.nickname ? " (" + w.bestPlayer.nickname + ")" : "")
-                        : "Ã”Ã‡Ã¶"
+                        : "ÔÇö"
                       %>
                     </span>
                   </p>
@@ -638,11 +638,11 @@
       </div>
     </div>
 
-    <!-- CRAQUE DO Mâ”œÃ¨S -->
+    <!-- CRAQUE DO M+èS -->
     <div class="card-inner rounded-2xl p-6 md:p-7 space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-          Craque do mÃªs
+          Craque do mês
         </h2>
       </div>
 
@@ -654,7 +654,7 @@
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            MÃªs
+            Mês
           </label>
           <select
             id="monthly_month"
@@ -665,7 +665,7 @@
             <option value="">Selecione</option>
             <option value="1">Janeiro</option>
             <option value="2">Fevereiro</option>
-            <option value="3">Marâ”œÂºo</option>
+            <option value="3">Mar+ºo</option>
             <option value="4">Abril</option>
             <option value="5">Maio</option>
             <option value="6">Junho</option>
@@ -694,7 +694,7 @@
 
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Craque do mÃªs (opcional)
+            Craque do mês (opcional)
           </label>
           <select
             id="monthly_craque"
@@ -714,19 +714,19 @@
           type="submit"
           class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Salvar craque do mÃªs
+          Salvar craque do mês
         </button>
       </form>
 
-      <!-- Lista â”œâ•‘ltimos craques do mÃªs -->
+      <!-- Lista +¦ltimos craques do mês -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          â”œÃœltimos craques do mÃªs
+          +Ültimos craques do mês
         </h3>
 
         <% if (!monthlyAwards.length) { %>
           <p class="text-[11px] text-horriver-gray/70">
-            Nenhum craque do mÃªs cadastrado.
+            Nenhum craque do mês cadastrado.
           </p>
         <% } else { %>
           <ul class="space-y-2 text-[11px] md:text-xs">
@@ -745,7 +745,7 @@
                     <span class="text-horriver-light">
                       <%= m.craque
                         ? m.craque.name + (m.craque.nickname ? " (" + m.craque.nickname + ")" : "")
-                        : "Ã”Ã‡Ã¶"
+                        : "ÔÇö"
                       %>
                     </span>
                   </p>
@@ -766,7 +766,7 @@
                   <form
                     action="/admin/monthly-awards/<%= m.id %>/delete"
                     method="POST"
-                    onsubmit="return confirm('Remover esse craque do mÃªs?');"
+                    onsubmit="return confirm('Remover esse craque do mês?');"
                   >
                     <button
                       type="submit"
@@ -785,24 +785,24 @@
   </section>
 
   <!-- =====================================================
-       PREMIAâ”œÃ§â”œÃ¢O DA TEMPORADA
+       PREMIA+ç+âO DA TEMPORADA
   ====================================================== -->
   <section class="pt-4 border-t border-horriver-border/60">
     <div class="card-inner rounded-2xl p-5 md:p-6 space-y-4">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-            Premiaâ”œÂºâ”œÃºo da temporada
+            Premia+º+úo da temporada
           </h2>
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Cadastre os prÃªmios de fim de ano (melhor jogador, artilheiro, por posiâ”œÂºâ”œÃºo, etc).
+            Cadastre os prêmios de fim de ano (melhor jogador, artilheiro, por posi+º+úo, etc).
           </p>
         </div>
         <a
           href="/admin/premiacao"
           class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Gerenciar premiaâ”œÂºâ”œÃºo da temporada
+          Gerenciar premia+º+úo da temporada
         </a>
       </div>
 
@@ -834,7 +834,7 @@
       <% if (hasSeasonAwards && latestAwards.length) { %>
         <div class="mt-2 space-y-3">
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Campeâ”œÃes atuais da temporada
+            Campe+Áes atuais da temporada
             <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
           </p>
           <div class="overflow-x-auto text-[11px] md:text-xs">
@@ -855,7 +855,7 @@
                       <% if (a.player) { %>
                         <%= a.player.name %><% if (a.player.nickname) { %> (<%= a.player.nickname %>)<% } %>
                       <% } else { %>
-                        Ã”Ã‡Ã¶
+                        ÔÇö
                       <% } %>
                     </td>
                   </tr>
@@ -866,7 +866,7 @@
         </div>
       <% } else { %>
         <p class="text-[11px] md:text-xs text-horriver-gray/80">
-          Nenhuma premiaâ”œÂºâ”œÃºo cadastrada ainda. Clique em "Gerenciar premiaâ”œÂºâ”œÃºo da temporada" para comeâ”œÂºar.
+          Nenhuma premia+º+úo cadastrada ainda. Clique em "Gerenciar premia+º+úo da temporada" para come+ºar.
         </p>
       <% } %>
     </div>
@@ -878,7 +878,7 @@
               Recalcular overalls e conquistas
             </h3>
             <p class="text-[10px] md:text-xs text-horriver-gray/80">
-              Usa as estatÃ­sticas atuais (gols, assistÃªncias, presenÃ§as e notas) com pesos por posiÃ§Ã£o, grava histÃ³rico e reavalia as conquistas automÃ¡ticas.
+              Usa as estatísticas atuais (gols, assistências, presenças e notas) com pesos por posição, grava histórico e reavalia as conquistas automáticas.
             </p>
           </div>
           <div class="flex items-center gap-2">
@@ -911,8 +911,8 @@
       </div>
     </section>
 <!-- =====================================================
-       BOTâ”œÃ¢O OCULTO: REINICIAR TOTAIS
-       (sâ”œâ”‚ aparece se showReset === true vindo da rota)
+       BOT+âO OCULTO: REINICIAR TOTAIS
+       (s+¦ aparece se showReset === true vindo da rota)
   ====================================================== -->
   <% if (showResetButton) { %>
     <section class="pt-4 border-t border-horriver-border/60">
@@ -920,7 +920,7 @@
         method="POST"
         action="/admin/recalculate-totals"
         class="inline"
-        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estatâ”œÂ¡sticas.');"
+        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estat+¡sticas.');"
       >
         <button
           type="submit"
@@ -937,7 +937,7 @@
 </div>
 
 <!-- =====================================================
-     SCRIPTS: CROPPER + Lâ”œÃ´GICA DO PAINEL
+     SCRIPTS: CROPPER + L+ôGICA DO PAINEL
 ====================================================== -->
 <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 
@@ -978,8 +978,8 @@
       playerForm.removeAttribute("enctype");
       playerFormTitle.textContent = "Editar jogador";
       playerFormHint.textContent =
-        'Editando o jogador selecionado. Clique em "Cancelar ediâ”œÂºâ”œÃºo" para voltar ao modo de cadastro.';
-      playerSubmit.textContent = "Salvar alteraâ”œÂºâ”œÃes";
+        'Editando o jogador selecionado. Clique em "Cancelar edi+º+úo" para voltar ao modo de cadastro.';
+      playerSubmit.textContent = "Salvar altera+º+Áes";
       playerCancelEdit.classList.remove("hidden");
       if (playerPhotoBlock) playerPhotoBlock.classList.add("hidden");
 
@@ -1006,7 +1006,7 @@
       setCreateMode();
     });
 
-    // comeâ”œÂºa em modo criar
+    // come+ºa em modo criar
     setCreateMode();
 
     // ============ EDITAR WEEKLY ============
@@ -1081,7 +1081,7 @@
 
           if (typeof Cropper === "undefined") {
             alert(
-              "Ferramenta de corte nâ”œÃºo carregou. Verifique sua conexâ”œÃºo com a internet."
+              "Ferramenta de corte n+úo carregou. Verifique sua conex+úo com a internet."
             );
             return;
           }
@@ -1152,7 +1152,7 @@
         labelEl.textContent = hidden ? "Mostrar lista" : "Esconder lista";
         const iconSpan = trigger.querySelector("span:first-child");
         if (iconSpan) {
-          iconSpan.textContent = hidden ? "Ã”Ã»â•" : "Ã”Ã»â–“";
+          iconSpan.textContent = hidden ? "Ôû+" : "Ôû¦";
         }
       }
 
@@ -1168,6 +1168,7 @@
     setupCollapse("matches-list", "matches");
   })();
 </script>
+
 
 
 

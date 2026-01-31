@@ -1,3 +1,8 @@
+<%
+  const fmtDateTimeBR = (d) =>
+    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "-";
+%>
+
 <section class="space-y-6 animate-fadeIn">
   <div class="flex items-center justify-between gap-3">
     <div>
@@ -6,15 +11,15 @@
       </h1>
       <p class="text-xs md:text-sm text-horriver-gray mt-1">
         <span class="text-horriver-orange">
-          <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
+          <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
         </span>
         <% if (match.description) { %> - <%= match.description %> <% } %>
       </p>
       <% if (session) { %>
         <p class="text-[11px] text-horriver-gray/80">
-          Sessão criada em <%= new Date(session.createdAt).toLocaleString('pt-BR') %>
+          Sessão criada em <%= fmtDateTimeBR(session.createdAt) %>
           <% if (session.expiresAt) { %>
-            - expira em <%= new Date(session.expiresAt).toLocaleString('pt-BR') %>
+            - expira em <%= fmtDateTimeBR(session.expiresAt) %>
           <% } else { %>
             - sem expiração
           <% } %>
@@ -50,12 +55,12 @@
                 </p>
               <% } %>
               <p class="text-horriver-gray/80">
-                Enviado em <%= new Date(b.createdAt).toLocaleString('pt-BR') %>
+                Enviado em <%= fmtDateTimeBR(b.createdAt) %>
               </p>
             </div>
             <div class="text-right text-[11px] text-horriver-orange">
               Token usado em
-              <%= b.token.usedAt ? new Date(b.token.usedAt).toLocaleString('pt-BR') : 'não usado' %>
+              <%= b.token.usedAt ? fmtDateTimeBR(b.token.usedAt) : 'não usado' %>
             </div>
           </div>
 
@@ -84,3 +89,4 @@
     </div>
   <% } %>
 </section>
+

@@ -29,7 +29,7 @@ router.get("/:id", async (req, res) => {
     }
 
     res.render("public_match", {
-      title: `Pelada em ${new Date(match.playedAt).toLocaleDateString("pt-BR")}`,
+      title: `Pelada em ${new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
       match,
     });
   } catch (err) {

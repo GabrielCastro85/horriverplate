@@ -361,7 +361,7 @@ router.get("/", requireAdmin, async (req, res) => {
     const groupedMatchesObj = matches.reduce((groups, match) => {
       const date = new Date(match.playedAt);
       const year = date.getFullYear();
-      const month = date.toLocaleString("pt-BR", { month: "long" });
+      const month = date.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", month: "long" });
       const key = `${month} ${year}`;
 
       if (!groups[key]) {

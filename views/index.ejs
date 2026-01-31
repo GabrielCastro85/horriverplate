@@ -1,9 +1,9 @@
-ï»¿<%
+<%
   // ===============================
   // Helpers gerais
   // ===============================
   const fmtDate = (d) =>
-    d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : "-";
 
   const limit = (arr, n) => (arr && arr.length ? arr.slice(0, n) : []);
 
@@ -13,11 +13,11 @@
   };
 
   const monthNames = [
-    "Janeiro","Fevereiro","MarÃ§o","Abril","Maio","Junho",
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
 
-  // Stats do mÃªs (craque)
+  // Stats do mês (craque)
   const mStats =
     (typeof monthlyStats !== "undefined" && monthlyStats) || null;
 
@@ -44,14 +44,14 @@
   const catLabelMap = {
     melhor_jogador: "Craque da temporada",
     artilheiro: "Artilheiro da temporada",
-    assistente: "Rei das assistÃªncias",
+    assistente: "Rei das assistências",
     melhor_goleiro: "Muralha da temporada",
     melhor_zagueiro: "Melhor zagueiro",
     melhor_meia: "Maestro da temporada",
     melhor_atacante: "Melhor atacante"
   };
 
-  // Gradientes pensados pra combinar com o site e com a ideia de prÃªmio
+  // Gradientes pensados pra combinar com o site e com a ideia de prêmio
   const catGradientMap = {
     melhor_jogador: "from-yellow-300 via-amber-300 to-yellow-500", // Ballon d'Or vibes
     artilheiro: "from-yellow-400 via-amber-400 to-orange-500",      // ouro quente
@@ -99,7 +99,7 @@
     hallSlides.push({
       key: "defesa",
       type: "pair",
-      title: "Muralhas lÃ¡ atrÃ¡s",
+      title: "Muralhas lá atrás",
       awards: defesaAwards
     });
   }
@@ -120,7 +120,7 @@
 <section class="space-y-10 animate-fadeIn">
 
   <!-- ======================================================
-       HALL DA FAMA â€“ CARROSSEL DA TEMPORADA
+       HALL DA FAMA – CARROSSEL DA TEMPORADA
   ======================================================= -->
   <% if (hasHallCarousel && hallSlides.length) { %>
     <section
@@ -131,14 +131,14 @@
       <div class="flex items-start justify-between gap-4 mb-2">
         <div>
           <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.20em]">
-            Temporada <%= hallYear || "" %> â€¢ PremiaÃ§Ã£o
+            Temporada <%= hallYear || "" %> • Premiação
           </p>
           <h1 class="text-2xl md:text-3xl font-title text-horriver-light">
-            Hall da Fama â€“ CampeÃµes da temporada
+            Hall da Fama – Campeões da temporada
           </h1>
           <p class="text-xs md:text-sm text-horriver-gray mt-1 max-w-xl">
-            Destaques oficiais da temporada <%= hallYear || '' %>, em evidÃªncia na home
-            atÃ© o fim do ano. Depois, eles ficam eternizados na pÃ¡gina do Hall da Fama.
+            Destaques oficiais da temporada <%= hallYear || '' %>, em evidência na home
+            até o fim do ano. Depois, eles ficam eternizados na página do Hall da Fama.
           </p>
         </div>
 
@@ -177,7 +177,7 @@
                  const grad = catGradientMap[a.category] || "from-slate-500 via-slate-600 to-slate-800";
                  const label = catLabelMap[a.category] || a.category;
             %>
-              <!-- Card Ãºnico: Craque da temporada (Ballon d'Or style) -->
+              <!-- Card único: Craque da temporada (Ballon d'Or style) -->
               <div
                 class="relative w-full h-full bg-gradient-to-r <%= grad %> rounded-3xl
                        shadow-card-soft flex flex-col md:flex-row items-center
@@ -194,9 +194,9 @@
                   class="section-badge absolute top-4 left-4 inline-flex items-center gap-2 px-3 py-1
                          rounded-full bg-black/40 border border-yellow-300/70"
                 >
-                  <span class="text-yellow-300 text-base">â˜…</span>
+                  <span class="text-yellow-300 text-base">?</span>
                   <span class="text-[11px] text-yellow-100 tracking-[0.18em] uppercase">
-                    Craque mÃ¡ximo
+                    Craque máximo
                   </span>
                 </div>
 
@@ -219,7 +219,7 @@
                   <% } %>
                   <p class="text-[11px] text-black/75 mt-2 max-w-md">
                     Eleito o grande nome da temporada <%= hallYear || '' %>.
-                    Aquele nÃ­vel de futebol que vira referÃªncia na resenha por muito tempo.
+                    Aquele nível de futebol que vira referência na resenha por muito tempo.
                   </p>
                 </div>
 
@@ -326,7 +326,7 @@
                    bg-black/40 border border-horriver-border text-horriver-gray
                    hover:border-horriver-orange hover:text-horriver-orange transition-colors"
           >
-            â† Anterior
+            ? Anterior
           </button>
           <button
             id="hallNext"
@@ -335,7 +335,7 @@
                    bg-black/40 border border-horriver-border text-horriver-gray
                    hover:border-horriver-orange hover:text-horriver-orange transition-colors"
           >
-            PrÃ³ximo â†’
+            Próximo ?
           </button>
         </div>
       <% } %>
@@ -343,7 +343,7 @@
   <% } %>
 
   <!-- ======================================================
-       CRAQUE DO MÃŠS â€“ HERO
+       CRAQUE DO MÊS – HERO
   ======================================================= -->
   <header class="mt-4">
     <div
@@ -364,12 +364,12 @@
           class="section-badge inline-flex items-center px-3 py-1 rounded-full bg-horriver-red/30
                  border border-horriver-red/70 text-[11px] text-horriver-gray"
         >
-          Craque do mÃªs
+          Craque do mês
         </span>
 
         <% if (!monthlyCraque) { %>
           <p class="text-sm text-horriver-light/80 text-center max-w-xl">
-            Nenhum craque do mÃªs cadastrado ainda. Defina um no painel do administrador.
+            Nenhum craque do mês cadastrado ainda. Defina um no painel do administrador.
           </p>
         <% } else { %>
           <div class="flex flex-col items-center gap-4">
@@ -418,29 +418,29 @@
 
           <div class="mt-6 space-y-2 text-center">
             <p class="text-[11px] text-horriver-gray tracking-wide uppercase">
-              EstatÃ­sticas do mÃªs
+              Estatísticas do mês
             </p>
             <div
               class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-w-4xl mx-auto text-[11px]"
             >
               <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
-                <p class="text-horriver-gray">Gols no mÃªs</p>
+                <p class="text-horriver-gray">Gols no mês</p>
                 <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.goals : 0 %></p>
               </div>
               <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
-                <p class="text-horriver-gray">AssistÃªncias no mÃªs</p>
+                <p class="text-horriver-gray">Assistências no mês</p>
                 <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.assists : 0 %></p>
               </div>
               <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
-                <p class="text-horriver-gray">PresenÃ§as no mÃªs</p>
+                <p class="text-horriver-gray">Presenças no mês</p>
                 <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.matches : 0 %></p>
               </div>
               <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
-                <p class="text-horriver-gray">Fotos no mÃªs</p>
+                <p class="text-horriver-gray">Fotos no mês</p>
                 <p class="text-horriver-light font-semibold text-sm"><%= mStats ? mStats.photos : 0 %></p>
               </div>
               <div class="px-3 py-2 rounded-2xl bg-black/60 border border-horriver-red/60 flex flex-col items-center">
-                <p class="text-horriver-gray">Nota mÃ©dia do mÃªs</p>
+                <p class="text-horriver-gray">Nota média do mês</p>
                 <p class="text-horriver-light font-semibold text-sm">
                   <%= mStats ? fmtRating(mStats.avgRating) : "0,00" %>
                 </p>
@@ -535,7 +535,7 @@
 
             <div class="mt-3 space-y-2 text-center">
               <p class="text-[11px] text-horriver-gray tracking-wide uppercase">
-                EstatÃ­sticas da semana
+                Estatísticas da semana
               </p>
               <div
                 class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 max-w-md mx-auto text-[11px]"
@@ -547,7 +547,7 @@
                   </p>
                 </div>
                 <div class="px-3 py-2 rounded-2xl bg-black/40 border border-horriver-red/70 flex flex-col items-center">
-                  <p class="text-horriver-gray">AssistÃªncias na semana</p>
+                  <p class="text-horriver-gray">Assistências na semana</p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= wStats ? wStats.assists : 0 %>
                   </p>
@@ -667,7 +667,7 @@
                   <%= fmtDate(weeklyAward.winningMatch.playedAt) %>
                 </span>
                 <% if (weeklyAward.winningMatch.description) { %>
-                  â€” <%= weeklyAward.winningMatch.description %>
+                  — <%= weeklyAward.winningMatch.description %>
                 <% } %>
               </p>
             </div>
@@ -678,12 +678,12 @@
   </section>
 
   <!-- ======================================================
-       RANKINGS RÃPIDOS
+       RANKINGS RÁPIDOS
   ======================================================= -->
   <section class="space-y-4">
     <div class="flex items-center justify-between gap-2">
       <h2 class="font-title text-2xl text-horriver-light">
-        Rankings rÃ¡pidos
+        Rankings rápidos
       </h2>
       <a
         href="/rankings"
@@ -706,7 +706,7 @@
         class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light"
         data-target="rk-assist-home"
       >
-        AssistÃªncias
+        Assistências
       </button>
       <button
         class="rk-home-btn px-3 py-1 rounded-full text-horriver-gray hover:text-horriver-light"
@@ -736,7 +736,7 @@
               <tr>
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
-                <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
+                <th class="text-left px-2 py-1">Posição</th>
                 <th class="text-center px-2 py-1">Gols</th>
               </tr>
             </thead>
@@ -761,12 +761,12 @@
         <% } %>
       </div>
 
-      <!-- AssistÃªncias -->
+      <!-- Assistências -->
       <div id="rk-assist-home" class="rk-home-tab hidden">
         <% const ass = limit(topAssists, 5); %>
         <% if (!ass.length) { %>
           <p class="text-sm text-horriver-gray">
-            Nenhum dado de assistÃªncias ainda.
+            Nenhum dado de assistências ainda.
           </p>
         <% } else { %>
           <table class="min-w-full text-[11px]">
@@ -774,7 +774,7 @@
               <tr>
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
-                <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
+                <th class="text-left px-2 py-1">Posição</th>
                 <th class="text-center px-2 py-1">Assist.</th>
               </tr>
             </thead>
@@ -812,8 +812,8 @@
               <tr>
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
-                <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
-                <th class="text-center px-2 py-1">MÃ©dia</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1">Média</th>
               </tr>
             </thead>
             <tbody>
@@ -850,7 +850,7 @@
               <tr>
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
-                <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
+                <th class="text-left px-2 py-1">Posição</th>
                 <th class="text-center px-2 py-1">Fotos</th>
               </tr>
             </thead>
@@ -1002,10 +1002,10 @@
     </div>
   </section>
 
-  <!-- ÃšLTIMAS PELADAS -->
+  <!-- ÚLTIMAS PELADAS -->
   <section class="space-y-4">
     <h2 class="font-title text-2xl text-horriver-light">
-      Ãšltimas peladas
+      Últimas peladas
     </h2>
 
     <% if (!recentMatches || !recentMatches.length) { %>
@@ -1021,7 +1021,7 @@
                 <%= fmtDate(m.playedAt) %>
               </p>
               <p class="text-[11px] text-horriver-gray">
-                <%= m.description || "Sem descriÃ§Ã£o" %>
+                <%= m.description || "Sem descrição" %>
               </p>
             </div>
             <div class="text-right text-[11px]">
@@ -1055,16 +1055,16 @@
                bg-horriver-red/20 border border-horriver-red/60 text-[11px]
                text-horriver-gray"
       >
-        Desde 2024 â€¢ Pelada e resenha
+        Desde 2024 • Pelada e resenha
       </div>
 
       <h2 class="font-title text-3xl text-horriver-orange">
         Horriver Plate
       </h2>
       <p class="text-sm text-horriver-gray">
-        EstatÃ­sticas de pelada com cara de time profissional. Acompanhe gols,
-        assistÃªncias, notas, presenÃ§as e destaques da nossa resenha. Tudo
-        organizado como se fosse clube grande â€” mas sempre com o espÃ­rito da
+        Estatísticas de pelada com cara de time profissional. Acompanhe gols,
+        assistências, notas, presenças e destaques da nossa resenha. Tudo
+        organizado como se fosse clube grande — mas sempre com o espírito da
         pelada entre amigos.
       </p>
     </div>
@@ -1197,6 +1197,7 @@
     }
   });
 </script>
+
 
 
 

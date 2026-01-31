@@ -359,7 +359,7 @@
                     <% group.matches.forEach(match => { %>
                       <tr class="border-b border-horriver-border/40 last:border-0">
                         <td class="py-2 pr-4">
-                          <%= new Date(match.playedAt).toLocaleDateString("pt-BR") %>
+                          <%= new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %>
                         </td>
                         <td class="py-2 pr-4 text-horriver-gray/90">
                           <%= match.description || "-" %>
@@ -465,7 +465,7 @@
             <option value="">Nenhuma</option>
             <% matches.forEach(m => { %>
               <option value="<%= m.id %>">
-                <%= new Date(m.playedAt).toLocaleDateString("pt-BR") %>
+                <%= new Date(m.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %>
                 <% if (m.description) { %> - <%= m.description %><% } %>
               </option>
             <% }) %>
@@ -548,7 +548,7 @@
                   <p class="text-horriver-light/90">
                     Semana de
                     <span class="text-horriver-orange">
-                      <%= new Date(w.weekStart).toLocaleDateString("pt-BR") %>
+                      <%= new Date(w.weekStart).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %>
                     </span>
                   </p>
                   <p class="text-[11px] text-horriver-gray/80">
@@ -1074,6 +1074,7 @@
     setupCollapse("matches-list", "matches");
   })();
 </script>
+
 
 
 

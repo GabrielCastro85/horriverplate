@@ -14,7 +14,7 @@ const emojiMap = {
 const rarityOrder = { lendaria: 4, ouro: 3, prata: 2, bronze: 1 };
 const emoji = emojiMap[cat] || "🎖️";
 const desc = ach.description || (ach.targetValue ? `Complete ${ach.targetValue} em ${cat}` : "Conquista");
-const unlockedDate = ach.unlockedAt ? new Date(ach.unlockedAt).toLocaleDateString("pt-BR") : null;
+const unlockedDate = ach.unlockedAt ? new Date(ach.unlockedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : null;
 const chipLabel = cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : null;
 %>
 
@@ -33,3 +33,4 @@ const chipLabel = cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : null;
     <% } %>
   </div>
 </div>
+

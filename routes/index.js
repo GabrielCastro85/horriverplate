@@ -380,7 +380,7 @@ router.get("/matches/:id", async (req, res) => {
 
     const baseUrl =
       process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
-    const matchDateLabel = new Date(match.playedAt).toLocaleDateString("pt-BR");
+    const matchDateLabel = new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
     const matchDesc = match.description
       ? `Pelada em ${matchDateLabel}. ${match.description}`
       : `Pelada em ${matchDateLabel}.`;

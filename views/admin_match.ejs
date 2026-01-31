@@ -1,22 +1,24 @@
-ï»¿<%
+<%
 // views/admin_match.ejs
-// VariÃ¡veis recebidas: match, players, stats
-// O layout.ejs jÃ¡ cuida de <html>, <body>, header, footer etc.
-// Aqui Ã© sÃ³ o conteÃºdo interno do <main>.
+// Variáveis recebidas: match, players, stats
+// O layout.ejs já cuida de <html>, <body>, header, footer etc.
+// Aqui é só o conteúdo interno do <main>.
+  const fmtDateTimeBR = (d) =>
+    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "-";
 %>
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
   <div>
     <h1 class="text-xl md:text-2xl font-semibold text-horriver-light">
-      EstatÃ­sticas da pelada
+      Estatísticas da pelada
     </h1>
     <p class="text-xs md:text-sm text-horriver-gray mt-1">
       Data:
       <span class="text-horriver-orange font-medium">
-        <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
+        <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
       </span>
       <% if (match.description) { %>
-      Â· <%= match.description %>
+      · <%= match.description %>
       <% } %>
     </p>
   </div>
@@ -87,7 +89,7 @@
           <th class="px-3 py-3 text-center font-semibold text-horriver-gray">OVR</th>
           <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Presente</th>
           <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Gols</th>
-          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">AssistÃªncias</th>
+          <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Assistências</th>
           <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Nota</th>
           <th class="px-3 py-3 text-center font-semibold text-horriver-gray">Foto</th>
         </tr>
@@ -276,29 +278,29 @@
         href="/admin/matches/<%= match.id %>/awards"
         class="w-full sm:w-auto text-center px-4 py-2 rounded-full border border-horriver-orange/60 text-horriver-orange text-xs md:text-sm font-semibold hover:bg-horriver-orange hover:text-black transition shadow-card-soft"
       >
-        Ver prÃªmios / baixar imagem
+        Ver prêmios / baixar imagem
       </a>
       <button
         type="submit"
         class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-horriver-bg text-xs md:text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
       >
-        Salvar estatÃ­sticas
+        Salvar estatísticas
       </button>
     </div>
   </div>
 </form>
 
 <!-- ========================= -->
-<!-- VotaÃ§Ã£o: geraÃ§Ã£o de links -->
+<!-- Votação: geração de links -->
 <!-- ========================= -->
 <section id="votacao" class="mt-10 space-y-4">
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-        VotaÃ§Ã£o da pelada
+        Votação da pelada
       </h2>
       <p class="text-xs text-horriver-gray">
-        Gera links Ãºnicos para os jogadores presentes votarem (via WhatsApp).
+        Gera links únicos para os jogadores presentes votarem (via WhatsApp).
       </p>
     </div>
     <form
@@ -329,7 +331,7 @@
 
   <% if (!voteSession || !voteSession.tokens || !voteSession.tokens.length) { %>
     <p class="text-sm text-horriver-gray">
-      Nenhuma sessÃ£o de votaÃ§Ã£o criada ainda. Gere os links apÃ³s marcar os presentes.
+      Nenhuma sessão de votação criada ainda. Gere os links após marcar os presentes.
     </p>
   <% } else { %>
     <div class="flex flex-col md:flex-row md:items-center gap-2 mb-3 text-[12px]">
@@ -338,7 +340,7 @@
         method="POST"
         class="flex items-center gap-2"
         data-toast="Votos aplicados."
-        onsubmit="return confirm('Aplicar notas baseadas na votaÃ§Ã£o? NÃ£o sobrescreve notas jÃ¡ lanÃ§adas.');"
+        onsubmit="return confirm('Aplicar notas baseadas na votação? Não sobrescreve notas já lançadas.');"
       >
         <button
           type="submit"
@@ -347,7 +349,7 @@
           Aplicar votos como notas
         </button>
         <span class="text-horriver-gray text-[11px]">
-          Calcula notas para presentes (nÃ£o altera notas jÃ¡ preenchidas).
+          Calcula notas para presentes (não altera notas já preenchidas).
         </span>
       </form>
 
@@ -356,27 +358,27 @@
         method="POST"
         class="flex items-center gap-2"
         data-toast="Votacao encerrada."
-        onsubmit="return confirm('Encerrar a votaÃ§Ã£o agora? Links restantes serÃ£o bloqueados.');"
+        onsubmit="return confirm('Encerrar a votação agora? Links restantes serão bloqueados.');"
       >
         <button
           type="submit"
           class="px-3 py-2 rounded-full bg-red-600 text-white font-semibold hover:bg-red-500 transition"
         >
-          Encerrar votaÃ§Ã£o
+          Encerrar votação
         </button>
         <span class="text-horriver-gray text-[11px]">
-          Expira a sessÃ£o e bloqueia links nÃ£o usados.
+          Expira a sessão e bloqueia links não usados.
         </span>
       </form>
     </div>
 
     <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
       <p class="text-xs text-horriver-gray mb-2">
-        SessÃ£o criada em <%= new Date(voteSession.createdAt).toLocaleString('pt-BR') %>
+        Sessão criada em <%= fmtDateTimeBR(voteSession.createdAt) %>
         <% if (voteSession.expiresAt) { %>
-          Â· expira em <%= new Date(voteSession.expiresAt).toLocaleString('pt-BR') %>
+          · expira em <%= fmtDateTimeBR(voteSession.expiresAt) %>
         <% } else { %>
-          Â· sem expiraÃ§Ã£o
+          · sem expiração
         <% } %>
       </p>
 
@@ -385,7 +387,7 @@
           <thead>
             <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
               <th class="py-2 pr-3 text-left font-normal">Jogador</th>
-              <th class="py-2 pr-3 text-left font-normal">PosiÃ§Ã£o</th>
+              <th class="py-2 pr-3 text-left font-normal">Posição</th>
               <th class="py-2 pr-3 text-left font-normal">Link</th>
               <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
               <th class="py-2 pr-3 text-left font-normal">Votou</th>
@@ -396,7 +398,7 @@
                  const link = `${voteBaseUrl}/vote/${t.token}`;
                  const waRaw = t.player.whatsapp || "";
                  const waDigits = waRaw.replace(/\\D/g, "");
-                 const msg = `Fala ${t.player.name}! Seu link de votaÃ§Ã£o da pelada: ${link}`;
+                 const msg = `Fala ${t.player.name}! Seu link de votação da pelada: ${link}`;
                  const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
             %>
                 <tr class="border-b border-horriver-border/40 last:border-0">
@@ -428,14 +430,14 @@
                       Mandar link
                     </a>
                   <% } else { %>
-                    <span class="text-horriver-gray">Sem nÃºmero</span>
+                    <span class="text-horriver-gray">Sem número</span>
                   <% } %>
                 </td>
                 <td class="py-2 pr-3">
                   <% if (t.usedAt) { %>
-                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">âœ“</span>
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">?</span>
                   <% } else { %>
-                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/10 text-horriver-gray text-[11px]">â€”</span>
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/10 text-horriver-gray text-[11px]">—</span>
                   <% } %>
                 </td>
               </tr>
@@ -456,7 +458,7 @@
         Sorteador inteligente de times
       </h2>
       <p class="text-xs text-horriver-gray">
-        Usa o mesmo overall do ranking e trava 6 jogadores por time. Convidados entram sÃ³ no sorteio (nÃ£o salvam no banco).
+        Usa o mesmo overall do ranking e trava 6 jogadores por time. Convidados entram só no sorteio (não salvam no banco).
       </p>
     </div>
   </div>
@@ -465,7 +467,7 @@
     <form id="sorterForm" class="space-y-3 text-[12px]">
       <div class="grid md:grid-cols-2 gap-3">
         <div class="space-y-2">
-          <p class="text-horriver-gray text-[12px]">Convidados (sÃ³ para este sorteio)</p>
+          <p class="text-horriver-gray text-[12px]">Convidados (só para este sorteio)</p>
           <div class="bg-black/30 border border-horriver-border rounded-xl p-3 space-y-2">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label class="flex flex-col gap-1 text-horriver-gray">
@@ -478,7 +480,7 @@
                 />
               </label>
               <label class="flex flex-col gap-1 text-horriver-gray">
-                PosiÃ§Ã£o
+                Posição
                 <select
                   id="guestPos"
                   class="bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light"
@@ -492,7 +494,7 @@
               </label>
             </div>
             <label class="flex flex-col gap-1 text-horriver-gray">
-              ForÃ§a (40-100)
+              Força (40-100)
               <input
                 type="number"
                 id="guestStr"
@@ -516,18 +518,18 @@
 
                 <div class="flex flex-col gap-2">
           <p class="text-horriver-gray text-[12px]">
-            Sorteio automÃ¡tico usando os presentes marcados acima. Se tiver mais de 12 presentes, cria 2, 3 ou 4 times com 6 em cada; extras vÃ£o para o banco.
+            Sorteio automático usando os presentes marcados acima. Se tiver mais de 12 presentes, cria 2, 3 ou 4 times com 6 em cada; extras vão para o banco.
           </p>
           <div class="space-y-1 text-[11px]">
             <p class="text-horriver-gray">
-              Marque os cabeÃ§as de chave (entre os presentes) para travar um em cada time.
+              Marque os cabeças de chave (entre os presentes) para travar um em cada time.
             </p>
             <div
               id="seedList"
               class="bg-black/30 border border-horriver-border rounded-xl p-2 flex flex-wrap gap-2 min-h-[46px]"
             ></div>
             <p class="text-horriver-gray text-[10px]">
-              Atualiza automaticamente ao marcar/desmarcar presenÃ§a.
+              Atualiza automaticamente ao marcar/desmarcar presença.
             </p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
@@ -747,7 +749,7 @@
     <% } %>
   </div>
 
-  <%
+<%
     const tournamentData = typeof tournament !== "undefined" ? tournament : null;
     const standings = Array.isArray(tournamentStandings) ? tournamentStandings : [];
     const games = tournamentData && Array.isArray(tournamentData.games) ? tournamentData.games : [];
@@ -1118,7 +1120,7 @@
     <div id="tournament-standings-export-admin" class="tournament-export" data-export-root>
       <div class="export-header export-only">
         <div>
-          <div class="export-title">HORRIVER PLATE â€” TORNEIO</div>
+          <div class="export-title">HORRIVER PLATE — TORNEIO</div>
           <div class="export-subtitle">Classificacao</div>
         </div>
         <div class="export-logo">
@@ -1177,7 +1179,7 @@
     <div id="tournament-games-export-admin" class="tournament-export" data-export-root>
       <div class="export-header export-only">
         <div>
-          <div class="export-title">HORRIVER PLATE â€” TORNEIO</div>
+          <div class="export-title">HORRIVER PLATE — TORNEIO</div>
           <div class="export-subtitle">Jogos e resultados</div>
         </div>
         <div class="export-logo">
@@ -1198,7 +1200,7 @@
             <% if (stage === "FINAL") { %>
               <% if (thirdPlaceGame) { const home = teamById.get(thirdPlaceGame.homeTeamId); const away = teamById.get(thirdPlaceGame.awayTeamId); const played = thirdPlaceGame.homeGoals != null && thirdPlaceGame.awayGoals != null; %>
                 <div class="export-card rounded-xl border border-white/10 bg-black/40 p-3">
-                  <div class="export-section-sub mb-2">Disputa 3Âº lugar</div>
+                  <div class="export-section-sub mb-2">Disputa 3º lugar</div>
                   <div class="game-card <%= played ? '' : 'game-pending' %>">
                     <div class="team-side">
                       <div class="team-name text-horriver-light">
@@ -1210,10 +1212,10 @@
                       <div class="team-meta">Mandante</div>
                     </div>
                     <div class="text-center">
-                      <div class="score"><%= thirdPlaceGame.homeGoals ?? "â€”" %> x <%= thirdPlaceGame.awayGoals ?? "â€”" %></div>
+                      <div class="score"><%= thirdPlaceGame.homeGoals ?? "—" %> x <%= thirdPlaceGame.awayGoals ?? "—" %></div>
                       <% if (thirdPlaceGame.decidedBy === "PENALTIES") { %>
                         <div class="score-note">
-                          PÃªnaltis: <%= thirdPlaceGame.homePenalties %>-<%= thirdPlaceGame.awayPenalties %>
+                          Pênaltis: <%= thirdPlaceGame.homePenalties %>-<%= thirdPlaceGame.awayPenalties %>
                         </div>
                       <% } %>
                     </div>
@@ -1243,10 +1245,10 @@
                       <div class="team-meta">Mandante</div>
                     </div>
                     <div class="text-center">
-                      <div class="score"><%= finalGame.homeGoals ?? "â€”" %> x <%= finalGame.awayGoals ?? "â€”" %></div>
+                      <div class="score"><%= finalGame.homeGoals ?? "—" %> x <%= finalGame.awayGoals ?? "—" %></div>
                       <% if (finalGame.decidedBy === "PENALTIES") { %>
                         <div class="score-note">
-                          PÃªnaltis: <%= finalGame.homePenalties %>-<%= finalGame.awayPenalties %>
+                          Pênaltis: <%= finalGame.homePenalties %>-<%= finalGame.awayPenalties %>
                         </div>
                       <% } %>
                     </div>
@@ -1275,10 +1277,10 @@
                     <div class="team-meta">Mandante</div>
                   </div>
                   <div class="text-center">
-                    <div class="score"><%= game.homeGoals ?? "â€”" %> x <%= game.awayGoals ?? "â€”" %></div>
+                    <div class="score"><%= game.homeGoals ?? "—" %> x <%= game.awayGoals ?? "—" %></div>
                     <% if (game.decidedBy === "PENALTIES") { %>
                       <div class="score-note">
-                        PÃªnaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
+                        Pênaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
                       </div>
                     <% } %>
                   </div>
@@ -1573,7 +1575,7 @@
                     <tr class="border-t border-horriver-border/40">
                       <td class="px-3 py-2 text-horriver-light">
                         <span class="text-horriver-orange text-[10px] uppercase mr-2">
-                          <%= stage === "THIRD" ? "3Âº" : stage %>
+                          <%= stage === "THIRD" ? "3º" : stage %>
                         </span>
                         <%- homeName %> x <%- awayName %>
                         <% if (isSemi && game.decidedBy === "ADVANTAGE") { %>
@@ -1866,7 +1868,7 @@
 
     if (!form || !resultsEl) return;
 
-    const matchDateLabel = new Date("<%= match.playedAt.toISOString() %>").toLocaleDateString("pt-BR");
+    const matchDateLabel = new Date("<%= match.playedAt.toISOString() %>").toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' });
 
     const guests = [];
     const seedIds = new Set();
@@ -1903,7 +1905,7 @@
         if (!allowedIds.has(id)) seedIds.delete(id);
       });
       if (!presentPlayers.length) {
-        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenÃ§as para escolher os cabeÃ§as de chave.</span>`;
+        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenças para escolher os cabeças de chave.</span>`;
         return;
       }
       seedList.innerHTML = presentPlayers
@@ -2468,7 +2470,7 @@
 
       const presentIds = getPresentIdsFromForm();
       if (!presentIds.length) {
-        statusEl.textContent = "Sorteando com os presentes jÃ¡ salvos (marque acima se quiser alterar).";
+        statusEl.textContent = "Sorteando com os presentes já salvos (marque acima se quiser alterar).";
       }
 
       syncGuestsField();
@@ -2573,7 +2575,7 @@
         }
         try {
           navigator.clipboard.writeText(text);
-          if (shareStatus) shareStatus.textContent = "Times copiados para a Ã¡rea de transferÃªncia.";
+          if (shareStatus) shareStatus.textContent = "Times copiados para a área de transferência.";
         } catch (err) {
           if (shareStatus) shareStatus.textContent = "Falha ao copiar. Copie manualmente.";
         }
@@ -2584,7 +2586,7 @@
       imgBtn.addEventListener("click", async () => {
         shareStatus.textContent = "Gerando imagem...";
         try {
-          // carrega html2canvas se ainda nÃ£o estiver presente
+          // carrega html2canvas se ainda não estiver presente
           if (typeof html2canvas === "undefined") {
             await new Promise((resolve, reject) => {
               const s = document.createElement("script");
@@ -2755,5 +2757,8 @@
   }
   })();
 </script>
+
+
+
 
 

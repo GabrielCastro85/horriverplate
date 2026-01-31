@@ -3,7 +3,7 @@
   // Helpers e preparação de dados
   // ===============================
   const fmtDate = (d) =>
-    d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : "-";
 
   const fmtRating = (val) => {
     if (!val && val !== 0) return "0,00";
@@ -911,5 +911,6 @@
     </div>
   </section>
 </section>
+
 
 

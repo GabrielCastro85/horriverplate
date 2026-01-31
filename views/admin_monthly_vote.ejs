@@ -1,3 +1,8 @@
+<%
+  const fmtDateTimeBR = (d) =>
+    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "-";
+%>
+
 <section class="space-y-4">
   <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
     <div>
@@ -206,7 +211,7 @@
                 <tr class="border-b border-horriver-border/40 last:border-0">
                   <td class="py-2 pr-3 text-horriver-light"><%= b.token?.player?.name || "Jogador" %></td>
                   <td class="py-2 pr-3 text-horriver-light"><%= b.candidate?.name || "Jogador" %></td>
-                  <td class="py-2 pr-3 text-horriver-gray"><%= new Date(b.createdAt).toLocaleString('pt-BR') %></td>
+                  <td class="py-2 pr-3 text-horriver-gray"><%= fmtDateTimeBR(b.createdAt) %></td>
                 </tr>
               <% }) %>
             </tbody>

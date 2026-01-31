@@ -21,7 +21,7 @@
     <h1 class="font-title text-3xl text-horriver-light">Votacao da pelada</h1>
     <% if (match) { %>
       <p class="text-sm text-horriver-gray">
-        Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR") %></span>
+        Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %></span>
         <% if (match.description) { %> · <%= match.description %> <% } %>
       </p>
     <% } %>
@@ -196,3 +196,4 @@
     showCard(index);
   })();
 </script>
+

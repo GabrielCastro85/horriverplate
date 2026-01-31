@@ -13,7 +13,7 @@
     <p class="text-xs md:text-sm text-horriver-gray mt-1">
       Data:
       <span class="text-horriver-orange font-medium">
-        <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %>
+        <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
       </span>
       <% if (match.description) { %>
       · <%= match.description %>
@@ -154,3 +154,4 @@
     </button>
   </div>
 </form>
+

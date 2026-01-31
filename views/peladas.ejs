@@ -1,6 +1,6 @@
 <%
   const fmtDate = (d) =>
-    d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : "-";
 
   const safeMatches = Array.isArray(matches) ? matches : [];
   const safeYears = Array.isArray(yearOptions) ? yearOptions : [];
@@ -10,8 +10,7 @@
 
   const monthLabel = (d) =>
     d
-      ? new Date(d).toLocaleDateString("pt-BR", {
-          month: "long",
+      ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo', month: "long",
           year: "numeric",
         })
       : "";
@@ -135,6 +134,7 @@
     </div>
   <% } %>
 </section>
+
 
 
 

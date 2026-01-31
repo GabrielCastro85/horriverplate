@@ -1,4 +1,4 @@
-Ôªø<%# views/vote_page.ejs %>
+<%# views/vote_page.ejs %>
 
 <% if (error) { %>
   <div class="text-center p-8 bg-red-900/20 rounded-lg">
@@ -9,13 +9,13 @@
 <% } else if (success) { %>
   <div class="text-center p-8 bg-green-900/20 rounded-lg">
     <h1 class="text-xl font-bold text-green-400">Voto computado!</h1>
-    <p class="mt-2 text-horriver-light">Obrigado pela sua participa√ß√£o.</p>
+    <p class="mt-2 text-horriver-light">Obrigado pela sua participaÁ„o.</p>
     <a href="/" class="mt-4 inline-block px-4 py-2 text-sm font-semibold text-white bg-horriver-orange rounded-lg">Voltar para Home</a>
   </div>
 <% } else { %>
 
-  <h1 class="text-2xl font-bold text-center text-horriver-orange">Vota√ß√£o da Pelada</h1>
-  <p class="text-center text-horriver-gray mb-8">Partida de <%= new Date(match.playedAt).toLocaleDateString('pt-BR') %></p>
+  <h1 class="text-2xl font-bold text-center text-horriver-orange">VotaÁ„o da Pelada</h1>
+  <p class="text-center text-horriver-gray mb-8">Partida de <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
 
   <form id="vote-form" method="POST" action="/vote/match/<%= match.id %>?token=<%= token %>" class="space-y-8">
     <% const blocks = (groupedOrder && groupedOrder.length) ? groupedOrder : Object.keys(grouped || {}).map(k => ({label:k, list: grouped[k]})); %>
@@ -42,8 +42,8 @@
                   <% } %>
                   <p class="text-[11px] text-horriver-gray">
                     Gols: <span class="text-horriver-orange"><%= player.goals %></span>
-                    ¬∑ Ast: <span class="text-horriver-orange"><%= player.assists %></span>
-                    <% if (player.appearedInPhoto) { %> ¬∑ <span title="Saiu na foto">üì∏</span><% } %>
+                    ∑ Ast: <span class="text-horriver-orange"><%= player.assists %></span>
+                    <% if (player.appearedInPhoto) { %> ∑ <span title="Saiu na foto">??</span><% } %>
                   </p>
                 </div>
               </div>
@@ -52,8 +52,8 @@
                   Pos: <span class="text-horriver-orange"><%= player.positionLabel || player.position %></span>
                 </div>
                 <div class="flex items-center gap-1">
-                  <button type="button" class="px-2 py-1 text-[10px] rounded-md border border-horriver-border text-horriver-gray hover:text-horriver-orange" data-move="up" aria-label="Mover para cima">‚ñ≤</button>
-                  <button type="button" class="px-2 py-1 text-[10px] rounded-md border border-horriver-border text-horriver-gray hover:text-horriver-orange" data-move="down" aria-label="Mover para baixo">‚ñº</button>
+                  <button type="button" class="px-2 py-1 text-[10px] rounded-md border border-horriver-border text-horriver-gray hover:text-horriver-orange" data-move="up" aria-label="Mover para cima">?</button>
+                  <button type="button" class="px-2 py-1 text-[10px] rounded-md border border-horriver-border text-horriver-gray hover:text-horriver-orange" data-move="down" aria-label="Mover para baixo">?</button>
                 </div>
               </div>
             </li>
@@ -64,7 +64,7 @@
     <% }) %>
 
     <div class="p-4 bg-black/30 rounded-lg border border-horriver-border">
-      <h2 class="text-lg font-semibold mb-3 text-horriver-light">‚≠ê Craque da Pelada (MVP)</h2>
+      <h2 class="text-lg font-semibold mb-3 text-horriver-light">? Craque da Pelada (MVP)</h2>
       <select name="mvpPlayerId" class="w-full p-3 bg-horriver-dark rounded-md border border-horriver-border text-horriver-light">
         <option value="">-- Escolha o melhor jogador --</option>
         <% players.forEach(player => { %>
@@ -124,3 +124,4 @@
     });
   </script>
 <% } %>
+

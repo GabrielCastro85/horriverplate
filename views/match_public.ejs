@@ -1,9 +1,9 @@
-ï»¿<%
+<%
   const fmtDate = (d) =>
-    d ? new Date(d).toLocaleDateString("pt-BR") : "-";
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) : "-";
 
   const fmtRating = (val) => {
-    if (val === null || val === undefined || Number.isNaN(val)) return "â€”";
+    if (val === null || val === undefined || Number.isNaN(val)) return "—";
     return Number(val).toFixed(2).replace(".", ",");
   };
 
@@ -12,7 +12,7 @@
 
 <section class="space-y-6 animate-fadeIn">
 
-  <!-- CabeÃ§alho da pelada -->
+  <!-- Cabeçalho da pelada -->
   <header class="space-y-2">
     <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
       Pelada em <span class="text-horriver-orange"><%= fmtDate(match.playedAt) %></span>
@@ -20,15 +20,15 @@
 
     <div class="text-sm text-horriver-gray space-y-1">
       <p>
-        <span class="font-semibold text-horriver-light">DescriÃ§Ã£o:</span>
-        <%= match.description || "Sem descriÃ§Ã£o" %>
+        <span class="font-semibold text-horriver-light">Descrição:</span>
+        <%= match.description || "Sem descrição" %>
       </p>
       <p>
         <span class="font-semibold text-horriver-light">Time vencedor:</span>
         <%= match.winnerTeam || "Sem time vencedor" %>
       </p>
       <p class="text-[11px] text-horriver-gray/80 mt-1">
-        Esta pÃ¡gina Ã© apenas para visualizaÃ§Ã£o pÃºblica. Para lanÃ§ar ou editar estatÃ­sticas,
+        Esta página é apenas para visualização pública. Para lançar ou editar estatísticas,
         use o painel do administrador.
       </p>
     </div>
@@ -238,7 +238,7 @@
         <div id="tournament-standings-export" class="tournament-export">
           <div class="export-header export-only">
             <div>
-              <div class="export-title">HORRIVER PLATE â€” TORNEIO</div>
+              <div class="export-title">HORRIVER PLATE — TORNEIO</div>
               <div class="export-subtitle">Classificacao da pelada</div>
             </div>
             <div class="export-logo">
@@ -284,7 +284,7 @@
         <div id="tournament-games-export" class="tournament-export">
           <div class="export-header export-only">
             <div>
-              <div class="export-title">HORRIVER PLATE â€” TORNEIO</div>
+              <div class="export-title">HORRIVER PLATE — TORNEIO</div>
               <div class="export-subtitle">Jogos e resultados</div>
             </div>
             <div class="export-logo">
@@ -313,7 +313,7 @@
                     </div>
                     <% if (game.decidedBy === "PENALTIES") { %>
                       <div class="text-[10px] text-horriver-gray mt-1">
-                        Decidido nos pÃªnaltis
+                        Decidido nos pênaltis
                         <% if (game.homePenalties != null && game.awayPenalties != null) { %>
                           <span class="ml-2 text-[10px] text-horriver-gray">
                             Penaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
@@ -344,14 +344,14 @@
       <div class="absolute bottom-[-120px] right-[-80px] w-[380px] h-[380px] bg-horriver-red/30 blur-3xl rounded-full"></div>
     </div>
 
-    <!-- ConteÃºdo -->
+    <!-- Conteúdo -->
     <div class="relative z-10 px-4 md:px-6 py-4 md:py-5">
 
-      <!-- TÃ­tulo -->
+      <!-- Título -->
       <div class="flex items-center justify-between gap-4 mb-3">
         <div>
-          <h2 class="font-title text-xl text-horriver-light">EstatÃ­sticas da pelada</h2>
-          <p class="text-[11px] text-horriver-gray">Jogadores em ordem alfabÃ©tica, com gols, assistÃªncias, presenÃ§a e nota.</p>
+          <h2 class="font-title text-xl text-horriver-light">Estatísticas da pelada</h2>
+          <p class="text-[11px] text-horriver-gray">Jogadores em ordem alfabética, com gols, assistências, presença e nota.</p>
         </div>
 
         <p class="text-[11px] text-horriver-gray">
@@ -360,7 +360,7 @@
         </p>
       </div>
 
-      <!-- MOBILE FIX â€“ SCROLL HORIZONTAL -->
+      <!-- MOBILE FIX – SCROLL HORIZONTAL -->
       <div class="rounded-2xl border border-horriver-red/50 bg-black/60 overflow-hidden">
 
         <!-- WRAPPER COM SCROLL HORIZONTAL NO MOBILE -->
@@ -372,7 +372,7 @@
               <tr>
                 <th class="px-3 py-2 text-left w-10 sticky left-0 z-20 bg-horriver-red/70">#</th>
                 <th class="px-3 py-2 text-left cursor-pointer select-none sticky left-10 z-20 bg-horriver-red/70" data-sort="name">Jogador</th>
-                <th class="px-3 py-2 text-left">PosiÃ§Ã£o</th>
+                <th class="px-3 py-2 text-left">Posição</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="present">Presente</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="goals">Gols</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="assists">Assist.</th>
@@ -385,7 +385,7 @@
               <% if (!safeStats.length) { %>
                 <tr>
                   <td colspan="8" class="px-3 py-4 text-center text-sm text-horriver-gray">
-                    Nenhuma estatÃ­stica lanÃ§ada para esta pelada.
+                    Nenhuma estatística lançada para esta pelada.
                   </td>
                 </tr>
               <% } else { %>
@@ -407,7 +407,7 @@
                       <% } %>
                     </td>
 
-                    <!-- PosiÃ§Ã£o -->
+                    <!-- Posição -->
                     <td class="px-3 py-2 text-[11px] text-horriver-orange uppercase whitespace-nowrap">
                       <%= s.player.position %>
                     </td>
@@ -415,9 +415,9 @@
                     <!-- Presente -->
                     <td class="px-3 py-2 text-center">
                       <% if (s.present) { %>
-                        <span class="text-emerald-400 text-sm">âœ”</span>
+                        <span class="text-emerald-400 text-sm">?</span>
                       <% } else { %>
-                        <span class="text-horriver-gray/70 text-sm">â€”</span>
+                        <span class="text-horriver-gray/70 text-sm">—</span>
                       <% } %>
                     </td>
 
@@ -439,9 +439,9 @@
                     <!-- Foto -->
                     <td class="px-3 py-2 text-center">
                       <% if (s.appearedInPhoto) { %>
-                        <span class="text-horriver-orange text-base">ðŸ“¸</span>
+                        <span class="text-horriver-orange text-base">??</span>
                       <% } else { %>
-                        <span class="text-horriver-gray/70 text-xs">â€”</span>
+                        <span class="text-horriver-gray/70 text-xs">—</span>
                       <% } %>
                     </td>
 
@@ -454,7 +454,7 @@
         </div>
       </div>
 
-      <!-- BotÃ£o voltar -->
+      <!-- Botão voltar -->
       <div class="mt-4 flex justify-end">
         <a
           href="/"
@@ -569,3 +569,4 @@
     });
   })();
 </script>
+
