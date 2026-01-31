@@ -295,10 +295,12 @@ app.listen(PORT, () => {
 // ==============================
 // 🔄 Backup automático (1x por dia)
 // ==============================
-scheduleBackup({ reason: "startup" });
-setInterval(() => {
-  scheduleBackup({ reason: "auto" });
-}, 24 * 60 * 60 * 1000);
+if (process.env.NODE_ENV === "production") {
+  scheduleBackup({ reason: "startup" });
+  setInterval(() => {
+    scheduleBackup({ reason: "auto" });
+  }, 24 * 60 * 60 * 1000);
+}
 
 
 

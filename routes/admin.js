@@ -547,6 +547,58 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
       return acc;
     }, {});
 
+    let monthlyVoteWinner = null;
+    if (monthlyVoteCandidates.length) {
+      monthlyVoteWinner = [...monthlyVoteCandidates]
+        .map((candidate) => ({
+          ...candidate,
+          votes: monthlyVoteCounts[candidate.id] || 0,
+        }))
+        .sort((a, b) => {
+          if (b.votes !== a.votes) return b.votes - a.votes;
+          if (b.score !== a.score) return (b.score || 0) - (a.score || 0);
+          return String(a.name || "").localeCompare(String(b.name || ""));
+        })[0];
+    }
+
+    const now = new Date();
+    const monthlyVoteClosed =
+      !!monthlyVoteSession?.expiresAt &&
+      new Date(monthlyVoteSession.expiresAt).getTime() <= now.getTime();
+
+    const closedSessions = await prisma.monthlyVoteSession.findMany({
+      where: { expiresAt: { lt: now } },
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+    });
+
+    const winnersHistory = [];
+    for (const session of closedSessions) {
+      const ballots = await prisma.monthlyVoteBallot.findMany({
+        where: { token: { sessionId: session.id } },
+        include: { candidate: true },
+      });
+      if (!ballots.length) continue;
+      const counts = ballots.reduce((acc, ballot) => {
+        acc[ballot.candidateId] = (acc[ballot.candidateId] || 0) + 1;
+        return acc;
+      }, {});
+      const winner = ballots
+        .map((b) => b.candidate)
+        .filter(Boolean)
+        .map((candidate) => ({
+          candidate,
+          votes: counts[candidate.id] || 0,
+        }))
+        .sort((a, b) => b.votes - a.votes)[0];
+      if (!winner) continue;
+      winnersHistory.push({
+        month: session.month,
+        year: session.year,
+        name: winner.candidate.name,
+        votes: winner.votes,
+      });
+    }
+
     res.render("admin_monthly_vote", {
       title: "Votacao do mes",
       mvMonth,
@@ -557,6 +609,9 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
       monthlyVoteCandidates,
       monthlyVoteBallots,
       monthlyVoteCounts,
+      monthlyVoteWinner,
+      monthlyVoteClosed,
+      winnersHistory,
       voteBaseUrl,
       monthlyVoteError: req.query.monthlyVoteError || null,
       monthlyVoteCreated: req.query.monthlyVoteCreated === "1",
@@ -564,6 +619,26 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
   } catch (err) {
     console.error("Erro ao carregar votacao do mes:", err);
     res.status(500).send("Erro ao carregar votacao do mes.");
+  }
+});
+
+// ==============================
+// 🔒 Encerrar votacao do mes
+// ==============================
+router.post("/monthly-vote/:id/close", requireAdmin, async (req, res) => {
+  try {
+    const sessionId = Number(req.params.id);
+    if (!sessionId) return res.redirect("/admin/monthly-vote");
+
+    await prisma.monthlyVoteSession.update({
+      where: { id: sessionId },
+      data: { expiresAt: new Date() },
+    });
+
+    return res.redirect("/admin/monthly-vote?monthlyVoteClosed=1");
+  } catch (err) {
+    console.error("Erro ao encerrar votacao do mes:", err);
+    return res.redirect("/admin/monthly-vote?monthlyVoteError=close");
   }
 });
 

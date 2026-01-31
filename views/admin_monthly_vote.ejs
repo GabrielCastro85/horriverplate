@@ -5,12 +5,24 @@
       <h1 class="font-title text-2xl text-horriver-light">Votacao do mes</h1>
       <p class="text-sm text-horriver-gray">Top 6 (minimo 2 peladas no mes) e links para votar.</p>
     </div>
-    <a
-      href="/admin"
-      class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-dark border border-horriver-border text-horriver-light text-xs hover:border-horriver-orange transition"
-    >
-      Voltar ao painel
-    </a>
+    <div class="flex flex-wrap items-center gap-2">
+      <% if (monthlyVoteSession) { %>
+        <form action="/admin/monthly-vote/<%= monthlyVoteSession.id %>/close" method="POST" onsubmit="return confirm('Encerrar a votacao do mes agora? Os links nao vao mais funcionar.');">
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-red-600/80 text-white text-xs font-semibold hover:bg-red-500 transition"
+          >
+            Encerrar votacao
+          </button>
+        </form>
+      <% } %>
+      <a
+        href="/admin"
+        class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-dark border border-horriver-border text-horriver-light text-xs hover:border-horriver-orange transition"
+      >
+        Voltar ao painel
+      </a>
+    </div>
   </header>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -72,6 +84,23 @@
       <% if (!monthlyVoteSession || !monthlyVoteCandidates.length) { %>
         <p class="text-sm text-horriver-gray">Nenhuma sessao criada ainda.</p>
       <% } else { %>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-[11px] text-horriver-gray">Vencedor atual baseado nos votos.</p>
+          <button
+            type="button"
+            id="exportMonthlyWinnerBtn"
+            class="inline-flex items-center justify-center px-3 py-2 rounded-full bg-horriver-orange text-black text-[11px] font-semibold hover:bg-orange-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            <%= monthlyVoteWinner ? "" : "disabled" %>
+          >
+            Exportar card do vencedor
+          </button>
+        </div>
+        <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3">
+          <p class="text-[11px] text-horriver-gray mb-2">Parcial de votos</p>
+          <div class="h-[220px]">
+            <canvas id="monthlyVotesChart" aria-label="Grafico de votos" role="img"></canvas>
+          </div>
+        </div>
         <div class="grid sm:grid-cols-2 gap-3">
           <% monthlyVoteCandidates.forEach((c) => { %>
             <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 text-[11px]">
@@ -108,7 +137,7 @@
                        const link = `${voteBaseUrl}/monthly-vote/${t.token}`;
                        const waRaw = t.player?.whatsapp || "";
                        const waDigits = waRaw.replace(/\\D/g, "");
-                       const msg = `Fala ${t.player?.name || "jogador"}! Seu link de votação do mês: ${link}`;
+                       const msg = `Fala ${t.player?.name || "jogador"}! Seu link de votação para craque do mês: ${link}`;
                        const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
                   %>
                     <tr class="border-b border-horriver-border/40 last:border-0">
@@ -187,3 +216,293 @@
     </div>
   <% } %>
 </section>
+
+<% if (monthlyVoteClosed) { %>
+  <section class="mt-6 bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 class="font-semibold text-lg text-horriver-light">Vencedores registrados</h3>
+      <span class="text-[11px] text-horriver-gray">Apos encerrar a votacao</span>
+    </div>
+    <% if (!winnersHistory || !winnersHistory.length) { %>
+      <p class="text-sm text-horriver-gray">Nenhum vencedor registrado ainda.</p>
+    <% } else { %>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <% winnersHistory.forEach((winner) => { %>
+          <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 text-[11px]">
+            <p class="text-horriver-light font-semibold"><%= winner.name %></p>
+            <p class="text-horriver-gray"><%= monthNames[winner.month - 1] %> <%= winner.year %></p>
+            <p class="text-horriver-gray">Votos: <span class="text-horriver-orange font-semibold"><%= winner.votes %></span></p>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+<% } %>
+
+<% if (monthlyVoteSession && monthlyVoteWinner) { %>
+  <div class="fixed -left-[9999px] top-0 w-[1200px]" aria-hidden="true">
+    <section id="monthlyWinnerExportRoot" class="monthly-export-card">
+      <header class="monthly-export-header">
+        <div>
+          <p class="monthly-export-kicker">HORRIVER PLATE</p>
+          <h2 class="monthly-export-title">Craque do mês</h2>
+          <p class="monthly-export-subtitle"><%= monthNames[mvMonth - 1] %> / <%= mvYear %></p>
+        </div>
+        <div class="monthly-export-logo">
+          <img src="/img/logo-128x128.svg" alt="Horriver Plate" />
+        </div>
+      </header>
+
+      <div class="monthly-export-body">
+        <div class="monthly-export-avatar">
+          <img
+            src="<%= monthlyVoteWinner.photoUrl || '/img/logo-64x64.svg' %>"
+            alt="<%= monthlyVoteWinner.name %>"
+          />
+        </div>
+        <div class="monthly-export-info">
+          <h3 class="monthly-export-name"><%= monthlyVoteWinner.name %></h3>
+          <% if (monthlyVoteWinner.nickname) { %>
+            <p class="monthly-export-nick">"<%= monthlyVoteWinner.nickname %>"</p>
+          <% } %>
+          <p class="monthly-export-votes">
+            Votos: <span><%= monthlyVoteWinner.votes %></span>
+          </p>
+          <div class="monthly-export-stats">
+            <div class="monthly-export-stat">
+              <span class="label">Gols</span>
+              <span class="value"><%= monthlyVoteWinner.goals ?? 0 %></span>
+            </div>
+            <div class="monthly-export-stat">
+              <span class="label">Assist.</span>
+              <span class="value"><%= monthlyVoteWinner.assists ?? 0 %></span>
+            </div>
+            <div class="monthly-export-stat">
+              <span class="label">Fotos</span>
+              <span class="value"><%= monthlyVoteWinner.photos ?? 0 %></span>
+            </div>
+            <div class="monthly-export-stat">
+              <span class="label">Nota</span>
+              <span class="value"><%= String(monthlyVoteWinner.avgRating || 0).replace('.', ',') %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="monthly-export-footer">@HORRIVERPLATE</footer>
+    </section>
+  </div>
+<% } %>
+
+<style>
+  .monthly-export-card {
+    width: 1200px;
+    padding: 40px 48px 32px;
+    border-radius: 32px;
+    background: linear-gradient(180deg, #0f1115 0%, #050608 100%);
+    color: #f5f5f5;
+    font-family: "Manrope", system-ui, sans-serif;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .monthly-export-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  .monthly-export-kicker {
+    font-size: 12px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .monthly-export-title {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 42px;
+    letter-spacing: 0.08em;
+    margin: 6px 0;
+    color: #ff7a1a;
+  }
+  .monthly-export-subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .monthly-export-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 122, 26, 0.7);
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .monthly-export-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .monthly-export-body {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+  .monthly-export-avatar {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 122, 26, 0.7);
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .monthly-export-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .monthly-export-name {
+    font-size: 32px;
+    margin: 0;
+    font-weight: 700;
+  }
+  .monthly-export-nick {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.65);
+    margin-top: 4px;
+  }
+  .monthly-export-votes {
+    margin-top: 10px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .monthly-export-votes span {
+    color: #ff7a1a;
+    font-weight: 700;
+  }
+  .monthly-export-stats {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .monthly-export-stat {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .monthly-export-stat .label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .monthly-export-stat .value {
+    display: block;
+    margin-top: 6px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ff7a1a;
+  }
+  .monthly-export-footer {
+    margin-top: 26px;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+  }
+</style>
+
+<script>
+  (function () {
+    const btn = document.getElementById("exportMonthlyWinnerBtn");
+    const root = document.getElementById("monthlyWinnerExportRoot");
+    if (!btn || !root) return;
+
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      btn.textContent = "Gerando...";
+      try {
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+        const canvas = await html2canvas(root, {
+          scale: 2,
+          backgroundColor: null,
+          useCORS: true,
+          height: root.scrollHeight,
+          windowHeight: root.scrollHeight,
+        });
+        const link = document.createElement("a");
+        link.download = `craque-do-mes-${<%= mvMonth %>}-${<%= mvYear %>}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } catch (err) {
+        alert("Nao foi possivel gerar a imagem.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Exportar card do vencedor";
+      }
+    });
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    const canvas = document.getElementById("monthlyVotesChart");
+    if (!canvas || typeof Chart === "undefined") return;
+    const data = <%- JSON.stringify({
+      labels: (monthlyVoteCandidates || []).map((c) => c.name),
+      values: (monthlyVoteCandidates || []).map((c) => (monthlyVoteCounts && monthlyVoteCounts[c.id]) || 0),
+    }) %>;
+
+    const colors = [
+      "#ff6b6b",
+      "#f4d35e",
+      "#4ecdc4",
+      "#5dade2",
+      "#af7ac5",
+      "#f39c12",
+      "#2ecc71",
+      "#e67e22",
+      "#1abc9c",
+      "#3498db",
+      "#9b59b6",
+      "#e74c3c",
+    ];
+
+    new Chart(canvas, {
+      type: "pie",
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            data: data.values,
+            backgroundColor: data.labels.map((_, i) => colors[i % colors.length]),
+            borderColor: "rgba(15, 17, 21, 0.9)",
+            borderWidth: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "rgba(245,245,245,0.8)",
+              boxWidth: 12,
+              padding: 12,
+              font: { size: 11 },
+            },
+          },
+        },
+      },
+    });
+  })();
+</script>
