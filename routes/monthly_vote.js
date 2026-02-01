@@ -1,4 +1,4 @@
-﻿// routes/monthly_vote.js
+// routes/monthly_vote.js
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
@@ -6,7 +6,7 @@ const prisma = require("../utils/db");
 const monthNames = [
   "Janeiro",
   "Fevereiro",
-  "Março",
+  "Mar�o",
   "Abril",
   "Maio",
   "Junho",
@@ -19,7 +19,7 @@ const monthNames = [
 ];
 
 async function loadMonthlyVoteContext(tokenValue) {
-  if (!tokenValue) return { error: "Token inválido." };
+  if (!tokenValue) return { error: "Token inv�lido." };
 
   const token = await prisma.monthlyVoteToken.findUnique({
     where: { token: tokenValue },
@@ -29,8 +29,8 @@ async function loadMonthlyVoteContext(tokenValue) {
     },
   });
 
-  if (!token) return { error: "Token inválido." };
-  if (token.usedAt) return { error: "Este link já foi usado para votar." };
+  if (!token) return { error: "Token inv�lido." };
+  if (token.usedAt) return { error: "Este link j� foi usado para votar." };
 
   const now = new Date();
   if (token.session?.expiresAt && token.session.expiresAt < now) {
@@ -42,7 +42,7 @@ async function loadMonthlyVoteContext(tokenValue) {
     : [];
 
   if (!candidates.length) {
-    return { error: "Nenhum candidato disponível para esta votação." };
+    return { error: "Nenhum candidato dispon�vel para esta vota��o." };
   }
 
   const monthLabel = token.session
@@ -64,7 +64,7 @@ router.get("/:token", async (req, res) => {
 
   if (ctx.error) {
     return res.render("monthly_vote", {
-      title: "Votação do mês",
+      title: "Vota��o do m�s",
       error: ctx.error,
       success: false,
       candidates: [],
@@ -75,7 +75,7 @@ router.get("/:token", async (req, res) => {
   }
 
   return res.render("monthly_vote", {
-    title: "Votação do mês",
+    title: "Vota��o do m�s",
     error: null,
     success: false,
     candidates: ctx.candidates,
@@ -91,7 +91,7 @@ router.post("/:token", async (req, res) => {
 
   if (ctx.error) {
     return res.render("monthly_vote", {
-      title: "Votação do mês",
+      title: "Vota��o do m�s",
       error: ctx.error,
       success: false,
       candidates: [],
@@ -108,8 +108,8 @@ router.post("/:token", async (req, res) => {
 
     if (!validCandidate) {
       return res.render("monthly_vote", {
-        title: "Votação do mês",
-        error: "Selecione um candidato válido.",
+        title: "Vota��o do m�s",
+        error: "Selecione um candidato v�lido.",
         success: false,
         candidates: ctx.candidates,
         voter: ctx.voter,
@@ -133,7 +133,7 @@ router.post("/:token", async (req, res) => {
     });
 
     return res.render("monthly_vote", {
-      title: "Votação do mês",
+      title: "Vota��o do m�s",
       error: null,
       success: true,
       candidates: ctx.candidates,
@@ -144,7 +144,7 @@ router.post("/:token", async (req, res) => {
   } catch (err) {
     console.error("Erro ao registrar voto mensal:", err);
     return res.render("monthly_vote", {
-      title: "Votação do mês",
+      title: "Vota��o do m�s",
       error: "Erro ao registrar o voto. Tente novamente.",
       success: false,
       candidates: ctx.candidates,

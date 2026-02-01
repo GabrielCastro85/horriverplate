@@ -14,28 +14,28 @@ const loginRouter = require("./routes/login");
 const rankingsRouter = require("./routes/rankings");
 const elencoRouter = require("./routes/elenco");
 const sobreRouter = require("./routes/sobre");
-const awardsRouter = require("./routes/awards"); // ✅ NOVO: rota da premiação
+const awardsRouter = require("./routes/awards"); // âœ… NOVO: rota da premiaÃ§Ã£o
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==============================
-// 🔧 View engine (EJS + layouts)
+// ðŸ”§ View engine (EJS + layouts)
 // ==============================
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(expressLayouts);
-app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
+app.set("layout", "layout"); // usa views/layout.ejs como layout padrÃ£o
 
 // ==============================
-// 🌐 Middlewares básicos
+// ðŸŒ Middlewares bÃ¡sicos
 // ==============================
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ==============================
-// 🛡️ Middleware: autenticação admin via JWT no cookie
+// ðŸ›¡ï¸ Middleware: autenticaÃ§Ã£o admin via JWT no cookie
 // ==============================
 async function setAdminFromToken(req, res, next) {
   try {
@@ -64,7 +64,7 @@ async function setAdminFromToken(req, res, next) {
     res.locals.admin = admin;
     next();
   } catch (err) {
-    console.error("⚠️ Erro ao verificar token de admin:", err);
+    console.error("âš ï¸ Erro ao verificar token de admin:", err);
     req.admin = null;
     res.locals.admin = null;
     next();
@@ -73,39 +73,39 @@ async function setAdminFromToken(req, res, next) {
 
 app.use(setAdminFromToken);
 
-// 🔥 Disponibiliza o admin logado para as views
+// ðŸ”¥ Disponibiliza o admin logado para as views
 app.use((req, res, next) => {
   res.locals.admin = req.admin || null;
   next();
 });
 
-// Deixa disponível a rota atual (pra menus ativos, etc.)
+// Deixa disponÃ­vel a rota atual (pra menus ativos, etc.)
 app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   next();
 });
 
 // ==============================
-// 🚏 Rotas
+// ðŸš Rotas
 // ==============================
 app.use("/", loginRouter);
 app.use("/", indexRouter);
 app.use("/rankings", rankingsRouter);
 app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
-app.use("/premiacao", awardsRouter); // ✅ NOVO: página de premiação
+app.use("/premiacao", awardsRouter); // âœ… NOVO: pÃ¡gina de premiaÃ§Ã£o
 app.use("/admin", adminRouter);
 
 // ==============================
-// 404 – sempre por último
+// 404 â€“ sempre por Ãºltimo
 // ==============================
 app.use((req, res) => {
   res.status(404).render("404", { title: "404" });
 });
 
-// Handler genérico de erro
+// Handler genÃ©rico de erro
 app.use((err, req, res, next) => {
-  console.error("💥 Erro inesperado:", err);
+  console.error("ðŸ’¥ Erro inesperado:", err);
   res.status(500).send("Erro interno do servidor");
 });
 
@@ -115,9 +115,9 @@ app.use((req, res, next) => {
 });
 
 // ==============================
-// 🚀 Start
+// ðŸš€ Start
 // ==============================
 app.listen(PORT, () => {
-  console.log(`🔥 Servidor rodando na porta ${PORT}`);
-  console.log(`🌍 http://localhost:${PORT}`);
+  console.log(`ðŸ”¥ Servidor rodando na porta ${PORT}`);
+  console.log(`ðŸŒ http://localhost:${PORT}`);
 });

@@ -1,6 +1,6 @@
 <%
   // ===============================
-  // Helpers e preparação de dados
+  // Helpers e preparaÃ§Ã£o de dados
   // ===============================
   const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString("pt-BR") : "-";
@@ -26,7 +26,7 @@
   const monthlyAwards = safeArr(rankings && rankings.monthlyAwards);
 
   const monthNames = [
-    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Janeiro","Fevereiro","MarÃ§o","Abril","Maio","Junho",
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
 
@@ -108,7 +108,7 @@
 </style>
 
 <section class="space-y-8 animate-fadeIn">
-  <!-- TÍTULO E FILTROS -->
+  <!-- TÃTULO E FILTROS -->
   <header class="space-y-4">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
       <div>
@@ -116,18 +116,18 @@
           Rankings completos
         </h1>
         <p class="text-sm text-horriver-gray mt-1">
-          Veja os rankings gerais ou filtrados por ano/mês e posição.
+          Veja os rankings gerais ou filtrados por ano/mÃªs e posiÃ§Ã£o.
         </p>
       </div>
 
       <!-- Resumo do filtro atual -->
       <div class="text-xs text-horriver-gray md:text-right">
         <p>
-          Período:
+          PerÃ­odo:
           <span class="text-horriver-orange font-medium"><%= periodLabel() %></span>
         </p>
         <p>
-          Posição:
+          PosiÃ§Ã£o:
           <span class="text-horriver-orange font-medium"><%= posLabel(selPos) %></span>
         </p>
       </div>
@@ -157,9 +157,9 @@
         </select>
       </div>
 
-      <!-- Mês -->
+      <!-- MÃªs -->
       <div class="flex-1 min-w-[120px]">
-        <label class="block text-horriver-gray mb-1">Mês</label>
+        <label class="block text-horriver-gray mb-1">MÃªs</label>
         <select
           name="month"
           class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
@@ -175,9 +175,9 @@
         </select>
       </div>
 
-      <!-- Posição -->
+      <!-- PosiÃ§Ã£o -->
       <div class="flex-1 min-w-[130px]">
-        <label class="block text-horriver-gray mb-1">Posição</label>
+        <label class="block text-horriver-gray mb-1">PosiÃ§Ã£o</label>
         <select
           name="position"
           class="w-full bg-horriver-dark border border-horriver-border rounded-lg px-2 py-1.5 text-horriver-light"
@@ -196,7 +196,7 @@
         </select>
       </div>
 
-      <!-- Botões -->
+      <!-- BotÃµes -->
       <div class="flex items-center gap-2 md:ml-4">
         <button
           type="submit"
@@ -219,7 +219,7 @@
 
   <!-- GRID DE RANKINGS PRINCIPAIS -->
   <section class="space-y-6">
-    <!-- Primeira grade: 3x2 (sem média ponderada) -->
+    <!-- Primeira grade: 3x2 (sem mÃ©dia ponderada) -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       <!-- ================= GOLS ================= -->
       <div class="card-highlight rounded-3xl p-[1px]">
@@ -228,7 +228,7 @@
             <div>
               <h2 class="font-title text-lg text-horriver-light">Artilheiros</h2>
               <p class="text-[11px] text-horriver-gray mt-0.5">
-                Quem mais balançou a rede.
+                Quem mais balanÃ§ou a rede.
               </p>
             </div>
             <span
@@ -242,7 +242,7 @@
           <div class="mt-4 flex-1 overflow-hidden">
             <% if (!goals.length) { %>
               <p class="text-sm text-horriver-gray">
-                Nenhum dado para este período.
+                Nenhum dado para este perÃ­odo.
               </p>
             <% } else { %>
               <div class="rk-scroll h-full overflow-y-auto">
@@ -251,7 +251,7 @@
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
-                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
                       <th class="text-center px-2 py-1 text-horriver-orange">Gols</th>
                       <th class="text-center px-2 py-1">Assist.</th>
                       <th class="text-center px-2 py-1">Part. G/A</th>
@@ -289,12 +289,12 @@
         </div>
       </div>
 
-      <!-- ================= ASSISTÊNCIAS ================= -->
+      <!-- ================= ASSISTÃŠNCIAS ================= -->
       <div class="card-highlight rounded-3xl p-[1px]">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h2 class="font-title text-lg text-horriver-light">Garçons</h2>
+              <h2 class="font-title text-lg text-horriver-light">GarÃ§ons</h2>
               <p class="text-[11px] text-horriver-gray mt-0.5">
                 Quem mais serviu gols.
               </p>
@@ -310,7 +310,7 @@
           <div class="mt-4 flex-1 overflow-hidden">
             <% if (!assists.length) { %>
               <p class="text-sm text-horriver-gray">
-                Nenhum dado para este período.
+                Nenhum dado para este perÃ­odo.
               </p>
             <% } else { %>
               <div class="rk-scroll h-full overflow-y-auto">
@@ -319,7 +319,7 @@
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
-                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
                       <th class="text-center px-2 py-1 text-horriver-orange">Assist.</th>
                       <th class="text-center px-2 py-1">Gols</th>
                       <th class="text-center px-2 py-1">Part. G/A</th>
@@ -357,16 +357,16 @@
         </div>
       </div>
 
-      <!-- ================= GOLS + ASSISTÊNCIAS ================= -->
+      <!-- ================= GOLS + ASSISTÃŠNCIAS ================= -->
       <div class="card-highlight rounded-3xl p-[1px]">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
               <h2 class="font-title text-lg text-horriver-light">
-                Participações em gol
+                ParticipaÃ§Ãµes em gol
               </h2>
               <p class="text-[11px] text-horriver-gray mt-0.5">
-                Soma de gols + assistências.
+                Soma de gols + assistÃªncias.
               </p>
             </div>
             <span
@@ -380,7 +380,7 @@
           <div class="mt-4 flex-1 overflow-hidden">
             <% if (!ga.length) { %>
               <p class="text-sm text-horriver-gray">
-                Nenhum dado para este período.
+                Nenhum dado para este perÃ­odo.
               </p>
             <% } else { %>
               <div class="rk-scroll h-full overflow-y-auto">
@@ -389,7 +389,7 @@
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
-                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
                       <th class="text-center px-2 py-1">Gols</th>
                       <th class="text-center px-2 py-1">Assist.</th>
                       <th class="text-center px-2 py-1 text-horriver-orange">Total</th>
@@ -433,7 +433,7 @@
           <div class="flex items-center justify-between gap-3">
             <div>
               <h2 class="font-title text-lg text-horriver-light">
-                Maiores médias de nota
+                Maiores mÃ©dias de nota
               </h2>
               <p class="text-[11px] text-horriver-gray mt-0.5">
                 Jogadores mais bem avaliados.
@@ -450,7 +450,7 @@
           <div class="mt-4 flex-1 overflow-hidden">
             <% if (!ratings.length) { %>
               <p class="text-sm text-horriver-gray">
-                Nenhum dado para este período.
+                Nenhum dado para este perÃ­odo.
               </p>
             <% } else { %>
               <div class="rk-scroll h-full overflow-y-auto">
@@ -459,9 +459,9 @@
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
-                      <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Presenças</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Média</th>
+                      <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
+                      <th class="text-center px-2 py-1">PresenÃ§as</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">MÃ©dia</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -493,30 +493,30 @@
         </div>
       </div>
 
-      <!-- ================= PRESENÇAS ================= -->
+      <!-- ================= PRESENÃ‡AS ================= -->
       <div class="card-highlight rounded-3xl p-[1px]">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
               <h2 class="font-title text-lg text-horriver-light">
-                Rei das presenças
+                Rei das presenÃ§as
               </h2>
               <p class="text-[11px] text-horriver-gray mt-0.5">
-                Quem mais marcou presença nas peladas.
+                Quem mais marcou presenÃ§a nas peladas.
               </p>
             </div>
             <span
               class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
                      bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
             >
-              Presenças
+              PresenÃ§as
             </span>
           </div>
 
           <div class="mt-4 flex-1 overflow-hidden">
             <% if (!matches.length) { %>
               <p class="text-sm text-horriver-gray">
-                Nenhum dado para este período.
+                Nenhum dado para este perÃ­odo.
               </p>
             <% } else { %>
               <div class="rk-scroll h-full overflow-y-auto">
@@ -525,8 +525,8 @@
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
-                      <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Presenças</th>
+                      <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange">PresenÃ§as</th>
                       <th class="text-center px-2 py-1">Gols</th>
                       <th class="text-center px-2 py-1">Assist.</th>
                     </tr>
@@ -586,7 +586,7 @@
           <div class="mt-4 flex-1 overflow-hidden">
             <% if (!photos.length) { %>
               <p class="text-sm text-horriver-gray">
-                Nenhum dado para este período.
+                Nenhum dado para este perÃ­odo.
               </p>
             <% } else { %>
               <div class="rk-scroll h-full overflow-y-auto">
@@ -595,7 +595,7 @@
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
-                      <th class="text-left px-2 py-1">Posição</th>
+                      <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
                       <th class="text-center px-2 py-1 text-horriver-orange">Fotos</th>
                     </tr>
                   </thead>
@@ -626,30 +626,30 @@
       </div>
     </div>
 
-    <!-- ================= MÉDIA PONDERADA (FULL WIDTH) ================= -->
+    <!-- ================= MÃ‰DIA PONDERADA (FULL WIDTH) ================= -->
     <div class="card-highlight rounded-3xl p-[1px] max-w-5xl mx-auto">
       <div class="card-inner p-4 md:p-5 flex flex-col h-full">
         <div class="flex items-center justify-between gap-3">
           <div>
             <h2 class="font-title text-lg text-horriver-light">
-              Média ponderada (0–10)
+              MÃ©dia ponderada (0â€“10)
             </h2>
             <p class="text-[11px] text-horriver-gray mt-0.5">
-              Combina gols, assistências e nota com pesos (G=4 • A=2 • N=4).
+              Combina gols, assistÃªncias e nota com pesos (G=4 â€¢ A=2 â€¢ N=4).
             </p>
           </div>
           <span
             class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
                    bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
           >
-            0–10
+            0â€“10
           </span>
         </div>
 
         <div class="mt-4 flex-1 overflow-hidden">
           <% if (!weighted.length) { %>
             <p class="text-sm text-horriver-gray">
-              Nenhum dado para este período.
+              Nenhum dado para este perÃ­odo.
             </p>
           <% } else { %>
             <div class="rk-scroll h-full overflow-y-auto">
@@ -658,7 +658,7 @@
                   <tr>
                     <th class="text-left px-2 py-1">#</th>
                     <th class="text-left px-2 py-1">Jogador</th>
-                    <th class="text-left px-2 py-1">Posição</th>
+                    <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
                     <th class="text-center px-2 py-1">Gols</th>
                     <th class="text-center px-2 py-1">Assist.</th>
                     <th class="text-center px-2 py-1">Nota</th>
@@ -701,10 +701,10 @@
     </div>
   </section>
 
-  <!-- RANKINGS DE PRÊMIOS (CRAQUE DA SEMANA / MÊS) -->
+  <!-- RANKINGS DE PRÃŠMIOS (CRAQUE DA SEMANA / MÃŠS) -->
   <section class="space-y-6 mt-4">
     <h2 class="font-title text-2xl text-horriver-light">
-      Craques da semana e do mês
+      Craques da semana e do mÃªs
     </h2>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] md:text-xs">
@@ -731,7 +731,7 @@
               <tr>
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
-                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
                 <th class="text-center px-2 py-1">Vezes</th>
               </tr>
             </thead>
@@ -758,22 +758,22 @@
         <% } %>
       </div>
 
-      <!-- Craques do mês -->
+      <!-- Craques do mÃªs -->
       <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
         <div class="flex items-center justify-between mb-3">
           <div>
             <h3 class="font-title text-lg text-horriver-light">
-              Craques do mês
+              Craques do mÃªs
             </h3>
             <p class="text-[11px] text-horriver-gray">
-              Quem mais levou o prêmio mensal.
+              Quem mais levou o prÃªmio mensal.
             </p>
           </div>
         </div>
 
         <% if (!monthlyAwards.length) { %>
           <p class="text-sm text-horriver-gray">
-            Nenhum craque do mês registrado ainda.
+            Nenhum craque do mÃªs registrado ainda.
           </p>
         <% } else { %>
           <table class="w-full text-[11px]">
@@ -781,7 +781,7 @@
               <tr>
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
-                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-left px-2 py-1">PosiÃ§Ã£o</th>
                 <th class="text-center px-2 py-1">Vezes</th>
               </tr>
             </thead>

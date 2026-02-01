@@ -38,7 +38,7 @@
           Todas as peladas
         </h1>
         <p class="text-sm text-horriver-gray/80">
-  Filtre por ano e mês ou veja todas as peladas cadastradas.
+  Filtre por ano e mÃªs ou veja todas as peladas cadastradas.
 </p>
 </div>
 
@@ -61,7 +61,7 @@
     <% }) %>
   </select>
 
-  <label for="month" class="text-[12px] text-horriver-gray/80">Mês</label>
+  <label for="month" class="text-[12px] text-horriver-gray/80">MÃªs</label>
   <select
     id="month"
     name="month"
@@ -80,7 +80,7 @@
 
   <% if (!safeMatches.length) { %>
     <div class="rounded-2xl border border-horriver-border/60 bg-black/40 px-4 py-5 text-sm text-horriver-gray">
-      Nenhuma pelada encontrada para este mês.
+      Nenhuma pelada encontrada para este mÃªs.
     </div>
   <% } else { %>
     <div class="grid gap-4 md:gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -103,16 +103,16 @@
 
             <div class="space-y-1 text-sm text-horriver-gray">
               <p>
-                <span class="text-horriver-light/80 font-medium">Descrição:</span>
-                <%= m.description || "Sem descrição" %>
+                <span class="text-horriver-light/80 font-medium">DescriÃ§Ã£o:</span>
+                <%= m.description || "Sem descriÃ§Ã£o" %>
               </p>
               <p>
                 <span class="text-horriver-light/80 font-medium">Time vencedor:</span>
-                <%= m.winnerTeam || "Ainda não definido" %>
+                <%= m.winnerTeam || "Ainda nÃ£o definido" %>
               </p>
               <p class="text-[12px] text-horriver-gray/80">
                 <span class="text-horriver-orange font-semibold"><%= m._count?.stats || 0 %></span>
-                registros de estatísticas
+                registros de estatÃ­sticas
               </p>
             </div>
 
@@ -121,8 +121,8 @@
                 href="/matches/<%= m.id %>"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
               >
-                Ver estatísticas
-                <span class="text-[13px]">➜</span>
+                Ver estatÃ­sticas
+                <span class="text-[13px]">âžœ</span>
               </a>
               <span class="text-[12px] text-horriver-gray/70">
                 ID #<%= m.id %>

@@ -21,7 +21,10 @@ function createUpload(subfolder) {
   });
 
   function fileFilter(req, file, cb) {
-    if (!file.mimetype.startsWith("image/")) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExts = new Set([".jpg", ".jpeg", ".png", ".webp", ".svg"]);
+    const allowedMimes = new Set(["image/jpeg", "image/png", "image/webp", "image/svg+xml"]);
+    if (!allowedExts.has(ext) || !allowedMimes.has(file.mimetype)) {
       return cb(new Error("Apenas arquivos de imagem são permitidos."), false);
     }
     cb(null, true);

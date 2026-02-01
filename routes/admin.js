@@ -1,4 +1,4 @@
-﻿// routes/admin.js
+// routes/admin.js
 const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
@@ -15,7 +15,7 @@ const { rebuildAchievementsForAllPlayers } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 // ==============================
-// 🛡️ Middleware: exige admin logado
+// ??? Middleware: exige admin logado
 // ==============================
 function requireAdmin(req, res, next) {
   if (!req.admin) {
@@ -148,7 +148,7 @@ function sanitizeAuditPayload(input) {
 }
 
 // ==============================
-// 🧾 Auditoria: loga ações de mutação
+// ?? Auditoria: loga a��es de muta��o
 // ==============================
 router.use((req, res, next) => {
   if (!req.admin) return next();
@@ -177,7 +177,7 @@ router.use((req, res, next) => {
 });
 
 // ==============================
-// 🔐 Trocar senha do admin logado
+// ?? Trocar senha do admin logado
 // ==============================
 router.get("/senha", requireAdmin, (req, res) => {
   res.render("admin_password", {
@@ -210,7 +210,7 @@ router.post("/senha", requireAdmin, async (req, res) => {
     if (newPassword !== confirmPassword) {
       return res.render("admin_password", {
         title: "Trocar senha",
-        error: "A confirmação da senha não confere.",
+        error: "A confirma��o da senha n�o confere.",
         success: false,
       });
     }
@@ -247,7 +247,7 @@ router.post("/senha", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 📜 Auditoria (apenas admin principal)
+// ?? Auditoria (apenas admin principal)
 // ==============================
 router.get("/auditoria", requireAdmin, async (req, res) => {
   try {
@@ -284,7 +284,7 @@ router.get("/auditoria", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🔢 Helper: recomputar totais de jogadores (para alguns IDs)
+// ?? Helper: recomputar totais de jogadores (para alguns IDs)
 // ==============================
 async function recomputeTotalsForPlayers(playerIds) {
   const uniqueIds = Array.from(new Set(playerIds)).filter((id) => !!id);
@@ -320,7 +320,7 @@ async function recomputeTotalsForPlayers(playerIds) {
 
     const avgRating = ratingCount > 0 ? ratingSum / ratingCount : 0;
 
-    // Overall dinâmico: mantém override manual (se existir), arredondado; não recalcula automaticamente
+    // Overall din�mico: mant�m override manual (se existir), arredondado; n�o recalcula automaticamente
     const overallDynamic = (player?.overallDynamic != null) ? Math.round(player.overallDynamic) : null;
 
     await prisma.player.update({
@@ -339,7 +339,7 @@ async function recomputeTotalsForPlayers(playerIds) {
 }
 
 // ==============================
-// 🧭 Painel principal /admin
+// ?? Painel principal /admin
 // ==============================
 router.use((req, res, next) => {
   if (req.method === "GET" || req.method === "HEAD") return next();
@@ -357,7 +357,7 @@ router.get("/", requireAdmin, async (req, res) => {
       orderBy: { playedAt: "desc" },
     });
 
-    // Agrupa peladas por mês/ano
+    // Agrupa peladas por m�s/ano
     const groupedMatchesObj = matches.reduce((groups, match) => {
       const date = new Date(match.playedAt);
       const year = date.getFullYear();
@@ -399,7 +399,7 @@ router.get("/", requireAdmin, async (req, res) => {
       },
     });
 
-    // Premiações de temporada (para exibir resuminho se quiser)
+    // Premia��es de temporada (para exibir resuminho se quiser)
     const seasonAwards = await prisma.seasonAward.findMany({
       include: { player: true },
       orderBy: [{ year: "desc" }, { category: "asc" }],
@@ -489,7 +489,7 @@ router.get("/", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🗳️ Votacao do mes (painel separado)
+// ??? Votacao do mes (painel separado)
 // ==============================
 router.get("/monthly-vote", requireAdmin, async (req, res) => {
   try {
@@ -623,7 +623,7 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🔒 Encerrar votacao do mes
+// ?? Encerrar votacao do mes
 // ==============================
 router.post("/monthly-vote/:id/close", requireAdmin, async (req, res) => {
   try {
@@ -643,7 +643,7 @@ router.post("/monthly-vote/:id/close", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🗑️ Excluir votacao do mes
+// ??? Excluir votacao do mes
 // ==============================
 router.post("/monthly-vote/:id/delete", requireAdmin, async (req, res) => {
   try {
@@ -666,7 +666,7 @@ router.post("/monthly-vote/:id/delete", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 👤 Jogadores - CRUD
+// ?? Jogadores - CRUD
 // ==============================
 
 // Adicionar jogador (com upload de foto)
@@ -724,7 +724,7 @@ router.post(
   }
 );
 
-// Página para editar jogador
+// P�gina para editar jogador
 router.get("/players/:id/edit", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -745,7 +745,7 @@ router.get("/players/:id/edit", requireAdmin, async (req, res) => {
       player,
     });
   } catch (err) {
-    console.error("Erro ao carregar página de edição de jogador:", err);
+    console.error("Erro ao carregar p�gina de edi��o de jogador:", err);
     res.redirect("/admin#jogadores");
   }
 });
@@ -807,7 +807,7 @@ router.post(
         data.hallReason = hallReasonText || null;
       }
 
-      // Se enviou nova foto, atualiza photoUrl; caso contrário, mantém a atual
+      // Se enviou nova foto, atualiza photoUrl; caso contr�rio, mant�m a atual
       if (photoUrl) {
         data.photoUrl = photoUrl;
       }
@@ -847,7 +847,7 @@ router.post("/players/:id/delete", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🏆 Peladas (Matches) - CRUD
+// ?? Peladas (Matches) - CRUD
 
 function parsePlayedAt({ playedAt, playedDate, playedTime }) {
   if (playedAt) {
@@ -1698,7 +1698,7 @@ router.get("/matches", requireAdmin, (req, res) => {
 });
 
 // ==============================
-// 💾 Salvar estatísticas em massa da pelada
+// ?? Salvar estat�sticas em massa da pelada
 // ==============================
 router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
   try {
@@ -1798,13 +1798,13 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
 
     res.redirect(`/admin/matches/${matchId}`);
   } catch (err) {
-    console.error("Erro ao salvar estatísticas da pelada:", err);
+    console.error("Erro ao salvar estat�sticas da pelada:", err);
     res.redirect(`/admin/matches/${req.params.id}`);
   }
 });
 
 // ==============================
-// 🏅 Destaques (semana / mês)
+// ?? Destaques (semana / m�s)
 // ==============================
 
 // Craque + Time da semana
@@ -1905,7 +1905,7 @@ router.post("/weekly-awards/:id/delete", requireAdmin, async (req, res) => {
   }
 });
 
-// Craque do mês
+// Craque do m�s
 router.post("/monthly-awards", requireAdmin, async (req, res) => {
   try {
     const { month, year, craqueId } = req.body;
@@ -1957,13 +1957,13 @@ router.post("/monthly-awards", requireAdmin, async (req, res) => {
 
     res.redirect("/admin");
   } catch (err) {
-    console.error("Erro ao salvar craque do mês:", err);
+    console.error("Erro ao salvar craque do m�s:", err);
     res.redirect("/admin");
   }
 });
 
 // ==============================
-// 🗳️ Votação do mês (Top 5)
+// ??? Vota��o do m�s (Top 5)
 // ==============================
 router.post("/monthly-vote-session", requireAdmin, async (req, res) => {
   try {
@@ -2038,12 +2038,12 @@ router.post("/monthly-vote-session", requireAdmin, async (req, res) => {
 
     return res.redirect(`/admin/monthly-vote?mvMonth=${month}&mvYear=${year}&monthlyVoteCreated=1`);
   } catch (err) {
-    console.error("Erro ao gerar votação do mês:", err);
+    console.error("Erro ao gerar vota��o do m�s:", err);
     return res.redirect("/admin/monthly-vote?monthlyVoteError=server");
   }
 });
 
-// Excluir craque do mês
+// Excluir craque do m�s
 router.post("/monthly-awards/:id/delete", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -2055,16 +2055,16 @@ router.post("/monthly-awards/:id/delete", requireAdmin, async (req, res) => {
 
     res.redirect("/admin");
   } catch (err) {
-    console.error("Erro ao excluir craque do mês:", err);
+    console.error("Erro ao excluir craque do m�s:", err);
     res.redirect("/admin");
   }
 });
 
 // ==============================
-// 🏆 Premiação da temporada (SeasonAward)
+// ?? Premia��o da temporada (SeasonAward)
 // ==============================
 
-// Tela de gestão da premiação
+// Tela de gest�o da premia��o
 router.get("/premiacao", requireAdmin, async (req, res) => {
   try {
     const players = await prisma.player.findMany({
@@ -2083,17 +2083,17 @@ router.get("/premiacao", requireAdmin, async (req, res) => {
     }, {});
 
     res.render("admin_awards", {
-      title: "Premiação da temporada",
+      title: "Premia��o da temporada",
       players,
       awardsByYear,
     });
   } catch (err) {
-    console.error("Erro ao carregar tela de premiação:", err);
-    res.status(500).send("Erro ao carregar premiação da temporada.");
+    console.error("Erro ao carregar tela de premia��o:", err);
+    res.status(500).send("Erro ao carregar premia��o da temporada.");
   }
 });
 
-// Criar/atualizar prêmio de temporada
+// Criar/atualizar pr�mio de temporada
 router.post("/season-awards", requireAdmin, async (req, res) => {
   try {
     const { year, category, playerId } = req.body;
@@ -2106,8 +2106,8 @@ router.post("/season-awards", requireAdmin, async (req, res) => {
       return res.redirect("/admin/premiacao");
     }
 
-    // 🔧 NAO usamos mais year_category (nao existe no schema).
-    // Então buscamos primeiro, depois fazemos update OU create.
+    // ?? NAO usamos mais year_category (nao existe no schema).
+    // Ent�o buscamos primeiro, depois fazemos update OU create.
     const existing = await prisma.seasonAward.findFirst({
       where: {
         year: y,
@@ -2134,12 +2134,12 @@ router.post("/season-awards", requireAdmin, async (req, res) => {
 
     res.redirect("/admin/premiacao");
   } catch (err) {
-    console.error("Erro ao salvar prêmio de temporada:", err);
+    console.error("Erro ao salvar pr�mio de temporada:", err);
     res.redirect("/admin/premiacao");
   }
 });
 
-// Excluir prêmio de temporada
+// Excluir pr�mio de temporada
 router.post(
   "/season-awards/:id/delete",
   requireAdmin,
@@ -2156,14 +2156,14 @@ router.post(
 
       res.redirect("/admin/premiacao");
     } catch (err) {
-      console.error("Erro ao excluir prêmio de temporada:", err);
+      console.error("Erro ao excluir pr�mio de temporada:", err);
       res.redirect("/admin/premiacao");
     }
   }
 );
 
 // ==============================
-// 📊 Ver estatísticas de uma pelada (ADMIN)
+// ?? Ver estat�sticas de uma pelada (ADMIN)
 // ==============================
 router.get("/matches/:id", requireAdmin, async (req, res) => {
   try {
@@ -2198,7 +2198,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       orderBy: { name: "asc" },
     });
 
-    // Overall de cada jogador (mesma métrica do ranking)
+    // Overall de cada jogador (mesma m�trica do ranking)
     const { computed: playersOverall } = computeOverallFromEntries(
       players.map((p) => ({
         player: p,
@@ -2278,7 +2278,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
     }
 
     res.render("admin_match", {
-      title: "Estatísticas da pelada",
+      title: "Estat�sticas da pelada",
       match,
       players: playersWithOverall,
       stats: displayStats,
@@ -2287,19 +2287,19 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       tournamentGames,
       standings: tournamentStandings,
       tournamentStandings,
-      voteSession, // Passando a sessão de votação para a view
+      voteSession, // Passando a sess�o de vota��o para a view
       voteBaseUrl,
       req,
       lineupResult: lastLineupDraw ? lastLineupDraw.result : null,
     });
   } catch (err) {
-    console.error("Erro ao carregar estatísticas da pelada:", err);
+    console.error("Erro ao carregar estat�sticas da pelada:", err);
     res.redirect("/admin");
   }
 });
 
 // ==============================
-// Votações privadas por link (admin)
+// Vota��es privadas por link (admin)
 // ==============================
 router.post("/matches/:id/vote-session", requireAdmin, async (req, res) => {
   try {
@@ -2338,7 +2338,7 @@ router.post("/matches/:id/vote-session", requireAdmin, async (req, res) => {
 
     return res.redirect(`/admin/matches/${matchId}?voteSessionCreated=true`);
   } catch (err) {
-    console.error("Erro ao criar sessão de votos:", err);
+    console.error("Erro ao criar sess�o de votos:", err);
     return res.redirect(`/admin/matches/${req.params.id}?error=voteSession`);
   }
 });
@@ -2364,7 +2364,7 @@ router.post("/matches/:id/close-votes", requireAdmin, async (req, res) => {
 
     return res.redirect(`/admin/matches/${matchId}?votesClosed=true`);
   } catch (err) {
-    console.error("Erro ao encerrar votação:", err);
+    console.error("Erro ao encerrar vota��o:", err);
     return res.redirect(`/admin/matches/${req.params.id}?error=closeVotes`);
   }
 });
@@ -2448,11 +2448,11 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
 });
 
 // ===============================================
-// 🔁 Rota: Recalcular totais de TODOS os jogadores
+// ?? Rota: Recalcular totais de TODOS os jogadores
 // ===============================================
 async function handleRecalculateTotals(req, res) {
   try {
-    console.log("🔁 Recalculando totais de todos os jogadores...");
+    console.log("?? Recalculando totais de todos os jogadores...");
 
     const players = await prisma.player.findMany({
       include: {
@@ -2486,7 +2486,7 @@ async function handleRecalculateTotals(req, res) {
       });
     }
 
-    console.log("✅ Totais recalculados com sucesso.");
+    console.log("? Totais recalculados com sucesso.");
     return res.redirect("/admin?success=totalsRecalculated");
   } catch (err) {
     console.error("Erro ao recalcular totais:", err);
@@ -2494,19 +2494,19 @@ async function handleRecalculateTotals(req, res) {
   }
 }
 
-// Aceita QUALQUER método (GET, POST, etc) nesse caminho
+// Aceita QUALQUER m�todo (GET, POST, etc) nesse caminho
 router.all("/recalculate-totals", requireAdmin, handleRecalculateTotals);
 
 
 // ===============================================
-// 🔁 Rota: Recalcular OVERALL (last 10)
+// ?? Rota: Recalcular OVERALL (last 10)
 // ===============================================
 router.post("/recalculate-overall", requireAdmin, async (req, res) => {
   try {
     const { recalculateOverallForAllPlayers } = require("../utils/ranking");
     const { count } = await recalculateOverallForAllPlayers();
     
-    // Adicionando um pequeno delay para o usuário perceber a ação
+    // Adicionando um pequeno delay para o usu�rio perceber a a��o
     setTimeout(() => {
       res.redirect(`/admin?success=overallRecalculated&count=${count}`);
     }, 500);
@@ -2520,10 +2520,10 @@ router.post("/recalculate-overall", requireAdmin, async (req, res) => {
 
 
 // ==============================
-// 🧠 Sorteador de times (6 por time, usa OVERALL do ranking)
+// ?? Sorteador de times (6 por time, usa OVERALL do ranking)
 // ==============================
 
-// Distribuição "snake" para balancear times
+// Distribui��o "snake" para balancear times
 function snakeDistribute(players, teamCount) {
     const teams = Array.from({ length: teamCount }, () => []);
     let playerIndex = 0;
@@ -2553,7 +2553,7 @@ function computeTeamPower(team) {
 router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
   try {
     const matchId = Number(req.params.id);
-    if (Number.isNaN(matchId)) return res.status(400).json({ error: "matchId inválido" });
+    if (Number.isNaN(matchId)) return res.status(400).json({ error: "matchId inv�lido" });
     const presentIds = Array.isArray(req.body.presentIds)
       ? req.body.presentIds
           .map((id) => Number(id))
@@ -2608,7 +2608,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     if (!stats.length && !guestEntries.length) {
       return res
         .status(400)
-        .json({ error: "Nenhum jogador presente para sortear. Marque presenças (ou adicione convidados)." });
+        .json({ error: "Nenhum jogador presente para sortear. Marque presen�as (ou adicione convidados)." });
     }
 
     // 3. Overall dos presentes
@@ -2628,14 +2628,14 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     );
     const overallMap = new Map(computed.map((c) => [c.player.id, c.overall]));
 
-    // 3.1 Últimas 10 peladas de cada jogador presente (para balancear força recente)
+    // 3.1 �ltimas 10 peladas de cada jogador presente (para balancear for�a recente)
     const recentStatsRaw = await prisma.playerStat.findMany({
       where: { playerId: { in: playerIds } },
       orderBy: { match: { playedAt: "desc" } },
       include: { match: true },
     });
 
-    // Agrupa por jogador e pega só os 10 jogos mais recentes
+    // Agrupa por jogador e pega s� os 10 jogos mais recentes
     const recentByPlayer = new Map();
     for (const s of recentStatsRaw) {
       if (!s.match || !s.match.playedAt) continue;
@@ -2645,7 +2645,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       }
     }
 
-    // Maximos para normalizar gols/assist nas últimas 10
+    // Maximos para normalizar gols/assist nas �ltimas 10
     let maxGoals10 = 0;
     let maxAssists10 = 0;
     recentByPlayer.forEach((arr) => {
@@ -2680,7 +2680,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       const ratingAvg = ratingCount > 0 ? ratingSum / ratingCount : 0;
       const goalsNorm = maxGoals10 > 0 ? (goals / maxGoals10) * 10 : 0;
       const assistsNorm = maxAssists10 > 0 ? (assists / maxAssists10) * 10 : 0;
-      const ratingNorm = ratingAvg || 0; // já em 0-10
+      const ratingNorm = ratingAvg || 0; // j� em 0-10
 
       // Peso recente: rating 5, gols 3, assist 2 (0-10)
       const last10Score = (ratingNorm * 5 + goalsNorm * 3 + assistsNorm * 2) / 10;
@@ -2694,7 +2694,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       name: s.player.name,
       nickname: s.player.nickname,
       position: s.player.position || "Outros",
-      // força combinando overall histórico + desempenho recente (últimas 10)
+      // for�a combinando overall hist�rico + desempenho recente (�ltimas 10)
       strength: (() => {
         const baseOverall = overallMap.get(s.playerId) ?? 60;
         const last10Score = last10ScoreMap.get(s.playerId) ?? 0; // 0-10
@@ -2721,22 +2721,22 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       }
     });
 
-    // 6. Validar número mínimo de jogadores de linha
+    // 6. Validar n�mero m�nimo de jogadores de linha
     const MIN_PLAYERS_PER_TEAM = 6;
     const requiredFieldPlayers = MIN_PLAYERS_PER_TEAM * 2;
     if (fieldPlayers.length < requiredFieldPlayers) {
-      return res.status(400).json({ error: `São necessários pelo menos ${requiredFieldPlayers} jogadores de linha para formar 2 times. Atualmente: ${fieldPlayers.length}.` });
+      return res.status(400).json({ error: `S�o necess�rios pelo menos ${requiredFieldPlayers} jogadores de linha para formar 2 times. Atualmente: ${fieldPlayers.length}.` });
     }
 
-    // 7. Definir quantos times e quantos vão pro banco
+    // 7. Definir quantos times e quantos v�o pro banco
     const teamCount = Math.floor(fieldPlayers.length / MIN_PLAYERS_PER_TEAM);
     const playersPerTeam = MIN_PLAYERS_PER_TEAM;
     const totalPlayersForTeams = teamCount * playersPerTeam;
 
-    // 8. Ordenar por força para sorteio balanceado
+    // 8. Ordenar por for�a para sorteio balanceado
     fieldPlayers.sort((a, b) => b.strength - a.strength);
 
-    // 8.1. Cabeças de chave (mantêm um por time sempre que possível)
+    // 8.1. Cabe�as de chave (mant�m um por time sempre que poss�vel)
     const seedSet = new Set(seedIds.map((id) => String(id)));
     const seedPool = [];
     const nonSeedPool = [];
@@ -2762,7 +2762,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     const autoBuckets = snakeDistribute(remainingPlayers, teamCount);
     const teamBuckets = seededBuckets.map((bucket, idx) => [...bucket, ...(autoBuckets[idx] || [])]);
 
-    // 10. Goleiros sempre vão para o banco (não entram direto nos times)
+    // 10. Goleiros sempre v�o para o banco (n�o entram direto nos times)
     const keepGoalkeepersOnBench = true;
     
     // 11. Montar banco de reservas
@@ -2802,7 +2802,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       });
     } catch (persistErr) {
       console.error("Erro ao salvar sorteio (LineupDraw):", persistErr);
-      // NÆo bloquear a resposta principal se o salvamento falhar
+      // N�o bloquear a resposta principal se o salvamento falhar
     }
 
     return res.json({ teams, bench });
@@ -2867,7 +2867,7 @@ router.post("/matches/:id/save-lineup", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🔗 Gerar link de votação pública para a pelada
+// ?? Gerar link de vota��o p�blica para a pelada
 // ==============================
 router.post("/matches/:id/generate-voting-link", requireAdmin, async (req, res) => {
   try {
@@ -2888,13 +2888,13 @@ router.post("/matches/:id/generate-voting-link", requireAdmin, async (req, res) 
 
     return res.redirect(`/admin/matches/${matchId}?votingLinkGenerated=true`);
   } catch (err) {
-    console.error("Erro ao gerar link de votação:", err);
+    console.error("Erro ao gerar link de vota��o:", err);
     return res.redirect(`/admin/matches/${req.params.id}?error=votingLink`);
   }
 });
 
 // ----------------------------------------------
-// Helpers para cálculo de notas e prêmios
+// Helpers para c�lculo de notas e pr�mios
 // ----------------------------------------------
 router.post("/matches/:id/calculate-results", requireAdmin, async (req, res) => {
   const matchId = Number(req.params.id);
@@ -2933,13 +2933,13 @@ router.post("/matches/:id/calculate-results", requireAdmin, async (req, res) => 
 
     return res.redirect(`/admin/matches/${matchId}?resultsCalculated=true`);
   } catch (err) {
-    console.error("Erro ao calcular resultados da votação:", err);
+    console.error("Erro ao calcular resultados da vota��o:", err);
     return res.redirect(`/admin/matches/${matchId}?error=results`);
   }
 });
 
 // ==============================
-// 🏆 Card de prêmios da pelada
+// ?? Card de pr�mios da pelada
 // ==============================
 router.get("/matches/:id/awards-card", requireAdmin, async (req, res) => {
   try {
@@ -2964,13 +2964,13 @@ router.get("/matches/:id/awards-card", requireAdmin, async (req, res) => {
       scores: scoresList,
     });
   } catch (err) {
-    console.error("Erro ao exibir card de prêmios:", err);
+    console.error("Erro ao exibir card de pr�mios:", err);
     return res.redirect("/admin");
   }
 });
 
 // ==============================
-// 📊 Página de resultados/prêmios da pelada (com botão de download)
+// ?? P�gina de resultados/pr�mios da pelada (com bot�o de download)
 // ==============================
 router.get("/matches/:id/awards", requireAdmin, async (req, res) => {
   try {
@@ -2995,13 +2995,13 @@ router.get("/matches/:id/awards", requireAdmin, async (req, res) => {
       scores: scoresList,
     });
   } catch (err) {
-    console.error("Erro ao exibir resultados/prêmios:", err);
+    console.error("Erro ao exibir resultados/pr�mios:", err);
     return res.redirect("/admin");
   }
 });
 
 // ==============================
-// 🔄 Rebuild de conquistas para todos os jogadores
+// ?? Rebuild de conquistas para todos os jogadores
 // ==============================
 router.post("/rebuild-achievements", requireAdmin, async (req, res) => {
   try {

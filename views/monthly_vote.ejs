@@ -1,8 +1,8 @@
-﻿<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
   <header class="text-center space-y-2">
-    <h1 class="font-title text-3xl text-horriver-light">Votação do melhor do mês</h1>
+    <h1 class="font-title text-3xl text-horriver-light">Vota��o do melhor do m�s</h1>
     <% if (monthLabel) { %>
-      <p class="text-sm text-horriver-gray">Mês: <span class="text-horriver-orange"><%= monthLabel %></span></p>
+      <p class="text-sm text-horriver-gray">M�s: <span class="text-horriver-orange"><%= monthLabel %></span></p>
     <% } %>
     <% if (voter) { %>
       <p class="text-xs text-horriver-gray">Link gerado para: <span class="text-horriver-light"><%= voter.name %></span></p>
@@ -38,7 +38,7 @@
                 <% if (c.nickname) { %>
                   <p class="text-[11px] text-horriver-gray truncate">"<%= c.nickname %>"</p>
                 <% } %>
-                <p class="text-[11px] text-horriver-gray">Peladas no mês: <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span></p>
+                <p class="text-[11px] text-horriver-gray">Peladas no m�s: <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span></p>
               </div>
             </div>
             <div class="mt-3 grid grid-cols-4 gap-2 text-[11px] text-horriver-gray">
@@ -60,7 +60,7 @@
               </div>
             </div>
             <div class="mt-3 flex items-center gap-2 text-[11px] text-horriver-gray">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-horriver-orange text-horriver-orange">★</span>
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-horriver-orange text-horriver-orange">?</span>
               <span class="peer-checked:text-horriver-orange">Selecionar este jogador</span>
             </div>
           </label>

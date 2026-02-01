@@ -5,10 +5,10 @@ const bcrypt = require("bcryptjs");
 const { generateToken } = require("../utils/auth");
 
 // ===============================
-// GET /login  → tela de login
+// GET /login  â†’ tela de login
 // ===============================
 router.get("/login", (req, res) => {
-  // Se já estiver logado, manda direto pro painel admin
+  // Se jÃ¡ estiver logado, manda direto pro painel admin
   if (req.admin) {
     return res.redirect("/admin");
   }
@@ -20,7 +20,7 @@ router.get("/login", (req, res) => {
 });
 
 // ===============================
-// POST /login  → autenticação
+// POST /login  â†’ autenticaÃ§Ã£o
 // ===============================
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -80,7 +80,7 @@ router.post("/login", async (req, res) => {
 });
 
 // ===============================
-// POST /logout  → sair do painel
+// POST /logout  â†’ sair do painel
 // ===============================
 router.post("/logout", (req, res) => {
   res.clearCookie("adminToken");

@@ -1,4 +1,4 @@
-﻿require("dotenv").config();
+require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
@@ -6,6 +6,7 @@ const fs = require("fs");
 const cookieParser = require("cookie-parser");
 const expressLayouts = require("express-ejs-layouts");
 const compression = require("compression");
+const csrf = require("csurf");
 
 const prisma = require("./utils/db");
 const { verifyToken } = require("./utils/auth");
@@ -17,7 +18,7 @@ const loginRouter = require("./routes/login");
 const rankingsRouter = require("./routes/rankings");
 const elencoRouter = require("./routes/elenco");
 const sobreRouter = require("./routes/sobre");
-const awardsRouter = require("./routes/awards"); // ✅ NOVO: rota da premiação
+const awardsRouter = require("./routes/awards"); // ? NOVO: rota da premia��o
 const playerRouter = require("./routes/player");
 const voteRouter = require("./routes/vote");
 const monthlyVoteRouter = require("./routes/monthly_vote");
@@ -43,16 +44,17 @@ const ASSET_VERSION =
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const IS_PROD = process.env.NODE_ENV === "production";
 
 app.disable("x-powered-by");
 
 // ==============================
-// 🔧 View engine (EJS + layouts)
+// ?? View engine (EJS + layouts)
 // ==============================
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(expressLayouts);
-app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
+app.set("layout", "layout"); // usa views/layout.ejs como layout padr�o
 app.locals.assetVersion = ASSET_VERSION;
 app.locals.thumbUrl = (url, width) => {
   if (!url || !width) return url;
@@ -64,12 +66,37 @@ app.locals.thumbUrl = (url, width) => {
 };
 
 // ==============================
-// 🌐 Middlewares básicos
+// ?? Middlewares b�sicos
 // ==============================
 app.use(compression());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: IS_PROD,
+  },
+});
+app.use((req, res, next) => {
+  if (
+    req.path.startsWith("/vote") ||
+    req.path.startsWith("/monthly-vote") ||
+    req.path.startsWith("/monitoring/frontend-error")
+  ) {
+    return next();
+  }
+  return csrfProtection(req, res, next);
+});
+app.use((req, res, next) => {
+  if (typeof req.csrfToken === "function") {
+    res.locals.csrfToken = req.csrfToken();
+  } else {
+    res.locals.csrfToken = null;
+  }
+  next();
+});
 app.get(["/uploads/*", "/img/*"], async (req, res, next) => {
   const width = parseInt(req.query.w, 10);
   if (!sharp || !width || width < 40 || width > 1600) return next();
@@ -109,6 +136,10 @@ app.use(
   express.static(PUBLIC_DIR, {
     maxAge: "7d",
     setHeaders: (res, filePath) => {
+      if (/\.svg$/i.test(filePath)) {
+        res.setHeader("Content-Security-Policy", "sandbox");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+      }
       if (filePath.includes(`${path.sep}.thumbs${path.sep}`)) {
         res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
         return;
@@ -138,13 +169,13 @@ app.use((req, res, next) => {
 });
 
 // ==============================
-// 🎨 Skins dinâmicas
+// ?? Skins din�micas
 // ==============================
 app.use((req, res, next) => {
   const allowedSkins = ["default", "game-day"];
   let skin = null;
 
-  // Prioridade: query > cookie > automática (terça)
+  // Prioridade: query > cookie > autom�tica (ter�a)
   if (req.query.skin && allowedSkins.includes(req.query.skin)) {
     skin = req.query.skin;
     // persiste override por 7 dias
@@ -155,7 +186,7 @@ app.use((req, res, next) => {
 
   if (!skin) {
     const now = new Date();
-    const isTuesday = now.getDay() === 2; // terça-feira
+    const isTuesday = now.getDay() === 2; // ter�a-feira
     skin = isTuesday ? "game-day" : "default";
   }
 
@@ -165,7 +196,7 @@ app.use((req, res, next) => {
 });
 
 // ==============================
-// 🛡️ Middleware: autenticação admin via JWT no cookie
+// ??? Middleware: autentica��o admin via JWT no cookie
 // ==============================
 async function setAdminFromToken(req, res, next) {
   try {
@@ -194,7 +225,7 @@ async function setAdminFromToken(req, res, next) {
     res.locals.admin = admin;
     next();
   } catch (err) {
-    console.error("⚠️ Erro ao verificar token de admin:", err);
+    console.error("?? Erro ao verificar token de admin:", err);
     req.admin = null;
     res.locals.admin = null;
     next();
@@ -203,13 +234,13 @@ async function setAdminFromToken(req, res, next) {
 
 app.use(setAdminFromToken);
 
-// 🔥 Disponibiliza o admin logado para as views
+// ?? Disponibiliza o admin logado para as views
 app.use((req, res, next) => {
   res.locals.admin = req.admin || null;
   next();
 });
 
-// Deixa disponível a rota atual (pra menus ativos, etc.)
+// Deixa dispon�vel a rota atual (pra menus ativos, etc.)
 app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   next();
@@ -257,14 +288,14 @@ app.post("/monitoring/frontend-error", (req, res) => {
 });
 
 // ==============================
-// 🚏 Rotas
+// ?? Rotas
 // ==============================
 app.use("/", loginRouter);
 app.use("/", indexRouter);
 app.use("/rankings", rankingsRouter);
 app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
-app.use("/premiacao", awardsRouter); // ✅ NOVO: página de premiação
+app.use("/premiacao", awardsRouter); // ? NOVO: p�gina de premia��o
 app.use("/jogador", playerRouter);
 app.use("/admin", adminRouter);
 app.use("/vote", voteRouter);
@@ -272,28 +303,36 @@ app.use("/monthly-vote", monthlyVoteRouter);
 
 
 // ==============================
-// 404 – sempre por último
+// 404 � sempre por �ltimo
 // ==============================
 app.use((req, res) => {
   res.status(404).render("404", { title: "404" });
 });
 
-// Handler genérico de erro
+// Handler de CSRF
 app.use((err, req, res, next) => {
-  console.error("💥 Erro inesperado:", err);
+  if (err && err.code === "EBADCSRFTOKEN") {
+    return res.status(403).send("Sess�o inv�lida. Atualize a p�gina e tente novamente.");
+  }
+  next(err);
+});
+
+// Handler gen�rico de erro
+app.use((err, req, res, next) => {
+  console.error("?? Erro inesperado:", err);
   res.status(500).send("Erro interno do servidor");
 });
 
 // ==============================
-// 🚀 Start
+// ?? Start
 // ==============================
 app.listen(PORT, () => {
-  console.log(`🔥 Servidor rodando na porta ${PORT}`);
-  console.log(`🌍 http://localhost:${PORT}`);
+  console.log(`?? Servidor rodando na porta ${PORT}`);
+  console.log(`?? http://localhost:${PORT}`);
 });
 
 // ==============================
-// 🔄 Backup automático (1x por dia)
+// ?? Backup autom�tico (1x por dia)
 // ==============================
 if (process.env.NODE_ENV === "production") {
   scheduleBackup({ reason: "startup" });

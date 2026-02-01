@@ -2,6 +2,9 @@ const jwt = require("jsonwebtoken");
 
 
 
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET must be set in production.");
+}
 const SECRET_KEY = process.env.JWT_SECRET || "dev-secret";
 
 /**

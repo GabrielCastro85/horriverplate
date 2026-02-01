@@ -9,15 +9,15 @@
 <% } else if (success) { %>
   <div class="text-center p-8 bg-green-900/20 rounded-lg">
     <h1 class="text-xl font-bold text-green-400">Voto computado!</h1>
-    <p class="mt-2 text-horriver-light">Obrigado pela sua participação.</p>
+    <p class="mt-2 text-horriver-light">Obrigado pela sua participaï¿½ï¿½o.</p>
     <a href="/" class="mt-4 inline-block px-4 py-2 text-sm font-semibold text-white bg-horriver-orange rounded-lg">Voltar para Home</a>
   </div>
 <% } else { %>
 
-  <h1 class="text-2xl font-bold text-center text-horriver-orange">Votação da Pelada</h1>
+  <h1 class="text-2xl font-bold text-center text-horriver-orange">Votaï¿½ï¿½o da Pelada</h1>
   <p class="text-center text-horriver-gray mb-8">Partida de <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
 
-  <form id="vote-form" method="POST" action="/vote/match/<%= match.id %>?token=<%= token %>" class="space-y-8">
+  <form id="vote-form" method="POST" action="/vote/match/<%= match.id %>/<%= token %>" class="space-y-8">
     <% const blocks = (groupedOrder && groupedOrder.length) ? groupedOrder : Object.keys(grouped || {}).map(k => ({label:k, list: grouped[k]})); %>
     <% blocks.forEach(({label, list}) => { if (!list || !list.length) return; const labelId = String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); %>
       <div class="p-4 bg-black/30 rounded-lg border border-horriver-border">
@@ -42,8 +42,8 @@
                   <% } %>
                   <p class="text-[11px] text-horriver-gray">
                     Gols: <span class="text-horriver-orange"><%= player.goals %></span>
-                    · Ast: <span class="text-horriver-orange"><%= player.assists %></span>
-                    <% if (player.appearedInPhoto) { %> · <span title="Saiu na foto">??</span><% } %>
+                    ï¿½ Ast: <span class="text-horriver-orange"><%= player.assists %></span>
+                    <% if (player.appearedInPhoto) { %> ï¿½ <span title="Saiu na foto">??</span><% } %>
                   </p>
                 </div>
               </div>
@@ -124,4 +124,6 @@
     });
   </script>
 <% } %>
+
+
 

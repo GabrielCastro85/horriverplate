@@ -1,4 +1,4 @@
-﻿// routes/rankings.js
+// routes/rankings.js
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
@@ -37,14 +37,14 @@ function getDateRange(year, month) {
     return { from: null, to: null };
   }
 
-  // Se tiver m├¬s v├ílido, filtra aquele m├¬s
+  // Se tiver m+�s v+�lido, filtra aquele m+�s
   if (!Number.isNaN(m) && m > 0 && m <= 12) {
     const from = new Date(y, m - 1, 1);
     const to = new Date(y, m, 1);
     return { from, to };
   }
 
-  // Sen├úo, filtra o ano inteiro
+  // Sen+�o, filtra o ano inteiro
   const from = new Date(y, 0, 1);
   const to = new Date(y + 1, 0, 1);
   return { from, to };
@@ -56,7 +56,7 @@ router.get("/", async (req, res) => {
 
     let { year, month, position } = req.query;
 
-    // Defaults ÔÇô ano atual como padr├úo se nada for enviado
+    // Defaults ��� ano atual como padr+�o se nada for enviado
     if (!year) year = String(currentYear);
     if (!month) month = "0"; // 0 = todos os meses
     const selPosition = position && position !== "all" ? position : "all";
@@ -160,7 +160,7 @@ router.get("/", async (req, res) => {
       };
     });
 
-    // ======= FORMA RECENTE (últimas 10 peladas gerais) =======
+    // ======= FORMA RECENTE (�ltimas 10 peladas gerais) =======
     // Pega as 10 peladas mais recentes (dentro do filtro de data) e agrega nelas.
     const allStats = players.flatMap((p) =>
       (p.stats || []).map((s) => ({
@@ -254,8 +254,8 @@ router.get("/", async (req, res) => {
         return b.assists - a.assists;
       });
 
-    // ======= M├ëDIA PONDERADA (0ÔÇô10) =======
-    // Normaliza gols e assist├¬ncias para 0ÔÇô10 com base no m├íximo do per├¡odo
+    // ======= M+�DIA PONDERADA (0���10) =======
+    // Normaliza gols e assist+�ncias para 0���10 com base no m+�ximo do per+�odo
     const maxGoals = entries.reduce(
       (max, e) => (e.goals > max ? e.goals : max),
       0
@@ -279,7 +279,7 @@ router.get("/", async (req, res) => {
           maxGoals > 0 ? (e.goals / maxGoals) * 10 : 0;
         const assistsNorm =
           maxAssists > 0 ? (e.assists / maxAssists) * 10 : 0;
-        const ratingNorm = e.rating || 0; // j├í est├í em 0ÔÇô10
+        const ratingNorm = e.rating || 0; // j+� est+� em 0���10
 
         const weightedScore =
           weightsSum > 0
@@ -297,13 +297,13 @@ router.get("/", async (req, res) => {
           ratingNorm,
         };
       })
-      // pelo menos alguma participa├º├úo
+      // pelo menos alguma participa+�+�o
       .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
       .sort((a, b) => {
         if (b.weightedScore !== a.weightedScore) {
           return b.weightedScore - a.weightedScore;
         }
-        // desempates: nota > gols > assist├¬ncias
+        // desempates: nota > gols > assist+�ncias
         if (b.rating !== a.rating) return b.rating - a.rating;
         if (b.goals !== a.goals) return b.goals - a.goals;
         return b.assists - a.assists;
@@ -318,7 +318,7 @@ router.get("/", async (req, res) => {
         return b.matches - a.matches;
       });
 
-    // ======= ASSIST├èNCIAS =======
+    // ======= ASSIST+�NCIAS =======
     const assistsRanking = [...entries]
       .filter((e) => e.assists > 0 || e.goals > 0 || e.matches > 0)
       .sort((a, b) => {
@@ -327,7 +327,7 @@ router.get("/", async (req, res) => {
         return b.matches - a.matches;
       });
 
-    // ======= GOLS + ASSIST├èNCIAS =======
+    // ======= GOLS + ASSIST+�NCIAS =======
     const gaRanking = [...entries]
       .map((e) => ({
         ...e,
@@ -347,7 +347,7 @@ router.get("/", async (req, res) => {
         return b.matches - a.matches;
       });
 
-    // ======= OVERALL 0-100 (pesos por posição) =======
+    // ======= OVERALL 0-100 (pesos por posi��o) =======
     const { computed: overallComputed } = computeOverallFromEntries(entries);
     const overallRanking = overallComputed
       .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
@@ -363,7 +363,7 @@ router.get("/", async (req, res) => {
         return b.assists - a.assists;
       });
 
-    // ======= PRESEN├çAS =======
+    // ======= PRESEN+�AS =======
     const matchesRanking = [...entries]
       .filter((e) => e.matches > 0)
       .sort((a, b) => {
@@ -410,7 +410,7 @@ router.get("/", async (req, res) => {
       (a, b) => b.count - a.count
     );
 
-    // ======= CRAQUES DO M├èS (contagem) =======
+    // ======= CRAQUES DO M+�S (contagem) =======
     let monthlyWhere = {};
     const yearNum = parseInt(year, 10);
     const monthNum = parseInt(month, 10);

@@ -32,15 +32,15 @@ router.get("/", async (req, res) => {
     const now = new Date();
 
     // Janela em que o carrossel da temporada aparece na home
-    // (29/11/2024 às 15h até 31/12/2024 23:59:59 - horário local do servidor)
-    const highlightStart = new Date(2024, 10, 29, 15, 0, 0); // 29/11 (mês 10)
+    // (29/11/2024 Ã s 15h atÃ© 31/12/2024 23:59:59 - horÃ¡rio local do servidor)
+    const highlightStart = new Date(2024, 10, 29, 15, 0, 0); // 29/11 (mÃªs 10)
     const highlightEnd = new Date(2024, 11, 31, 23, 59, 59, 999); // 31/12
     const showSeasonHighlight =
       now.getTime() >= highlightStart.getTime() &&
       now.getTime() <= highlightEnd.getTime();
 
     // =====================================================
-    // CRAQUE DO MÊS
+    // CRAQUE DO MÃŠS
     // =====================================================
     const monthlyCraque = await prisma.monthlyAward.findFirst({
       orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -147,13 +147,13 @@ router.get("/", async (req, res) => {
 
     // =====================================================
     // DESTAQUES DA TEMPORADA (CARROSSEL DA HOME)
-    // Só aparece entre highlightStart e highlightEnd
+    // SÃ³ aparece entre highlightStart e highlightEnd
     // =====================================================
     let seasonHighlightYear = null;
     let seasonHighlightAwards = [];
 
     if (showSeasonHighlight) {
-      // Pega ano mais recente que tem prêmios
+      // Pega ano mais recente que tem prÃªmios
       const latestAward = await prisma.seasonAward.findFirst({
         orderBy: { year: "desc" },
       });
@@ -182,7 +182,7 @@ router.get("/", async (req, res) => {
     }
 
     // =====================================================
-    // RANKINGS RÁPIDOS (agregados a partir de PlayerStat para evitar totals defasados)
+    // RANKINGS RÃPIDOS (agregados a partir de PlayerStat para evitar totals defasados)
     // =====================================================
     const playersRaw = await prisma.player.findMany({
       include: { stats: true },
@@ -253,7 +253,7 @@ router.get("/", async (req, res) => {
       .slice(0, 10);
 
     // =====================================================
-    // ÚLTIMAS PELADAS
+    // ÃšLTIMAS PELADAS
     // =====================================================
     const recentMatches = await prisma.match.findMany({
       orderBy: { playedAt: "desc" },
@@ -285,12 +285,12 @@ router.get("/", async (req, res) => {
     });
   } catch (err) {
     console.error("Erro ao carregar home:", err);
-    res.status(500).send("Erro ao carregar a página inicial.");
+    res.status(500).send("Erro ao carregar a pÃ¡gina inicial.");
   }
 });
 
 // ==============================
-// PÁGINA PÚBLICA DE UMA PELADA
+// PÃGINA PÃšBLICA DE UMA PELADA
 // ==============================
 router.get("/matches/:id", async (req, res) => {
   try {
@@ -310,26 +310,26 @@ router.get("/matches/:id", async (req, res) => {
     if (!match) return res.status(404).render("404");
 
     res.render("match_public", {
-      title: "Estatísticas da pelada",
+      title: "EstatÃ­sticas da pelada",
       activePage: "home",
       match,
       stats: match.stats || [],
     });
   } catch (err) {
-    console.error("Erro ao carregar pelada pública:", err);
-    res.status(500).send("Erro ao carregar estatísticas da pelada.");
+    console.error("Erro ao carregar pelada pÃºblica:", err);
+    res.status(500).send("Erro ao carregar estatÃ­sticas da pelada.");
   }
 });
 
 // ==============================
-// HALL DA FAMA – LIBERAÇÃO PROGRAMADA
+// HALL DA FAMA â€“ LIBERAÃ‡ÃƒO PROGRAMADA
 // ==============================
 router.get("/hall-da-fama", async (req, res) => {
   try {
     const now = new Date();
 
-    // ✅ Liberação programada para 2025:
-    // sábado 29/11 às 15h (horário de Brasília)
+    // âœ… LiberaÃ§Ã£o programada para 2025:
+    // sÃ¡bado 29/11 Ã s 15h (horÃ¡rio de BrasÃ­lia)
     const releaseDate = new Date("2025-11-29T15:00:00-03:00");
     const beforeRelease = now < releaseDate;
 
@@ -338,7 +338,7 @@ router.get("/hall-da-fama", async (req, res) => {
       orderBy: [{ year: "desc" }, { category: "asc" }],
     });
 
-    // ✅ Se ainda não chegou a data → esconder 2025
+    // âœ… Se ainda nÃ£o chegou a data â†’ esconder 2025
     if (beforeRelease) {
       awards = awards.filter((a) => a.year !== 2025);
     }
@@ -350,7 +350,7 @@ router.get("/hall-da-fama", async (req, res) => {
         awardsByYear: {},
         years: [],
         beforeRelease,
-        releaseLabel: "29/11/2025 às 15h",
+        releaseLabel: "29/11/2025 Ã s 15h",
       });
     }
 
@@ -370,7 +370,7 @@ router.get("/hall-da-fama", async (req, res) => {
       awardsByYear,
       years,
       beforeRelease,
-      releaseLabel: "29/11/2025 às 15h",
+      releaseLabel: "29/11/2025 Ã s 15h",
     });
   } catch (err) {
     console.error("Erro ao carregar Hall da Fama:", err);
@@ -379,7 +379,7 @@ router.get("/hall-da-fama", async (req, res) => {
 });
 
 // ==============================
-// LISTA DE PELADAS COM FILTRO POR MÊS
+// LISTA DE PELADAS COM FILTRO POR MÃŠS
 // ==============================
 router.get("/peladas", async (req, res) => {
   try {
@@ -403,7 +403,7 @@ router.get("/peladas", async (req, res) => {
     const monthNames = [
       "janeiro",
       "fevereiro",
-      "março",
+      "marÃ§o",
       "abril",
       "maio",
       "junho",
@@ -415,7 +415,7 @@ router.get("/peladas", async (req, res) => {
       "dezembro",
     ];
 
-    // Opções de ano (com "all")
+    // OpÃ§Ãµes de ano (com "all")
     const yearsSet = new Set();
     matches.forEach((m) => {
       const y = new Date(m.playedAt).getFullYear();
@@ -428,7 +428,7 @@ router.get("/peladas", async (req, res) => {
       ? selectedYearRaw
       : "all";
 
-    // Opções de mês dependem do ano selecionado (ou todos)
+    // OpÃ§Ãµes de mÃªs dependem do ano selecionado (ou todos)
     const monthsSet = new Set();
     matches.forEach((m) => {
       const d = new Date(m.playedAt);

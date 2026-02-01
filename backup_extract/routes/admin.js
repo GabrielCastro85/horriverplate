@@ -8,7 +8,7 @@ const {
 } = require("../utils/upload");
 
 // ==============================
-// 🛡️ Middleware: exige admin logado
+// ðŸ›¡ï¸ Middleware: exige admin logado
 // ==============================
 function requireAdmin(req, res, next) {
   if (!req.admin) {
@@ -18,7 +18,7 @@ function requireAdmin(req, res, next) {
 }
 
 // ==============================
-// 🔢 Helper: recomputar totais de jogadores (para alguns IDs)
+// ðŸ”¢ Helper: recomputar totais de jogadores (para alguns IDs)
 // ==============================
 async function recomputeTotalsForPlayers(playerIds) {
   const uniqueIds = Array.from(new Set(playerIds)).filter((id) => !!id);
@@ -63,7 +63,7 @@ async function recomputeTotalsForPlayers(playerIds) {
 }
 
 // ==============================
-// 🧭 Painel principal /admin
+// ðŸ§­ Painel principal /admin
 // ==============================
 router.get("/", requireAdmin, async (req, res) => {
   try {
@@ -71,7 +71,7 @@ router.get("/", requireAdmin, async (req, res) => {
       orderBy: { playedAt: "desc" },
     });
 
-    // Agrupa peladas por mês/ano
+    // Agrupa peladas por mÃªs/ano
     const groupedMatchesObj = matches.reduce((groups, match) => {
       const date = new Date(match.playedAt);
       const year = date.getFullYear();
@@ -113,7 +113,7 @@ router.get("/", requireAdmin, async (req, res) => {
       },
     });
 
-    // Premiações de temporada (para exibir resuminho se quiser)
+    // PremiaÃ§Ãµes de temporada (para exibir resuminho se quiser)
     const seasonAwards = await prisma.seasonAward.findMany({
       include: { player: true },
       orderBy: [{ year: "desc" }, { category: "asc" }],
@@ -135,7 +135,7 @@ router.get("/", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 👤 Jogadores - CRUD
+// ðŸ‘¤ Jogadores - CRUD
 // ==============================
 
 // Adicionar jogador (com upload de foto)
@@ -203,7 +203,7 @@ router.post(
         position,
       };
 
-      // Se enviou nova foto, atualiza photoUrl; caso contrário, mantém a atual
+      // Se enviou nova foto, atualiza photoUrl; caso contrÃ¡rio, mantÃ©m a atual
       if (photoUrl) {
         data.photoUrl = photoUrl;
       }
@@ -243,7 +243,7 @@ router.post("/players/:id/delete", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🏆 Peladas (Matches) - CRUD
+// ðŸ† Peladas (Matches) - CRUD
 // ==============================
 
 // Criar nova pelada
@@ -320,7 +320,7 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🔁 Selecionar pelada para lançar stats
+// ðŸ” Selecionar pelada para lanÃ§ar stats
 // ==============================
 router.get("/matches", requireAdmin, (req, res) => {
   const { matchId } = req.query;
@@ -338,7 +338,7 @@ router.get("/matches", requireAdmin, (req, res) => {
 });
 
 // ==============================
-// 💾 Salvar estatísticas em massa da pelada
+// ðŸ’¾ Salvar estatÃ­sticas em massa da pelada
 // ==============================
 router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
   try {
@@ -430,13 +430,13 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
 
     res.redirect(`/admin/matches/${matchId}`);
   } catch (err) {
-    console.error("Erro ao salvar estatísticas da pelada:", err);
+    console.error("Erro ao salvar estatÃ­sticas da pelada:", err);
     res.redirect(`/admin/matches/${req.params.id}`);
   }
 });
 
 // ==============================
-// 🏅 Destaques (semana / mês)
+// ðŸ… Destaques (semana / mÃªs)
 // ==============================
 
 // Craque + Time da semana
@@ -537,7 +537,7 @@ router.post("/weekly-awards/:id/delete", requireAdmin, async (req, res) => {
   }
 });
 
-// Craque do mês
+// Craque do mÃªs
 router.post("/monthly-awards", requireAdmin, async (req, res) => {
   try {
     const { month, year, craqueId } = req.body;
@@ -589,12 +589,12 @@ router.post("/monthly-awards", requireAdmin, async (req, res) => {
 
     res.redirect("/admin");
   } catch (err) {
-    console.error("Erro ao salvar craque do mês:", err);
+    console.error("Erro ao salvar craque do mÃªs:", err);
     res.redirect("/admin");
   }
 });
 
-// Excluir craque do mês
+// Excluir craque do mÃªs
 router.post("/monthly-awards/:id/delete", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -606,16 +606,16 @@ router.post("/monthly-awards/:id/delete", requireAdmin, async (req, res) => {
 
     res.redirect("/admin");
   } catch (err) {
-    console.error("Erro ao excluir craque do mês:", err);
+    console.error("Erro ao excluir craque do mÃªs:", err);
     res.redirect("/admin");
   }
 });
 
 // ==============================
-// 🏆 Premiação da temporada (SeasonAward)
+// ðŸ† PremiaÃ§Ã£o da temporada (SeasonAward)
 // ==============================
 
-// Tela de gestão da premiação
+// Tela de gestÃ£o da premiaÃ§Ã£o
 router.get("/premiacao", requireAdmin, async (req, res) => {
   try {
     const players = await prisma.player.findMany({
@@ -634,17 +634,17 @@ router.get("/premiacao", requireAdmin, async (req, res) => {
     }, {});
 
     res.render("admin_awards", {
-      title: "Premiação da temporada",
+      title: "PremiaÃ§Ã£o da temporada",
       players,
       awardsByYear,
     });
   } catch (err) {
-    console.error("Erro ao carregar tela de premiação:", err);
-    res.status(500).send("Erro ao carregar premiação da temporada.");
+    console.error("Erro ao carregar tela de premiaÃ§Ã£o:", err);
+    res.status(500).send("Erro ao carregar premiaÃ§Ã£o da temporada.");
   }
 });
 
-// Criar/atualizar prêmio de temporada
+// Criar/atualizar prÃªmio de temporada
 router.post("/season-awards", requireAdmin, async (req, res) => {
   try {
     const { year, category, playerId } = req.body;
@@ -657,8 +657,8 @@ router.post("/season-awards", requireAdmin, async (req, res) => {
       return res.redirect("/admin/premiacao");
     }
 
-    // 🔧 NÃO usamos mais year_category (não existe no schema).
-    // Então buscamos primeiro, depois fazemos update OU create.
+    // ðŸ”§ NÃƒO usamos mais year_category (nÃ£o existe no schema).
+    // EntÃ£o buscamos primeiro, depois fazemos update OU create.
     const existing = await prisma.seasonAward.findFirst({
       where: {
         year: y,
@@ -685,12 +685,12 @@ router.post("/season-awards", requireAdmin, async (req, res) => {
 
     res.redirect("/admin/premiacao");
   } catch (err) {
-    console.error("Erro ao salvar prêmio de temporada:", err);
+    console.error("Erro ao salvar prÃªmio de temporada:", err);
     res.redirect("/admin/premiacao");
   }
 });
 
-// Excluir prêmio de temporada
+// Excluir prÃªmio de temporada
 router.post(
   "/season-awards/:id/delete",
   requireAdmin,
@@ -707,14 +707,14 @@ router.post(
 
       res.redirect("/admin/premiacao");
     } catch (err) {
-      console.error("Erro ao excluir prêmio de temporada:", err);
+      console.error("Erro ao excluir prÃªmio de temporada:", err);
       res.redirect("/admin/premiacao");
     }
   }
 );
 
 // ==============================
-// 📊 Ver estatísticas de uma pelada (ADMIN)
+// ðŸ“Š Ver estatÃ­sticas de uma pelada (ADMIN)
 // ==============================
 router.get("/matches/:id", requireAdmin, async (req, res) => {
   try {
@@ -742,23 +742,23 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
     });
 
     res.render("admin_match", {
-      title: "Estatísticas da pelada",
+      title: "EstatÃ­sticas da pelada",
       match,
       players,
       stats: match.stats || [],
     });
   } catch (err) {
-    console.error("Erro ao carregar estatísticas da pelada:", err);
+    console.error("Erro ao carregar estatÃ­sticas da pelada:", err);
     res.redirect("/admin");
   }
 });
 
 // ===============================================
-// 🔁 Rota: Recalcular totais de TODOS os jogadores
+// ðŸ” Rota: Recalcular totais de TODOS os jogadores
 // ===============================================
 async function handleRecalculateTotals(req, res) {
   try {
-    console.log("🔁 Recalculando totais de todos os jogadores...");
+    console.log("ðŸ” Recalculando totais de todos os jogadores...");
 
     const players = await prisma.player.findMany({
       include: {
@@ -792,7 +792,7 @@ async function handleRecalculateTotals(req, res) {
       });
     }
 
-    console.log("✅ Totais recalculados com sucesso.");
+    console.log("âœ… Totais recalculados com sucesso.");
     return res.redirect("/admin?success=totalsRecalculated");
   } catch (err) {
     console.error("Erro ao recalcular totais:", err);
@@ -800,7 +800,7 @@ async function handleRecalculateTotals(req, res) {
   }
 }
 
-// Aceita QUALQUER método (GET, POST, etc) nesse caminho
+// Aceita QUALQUER mÃ©todo (GET, POST, etc) nesse caminho
 router.all("/recalculate-totals", requireAdmin, handleRecalculateTotals);
 
 module.exports = router;

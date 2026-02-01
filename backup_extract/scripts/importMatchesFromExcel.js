@@ -3,17 +3,17 @@
 // Como usar:
 //
 // 1) Coloque o arquivo "PELADA RESENHA - Copia.xlsx" na raiz do projeto,
-//    no mesmo nível do server.js.
+//    no mesmo nÃ­vel do server.js.
 // 2) Rode: node scripts/importMatchesFromExcel.js
 //
 // Esse script:
 //  - Percorre as abas JAN, FEV, MAR, ..., DEZ (ignora TOTAL)
 //  - Em cada aba, olha a linha 3 (datas) e linha 4 ("PRESENTE", "GOL", "ASSIST", "NOTA")
-//  - Cada coluna onde (linha3 = data) E (linha4 contém "PRESENTE") é considerada uma pelada
-//  - Cria um Match no banco para cada data encontrada (se não existir ainda)
+//  - Cada coluna onde (linha3 = data) E (linha4 contÃ©m "PRESENTE") Ã© considerada uma pelada
+//  - Cria um Match no banco para cada data encontrada (se nÃ£o existir ainda)
 //
-// Ele NÃO importa estatísticas nem jogadores ainda, só as peladas.
-// Assim você usa o painel admin normalmente para lançar stats depois.
+// Ele NÃƒO importa estatÃ­sticas nem jogadores ainda, sÃ³ as peladas.
+// Assim vocÃª usa o painel admin normalmente para lanÃ§ar stats depois.
 //
 // Requer:
 //   npm install xlsx
@@ -26,16 +26,16 @@ const prisma = require("../utils/db");
 function isDateValue(v) {
   if (!v) return false;
 
-  // Se o xlsx já converteu pra Date
+  // Se o xlsx jÃ¡ converteu pra Date
   if (v instanceof Date) return !isNaN(v.getTime());
 
-  // Se vier como string parseável (tipo "2025-01-07" ou "07/01/2025")
+  // Se vier como string parseÃ¡vel (tipo "2025-01-07" ou "07/01/2025")
   if (typeof v === "string") {
     const d = new Date(v);
     return !isNaN(d.getTime());
   }
 
-  // Se vier como número (serial Excel) — fallback
+  // Se vier como nÃºmero (serial Excel) â€” fallback
   if (typeof v === "number") {
     // Excel serial -> JS Date (baseado em 1899-12-30)
     const excelEpoch = new Date(Date.UTC(1899, 11, 30));
@@ -91,7 +91,7 @@ async function main() {
 
   console.log("Lendo planilha:", excelPath);
 
-  // cellDates: true ajuda a já trazer datas como Date
+  // cellDates: true ajuda a jÃ¡ trazer datas como Date
   const workbook = xlsx.readFile(excelPath, { cellDates: true });
 
   // Abas que vamos considerar (ignorar "TOTAL")
@@ -100,17 +100,17 @@ async function main() {
   );
 
   if (!sheetNames.length) {
-    console.error("Nenhuma aba válida encontrada na planilha.");
+    console.error("Nenhuma aba vÃ¡lida encontrada na planilha.");
     process.exit(1);
   }
 
-  console.log("📚 Abas encontradas:", sheetNames.join(", "));
+  console.log("ðŸ“š Abas encontradas:", sheetNames.join(", "));
 
   let totalCreated = 0;
   let totalSkipped = 0;
 
   for (const sheetName of sheetNames) {
-    console.log("\n📑 Processando aba:", sheetName);
+    console.log("\nðŸ“‘ Processando aba:", sheetName);
 
     const sheet = workbook.Sheets[sheetName];
 
@@ -119,20 +119,20 @@ async function main() {
 
     if (!rows || rows.length < 4) {
       console.warn(
-        `  ⚠️  Aba ${sheetName} tem poucas linhas, pulando (esperado >= 4).`
+        `  âš ï¸  Aba ${sheetName} tem poucas linhas, pulando (esperado >= 4).`
       );
       continue;
     }
 
-    // IMPORTANTE: baseado em como está sua planilha:
-    // row3 (índice 2) -> datas das peladas + "JOGADOR"
-    // row4 (índice 3) -> "PRESENTE", "GOL", "ASSIST", "NOTA", ...
+    // IMPORTANTE: baseado em como estÃ¡ sua planilha:
+    // row3 (Ã­ndice 2) -> datas das peladas + "JOGADOR"
+    // row4 (Ã­ndice 3) -> "PRESENTE", "GOL", "ASSIST", "NOTA", ...
     const headerDates = rows[2]; // linha 3 do Excel
     const headerFlags = rows[3]; // linha 4 do Excel
 
     if (!headerDates || !headerFlags) {
       console.warn(
-        `  ⚠️  Aba ${sheetName} sem cabeçalho suficiente (linhas 3 e 4).`
+        `  âš ï¸  Aba ${sheetName} sem cabeÃ§alho suficiente (linhas 3 e 4).`
       );
       continue;
     }
@@ -164,12 +164,12 @@ async function main() {
 
     if (!matchColumns.length) {
       console.warn(
-        `  ⚠️  Aba ${sheetName}: não encontrei nenhuma coluna com (data + PRESENTE).`
+        `  âš ï¸  Aba ${sheetName}: nÃ£o encontrei nenhuma coluna com (data + PRESENTE).`
       );
       continue;
     }
 
-    console.log("  📅 Colunas de pelada encontradas:");
+    console.log("  ðŸ“… Colunas de pelada encontradas:");
     matchColumns.forEach((mc, i) => {
       const yyyy = mc.playedAt.getFullYear();
       const mm = String(mc.playedAt.getMonth() + 1).padStart(2, "0");
@@ -183,10 +183,10 @@ async function main() {
     for (const mc of matchColumns) {
       const d = mc.playedAt;
 
-      // normalizar para "só data" (00:00)
+      // normalizar para "sÃ³ data" (00:00)
       const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-      // checar se já existe
+      // checar se jÃ¡ existe
       const existing = await prisma.match.findFirst({
         where: {
           playedAt: dateOnly,
@@ -197,7 +197,7 @@ async function main() {
 
       if (existing) {
         console.log(
-          `  ⚠️  Já existe pelada com data ${isoDate} (id=${existing.id}) — pulando.`
+          `  âš ï¸  JÃ¡ existe pelada com data ${isoDate} (id=${existing.id}) â€” pulando.`
         );
         totalSkipped++;
         continue;
@@ -206,27 +206,27 @@ async function main() {
       const match = await prisma.match.create({
         data: {
           playedAt: dateOnly,
-          description: null, // você pode editar depois no painel
+          description: null, // vocÃª pode editar depois no painel
           winnerTeam: null, // idem
         },
       });
 
       console.log(
-        `  ✅ Criada pelada (Match) id=${match.id} para data ${isoDate}`
+        `  âœ… Criada pelada (Match) id=${match.id} para data ${isoDate}`
       );
       totalCreated++;
     }
   }
 
   console.log("\n-----");
-  console.log(`✅ Importação concluída.`);
+  console.log(`âœ… ImportaÃ§Ã£o concluÃ­da.`);
   console.log(`  Peladas criadas: ${totalCreated}`);
-  console.log(`  Peladas ignoradas (já existiam): ${totalSkipped}`);
+  console.log(`  Peladas ignoradas (jÃ¡ existiam): ${totalSkipped}`);
 }
 
 main()
   .catch((err) => {
-    console.error("❌ Erro ao importar peladas:", err);
+    console.error("âŒ Erro ao importar peladas:", err);
   })
   .finally(async () => {
     await prisma.$disconnect();

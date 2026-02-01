@@ -78,7 +78,7 @@ router.post("/login", loginLimiter, async (req, res) => {
     // Salva o token em cookie httpOnly
     res.cookie("adminToken", token, {
       httpOnly: true,
-      secure: false, // colocar true se usar HTTPS
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 2 * 60 * 60 * 1000, // 2 horas
     });

@@ -100,15 +100,15 @@ router.get("/", async (req, res) => {
     }
 
     // Janela em que o carrossel da temporada aparece na home
-    // (29/11/2024 às 15h até 31/12/2024 23:59:59 - horário local do servidor)
-    const highlightStart = new Date(2024, 10, 29, 15, 0, 0); // 29/11 (mês 10)
+    // (29/11/2024 ï¿½s 15h atï¿½ 31/12/2024 23:59:59 - horï¿½rio local do servidor)
+    const highlightStart = new Date(2024, 10, 29, 15, 0, 0); // 29/11 (mï¿½s 10)
     const highlightEnd = new Date(2024, 11, 31, 23, 59, 59, 999); // 31/12
     const showSeasonHighlight =
       now.getTime() >= highlightStart.getTime() &&
       now.getTime() <= highlightEnd.getTime();
 
     // =====================================================
-    // CRAQUE DO MÊS
+    // CRAQUE DO Mï¿½S
     // =====================================================
     const monthlyCraque = await prisma.monthlyAward.findFirst({
       orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -215,13 +215,13 @@ router.get("/", async (req, res) => {
 
     // =====================================================
     // DESTAQUES DA TEMPORADA (CARROSSEL DA HOME)
-    // Só aparece entre highlightStart e highlightEnd
+    // Sï¿½ aparece entre highlightStart e highlightEnd
     // =====================================================
     let seasonHighlightYear = null;
     let seasonHighlightAwards = [];
 
     if (showSeasonHighlight) {
-      // Pega ano mais recente que tem prêmios
+      // Pega ano mais recente que tem prï¿½mios
       const latestAward = await prisma.seasonAward.findFirst({
         orderBy: { year: "desc" },
       });
@@ -250,7 +250,7 @@ router.get("/", async (req, res) => {
     }
 
     // =====================================================
-    // RANKINGS RÁPIDOS
+    // RANKINGS Rï¿½PIDOS
     // =====================================================
     const topScorers = await prisma.player.findMany({
       orderBy: { totalGoals: "desc" },
@@ -328,12 +328,12 @@ router.get("/", async (req, res) => {
     res.render("index", payload);
   } catch (err) {
     console.error("Erro ao carregar home:", err);
-    res.status(500).send("Erro ao carregar a página inicial.");
+    res.status(500).send("Erro ao carregar a pï¿½gina inicial.");
   }
 });
 
 // ==============================
-// PÁGINA PÚBLICA DE UMA PELADA
+// Pï¿½GINA Pï¿½BLICA DE UMA PELADA
 // ==============================
 router.get("/matches/:id", async (req, res) => {
   try {
@@ -375,7 +375,7 @@ router.get("/matches/:id", async (req, res) => {
         }));
       }
     } catch (calcErr) {
-      console.warn("Falha ao calcular nota final p£blica:", calcErr);
+      console.warn("Falha ao calcular nota final pï¿½blica:", calcErr);
     }
 
     const baseUrl =
@@ -395,7 +395,7 @@ router.get("/matches/:id", async (req, res) => {
     res.locals.ogTitle = `Pelada ${matchDateLabel} | Horriver Plate`;
 
     res.render("match_public", {
-      title: "Estat¡sticas da pelada",
+      title: "Estatï¿½sticas da pelada",
       activePage: "home",
       match,
       stats: publicStats,
@@ -404,8 +404,8 @@ router.get("/matches/:id", async (req, res) => {
       tournamentTeams: [],
     });
   } catch (err) {
-    console.error("Erro ao carregar pelada pública:", err);
-    res.status(500).send("Erro ao carregar estatísticas da pelada.");
+    console.error("Erro ao carregar pelada pï¿½blica:", err);
+    res.status(500).send("Erro ao carregar estatï¿½sticas da pelada.");
   }
 });
 
@@ -433,7 +433,7 @@ router.get("/tierlist", async (req, res) => {
 });
 
 // ==============================
-// LISTA DE PELADAS COM FILTRO POR MÊS/ANO
+// LISTA DE PELADAS COM FILTRO POR Mï¿½S/ANO
 // ==============================
 router.get("/peladas", async (req, res) => {
   try {
@@ -459,7 +459,7 @@ router.get("/peladas", async (req, res) => {
     const monthNames = [
       "janeiro",
       "fevereiro",
-      "março",
+      "marï¿½o",
       "abril",
       "maio",
       "junho",
@@ -471,7 +471,7 @@ router.get("/peladas", async (req, res) => {
       "dezembro",
     ];
 
-    // Opções de ano (com "all")
+    // Opï¿½ï¿½es de ano (com "all")
     const yearsSet = new Set();
     matches.forEach((m) => {
       const y = new Date(m.playedAt).getFullYear();
@@ -484,7 +484,7 @@ router.get("/peladas", async (req, res) => {
       ? selectedYearRaw
       : "all";
 
-    // Opções de mês dependem do ano selecionado (ou todos)
+    // Opï¿½ï¿½es de mï¿½s dependem do ano selecionado (ou todos)
     const monthsSet = new Set();
     matches.forEach((m) => {
       const d = new Date(m.playedAt);
@@ -696,7 +696,7 @@ router.get("/hall-da-fama", async (req, res) => {
       },
     });
 
-    // Campeões da temporada mais recente (premiação oficial)
+    // Campeï¿½es da temporada mais recente (premiaï¿½ï¿½o oficial)
     const seasonAwards = await prisma.seasonAward.findMany({
       include: { player: true },
       orderBy: [{ year: "desc" }, { category: "asc" }],
@@ -729,7 +729,7 @@ router.get("/hall-da-fama", async (req, res) => {
         forward: byCategory("MELHOR_ATACANTE"),
       };
 
-      // pega o ano anterior (se existir) para histórico
+      // pega o ano anterior (se existir) para histï¿½rico
       const otherYear = seasonAwards.find((a) => a.year < latestSeasonYear);
       if (otherYear) {
         previousSeasonYear = otherYear.year;
@@ -738,7 +738,7 @@ router.get("/hall-da-fama", async (req, res) => {
         );
       }
 
-      // agrupa todos os anos para histórico completo
+      // agrupa todos os anos para histï¿½rico completo
       const awardsByYear = seasonAwards.reduce((acc, award) => {
         const y = award.year;
         if (!acc[y]) acc[y] = [];
@@ -746,7 +746,7 @@ router.get("/hall-da-fama", async (req, res) => {
         return acc;
       }, {});
       seasonHistory = Object.entries(awardsByYear)
-        .filter(([year]) => Number(year) !== latestSeasonYear) // já exibimos a mais recente em destaque
+        .filter(([year]) => Number(year) !== latestSeasonYear) // jï¿½ exibimos a mais recente em destaque
         .sort((a, b) => Number(b[0]) - Number(a[0]))
         .map(([year, awards]) => ({
           year: Number(year),
@@ -811,4 +811,5 @@ router.get("/achievements", async (req, res) => {
 });
 
 module.exports = router;
+
 

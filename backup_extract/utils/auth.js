@@ -6,8 +6,8 @@ const SECRET_KEY = process.env.JWT_SECRET || "dev-secret";
 
 /**
  * Gera um token JWT para o admin.
- * @param {object} payload - Dados que vão dentro do token (ex: { id, email }).
- * @param {object} options - Opções extras do JWT (ex: expiresIn).
+ * @param {object} payload - Dados que vÃ£o dentro do token (ex: { id, email }).
+ * @param {object} options - OpÃ§Ãµes extras do JWT (ex: expiresIn).
  * @returns {string} token
  */
 function generateToken(payload, options = {}) {
@@ -22,7 +22,7 @@ function generateToken(payload, options = {}) {
 /**
  * Valida um token JWT.
  * @param {string} token
- * @returns {object|null} payload decodado ou null se inválido/expirado
+ * @returns {object|null} payload decodado ou null se invÃ¡lido/expirado
  */
 function verifyToken(token) {
   try {

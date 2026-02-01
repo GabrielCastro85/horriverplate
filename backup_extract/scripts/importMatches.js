@@ -1,8 +1,8 @@
 // scripts/importMatches.js
 //
 // Como usar:
-// 1) Coloque um arquivo peladas.csv na raiz do projeto (mesmo nível de server.js)
-// 2) Formato do CSV (com cabeçalho):
+// 1) Coloque um arquivo peladas.csv na raiz do projeto (mesmo nÃ­vel de server.js)
+// 2) Formato do CSV (com cabeÃ§alho):
 //    playedAt,description,winnerTeam
 //    2025-01-10,Pelada da sexta,Time Azul
 //    2025-01-17,Pelada da sexta,Time Vermelho
@@ -18,7 +18,7 @@ async function main() {
   const csvPath = path.join(__dirname, "..", "peladas.csv");
 
   if (!fs.existsSync(csvPath)) {
-    console.error("Arquivo peladas.csv não encontrado na raiz do projeto.");
+    console.error("Arquivo peladas.csv nÃ£o encontrado na raiz do projeto.");
     console.error("Crie o arquivo e rode o script novamente.");
     process.exit(1);
   }
@@ -37,13 +37,13 @@ async function main() {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // pula cabeçalho
+    // pula cabeÃ§alho
     if (isHeader) {
       isHeader = false;
       continue;
     }
 
-    // separa por vírgula — se sua planilha estiver usando ; em vez de ,,
+    // separa por vÃ­rgula â€” se sua planilha estiver usando ; em vez de ,,
     // troque o split abaixo para split(";")
     const parts = trimmed.split(",");
 
@@ -59,7 +59,7 @@ async function main() {
     // datas no formato YYYY-MM-DD
     const playedAt = new Date(playedAtRaw);
     if (isNaN(playedAt.getTime())) {
-      console.warn("Data inválida, linha ignorada:", line);
+      console.warn("Data invÃ¡lida, linha ignorada:", line);
       continue;
     }
 
@@ -77,7 +77,7 @@ async function main() {
     count++;
   }
 
-  console.log(`✅ Importação concluída. ${count} peladas criadas.`);
+  console.log(`âœ… ImportaÃ§Ã£o concluÃ­da. ${count} peladas criadas.`);
 }
 
 main()

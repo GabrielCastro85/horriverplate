@@ -25,7 +25,7 @@ function categoryLabel(category) {
 
 router.get("/", async (req, res) => {
   try {
-    // Busca todas as premiações cadastradas
+    // Busca todas as premiaÃ§Ãµes cadastradas
     const awards = await prisma.seasonAward.findMany({
       include: {
         player: true,
@@ -36,10 +36,10 @@ router.get("/", async (req, res) => {
       ],
     });
 
-    // Se ainda não tiver nada cadastrado
+    // Se ainda nÃ£o tiver nada cadastrado
     if (!awards || awards.length === 0) {
       return res.render("awards", {
-        title: "Premiação",
+        title: "PremiaÃ§Ã£o",
         awardsByYear: {},
         currentYear: null,
         categoryLabel,
@@ -62,14 +62,14 @@ router.get("/", async (req, res) => {
     const currentYear = years[0];
 
     res.render("awards", {
-      title: "Premiação",
+      title: "PremiaÃ§Ã£o",
       awardsByYear,
       currentYear,
       categoryLabel,
     });
   } catch (err) {
     console.error("Erro ao carregar /premiacao:", err);
-    res.status(500).send("Erro ao carregar premiação");
+    res.status(500).send("Erro ao carregar premiaÃ§Ã£o");
   }
 });
 

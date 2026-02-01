@@ -11,15 +11,15 @@
 %>
 
 <section class="space-y-6 animate-fadeIn">
-  <!-- Cabeçalho -->
+  <!-- CabeÃ§alho -->
   <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
     <div class="space-y-2">
       <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
         Elenco
       </h1>
       <p class="text-sm text-horriver-gray max-w-xl">
-        Todos os jogadores cadastrados no Horriver Plate. Acompanhe posição,
-        apelido e um resumo rápido das estatísticas gerais.
+        Todos os jogadores cadastrados no Horriver Plate. Acompanhe posiÃ§Ã£o,
+        apelido e um resumo rÃ¡pido das estatÃ­sticas gerais.
       </p>
     </div>
 
@@ -41,7 +41,7 @@
 
       <div class="w-full sm:w-40">
         <label class="block text-horriver-gray mb-1">
-          Filtrar por posição
+          Filtrar por posiÃ§Ã£o
         </label>
         <select
           id="player-position-filter"
@@ -85,7 +85,7 @@
               ></div>
             </div>
 
-            <!-- Conteúdo -->
+            <!-- ConteÃºdo -->
             <div class="relative z-10 p-4 flex flex-col gap-3">
               <!-- Topo: avatar + nome -->
               <div class="flex items-center gap-3">
@@ -121,10 +121,10 @@
                 </div>
               </div>
 
-              <!-- Linha divisória -->
+              <!-- Linha divisÃ³ria -->
               <div class="h-px bg-gradient-to-r from-transparent via-horriver-red/60 to-transparent"></div>
 
-              <!-- Stats rápidos -->
+              <!-- Stats rÃ¡pidos -->
               <div class="grid grid-cols-2 gap-2 text-[10px]">
                 <div
                   class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
@@ -140,7 +140,7 @@
                   class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
                          flex flex-col items-center"
                 >
-                  <p class="text-horriver-gray">Assistências</p>
+                  <p class="text-horriver-gray">AssistÃªncias</p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalAssists || 0 %>
                   </p>
@@ -150,7 +150,7 @@
                   class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-border
                          flex flex-col items-center"
                 >
-                  <p class="text-horriver-gray">Presenças</p>
+                  <p class="text-horriver-gray">PresenÃ§as</p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalMatches || 0 %>
                   </p>

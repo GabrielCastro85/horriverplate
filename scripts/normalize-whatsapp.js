@@ -1,4 +1,4 @@
-﻿const prisma = require('../utils/db');
+const prisma = require('../utils/db');
 const { Prisma } = require('@prisma/client');
 
 function normalizeWhatsapp(raw) {
@@ -32,7 +32,7 @@ async function main() {
       updated++;
     }
   }
-  console.log(`Normalização concluída. Atualizados: ${updated}`);
+  console.log(`Normaliza��o conclu�da. Atualizados: ${updated}`);
 }
 
 main()

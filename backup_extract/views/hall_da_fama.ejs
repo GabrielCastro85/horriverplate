@@ -15,7 +15,7 @@
   const catLabel = {
     melhor_jogador: "Craque da temporada",
     artilheiro: "Artilheiro da temporada",
-    assistente: "Rei das assistências",
+    assistente: "Rei das assistÃªncias",
     melhor_goleiro: "Melhor goleiro",
     melhor_zagueiro: "Melhor zagueiro",
     melhor_meia: "Melhor meia",
@@ -49,28 +49,28 @@
   <!-- Header -->
   <header class="card-inner rounded-3xl px-6 py-6 md:px-8 md:py-7">
     <p class="text-[11px] text-horriver-gray/80 uppercase tracking-[0.20em]">
-      Horriver Plate • Premiação oficial
+      Horriver Plate â€¢ PremiaÃ§Ã£o oficial
     </p>
     <h1 class="mt-1 text-2xl md:text-3xl font-title text-horriver-light">
-      Hall da Fama – Campeões da temporada
+      Hall da Fama â€“ CampeÃµes da temporada
     </h1>
     <p class="mt-2 text-xs md:text-sm text-horriver-gray max-w-2xl">
-      Aqui ficam registrados os jogadores que marcaram época na nossa pelada.
-      Craque do ano, artilheiro, rei das assistências e os destaques por posição,
+      Aqui ficam registrados os jogadores que marcaram Ã©poca na nossa pelada.
+      Craque do ano, artilheiro, rei das assistÃªncias e os destaques por posiÃ§Ã£o,
       temporada por temporada.
     </p>
 
     <% if (hasBeforeRelease) { %>
-      <!-- Aviso de que 2025 ainda não liberou -->
+      <!-- Aviso de que 2025 ainda nÃ£o liberou -->
       <div class="mt-4 rounded-2xl border border-horriver-orange/70 bg-black/50 px-4 py-3 text-[11px] md:text-xs text-horriver-gray">
         <p>
-          A premiação da temporada
+          A premiaÃ§Ã£o da temporada
           <span class="text-horriver-orange font-semibold">2025</span>
-          será revelada em
+          serÃ¡ revelada em
           <span class="text-horriver-orange font-semibold"><%= releaseLabel %></span>.
         </p>
         <p class="mt-1 text-[10px] text-horriver-gray/80">
-          Até lá, o Hall da Fama mostra apenas os campeões das temporadas anteriores. 👀✨
+          AtÃ© lÃ¡, o Hall da Fama mostra apenas os campeÃµes das temporadas anteriores. ðŸ‘€âœ¨
         </p>
       </div>
     <% } %>
@@ -78,7 +78,7 @@
 
   <% if (!years || !years.length) { %>
     <div class="card-inner rounded-3xl px-6 py-6 md:px-8 md:py-7 text-sm text-horriver-gray text-center">
-      Nenhuma premiação de temporada cadastrada ainda.
+      Nenhuma premiaÃ§Ã£o de temporada cadastrada ainda.
     </div>
   <% } else { %>
     <section class="space-y-4">
@@ -88,7 +88,7 @@
            const others = list.filter(a => a.category !== "melhor_jogador");
       %>
         <article class="card-inner rounded-3xl px-5 py-4 md:px-7 md:py-5">
-          <!-- Cabeçalho do ano (accordion) -->
+          <!-- CabeÃ§alho do ano (accordion) -->
           <button
             type="button"
             onclick="toggleHall(<%= year %>)"
@@ -99,12 +99,12 @@
                 Temporada <%= year %>
               </p>
               <h2 class="text-lg md:text-xl font-title text-horriver-light">
-                Campeões da temporada
+                CampeÃµes da temporada
               </h2>
             </div>
 
             <div class="flex items-center gap-2 text-[11px] text-horriver-gray">
-              <span><%= list.length %> prêmios</span>
+              <span><%= list.length %> prÃªmios</span>
               <span
                 id="hallArrow-<%= year %>"
                 class="inline-flex items-center justify-center w-6 h-6 rounded-full
@@ -112,12 +112,12 @@
                        transition-transform duration-200"
                 style="<%= index === 0 ? 'transform: rotate(0deg);' : 'transform: rotate(-90deg);' %>"
               >
-                ▲
+                â–²
               </span>
             </div>
           </button>
 
-          <!-- Conteúdo do ano -->
+          <!-- ConteÃºdo do ano -->
           <div
             id="hallContent-<%= year %>"
             class="mt-5 space-y-5"
@@ -189,7 +189,7 @@
                     <% } %>
 
                     <p class="mt-2 text-[11px] md:text-xs text-horriver-gray max-w-xl">
-                      O jogador que dominou a temporada, decidiu peladas e virou referência
+                      O jogador que dominou a temporada, decidiu peladas e virou referÃªncia
                       no nosso futebol raiz. Status de lenda garantido no Hall da Fama.
                     </p>
                   </div>
@@ -200,7 +200,7 @@
                       class="w-10 h-10 rounded-full border border-amber-300
                              flex items-center justify-center bg-black/60"
                     >
-                      ★
+                      â˜…
                     </div>
                     <span>Lenda</span>
                   </div>
@@ -308,7 +308,7 @@
       });
     }
 
-    // Deixa a função disponível no escopo global para o onclick do botão
+    // Deixa a funÃ§Ã£o disponÃ­vel no escopo global para o onclick do botÃ£o
     window.toggleHall = toggleHall;
   })();
 </script>

@@ -22,7 +22,7 @@ function createUpload(subfolder) {
 
   function fileFilter(req, file, cb) {
     if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Apenas arquivos de imagem são permitidos."), false);
+      return cb(new Error("Apenas arquivos de imagem sÃ£o permitidos."), false);
     }
     cb(null, true);
   }

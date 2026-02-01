@@ -298,15 +298,16 @@ async function loadPublicVoteContext(matchId, token) {
   return { match, players, grouped, groupedOrder, token };
 }
 
+function getPublicToken(req) {
+  return req.params?.token || req.query?.token || null;
+}
 
-router.get("/match/:matchId", async (req, res) => {
+async function renderPublicVote(req, res) {
   const { matchId } = req.params;
-  const { token } = req.query;
-
+  const token = getPublicToken(req);
   const ctx = await loadPublicVoteContext(matchId, token);
 
   if (ctx.error) {
-    // Render a simple error page if context fails
     return res.render("vote_page", {
       title: "Erro na Votação",
       error: ctx.error,
@@ -329,11 +330,11 @@ router.get("/match/:matchId", async (req, res) => {
     token: ctx.token,
     success: false,
   });
-});
+}
 
-router.post("/match/:matchId", async (req, res) => {
+async function handlePublicVote(req, res) {
   const { matchId } = req.params;
-  const { token } = req.query;
+  const token = getPublicToken(req);
 
   const ctx = await loadPublicVoteContext(matchId, token);
 
@@ -350,7 +351,12 @@ router.post("/match/:matchId", async (req, res) => {
   if (!voterIdentifier) {
     voterIdentifier = crypto.randomBytes(16).toString("hex");
     // Set the cookie for future visits
-    res.cookie(`vote_id_${matchId}`, voterIdentifier, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+    res.cookie(`vote_id_${matchId}`, voterIdentifier, {
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
   }
 
   // Check if this identifier has already voted
@@ -396,8 +402,8 @@ router.post("/match/:matchId", async (req, res) => {
     });
 
     const mvpPlayerIdRaw = req.body.mvpPlayerId;
-    const mvpPlayerId = mvpPlayerIdRaw && ctx.players.some(p => p.id === parseInt(mvpPlayerIdRaw, 10)) 
-      ? parseInt(mvpPlayerIdRaw, 10) 
+    const mvpPlayerId = mvpPlayerIdRaw && ctx.players.some(p => p.id === parseInt(mvpPlayerIdRaw, 10))
+      ? parseInt(mvpPlayerIdRaw, 10)
       : null;
 
     await prisma.publicVote.create({
@@ -437,7 +443,13 @@ router.post("/match/:matchId", async (req, res) => {
       match: ctx.match, players: ctx.players, grouped: ctx.grouped, groupedOrder: ctx.groupedOrder, token, success: false,
     });
   }
-});
+}
+
+
+router.get("/match/:matchId/:token", renderPublicVote);
+router.post("/match/:matchId/:token", handlePublicVote);
+router.get("/match/:matchId", renderPublicVote);
+router.post("/match/:matchId", handlePublicVote);
 
 
 module.exports = router;

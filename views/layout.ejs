@@ -16,6 +16,7 @@
       rel="stylesheet"
     />
     <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Pelada, stats e resenha do Horriver Plate.' %>" />
+    <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '' %>" />
 
     <!-- Favicon / Icones -->
     <!-- Icone principal em SVG (aba do navegador) -->
@@ -432,7 +433,7 @@
         admin && admin.email ? String(admin.email).toLowerCase() : null;
       const adminNameMap = {
         "coxinha@hp.com": "Coxinha",
-        "jv@horriver.com": "João Vitor",
+        "jv@horriver.com": "Joï¿½o Vitor",
         "pablo@horriver.com": "Pablo",
         "gabriel@horriver.com": "Gabriel",
         "admin@horriver.com": "Admin",
@@ -566,7 +567,7 @@
           <div class="hidden md:flex items-center gap-2 shrink-0 whitespace-nowrap">
             <% if (adminLabel) { %>
               <span class="text-[11px] md:text-xs text-horriver-gray">
-                Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
+                Olï¿½, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
               </span>
             <% } %>
             <a
@@ -653,7 +654,7 @@
           id="mobilePanel"
           role="dialog"
           aria-modal="true"
-          aria-label="Menu de navegação"
+          aria-label="Menu de navegaï¿½ï¿½o"
           tabindex="-1"
           class="relative mx-auto mt-2 w-[92%] max-w-sm max-h-[90vh] rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown flex flex-col"
         >
@@ -682,7 +683,7 @@
             <div class="mt-2 flex flex-wrap items-center gap-2 px-2">
               <% if (adminLabel) { %>
                 <span class="text-[12px] text-horriver-gray">
-                  Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
+                  Olï¿½, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
                 </span>
               <% } %>
               <% if (!isAdmin) { %>
@@ -810,9 +811,33 @@
     >
       Topo
     </button>
+    <script>
+      (() => {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        const token = meta && meta.content ? meta.content : null;
+        if (!token) return;
+
+        const ensureToken = (form) => {
+          if (!form || !form.method || form.method.toLowerCase() !== "post") return;
+          if (form.querySelector('input[name="_csrf"]')) return;
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "_csrf";
+          input.value = token;
+          form.appendChild(input);
+        };
+
+        document.addEventListener("submit", (event) => {
+          ensureToken(event.target);
+        });
+
+        document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(ensureToken);
+      })();
+    </script>
     <script src="/js/site.js?v=<%= assetVersion %>" defer></script>
   </body>
 </html>
+
 
 
 

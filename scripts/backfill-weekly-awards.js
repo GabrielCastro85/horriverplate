@@ -1,4 +1,4 @@
-﻿const prisma = require('../utils/db');
+const prisma = require('../utils/db');
 
 function startOfWeekMonday(date) {
   const d = new Date(date);
@@ -37,7 +37,7 @@ async function main() {
     const existing = await prisma.weeklyAward.findFirst({ where: { weekStart } });
     if (existing) {
       skipped++;
-      continue; // não sobrescreve
+      continue; // n�o sobrescreve
     }
 
     let best = null;
@@ -72,7 +72,7 @@ async function main() {
     created++;
   }
 
-  console.log(`Concluído. Criados: ${created}, ignorados (já existiam ou sem nota): ${skipped}`);
+  console.log(`Conclu�do. Criados: ${created}, ignorados (j� existiam ou sem nota): ${skipped}`);
 }
 
 main()
