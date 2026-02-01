@@ -65,11 +65,11 @@
 
           <div class="grid grid-cols-2 gap-3 text-sm">
             <div class="bg-black/40 border border-horriver-border/60 rounded-xl px-3 py-2">
-              <p class="text-horriver-gray text-[11px]">Posi��o</p>
+              <p class="text-horriver-gray text-[11px]">Posição</p>
               <p class="text-horriver-orange font-semibold"><%= hero.position %></p>
             </div>
             <div class="bg-black/40 border border-horriver-border/60 rounded-xl px-3 py-2">
-              <p class="text-horriver-gray text-[11px]">M�dia</p>
+              <p class="text-horriver-gray text-[11px]">Média</p>
               <p class="text-horriver-light font-semibold"><%= (hero.totalRating || 0).toFixed(2) %></p>
             </div>
             <div class="bg-black/40 border border-horriver-border/60 rounded-xl px-3 py-2">
@@ -129,13 +129,13 @@
               <% } %>
               <% if (val !== null) { %>
                 <p class="text-[11px] text-horriver-orange mt-1">
-                  <%= label === "Artilheiro" ? "Gols" : label === "Assistente" ? "Assist�ncias" : "Fotos" %>: <%= val %>
+                  <%= label === "Artilheiro" ? "Gols" : label === "Assistente" ? "Assistências" : "Fotos" %>: <%= val %>
                 </p>
               <% } %>
             </div>
           </div>
         <% } else { %>
-          <p class="text-sm text-horriver-gray mt-2">N�o definido na temporada.</p>
+          <p class="text-sm text-horriver-gray mt-2">Não definido na temporada.</p>
         <% } %>
       </div>
     <% }) %>
@@ -166,7 +166,7 @@
               <p class="text-[11px] text-horriver-gray">(<%= award.player.nickname %>)</p>
             <% } %>
           <% } else { %>
-            <p class="text-sm text-horriver-gray">N�o definido.</p>
+            <p class="text-sm text-horriver-gray">Não definido.</p>
           <% } %>
         </div>
       </div>
@@ -175,11 +175,11 @@
 
   <section class="space-y-3">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl md:text-2xl font-title text-horriver-light">Hist�rico de temporadas</h2>
-      <p class="text-xs text-horriver-gray">Pr�mios oficiais de anos anteriores.</p>
+      <h2 class="text-xl md:text-2xl font-title text-horriver-light">Histórico de temporadas</h2>
+      <p class="text-xs text-horriver-gray">Prêmios oficiais de anos anteriores.</p>
     </div>
     <% if (!seasonHistory || !seasonHistory.length) { %>
-      <p class="text-sm text-horriver-gray">Nenhum hist�rico dispon�vel.</p>
+      <p class="text-sm text-horriver-gray">Nenhum histórico disponível.</p>
     <% } else { %>
       <div class="space-y-4">
         <% seasonHistory.forEach(({ year, awards }) => { %>

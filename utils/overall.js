@@ -1,4 +1,4 @@
-// Utilidades para cálculo de overall (0-100) com pesos por posição
+// Utilidades para c—lculo de overall (0-100) com pesos por posi——o
 // Entrada esperada para cada jogador: { player, goals, assists, matches, rating }
 
 function clamp(val, min, max) {
@@ -47,9 +47,9 @@ function computeOverallFromEntries(entries) {
 
     // Raw em 0-100
     const rawOverall = Math.round(clamp(score01, 0, 1) * 100);
-    // Reescala para uma faixa mais “orgânica”: 60 (mínimo) a 95 (topo atual)
-    // Isso mantém espaço para crescimento conforme novos stats forem entrando.
-    const scaledOverall = Math.round(60 + (rawOverall / 100) * 35); // 60–95
+    // Reescala para uma faixa mais —org—nica—: 60 (mínimo) a 95 (topo atual)
+    // Isso mant—m espa—o para crescimento conforme novos stats forem entrando.
+    const scaledOverall = Math.round(60 + (rawOverall / 100) * 35); // 60—95
     const overall = clamp(scaledOverall, 60, 95);
 
     return {

@@ -2,9 +2,9 @@
   <div class="max-w-4xl mx-auto space-y-6">
     <header class="flex items-center justify-between">
       <div>
-        <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Prêmios da pelada</p>
+        <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">PrÃªmios da pelada</p>
         <h1 class="text-2xl font-semibold text-horriver-orange">
-          <%= match.description || 'Pelada' %> — <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
+          <%= match.description || 'Pelada' %> â€” <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
         </h1>
       </div>
       <button
@@ -12,7 +12,7 @@
         id="download-awards-image"
         class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
       >
-        Baixar imagem dos prêmios
+        Baixar imagem dos prÃªmios
       </button>
     </header>
 
@@ -24,7 +24,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Horriver Plate</p>
-            <h2 class="text-xl font-semibold text-horriver-light">Prêmios oficiais</h2>
+            <h2 class="text-xl font-semibold text-horriver-light">PrÃªmios oficiais</h2>
           </div>
           <div class="text-right text-xs text-horriver-gray">
             <p><%= match.description || 'Pelada' %></p>
@@ -40,10 +40,10 @@
               <% if (item) { %>
                 <p class="text-lg font-semibold text-horriver-light"><%= item.player?.name || 'Jogador' %></p>
                 <p class="text-xs text-horriver-orange">
-                  <%= item.player?.position || item.positionNorm || '-' %> • Nota: <%= item.finalRating?.toFixed(2) %>
+                  <%= item.player?.position || item.positionNorm || '-' %> â€¢ Nota: <%= item.finalRating?.toFixed(2) %>
                 </p>
                 <p class="text-[11px] text-horriver-gray mt-1">
-                  Gols: <%= item.goals || 0 %> · Assist: <%= item.assists || 0 %> · Votos: <%= item.votesCount || 0 %>
+                  Gols: <%= item.goals || 0 %> Â· Assist: <%= item.assists || 0 %> Â· Votos: <%= item.votesCount || 0 %>
                 </p>
               <% } else { %>
                 <p class="text-sm text-horriver-gray">Sem dados suficientes.</p>

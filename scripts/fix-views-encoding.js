@@ -11,7 +11,7 @@ for (const file of files) {
   const filePath = path.join(root, file);
   const buf = fs.readFileSync(filePath);
   const utf8Text = buf.toString('utf8');
-  if (/�|�|?/.test(utf8Text)) {
+  if (/–|–|?/.test(utf8Text)) {
     const repaired = decoderLatin1.decode(buf);
     fs.writeFileSync(filePath, repaired, 'utf8');
     fixed++;

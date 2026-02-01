@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
   <%
     // Flags de ambiente e admin para usar no layout todo
@@ -433,7 +433,7 @@
         admin && admin.email ? String(admin.email).toLowerCase() : null;
       const adminNameMap = {
         "coxinha@hp.com": "Coxinha",
-        "jv@horriver.com": "Joï¿½o Vitor",
+        "jv@horriver.com": "Jo–o Vitor",
         "pablo@horriver.com": "Pablo",
         "gabriel@horriver.com": "Gabriel",
         "admin@horriver.com": "Admin",
@@ -567,7 +567,7 @@
           <div class="hidden md:flex items-center gap-2 shrink-0 whitespace-nowrap">
             <% if (adminLabel) { %>
               <span class="text-[11px] md:text-xs text-horriver-gray">
-                Olï¿½, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
+                Ol–, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
               </span>
             <% } %>
             <a
@@ -654,7 +654,7 @@
           id="mobilePanel"
           role="dialog"
           aria-modal="true"
-          aria-label="Menu de navegaï¿½ï¿½o"
+          aria-label="Menu de navega––o"
           tabindex="-1"
           class="relative mx-auto mt-2 w-[92%] max-w-sm max-h-[90vh] rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown flex flex-col"
         >
@@ -683,7 +683,7 @@
             <div class="mt-2 flex flex-wrap items-center gap-2 px-2">
               <% if (adminLabel) { %>
                 <span class="text-[12px] text-horriver-gray">
-                  Olï¿½, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
+                  Ol–, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
                 </span>
               <% } %>
               <% if (!isAdmin) { %>

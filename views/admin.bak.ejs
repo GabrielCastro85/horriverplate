@@ -1,11 +1,11 @@
-<!-- CSS do Cropper (somente usado no admin) -->
+?<!-- CSS do Cropper (somente usado no admin) -->
 <link
   rel="stylesheet"
   href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css"
 />
 
 <%
-  // controla exibi+º+úo do bot+úo de recalcular (vir+í da rota /admin)
+  // controla exibi+â€”+â€”o do bot+â€”o de recalcular (vir+â€” da rota /admin)
   const showResetButton =
     typeof showReset !== "undefined" ? !!showReset : false;
 %>
@@ -22,13 +22,13 @@
           Painel do Administrador
         </h1>
         <p class="text-[11px] md:text-xs text-horriver-gray/80 mt-1">
-          Gerencie peladas, jogadores, destaques da semana, craque do mês e a premia+º+úo da temporada.
+          Gerencie peladas, jogadores, destaques da semana, craque do mâ€”s e a premia+â€”+â€”o da temporada.
         </p>
       </div>
 
       <div class="flex items-center gap-2 text-[11px] md:text-xs">
         <span class="px-3 py-1 rounded-full border border-horriver-border bg-black/50 text-horriver-gray">
-          Ambiente restrito ÔÇó Admin
+          Ambiente restrito â€”â€”â€” Admin
         </span>
       </div>
     </div>
@@ -46,7 +46,7 @@
             Nova pelada
           </h2>
           <span class="text-[11px] text-horriver-gray/70">
-            Use este card em toda ter+ºa.
+            Use este card em toda ter+â€”a.
           </span>
         </div>
 
@@ -65,12 +65,12 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
-              Descri+º+úo (opcional)
+              Descri+â€”+â€”o (opcional)
             </label>
             <input
               type="text"
               name="description"
-              placeholder="ex: Pelada da ter+ºa +á noite"
+              placeholder="ex: Pelada da ter+â€”a +â€” noite"
               class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light placeholder:text-horriver-gray/60 focus:outline-none focus:ring-1 focus:ring-horriver-orange"
             />
           </div>
@@ -112,7 +112,7 @@
             type="button"
             class="hidden text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
           >
-            Cancelar edi+º+úo
+            Cancelar edi+â€”+â€”o
           </button>
         </div>
 
@@ -156,7 +156,7 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
-              Posi+º+úo
+              Posi+â€”+â€”o
             </label>
             <select
               name="position"
@@ -185,7 +185,7 @@
               class="block w-full text-[11px] md:text-xs text-horriver-gray"
             />
             <p class="text-[10px] text-horriver-gray/70">
-              Aceita JPG/PNG, at+® 5MB. Usado apenas ao cadastrar um novo jogador.
+              Aceita JPG/PNG, at+â€” 5MB. Usado apenas ao cadastrar um novo jogador.
             </p>
           </div>
 
@@ -217,7 +217,7 @@
         >
           <span
             class="inline-block w-4 text-center"
-          >Ôû+</span>
+          >â€”â€”+</span>
           <span data-collapse-label-players>Mostrar lista</span>
         </button>
       <% } %>
@@ -240,8 +240,8 @@
                 <tr class="border-b border-horriver-border/70 text-horriver-gray/80">
                   <th class="py-2 pr-3 text-left font-normal">Jogador</th>
                   <th class="py-2 pr-3 text-left font-normal">Apelido</th>
-                  <th class="py-2 pr-3 text-left font-normal">Posi+º+úo</th>
-                  <th class="py-2 pr-3 text-left font-normal">A+º+Áes</th>
+                  <th class="py-2 pr-3 text-left font-normal">Posi+â€”+â€”o</th>
+                  <th class="py-2 pr-3 text-left font-normal">A+â€”+â€”es</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,7 +315,7 @@
                         <form
                           action="/admin/players/<%= p.id %>/delete"
                           method="POST"
-                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estat+¡sticas.');"
+                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estat+â€”sticas.');"
                         >
                           <button
                             type="submit"
@@ -354,7 +354,7 @@
                 class="bg-black/50 border border-horriver-border rounded-lg px-2 py-1 text-horriver-light"
                 onchange="this.form.submit()"
               >
-                <option value="default" <%= (skin === 'default') ? 'selected' : '' %>>Padrão</option>
+                <option value="default" <%= (skin === 'default') ? 'selected' : '' %>>Padrâ€”o</option>
                 <option value="game-day" <%= (skin === 'game-day') ? 'selected' : '' %>>Dia de Jogo</option>
               </select>
             </form>
@@ -364,7 +364,7 @@
               class="inline-flex items-center gap-1 text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
               data-collapse-trigger="matches-list"
             >
-          <span class="inline-block w-4 text-center">Ôû+</span>
+          <span class="inline-block w-4 text-center">â€”â€”+</span>
           <span data-collapse-label-matches>Mostrar lista</span>
         </button>
       <% } %>
@@ -394,9 +394,9 @@
                   <thead>
                     <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
                       <th class="py-2 pr-4 text-left font-normal">Data</th>
-                      <th class="py-2 pr-4 text-left font-normal">Descri+º+úo</th>
+                      <th class="py-2 pr-4 text-left font-normal">Descri+â€”+â€”o</th>
                       <th class="py-2 pr-4 text-left font-normal">Vencedor</th>
-                      <th class="py-2 pr-4 text-left font-normal">A+º+Áes</th>
+                      <th class="py-2 pr-4 text-left font-normal">A+â€”+â€”es</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -418,7 +418,7 @@
                             href="/admin/matches/<%= match.id %>"
                             class="text-[11px] text-horriver-orange hover:underline"
                           >
-                            Estat+¡sticas
+                            Estat+â€”sticas
                           </a>
 
                           <form
@@ -448,7 +448,7 @@
   </section>
 
   <!-- =====================================================
-       DESTAQUE DA SEMANA & CRAQUE DO M+èS
+       DESTAQUE DA SEMANA & CRAQUE DO M+â€”S
   ====================================================== -->
   <section class="grid lg:grid-cols-2 gap-8">
     <!-- DESTAQUE DA SEMANA -->
@@ -468,7 +468,7 @@
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Semana (data de in+¡cio)
+            Semana (data de in+â€”cio)
           </label>
           <input
             id="weekly_weekStart"
@@ -528,10 +528,10 @@
             class="block w-full text-[11px] md:text-xs text-horriver-gray"
           />
           <p class="text-[10px] text-horriver-gray/70">
-            Assim que você escolher uma imagem, o editor de corte aparece logo abaixo.
+            Assim que vocâ€” escolher uma imagem, o editor de corte aparece logo abaixo.
           </p>
 
-          <!-- +ürea de crop -->
+          <!-- +â€”rea de crop -->
           <div
             id="teamPhotoCropContainer"
             class="mt-2 hidden space-y-2"
@@ -545,7 +545,7 @@
               <img
                 id="teamPhotoCropImage"
                 class="max-w-full block"
-                alt="Pr+®-visualiza+º+úo do corte"
+                alt="Pr+â€”-visualiza+â€”+â€”o do corte"
               />
             </div>
             <button
@@ -559,7 +559,7 @@
               id="teamPhotoCropDone"
               class="text-[10px] text-horriver-gray/70 hidden"
             >
-              Corte aplicado! A imagem ser+í enviada j+í recortada.
+              Corte aplicado! A imagem ser+â€” enviada j+â€” recortada.
             </p>
           </div>
         </div>
@@ -572,10 +572,10 @@
         </button>
       </form>
 
-      <!-- Lista +¦ltimos destaques -->
+      <!-- Lista +â€”ltimos destaques -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          +Ültimos destaques
+          +â€”ltimos destaques
         </h3>
 
         <% if (!weeklyAwards.length) { %>
@@ -600,7 +600,7 @@
                     <span class="text-horriver-light">
                       <%= w.bestPlayer
                         ? w.bestPlayer.name + (w.bestPlayer.nickname ? " (" + w.bestPlayer.nickname + ")" : "")
-                        : "ÔÇö"
+                        : "â€”â€”â€”"
                       %>
                     </span>
                   </p>
@@ -638,11 +638,11 @@
       </div>
     </div>
 
-    <!-- CRAQUE DO M+èS -->
+    <!-- CRAQUE DO M+â€”S -->
     <div class="card-inner rounded-2xl p-6 md:p-7 space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-          Craque do mês
+          Craque do mâ€”s
         </h2>
       </div>
 
@@ -654,7 +654,7 @@
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Mês
+            Mâ€”s
           </label>
           <select
             id="monthly_month"
@@ -665,7 +665,7 @@
             <option value="">Selecione</option>
             <option value="1">Janeiro</option>
             <option value="2">Fevereiro</option>
-            <option value="3">Mar+ºo</option>
+            <option value="3">Mar+â€”o</option>
             <option value="4">Abril</option>
             <option value="5">Maio</option>
             <option value="6">Junho</option>
@@ -694,7 +694,7 @@
 
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Craque do mês (opcional)
+            Craque do mâ€”s (opcional)
           </label>
           <select
             id="monthly_craque"
@@ -714,19 +714,19 @@
           type="submit"
           class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Salvar craque do mês
+          Salvar craque do mâ€”s
         </button>
       </form>
 
-      <!-- Lista +¦ltimos craques do mês -->
+      <!-- Lista +â€”ltimos craques do mâ€”s -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          +Ültimos craques do mês
+          +â€”ltimos craques do mâ€”s
         </h3>
 
         <% if (!monthlyAwards.length) { %>
           <p class="text-[11px] text-horriver-gray/70">
-            Nenhum craque do mês cadastrado.
+            Nenhum craque do mâ€”s cadastrado.
           </p>
         <% } else { %>
           <ul class="space-y-2 text-[11px] md:text-xs">
@@ -745,7 +745,7 @@
                     <span class="text-horriver-light">
                       <%= m.craque
                         ? m.craque.name + (m.craque.nickname ? " (" + m.craque.nickname + ")" : "")
-                        : "ÔÇö"
+                        : "â€”â€”â€”"
                       %>
                     </span>
                   </p>
@@ -766,7 +766,7 @@
                   <form
                     action="/admin/monthly-awards/<%= m.id %>/delete"
                     method="POST"
-                    onsubmit="return confirm('Remover esse craque do mês?');"
+                    onsubmit="return confirm('Remover esse craque do mâ€”s?');"
                   >
                     <button
                       type="submit"
@@ -785,24 +785,24 @@
   </section>
 
   <!-- =====================================================
-       PREMIA+ç+âO DA TEMPORADA
+       PREMIA+â€”+â€”O DA TEMPORADA
   ====================================================== -->
   <section class="pt-4 border-t border-horriver-border/60">
     <div class="card-inner rounded-2xl p-5 md:p-6 space-y-4">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-            Premia+º+úo da temporada
+            Premia+â€”+â€”o da temporada
           </h2>
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Cadastre os prêmios de fim de ano (melhor jogador, artilheiro, por posi+º+úo, etc).
+            Cadastre os prâ€”mios de fim de ano (melhor jogador, artilheiro, por posi+â€”+â€”o, etc).
           </p>
         </div>
         <a
           href="/admin/premiacao"
           class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Gerenciar premia+º+úo da temporada
+          Gerenciar premia+â€”+â€”o da temporada
         </a>
       </div>
 
@@ -834,7 +834,7 @@
       <% if (hasSeasonAwards && latestAwards.length) { %>
         <div class="mt-2 space-y-3">
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Campe+Áes atuais da temporada
+            Campe+â€”es atuais da temporada
             <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
           </p>
           <div class="overflow-x-auto text-[11px] md:text-xs">
@@ -855,7 +855,7 @@
                       <% if (a.player) { %>
                         <%= a.player.name %><% if (a.player.nickname) { %> (<%= a.player.nickname %>)<% } %>
                       <% } else { %>
-                        ÔÇö
+                        â€”â€”â€”
                       <% } %>
                     </td>
                   </tr>
@@ -866,7 +866,7 @@
         </div>
       <% } else { %>
         <p class="text-[11px] md:text-xs text-horriver-gray/80">
-          Nenhuma premia+º+úo cadastrada ainda. Clique em "Gerenciar premia+º+úo da temporada" para come+ºar.
+          Nenhuma premia+â€”+â€”o cadastrada ainda. Clique em "Gerenciar premia+â€”+â€”o da temporada" para come+â€”ar.
         </p>
       <% } %>
     </div>
@@ -878,7 +878,7 @@
               Recalcular overalls e conquistas
             </h3>
             <p class="text-[10px] md:text-xs text-horriver-gray/80">
-              Usa as estatísticas atuais (gols, assistências, presenças e notas) com pesos por posição, grava histórico e reavalia as conquistas automáticas.
+              Usa as estatâ€”sticas atuais (gols, assistâ€”ncias, presenâ€”as e notas) com pesos por posiâ€”â€”o, grava histâ€”rico e reavalia as conquistas automÃ¡ticas.
             </p>
           </div>
           <div class="flex items-center gap-2">
@@ -911,8 +911,8 @@
       </div>
     </section>
 <!-- =====================================================
-       BOT+âO OCULTO: REINICIAR TOTAIS
-       (s+¦ aparece se showReset === true vindo da rota)
+       BOT+â€”O OCULTO: REINICIAR TOTAIS
+       (s+â€” aparece se showReset === true vindo da rota)
   ====================================================== -->
   <% if (showResetButton) { %>
     <section class="pt-4 border-t border-horriver-border/60">
@@ -920,7 +920,7 @@
         method="POST"
         action="/admin/recalculate-totals"
         class="inline"
-        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estat+¡sticas.');"
+        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estat+â€”sticas.');"
       >
         <button
           type="submit"
@@ -937,7 +937,7 @@
 </div>
 
 <!-- =====================================================
-     SCRIPTS: CROPPER + L+ôGICA DO PAINEL
+     SCRIPTS: CROPPER + L+â€”GICA DO PAINEL
 ====================================================== -->
 <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 
@@ -978,8 +978,8 @@
       playerForm.removeAttribute("enctype");
       playerFormTitle.textContent = "Editar jogador";
       playerFormHint.textContent =
-        'Editando o jogador selecionado. Clique em "Cancelar edi+º+úo" para voltar ao modo de cadastro.';
-      playerSubmit.textContent = "Salvar altera+º+Áes";
+        'Editando o jogador selecionado. Clique em "Cancelar edi+â€”+â€”o" para voltar ao modo de cadastro.';
+      playerSubmit.textContent = "Salvar altera+â€”+â€”es";
       playerCancelEdit.classList.remove("hidden");
       if (playerPhotoBlock) playerPhotoBlock.classList.add("hidden");
 
@@ -1006,7 +1006,7 @@
       setCreateMode();
     });
 
-    // come+ºa em modo criar
+    // come+â€”a em modo criar
     setCreateMode();
 
     // ============ EDITAR WEEKLY ============
@@ -1081,7 +1081,7 @@
 
           if (typeof Cropper === "undefined") {
             alert(
-              "Ferramenta de corte n+úo carregou. Verifique sua conex+úo com a internet."
+              "Ferramenta de corte n+â€”o carregou. Verifique sua conex+â€”o com a internet."
             );
             return;
           }
@@ -1152,7 +1152,7 @@
         labelEl.textContent = hidden ? "Mostrar lista" : "Esconder lista";
         const iconSpan = trigger.querySelector("span:first-child");
         if (iconSpan) {
-          iconSpan.textContent = hidden ? "Ôû+" : "Ôû¦";
+          iconSpan.textContent = hidden ? "â€”â€”+" : "â€”â€”â€”";
         }
       }
 

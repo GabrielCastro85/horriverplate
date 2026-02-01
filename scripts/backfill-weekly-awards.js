@@ -37,7 +37,7 @@ async function main() {
     const existing = await prisma.weeklyAward.findFirst({ where: { weekStart } });
     if (existing) {
       skipped++;
-      continue; // n�o sobrescreve
+      continue; // não sobrescreve
     }
 
     let best = null;
@@ -72,7 +72,7 @@ async function main() {
     created++;
   }
 
-  console.log(`Conclu�do. Criados: ${created}, ignorados (j� existiam ou sem nota): ${skipped}`);
+  console.log(`Conclu–do. Criados: ${created}, ignorados (j– existiam ou sem nota): ${skipped}`);
 }
 
 main()

@@ -2,15 +2,15 @@
 //
 // Como usar:
 //
-// 1) Certifique-se de que j� existem as peladas (Matches) no banco
-//    - voc� j� rodou o importMatchesFromExcel.js antes, ent�o ok.
+// 1) Certifique-se de que j– existem as peladas (Matches) no banco
+//    - voc– j– rodou o importMatchesFromExcel.js antes, ent–o ok.
 // 2) Tenha o arquivo "PELADA RESENHA - Copia.xlsx" na raiz do projeto.
 // 3) Rode: node scripts/importStatsFromExcel.js
 //
 // O script:
 //  - Percorre abas JAN, FEV, MAR... (ignora TOTAL)
 //  - Identifica as colunas de cada pelada (data + PRESENTE)
-//  - Para cada jogador (linha), l�: PRESENTE, GOL, ASSIST, NOTA, FOTO
+//  - Para cada jogador (linha), l–: PRESENTE, GOL, ASSIST, NOTA, FOTO
 //  - Cria/atualiza PlayerStat para (player, match)
 //  - Ao final, recalcula os totais para todos os jogadores tocados.
 //
@@ -25,21 +25,21 @@ const prisma = require("../utils/db");
 // Helpers de nome/jogador
 // ==========================
 
-// Remove acentos, par�nteses com (GK), etc.
+// Remove acentos, par–nteses com (GK), etc.
 function normalizeName(str) {
   if (!str) return "";
   let s = String(str).trim();
 
-  // remove conte�do entre par�nteses, ex: "Breno (GK)" -> "Breno"
+  // remove conte–do entre par–nteses, ex: "Breno (GK)" -> "Breno"
   s = s.replace(/\([^)]*\)/g, "");
 
-  // pega s� antes de " - " (ex: "Lucas Gama - Passarim" -> "Lucas Gama")
+  // pega s– antes de " - " (ex: "Lucas Gama - Passarim" -> "Lucas Gama")
   const dashIdx = s.indexOf(" - ");
   if (dashIdx !== -1) {
     s = s.slice(0, dashIdx);
   }
 
-  // normaliza acentos, caixa, espa�os
+  // normaliza acentos, caixa, espa–os
   s = s
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -136,7 +136,7 @@ function parsePresent(value) {
   return ["x", "p", "1", "sim", "s", "ok"].includes(s);
 }
 
-// Interpreta num�rico (gols, assist)
+// Interpreta num–rico (gols, assist)
 function parseIntSafe(v) {
   if (v == null || v === "") return 0;
   const n = parseInt(String(v).replace(",", "."), 10);
@@ -206,7 +206,7 @@ async function main() {
       }
     }
 
-    // tamb�m tentamos com nome + apelido (caso �til depois)
+    // tamb–m tentamos com nome + apelido (caso útil depois)
     if (p.nickname) {
       const combo = normalizeName(p.name + " " + p.nickname);
       if (combo && !playerMap.has(combo)) {
@@ -248,7 +248,7 @@ async function main() {
       continue;
     }
 
-    // Mesma l�gica do script anterior:
+    // Mesma l–gica do script anterior:
     // rows[2] -> linha 3: datas + "JOGADOR"
     // rows[3] -> linha 4: "PRESENTE", "GOL", "ASSIST", "NOTA", (col vazia para FOTO)
     const headerDates = rows[2];
@@ -275,7 +275,7 @@ async function main() {
         // col+1:   GOL
         // col+2:   ASSIST
         // col+3:   NOTA
-        // col+4:   FOTO (sem cabe�alho, mas preenchido com "F")
+        // col+4:   FOTO (sem cabe–alho, mas preenchido com "F")
         const goalsCol = col + 1;
         const assistsCol = col + 2;
         const ratingCol = col + 3;
@@ -295,7 +295,7 @@ async function main() {
 
     if (!matchColumns.length) {
       console.warn(
-        `  ??  Aba ${sheetName}: n�o encontrei colunas (data + PRESENTE).`
+        `  ??  Aba ${sheetName}: não encontrei colunas (data + PRESENTE).`
       );
       continue;
     }
@@ -311,12 +311,12 @@ async function main() {
       );
     });
 
-    // Dados come�am a partir da linha 5 (�ndice 4) em diante
+    // Dados come–am a partir da linha 5 (índice 4) em diante
     for (let rowIndex = 4; rowIndex < rows.length; rowIndex++) {
       const row = rows[rowIndex];
       if (!row || !row.length) continue;
 
-      // ?? Nome est� na coluna B (�ndice 1), coluna A � vazia
+      // ?? Nome est– na coluna B (índice 1), coluna A – vazia
       const rawName = row[1];
       if (!rawName || String(rawName).trim() === "") {
         continue;
@@ -346,7 +346,7 @@ async function main() {
 
         if (!match) {
           console.warn(
-            `  ??  N�o encontrei Match no banco para data ${matchKey} (aba ${sheetName}).`
+            `  ??  Não encontrei Match no banco para data ${matchKey} (aba ${sheetName}).`
           );
           continue;
         }
@@ -373,7 +373,7 @@ async function main() {
           rating !== null ||
           appearedInPhoto;
 
-        // Se n�o tem nada pra esse jogador nessa pelada, apaga stat (se existir) e segue
+        // Se não tem nada pra esse jogador nessa pelada, apaga stat (se existir) e segue
         if (!hasAnyData) {
           const existing = await prisma.playerStat.findFirst({
             where: { playerId, matchId },
@@ -386,7 +386,7 @@ async function main() {
           continue;
         }
 
-        // upsert manual: se existir, atualiza; sen�o cria
+        // upsert manual: se existir, atualiza; senão cria
         const existing = await prisma.playerStat.findFirst({
           where: { playerId, matchId },
         });
@@ -422,13 +422,13 @@ async function main() {
   }
 
   console.log("\n-----");
-  console.log(`? Importa��o de estat�sticas conclu�da.`);
+  console.log(`? Importa––o de estatísticas conclu–da.`);
   console.log(`  PlayerStats criados: ${statsCreated}`);
   console.log(`  PlayerStats atualizados: ${statsUpdated}`);
   console.log(`  Jogadores tocados: ${touchedPlayerIds.size}`);
 
   if (unmatchedPlayers.size) {
-    console.log("\n?? Jogadores na planilha N�O encontrados no banco:");
+    console.log("\n?? Jogadores na planilha N–O encontrados no banco:");
     for (const name of unmatchedPlayers) {
       console.log("   -", name);
     }
@@ -442,7 +442,7 @@ async function main() {
 
 main()
   .catch((err) => {
-    console.error("? Erro ao importar estat�sticas:", err);
+    console.error("? Erro ao importar estatísticas:", err);
   })
   .finally(async () => {
     await prisma.$disconnect();

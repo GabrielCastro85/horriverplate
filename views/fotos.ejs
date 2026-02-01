@@ -2,7 +2,7 @@
   <header class="space-y-2">
     <h1 class="font-title text-3xl text-horriver-light">Fotos</h1>
     <p class="text-sm text-horriver-gray">
-      Registros do time vencedor, craque da semana e craque do mês.
+      Registros do time vencedor, craque da semana e craque do mÃªs.
     </p>
   </header>
 
@@ -83,7 +83,7 @@
                       <%= new Date(award.weekStart).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
                     </span>
                     <% if (award.winningMatch?.description) { %>
-                      · <%= award.winningMatch.description %>
+                      Â· <%= award.winningMatch.description %>
                     <% } %>
                   </p>
                   <% if (award.winningMatch?.playedAt) { %>
@@ -94,9 +94,9 @@
             </div>
           <% } else if (item.type === 'monthly') { const award = item.entry.award; const stats = item.entry.stats; %>
             <section class="rounded-2xl border border-horriver-border bg-black/40 p-4 space-y-3">
-              <h2 class="font-title text-xl text-horriver-orange">Craque do mês</h2>
+              <h2 class="font-title text-xl text-horriver-orange">Craque do mÃªs</h2>
               <% if (!award?.craque) { %>
-                <p class="text-sm text-horriver-gray">Nenhum craque do mês definido.</p>
+                <p class="text-sm text-horriver-gray">Nenhum craque do mÃªs definido.</p>
               <% } else { %>
                 <div class="flex items-center gap-3">
                   <img

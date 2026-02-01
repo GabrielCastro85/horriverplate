@@ -1,5 +1,5 @@
 <% /* =====================================================================
-//  Página de Edição de Jogador
+//  Página de Edi——o de Jogador
 // ================================================================== */ %>
 
 <div>
@@ -24,11 +24,11 @@
     <div>
       <label for="whatsapp" class="block text-xs mb-1">Telefone (WhatsApp)</label>
       <input type="tel" name="whatsapp" id="whatsapp" value="<%= player.whatsapp ? player.whatsapp.slice(2) : '' %>" placeholder="21999998888" class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
-      <p class="text-xs text-horriver-gray mt-1">Apenas números (DDD + número). O +55 será adicionado automaticamente.</p>
+      <p class="text-xs text-horriver-gray mt-1">Apenas números (DDD + número). O +55 ser— adicionado automaticamente.</p>
     </div>
 
     <div>
-      <label for="position" class="block text-xs mb-1">Posição Principal</label>
+      <label for="position" class="block text-xs mb-1">Posi——o Principal</label>
       <select name="position" id="position" required class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange">
         <option value="GOL" <%= player.position === 'GOL' ? 'selected' : '' %>>Goleiro</option>
         <option value="ZAG" <%= player.position === 'ZAG' ? 'selected' : '' %>>Zagueiro</option>
@@ -49,7 +49,7 @@
         value="<%= typeof player.baseOverall === 'number' ? player.baseOverall : 60 %>"
         class="w-full bg-horriver-dark border border-horriver-gray-light rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-horriver-orange"
       />
-      <p class="text-xs text-horriver-gray mt-1">Valor inicial manual; o overall dinâmico usa este número como ponto de partida.</p>
+      <p class="text-xs text-horriver-gray mt-1">Valor inicial manual; o overall din—mico usa este número como ponto de partida.</p>
     </div>
 
     <div>
@@ -68,7 +68,7 @@
           <option value="active" <%= player.hallReason !== 'Aposentado' ? 'selected' : '' %>>Ativo</option>
           <option value="retired" <%= player.hallReason === 'Aposentado' ? 'selected' : '' %>>Aposentado (aparece no Hall)</option>
         </select>
-        <p class="text-xs text-horriver-gray mt-1">Selecione “Aposentado” para aparecer na seção de aposentados do Hall.</p>
+        <p class="text-xs text-horriver-gray mt-1">Selecione —Aposentado— para aparecer na se——o de aposentados do Hall.</p>
       </div>
       <div>
         <label for="hallReason" class="block text-xs mb-1">Motivo (opcional)</label>
@@ -77,7 +77,7 @@
     </div>
 
     <div class="pt-4">
-      <button type="submit" class="w-full bg-horriver-orange text-horriver-dark font-bold py-2 rounded-md hover:bg-opacity-80 transition">Salvar Alterações</button>
+      <button type="submit" class="w-full bg-horriver-orange text-horriver-dark font-bold py-2 rounded-md hover:bg-opacity-80 transition">Salvar Altera——es</button>
     </div>
   </form>
 </div>

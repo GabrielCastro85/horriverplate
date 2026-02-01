@@ -32,7 +32,7 @@ async function main() {
       updated++;
     }
   }
-  console.log(`Normaliza��o conclu�da. Atualizados: ${updated}`);
+  console.log(`Normaliza––o conclu–da. Atualizados: ${updated}`);
 }
 
 main()

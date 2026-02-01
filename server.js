@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
@@ -18,7 +18,7 @@ const loginRouter = require("./routes/login");
 const rankingsRouter = require("./routes/rankings");
 const elencoRouter = require("./routes/elenco");
 const sobreRouter = require("./routes/sobre");
-const awardsRouter = require("./routes/awards"); // ? NOVO: rota da premia��o
+const awardsRouter = require("./routes/awards"); // ? NOVO: rota da premiação
 const playerRouter = require("./routes/player");
 const voteRouter = require("./routes/vote");
 const monthlyVoteRouter = require("./routes/monthly_vote");
@@ -49,12 +49,12 @@ const IS_PROD = process.env.NODE_ENV === "production";
 app.disable("x-powered-by");
 
 // ==============================
-// ?? View engine (EJS + layouts)
+// View engine (EJS + layouts)
 // ==============================
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(expressLayouts);
-app.set("layout", "layout"); // usa views/layout.ejs como layout padr�o
+app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
 app.locals.assetVersion = ASSET_VERSION;
 app.locals.thumbUrl = (url, width) => {
   if (!url || !width) return url;
@@ -66,7 +66,7 @@ app.locals.thumbUrl = (url, width) => {
 };
 
 // ==============================
-// ?? Middlewares b�sicos
+// Middlewares básicos
 // ==============================
 app.use(compression());
 app.use(express.urlencoded({ extended: true }));
@@ -169,13 +169,13 @@ app.use((req, res, next) => {
 });
 
 // ==============================
-// ?? Skins din�micas
+// Skins dinâmicas
 // ==============================
 app.use((req, res, next) => {
   const allowedSkins = ["default", "game-day"];
   let skin = null;
 
-  // Prioridade: query > cookie > autom�tica (ter�a)
+  // Prioridade: query > cookie > automática (terça)
   if (req.query.skin && allowedSkins.includes(req.query.skin)) {
     skin = req.query.skin;
     // persiste override por 7 dias
@@ -186,7 +186,7 @@ app.use((req, res, next) => {
 
   if (!skin) {
     const now = new Date();
-    const isTuesday = now.getDay() === 2; // ter�a-feira
+    const isTuesday = now.getDay() === 2; // terça-feira
     skin = isTuesday ? "game-day" : "default";
   }
 
@@ -196,7 +196,7 @@ app.use((req, res, next) => {
 });
 
 // ==============================
-// ??? Middleware: autentica��o admin via JWT no cookie
+// Middleware: autenticação admin via JWT no cookie
 // ==============================
 async function setAdminFromToken(req, res, next) {
   try {
@@ -240,7 +240,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Deixa dispon�vel a rota atual (pra menus ativos, etc.)
+// Deixa disponível a rota atual (pra menus ativos, etc.)
 app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   next();
@@ -295,7 +295,7 @@ app.use("/", indexRouter);
 app.use("/rankings", rankingsRouter);
 app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
-app.use("/premiacao", awardsRouter); // ? NOVO: p�gina de premia��o
+app.use("/premiacao", awardsRouter); // ? NOVO: página de premiação
 app.use("/jogador", playerRouter);
 app.use("/admin", adminRouter);
 app.use("/vote", voteRouter);
@@ -303,7 +303,7 @@ app.use("/monthly-vote", monthlyVoteRouter);
 
 
 // ==============================
-// 404 � sempre por �ltimo
+// 404 – sempre por último
 // ==============================
 app.use((req, res) => {
   res.status(404).render("404", { title: "404" });
@@ -312,12 +312,12 @@ app.use((req, res) => {
 // Handler de CSRF
 app.use((err, req, res, next) => {
   if (err && err.code === "EBADCSRFTOKEN") {
-    return res.status(403).send("Sess�o inv�lida. Atualize a p�gina e tente novamente.");
+    return res.status(403).send("Sessão inválida. Atualize a página e tente novamente.");
   }
   next(err);
 });
 
-// Handler gen�rico de erro
+// Handler genérico de erro
 app.use((err, req, res, next) => {
   console.error("?? Erro inesperado:", err);
   res.status(500).send("Erro interno do servidor");
@@ -332,7 +332,7 @@ app.listen(PORT, () => {
 });
 
 // ==============================
-// ?? Backup autom�tico (1x por dia)
+// Backup automático (1x por dia)
 // ==============================
 if (process.env.NODE_ENV === "production") {
   scheduleBackup({ reason: "startup" });
@@ -340,6 +340,8 @@ if (process.env.NODE_ENV === "production") {
     scheduleBackup({ reason: "auto" });
   }, 24 * 60 * 60 * 1000);
 }
+
+
 
 
 
