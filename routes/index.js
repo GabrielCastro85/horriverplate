@@ -62,6 +62,13 @@ function getNextTuesdayAtHour(baseDate, hour = 20) {
   return target;
 }
 
+function getMonthRangeSaoPaulo(year, month) {
+  // Sao Paulo is UTC-3; use UTC boundaries to avoid TZ drift in DB comparisons.
+  const start = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 1, 3, 0, 0, 0));
+  return { start, end };
+}
+
 async function ensureNextTuesdayMatch(baseDate) {
   const target = getNextTuesdayAtHour(baseDate, 20);
   const dayStart = startOfDay(target);
@@ -116,21 +123,43 @@ router.get("/", async (req, res) => {
     });
 
     let monthlyStats = null;
+    let monthlyStatsMonth = null;
+    let monthlyStatsYear = null;
     if (monthlyCraque?.craqueId) {
       const { month, year } = monthlyCraque;
-      const monthStart = new Date(year, month - 1, 1);
-      const monthEnd = new Date(year, month, 0);
-      monthStart.setHours(0, 0, 0, 0);
-      monthEnd.setHours(23, 59, 59, 999);
+      const { start: monthStart, end: monthEnd } = getMonthRangeSaoPaulo(year, month);
 
-      const stats = await prisma.playerStat.findMany({
+      let stats = await prisma.playerStat.findMany({
         where: {
           playerId: monthlyCraque.craqueId,
           match: {
-            playedAt: { gte: monthStart, lte: monthEnd },
+            playedAt: { gte: monthStart, lt: monthEnd },
           },
         },
       });
+
+      if (!stats.length) {
+        const latestStat = await prisma.playerStat.findFirst({
+          where: { playerId: monthlyCraque.craqueId },
+          include: { match: true },
+          orderBy: { match: { playedAt: "desc" } },
+        });
+
+        if (latestStat?.match?.playedAt) {
+          const ref = new Date(latestStat.match.playedAt);
+          const refMonth = ref.getMonth() + 1;
+          const refYear = ref.getFullYear();
+          const range = getMonthRangeSaoPaulo(refYear, refMonth);
+          stats = await prisma.playerStat.findMany({
+            where: {
+              playerId: monthlyCraque.craqueId,
+              match: { playedAt: { gte: range.start, lt: range.end } },
+            },
+          });
+          monthlyStatsMonth = refMonth;
+          monthlyStatsYear = refYear;
+        }
+      }
 
       let goals = 0,
         assists = 0,
@@ -157,6 +186,10 @@ router.get("/", async (req, res) => {
         photos,
         avgRating: ratingCount ? ratingSum / ratingCount : 0,
       };
+      if (!monthlyStatsMonth || !monthlyStatsYear) {
+        monthlyStatsMonth = month;
+        monthlyStatsYear = year;
+      }
     }
 
     // =====================================================
@@ -307,6 +340,8 @@ router.get("/", async (req, res) => {
 
       monthlyCraque,
       monthlyStats,
+      monthlyStatsMonth,
+      monthlyStatsYear,
       weeklyAward,
       weeklyStats,
 
@@ -811,5 +846,6 @@ router.get("/achievements", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
