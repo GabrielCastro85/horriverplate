@@ -1840,6 +1840,7 @@
     const statusEl = document.getElementById("sorterStatus");
     try {
     const matchId = <%= match.id %>;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
     const form = document.getElementById("sorterForm");
     const resultsEl = document.getElementById("sorterResults");
     const shareBox = document.getElementById("sorterShare");
@@ -1873,16 +1874,18 @@
     const guests = [];
     const seedIds = new Set();
     const guestsStorageKey = `hp_match_${matchId}_guests`;
+    const seedStorageKey = `hp_match_${matchId}_seeds`;
 
     function getPresentIdsFromForm() {
-      return Array.from(document.querySelectorAll('input[name^="present_"]'))
+      const ids = Array.from(document.querySelectorAll('input[name^="present_"]'))
         .filter((cb) => cb.checked)
         .map((cb) => cb.name.replace("present_", ""))
         .filter(Boolean);
+      return Array.from(new Set(ids));
     }
 
     function getPresentPlayersDetail() {
-      return Array.from(document.querySelectorAll('input[name^="present_"]'))
+      const players = Array.from(document.querySelectorAll('input[name^="present_"]'))
         .filter((cb) => cb.checked)
         .map((cb) => ({
           id: cb.name.replace("present_", ""),
@@ -1890,6 +1893,12 @@
           position: cb.dataset.playerPosition || "",
           strength: Number(cb.dataset.playerStrength || cb.dataset.playerOverall || 0),
         }));
+      const unique = new Map();
+      players.forEach((p) => {
+        if (!p.id || unique.has(p.id)) return;
+        unique.set(p.id, p);
+      });
+      return Array.from(unique.values());
     }
 
     function isGoalkeeperPosition(pos = "") {
@@ -1904,6 +1913,7 @@
       Array.from(seedIds).forEach((id) => {
         if (!allowedIds.has(id)) seedIds.delete(id);
       });
+      localStorage.setItem(seedStorageKey, JSON.stringify(Array.from(seedIds)));
       if (!presentPlayers.length) {
         seedList.innerHTML = `<span class="text-horriver-gray">Marque presenças para escolher os cabeças de chave.</span>`;
         return;
@@ -1929,6 +1939,7 @@
       if (!id) return;
       if (cb.checked) seedIds.add(id);
       else seedIds.delete(id);
+      localStorage.setItem(seedStorageKey, JSON.stringify(Array.from(seedIds)));
     });
 
     document.querySelectorAll('input[name^="present_"]').forEach((cb) => {
@@ -1937,6 +1948,16 @@
         updateAvailableList();
       });
     });
+
+    // Restaura cabeças de chave ao recarregar
+    try {
+      const storedSeeds = JSON.parse(localStorage.getItem(seedStorageKey) || "[]");
+      if (Array.isArray(storedSeeds)) {
+        storedSeeds.forEach((id) => seedIds.add(String(id)));
+      }
+    } catch (err) {
+      console.warn("Falha ao restaurar seeds:", err);
+    }
     renderSeedList();
 
     function syncGuestsField() {
@@ -2433,9 +2454,11 @@
       }
 
       try {
+        const headers = { "Content-Type": "application/json" };
+        if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
         const resp = await fetch(`/admin/matches/${matchId}/save-lineup`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ ...payload, source }),
         });
         const data = await resp.json().catch(() => ({}));
@@ -2477,9 +2500,11 @@
       const payload = { guests: guestsField.value || "", presentIds, seedIds: Array.from(seedIds) };
 
       try {
+        const headers = { "Content-Type": "application/json" };
+        if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
         const resp = await fetch(`/admin/matches/${matchId}/sort-teams`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(payload),
         });
         const data = await resp.json();

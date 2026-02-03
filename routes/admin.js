@@ -2721,26 +2721,31 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       }
     });
 
-    // 6. Validar n–mero m–nimo de jogadores de linha
+    // 6. Validar n–mero m–nimo de jogadores (linha + goleiros)
     const MIN_PLAYERS_PER_TEAM = 6;
-    const requiredFieldPlayers = MIN_PLAYERS_PER_TEAM * 2;
-    if (fieldPlayers.length < requiredFieldPlayers) {
-      return res.status(400).json({ error: `S–o necess–rios pelo menos ${requiredFieldPlayers} jogadores de linha para formar 2 times. Atualmente: ${fieldPlayers.length}.` });
+    const totalPlayers = fieldPlayers.length + guestEntries.length;
+    const minPlayersForTwoTeams = MIN_PLAYERS_PER_TEAM * 2;
+    if (totalPlayers < minPlayersForTwoTeams) {
+      return res.status(400).json({ error: `S–o necess–rios pelo menos ${minPlayersForTwoTeams} jogadores para formar 2 times. Atualmente: ${totalPlayers}.` });
     }
 
-    // 7. Definir quantos times e quantos v–o pro banco
-    const teamCount = Math.floor(fieldPlayers.length / MIN_PLAYERS_PER_TEAM);
+    // 7. Definir quantos times e quantos v–o pro banco (m–x 4)
+    const teamCount = Math.min(4, Math.floor(totalPlayers / MIN_PLAYERS_PER_TEAM));
     const playersPerTeam = MIN_PLAYERS_PER_TEAM;
     const totalPlayersForTeams = teamCount * playersPerTeam;
 
+    // Goleiros ficam separados no banco (não entram no sorteio automático)
+    const keepGoalkeepersOnBench = true;
+    const teamPool = [...fieldPlayers, ...guestEntries];
+
     // 8. Ordenar por for–a para sorteio balanceado
-    fieldPlayers.sort((a, b) => b.strength - a.strength);
+    teamPool.sort((a, b) => b.strength - a.strength);
 
     // 8.1. Cabe–as de chave (mant–m um por time sempre que poss–vel)
     const seedSet = new Set(seedIds.map((id) => String(id)));
     const seedPool = [];
     const nonSeedPool = [];
-    fieldPlayers.forEach((p) => {
+    teamPool.forEach((p) => {
       if (seedSet.has(String(p.id))) seedPool.push(p);
       else nonSeedPool.push(p);
     });
@@ -2762,9 +2767,8 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     const autoBuckets = snakeDistribute(remainingPlayers, teamCount);
     const teamBuckets = seededBuckets.map((bucket, idx) => [...bucket, ...(autoBuckets[idx] || [])]);
 
-    // 10. Goleiros sempre v–o para o banco (não entram direto nos times)
-    const keepGoalkeepersOnBench = true;
-    
+    // 10. Goleiros no banco apenas se houver jogadores de linha suficientes
+
     // 11. Montar banco de reservas
     const leftoverFieldPlayers = orderedFieldPool.slice(totalPlayersForTeams);
     const bench = [
