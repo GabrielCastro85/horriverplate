@@ -1960,7 +1960,23 @@
     }
     renderSeedList();
 
+    function normalizeGuests() {
+      const unique = new Map();
+      guests.forEach((g) => {
+        const name = (g.name || "Convidado").trim();
+        const position = (g.position || "Outros").trim();
+        const strength = Math.max(40, Math.min(100, parseInt(g.strength || "60", 10) || 60));
+        const key = `${name.toLowerCase()}|${position.toLowerCase()}|${strength}`;
+        if (!unique.has(key)) {
+          unique.set(key, { name, position, strength });
+        }
+      });
+      guests.length = 0;
+      unique.forEach((g) => guests.push(g));
+    }
+
     function syncGuestsField() {
+      normalizeGuests();
       const lines = guests.map((g) => `${g.name};${g.position};${g.strength}`);
       guestsField.value = lines.join("\n");
       try {
