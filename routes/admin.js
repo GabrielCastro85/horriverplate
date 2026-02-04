@@ -2422,11 +2422,19 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
 
     const updates = [];
     stats.forEach((stat) => {
-      if (stat.rating != null) return;
       const entry = ratingMap.get(stat.playerId);
       if (!entry || entry.count === 0) return;
       const avg = entry.sum / entry.count; // 1..5
-      const finalRating = Math.max(0, Math.min(10, avg * 2));
+      const voteRating = Math.max(0, Math.min(10, avg * 2));
+      const manualRating =
+        stat.rating != null && !Number.isNaN(Number(stat.rating))
+          ? Number(stat.rating)
+          : null;
+      const combined =
+        manualRating != null
+          ? voteRating * 0.7 + manualRating * 0.3
+          : voteRating;
+      const finalRating = Math.max(0, Math.min(10, combined));
       updates.push(
         prisma.playerStat.update({
           where: { id: stat.id },

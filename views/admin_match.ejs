@@ -157,7 +157,7 @@
               data-input-scope="desktop"
               class="w-24 sm:w-20 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
               placeholder="7,50"
-              value="<%= stat && (stat.finalRating != null || stat.rating != null) ? (stat.finalRating != null ? stat.finalRating : stat.rating).toFixed(2).replace('.', ',') : '' %>"
+              value="<%= stat && (stat.rating != null || stat.finalRating != null) ? (stat.rating != null ? stat.rating : stat.finalRating).toFixed(2).replace('.', ',') : '' %>"
             />
           </td>
           <td class="px-3 py-2 text-center align-middle">
@@ -258,7 +258,7 @@
               data-input-scope="mobile"
               class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
               placeholder="7,50"
-              value="<%= stat && (stat.finalRating != null || stat.rating != null) ? (stat.finalRating != null ? stat.finalRating : stat.rating).toFixed(2).replace('.', ',') : '' %>"
+              value="<%= stat && (stat.rating != null || stat.finalRating != null) ? (stat.rating != null ? stat.rating : stat.finalRating).toFixed(2).replace('.', ',') : '' %>"
             />
           </label>
         </div>
@@ -372,7 +372,7 @@
       </form>
     </div>
 
-    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 w-full">
       <p class="text-xs text-horriver-gray mb-2">
         Sessão criada em <%= fmtDateTimeBR(voteSession.createdAt) %>
         <% if (voteSession.expiresAt) { %>
@@ -382,8 +382,8 @@
         <% } %>
       </p>
 
-      <div class="overflow-x-auto text-[11px] md:text-xs">
-        <table class="min-w-[640px] border-collapse">
+      <div class="overflow-x-auto text-[11px] md:text-xs w-full">
+        <table class="w-full min-w-[640px] border-collapse">
           <thead>
             <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
               <th class="py-2 pr-3 text-left font-normal">Jogador</th>
@@ -435,7 +435,7 @@
                 </td>
                 <td class="py-2 pr-3">
                   <% if (t.usedAt) { %>
-                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">?</span>
+                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">✓</span>
                   <% } else { %>
                     <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/10 text-horriver-gray text-[11px]">—</span>
                   <% } %>
