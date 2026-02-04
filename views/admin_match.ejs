@@ -1966,10 +1966,9 @@
         const name = (g.name || "Convidado").trim();
         const position = (g.position || "Outros").trim();
         const strength = Math.max(40, Math.min(100, parseInt(g.strength || "60", 10) || 60));
-        const key = `${name.toLowerCase()}|${position.toLowerCase()}|${strength}`;
-        if (!unique.has(key)) {
-          unique.set(key, { name, position, strength });
-        }
+        const key = name.toLowerCase();
+        // Se repetir nome, mantém a entrada mais recente
+        unique.set(key, { name, position, strength });
       });
       guests.length = 0;
       unique.forEach((g) => guests.push(g));
@@ -1988,7 +1987,7 @@
         .map(
           (g, idx) => `
             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-horriver-border text-horriver-light">
-              ${g.name} - ${g.position} - ${g.strength}
+              ${g.name} (Convidado) - ${g.position} - ${g.strength}
               <button type="button" data-remove="${idx}" class="text-horriver-orange hover:text-white">x</button>
             </span>
           `
@@ -2034,7 +2033,13 @@
       const name = (guestName.value || "Convidado").trim();
       const position = guestPos.value || "Outros";
       const strength = Math.max(40, Math.min(100, parseInt(guestStr.value || "60", 10) || 60));
-      guests.push({ name, position, strength });
+      const key = name.toLowerCase();
+      const existingIdx = guests.findIndex((g) => (g.name || "").trim().toLowerCase() === key);
+      if (existingIdx >= 0) {
+        guests[existingIdx] = { name, position, strength };
+      } else {
+        guests.push({ name, position, strength });
+      }
       guestName.value = "";
       guestStr.value = "60";
       syncGuestsField();
@@ -2101,7 +2106,9 @@
               <ul class="space-y-1" data-team-list data-list-id="team-${idx}">
                 ${players
                   .map(
-                    (p) => `
+                    (p) => {
+                      const displayName = p.guest ? `${p.name} (Convidado)` : p.name;
+                      return `
                       <li
                         class="flex items-center justify-between gap-1 bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
                         data-player-id="${p.id}"
@@ -2113,12 +2120,13 @@
                         data-player-guest="${p.guest ? "true" : "false"}"
                       >
                         <div class="flex flex-col">
-                          <span>${p.name}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
+                          <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
                           <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
                         </div>
                         <span class="text-horriver-gray">${Number(p.displayOverall ?? p.strength ?? 0).toFixed(1)}</span>
                       </li>
-                    `
+                    `;
+                    }
                   )
                   .join("")}
               </ul>
@@ -2150,8 +2158,9 @@
 
       const renderBenchList = (players, listId) =>
         players
-          .map(
-            (p) => `
+          .map((p) => {
+            const displayName = p.guest ? `${p.name} (Convidado)` : p.name;
+            return `
               <li
                 class="flex items-center justify-between bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
                 data-player-id="${p.id}"
@@ -2164,13 +2173,13 @@
                 data-list-id="${listId}"
               >
                 <div class="flex flex-col">
-                  <span>${p.name}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
+                  <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
                   <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
                 </div>
                 <span class="text-horriver-gray">${Number(p.displayOverall ?? p.strength ?? 0).toFixed(1)}</span>
               </li>
-            `
-          )
+            `;
+          })
           .join("");
 
       if (goalkeeperBenchBox) {
@@ -2687,59 +2696,75 @@
           card.style.left = "-9999px";
           card.style.top = "0";
           card.style.width = "1400px";
-          card.style.padding = "22px 22px 26px";
+          card.style.padding = "24px 24px 28px";
           card.style.borderRadius = "30px";
-          card.style.background = "radial-gradient(circle at 30% 20%, #2a0b0b 0%, #120606 38%, #0a090d 100%)";
+          card.style.background = "radial-gradient(circle at 25% 15%, #2b0d0d 0%, #140a0c 45%, #0b0b10 100%)";
           card.style.color = "#f3f4f6";
           card.style.fontFamily = "Inter, system-ui, -apple-system, sans-serif";
           card.style.boxShadow = "0 12px 28px rgba(0,0,0,0.35)";
 
           const headerHtml = `
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-              <div style="display:flex;flex-direction:column;gap:6px;">
-                <span style="font-size:12px;color:#f97316;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;">Craque da semana - Times</span>
-                <span style="font-size:28px;font-weight:900;letter-spacing:-0.5px;">Pelada ${matchDateLabel}</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <span style="font-size:11px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:1.6px;opacity:0.7;">Craque da semana - Times</span>
+                <span style="font-size:34px;font-weight:900;letter-spacing:-0.4px;line-height:1.05;">Pelada ${matchDateLabel}</span>
+                <span style="height:2px;width:160px;border-radius:999px;background:linear-gradient(90deg, rgba(249,115,22,0.85) 0%, rgba(249,115,22,0) 100%);"></span>
               </div>
-              <div style="width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid #f97316;background:#0f0f15;display:flex;align-items:center;justify-content:center;">
-                <img src="/img/logo-32x32.svg" alt="Horriver Plate" style="width:auto;height:auto;max-width:80%;max-height:80%;object-fit:contain;display:block;opacity:0.95;" />
+              <div style="width:88px;height:88px;border-radius:50%;overflow:hidden;border:2px solid rgba(249,115,22,0.6);background:#0f0f15;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,0.35);">
+                <img src="/img/logo-32x32.svg" alt="Horriver Plate" style="width:auto;height:auto;max-width:80%;max-height:80%;object-fit:contain;display:block;opacity:0.9;" />
               </div>
             </div>
           `;
 
           const colors = ["#facc15", "#3b82f6", "#1f2937", "#10b981"];
           const gridColumns = teamsForShare.length === 4 ? 2 : 3;
+          const getPosBadge = (pos = "") => {
+            const raw = String(pos || "").toUpperCase();
+            const key = raw.includes("GOL") ? "GOL" : raw.includes("ZAG") ? "ZAG" : raw.includes("MEI") ? "MEI" : raw.includes("ATA") ? "ATA" : raw.slice(0, 3);
+            const colorMap = {
+              ATA: "#ff00ff",
+              MEI: "#ff00ff",
+              ZAG: "#ff00ff",
+              GOL: "#ff00ff",
+            };
+            const bg = colorMap[key] || "#94a3b8";
+            return {
+              label: key || raw,
+              bg,
+            };
+          };
+
           const teamsHtml = `
-            <div style="display:grid;grid-template-columns:repeat(${gridColumns},minmax(0,1fr));gap:12px;">
+            <div style="display:grid;grid-template-columns:repeat(${gridColumns},minmax(0,1fr));gap:14px;">
               ${teamsForShare
                 .map((t, idx) => {
                   const headerBg = t.color || colors[idx % colors.length];
                   const isDark = getLuminance(headerBg) < 0.45 || t.name.toLowerCase().includes("preto");
                   const headerText = isDark ? "#f8fafc" : "#0b0b0b";
                   const bodyText = "#f8fafc";
-                  const subText = isDark ? "#e2e8f0" : "#cbd5e1";
-                  const lineColor = isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.08)";
-                  const panelBg = isDark
-                    ? `linear-gradient(145deg, ${headerBg}40 0%, rgba(15,15,20,0.95) 70%)`
-                    : `linear-gradient(145deg, ${headerBg}33 0%, rgba(15,15,20,0.9) 70%)`;
+                  const lineColor = "rgba(255,255,255,0.07)";
+                  const panelBg = `linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(8,8,12,0.75) 100%)`;
                   return `
-                    <div style="position:relative;border:1px solid ${headerBg}45;border-radius:18px;overflow:hidden;background:${panelBg};">
-                      <div style="position:absolute;right:-26px;bottom:-26px;width:110px;height:110px;opacity:0.08;background:url('/img/logo.jpg') center/contain no-repeat;"></div>
-                      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:${headerBg};color:${headerText};font-weight:800;letter-spacing:0.5px;font-size:14px;">
+                    <div style="position:relative;border:1px solid ${headerBg}55;border-radius:20px;overflow:hidden;background:${panelBg};box-shadow:0 10px 22px rgba(0,0,0,0.28), 0 0 0 1px ${headerBg}33;transition:transform .2s ease, box-shadow .2s ease;will-change:transform;">
+                      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.24);"></div>
+                      <div style="position:absolute;right:12px;bottom:10px;width:132px;height:132px;opacity:0.05;background:url('/img/logo.jpg') center/contain no-repeat;pointer-events:none;z-index:0;"></div>
+                      <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:${headerBg};color:${headerText};font-weight:800;letter-spacing:0.6px;font-size:15px;">
                         <span>${t.name}</span>
-                        <span style="font-size:11px;">${t.players.length} jogadores</span>
+                        <span style="font-size:11px;opacity:0.8;">${t.players.length} jogadores</span>
                       </div>
-                      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;color:${bodyText};">
+                      <div style="position:relative;z-index:1;padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;color:${bodyText};">
                         ${t.players
                           .map(
-                            (p) => `
-                              <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid ${lineColor};">
-                                <div style="display:flex;flex-direction:column;gap:2px;">
-                                  <span style="font-weight:800;font-size:16px;letter-spacing:0.1px;">${p.nome}</span>
-                                  <span style="font-size:12px;color:${subText};text-transform:uppercase;letter-spacing:0.4px;">${p.pos}</span>
-                                </div>
-                                <span style="font-size:13px;color:#fbd38d;font-weight:800;"></span>
+                            (p) => {
+                              const badge = getPosBadge(p.pos);
+                              return `
+                              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 6px 8px 0;border-bottom:1px solid ${lineColor};">
+                                <span style="font-weight:700;font-size:16px;letter-spacing:0.1px;line-height:1.2;flex:1;min-width:0;word-break:break-word;">${p.nome}</span>
+                                <span style="font-size:11px;color:#f8fafc;background:${badge.bg};padding:0 10px;border-radius:999px;letter-spacing:0.6px;text-transform:uppercase;font-weight:700;border:1px solid rgba(255,255,255,0.25);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);white-space:nowrap;line-height:22px;display:inline-block;height:22px;margin:0 8px 0 0;transform:translateY(-1px);">${badge.label}</span>
+                                </span>
                               </div>
-                            `
+                            `;
+                            }
                           )
                           .join("")}
                       </div>
@@ -2753,18 +2778,24 @@
           const gkHtml =
             goalkeepersForShare.length > 0
               ? `
-            <div style="margin-top:18px;border:1px solid rgba(255,122,0,0.35);border-radius:16px;padding:12px 14px;background:rgba(255,122,0,0.05);">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-weight:800;color:#f97316;">Goleiros (banco)</span>
-                <span style="font-size:12px;color:#f3f4f6;">${goalkeepersForShare.length} jogador(es)</span>
+            <div style="margin-top:18px;border:1px solid rgba(255,122,0,0.28);border-radius:18px;padding:14px 16px;background:rgba(12,12,16,0.7);box-shadow:0 10px 22px rgba(0,0,0,0.22);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-weight:800;color:#f97316;letter-spacing:0.6px;">Goleiros (banco)</span>
+                <span style="font-size:12px;color:rgba(243,244,246,0.8);">${goalkeepersForShare.length} jogador(es)</span>
               </div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
                 ${goalkeepersForShare
                   .map(
                     (gk) => `
-                      <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:6px 8px;background:rgba(255,255,255,0.03);">
-                        <span style="font-weight:700;font-size:13px;">${gk.nome}</span>
-                        <span style="font-size:11px;color:#cbd5e1;">${gk.pos}</span>
+                      <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:8px 10px;background:rgba(255,255,255,0.03);">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                          <span style="font-size:14px;">🧤</span>
+                          <div style="display:flex;flex-direction:column;gap:4px;">
+                            <span style="font-weight:700;font-size:13px;line-height:1.1;">${gk.nome}</span>
+                            <span style="font-size:10px;color:rgba(203,213,225,0.7);text-transform:uppercase;letter-spacing:0.5px;">${gk.pos}</span>
+                          </div>
+                        </div>
+                        <span style="font-size:11px;color:#f8fafc;background:#ff00ff;padding:0 10px;border-radius:999px;letter-spacing:0.6px;text-transform:uppercase;font-weight:700;border:1px solid rgba(255,255,255,0.25);opacity:0.9;line-height:22px;display:inline-block;height:22px;margin:0;transform:translateY(-1px);">GOL</span>
                       </div>
                     `
                   )

@@ -2567,7 +2567,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
 
     // 1. Convidados
     const guestsRaw = req.body.guests || "";
-    const guestEntries = guestsRaw
+    const guestEntriesRaw = guestsRaw
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean)
@@ -2583,6 +2583,17 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
           guest: true,
         };
       });
+    const guestEntries = Array.from(
+      guestEntriesRaw.reduce((acc, g) => {
+        const normalizedName = (g.name || "Convidado").trim().replace(/^\(convidado\)\s*/i, "");
+        const key = normalizedName.toLowerCase();
+        acc.set(key, {
+          ...g,
+          name: normalizedName,
+        });
+        return acc;
+      }, new Map()).values()
+    );
 
     // 2. Jogadores presentes
     let stats;
@@ -2707,11 +2718,23 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
 
     // 4. Pool completo
     const fullPool = [...players, ...guestEntries];
+    const uniquePool = Array.from(
+      fullPool.reduce((acc, p) => {
+        if (p.guest) {
+          const key = `guest:${String(p.name || "Convidado").trim().toLowerCase()}`;
+          acc.set(key, p);
+          return acc;
+        }
+        const key = `player:${String(p.id)}`;
+        acc.set(key, p);
+        return acc;
+      }, new Map()).values()
+    );
 
     // 5. Separar goleiros e jogadores de linha
     const goalkeepers = [];
     const fieldPlayers = [];
-    fullPool.forEach((p) => {
+    uniquePool.forEach((p) => {
       const pos = (p.position || "").toLowerCase();
       const isGoalkeeper = pos.includes("goleiro") || pos.includes("gol");
       if (isGoalkeeper) {
@@ -2723,7 +2746,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
 
     // 6. Validar n–mero m–nimo de jogadores (linha + goleiros)
     const MIN_PLAYERS_PER_TEAM = 6;
-    const totalPlayers = fieldPlayers.length + guestEntries.length;
+    const totalPlayers = fieldPlayers.length;
     const minPlayersForTwoTeams = MIN_PLAYERS_PER_TEAM * 2;
     if (totalPlayers < minPlayersForTwoTeams) {
       return res.status(400).json({ error: `S–o necess–rios pelo menos ${minPlayersForTwoTeams} jogadores para formar 2 times. Atualmente: ${totalPlayers}.` });
@@ -2736,7 +2759,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
 
     // Goleiros ficam separados no banco (não entram no sorteio automático)
     const keepGoalkeepersOnBench = true;
-    const teamPool = [...fieldPlayers, ...guestEntries];
+    const teamPool = [...fieldPlayers];
 
     // 8. Ordenar por for–a para sorteio balanceado
     teamPool.sort((a, b) => b.strength - a.strength);
