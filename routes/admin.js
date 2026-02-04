@@ -2550,6 +2550,40 @@ function computeTeamPower(team) {
   return team.reduce((sum, p) => sum + (p.strength || 0), 0);
 }
 
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = crypto.randomInt(i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function bucketShuffle(arr, bucketSize) {
+  if (!Array.isArray(arr) || bucketSize <= 1) return arr.slice();
+  const out = [];
+  for (let i = 0; i < arr.length; i += bucketSize) {
+    const bucket = arr.slice(i, i + bucketSize);
+    shuffleInPlace(bucket);
+    out.push(...bucket);
+  }
+  return out;
+}
+
+function lineupSignature(teams) {
+  const teamKeys = (teams || []).map((team) => {
+    const players = Array.isArray(team?.players) ? team.players : [];
+    const ids = players.map((p) =>
+      p?.guest
+        ? `guest:${String(p?.name || "").trim().toLowerCase()}`
+        : `player:${String(p?.id ?? "")}`
+    );
+    ids.sort();
+    return ids.join(",");
+  });
+  teamKeys.sort();
+  return teamKeys.join("|");
+}
+
 router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
   try {
     const matchId = Number(req.params.id);
@@ -2624,12 +2658,10 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
 
     // 3. Overall dos presentes
     const playerIds = Array.from(new Set(stats.map((s) => s.playerId)));
-    const basePlayers = await prisma.player.findMany({
-      where: { id: { in: playerIds } },
-    });
+    const allPlayers = await prisma.player.findMany();
 
     const { computed } = computeOverallFromEntries(
-      basePlayers.map((p) => ({
+      allPlayers.map((p) => ({
         player: p,
         goals: p.totalGoals || 0,
         assists: p.totalAssists || 0,
@@ -2764,54 +2796,85 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     // 8. Ordenar por for–a para sorteio balanceado
     teamPool.sort((a, b) => b.strength - a.strength);
 
-    // 8.1. Cabe–as de chave (mant–m um por time sempre que poss–vel)
-    const seedSet = new Set(seedIds.map((id) => String(id)));
-    const seedPool = [];
-    const nonSeedPool = [];
-    teamPool.forEach((p) => {
-      if (seedSet.has(String(p.id))) seedPool.push(p);
-      else nonSeedPool.push(p);
+    const lastDraw = await prisma.lineupDraw.findFirst({
+      where: { matchId },
+      orderBy: { createdAt: "desc" },
     });
-    const orderedFieldPool = [...seedPool, ...nonSeedPool];
+    const lastSignature = lastDraw?.result?.teams ? lineupSignature(lastDraw.result.teams) : null;
 
-    // 9. Distribuir os jogadores de linha com seeds priorizadas
-    const playersToDistribute = orderedFieldPool.slice(0, totalPlayersForTeams);
-    const seedsForTeams = playersToDistribute
-      .filter((p) => seedSet.has(String(p.id)))
-      .slice(0, teamCount);
-    const usedSeedIds = new Set(seedsForTeams.map((p) => String(p.id)));
-    const remainingPlayers = playersToDistribute.filter((p) => !usedSeedIds.has(String(p.id)));
+    const buildLineup = () => {
+      // 8.1. Cabe–as de chave (mant–m um por time sempre que poss–vel)
+      const seedSet = new Set(seedIds.map((id) => String(id)));
+      const seedPool = [];
+      const nonSeedPool = [];
+      teamPool.forEach((p) => {
+        if (seedSet.has(String(p.id))) seedPool.push(p);
+        else nonSeedPool.push(p);
+      });
+      const orderedFieldPool = [...seedPool, ...nonSeedPool];
 
-    const seededBuckets = Array.from({ length: teamCount }, () => []);
-    seedsForTeams.forEach((p, idx) => {
-      seededBuckets[idx % teamCount].push(p);
-    });
+      // 9. Distribuir os jogadores de linha com seeds priorizadas
+      const playersToDistribute = orderedFieldPool.slice(0, totalPlayersForTeams);
+      let seedsForTeams = playersToDistribute
+        .filter((p) => seedSet.has(String(p.id)))
+        .slice(0, teamCount);
+      seedsForTeams = shuffleInPlace([...seedsForTeams]);
 
-    const autoBuckets = snakeDistribute(remainingPlayers, teamCount);
-    const teamBuckets = seededBuckets.map((bucket, idx) => [...bucket, ...(autoBuckets[idx] || [])]);
+      const usedSeedIds = new Set(seedsForTeams.map((p) => String(p.id)));
+      let remainingPlayers = playersToDistribute.filter((p) => !usedSeedIds.has(String(p.id)));
+      remainingPlayers = bucketShuffle(remainingPlayers, teamCount);
 
-    // 10. Goleiros no banco apenas se houver jogadores de linha suficientes
+      const seededBuckets = Array.from({ length: teamCount }, () => []);
+      seedsForTeams.forEach((p, idx) => {
+        seededBuckets[idx % teamCount].push(p);
+      });
 
-    // 11. Montar banco de reservas
-    const leftoverFieldPlayers = orderedFieldPool.slice(totalPlayersForTeams);
-    const bench = [
-      ...(keepGoalkeepersOnBench ? goalkeepers : []),
-      ...leftoverFieldPlayers,
-    ].map((p) => ({
-      ...p,
-      displayOverall: overallMap.get(p.id) ?? null,
-    }));
-    bench.sort((a, b) => b.strength - a.strength);
+      const autoBuckets = snakeDistribute(remainingPlayers, teamCount);
+      const teamBuckets = seededBuckets.map((bucket, idx) => [...bucket, ...(autoBuckets[idx] || [])]);
 
-    // 12. Finalizar e retornar
-    const teams = teamBuckets.map((t, idx) => ({
-      name: `Time ${idx + 1}`,
-      power: computeTeamPower(t),
-      players: t.map((p) => ({
+      // 10. Goleiros no banco apenas se houver jogadores de linha suficientes
+
+      // 11. Montar banco de reservas
+      const leftoverFieldPlayers = orderedFieldPool.slice(totalPlayersForTeams);
+      const bench = [
+        ...(keepGoalkeepersOnBench ? goalkeepers : []),
+        ...leftoverFieldPlayers,
+      ].map((p) => ({
         ...p,
-        displayOverall: overallMap.get(p.id) ?? null,
-      })),
-    }));
+        displayOverall: p.displayOverall ?? overallMap.get(p.id) ?? null,
+      }));
+      bench.sort((a, b) => b.strength - a.strength);
+
+      // 12. Finalizar e retornar
+      const teams = teamBuckets.map((t, idx) => ({
+        name: `Time ${idx + 1}`,
+        power: computeTeamPower(t),
+        players: t.map((p) => ({
+          ...p,
+          displayOverall: p.displayOverall ?? overallMap.get(p.id) ?? null,
+        })),
+      }));
+
+      return { teams, bench };
+    };
+
+    let lineup = null;
+    const MAX_ATTEMPTS = 6;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+      const candidate = buildLineup();
+      if (!lastSignature) {
+        lineup = candidate;
+        break;
+      }
+      const signature = lineupSignature(candidate.teams);
+      if (signature !== lastSignature) {
+        lineup = candidate;
+        break;
+      }
+    }
+    if (!lineup) {
+      lineup = buildLineup();
+    }
 
     // 12. Persistir o sorteio mais recente para recarregar na tela depois
     try {
@@ -2824,7 +2887,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
             guests: guestEntries,
             seeds: seedIds,
           },
-          result: { teams, bench },
+          result: { teams: lineup.teams, bench: lineup.bench },
         },
       });
     } catch (persistErr) {
@@ -2832,7 +2895,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       // Não bloquear a resposta principal se o salvamento falhar
     }
 
-    return res.json({ teams, bench });
+    return res.json({ teams: lineup.teams, bench: lineup.bench });
 
   } catch (err) {
     console.error("Erro no sorteador:", err);

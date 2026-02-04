@@ -2062,6 +2062,18 @@
     };
 
     function renderTeams(teams, bench) {
+      const abbrevPos = (pos) => {
+        const p = String(pos || "").toLowerCase();
+        if (!p) return "";
+        if (p.includes("goleiro") || p.includes("gol")) return "GOL";
+        if (p.includes("ata")) return "ATA";
+        if (p.includes("atac")) return "ATA";
+        if (p.includes("meia") || p.includes("mei")) return "MEI";
+        if (p.includes("vol")) return "VOL";
+        if (p.includes("zag") || p.includes("def")) return "ZAG";
+        return p.slice(0, 3).toUpperCase();
+      };
+
       if (resultsEl) {
         if (teams && teams.length === 4) {
           resultsEl.classList.add("teams-4");
@@ -2100,7 +2112,7 @@
                       )
                       .join("")}
                   </select>
-                  <p class="text-horriver-light" data-team-power>Forca: ${power.toFixed(1)}</p>
+                  <p class="text-horriver-light" data-team-power>Forca: ${Math.round(power)}</p>
                 </div>
               </div>
               <ul class="space-y-1" data-team-list data-list-id="team-${idx}">
@@ -2108,6 +2120,7 @@
                   .map(
                     (p) => {
                       const displayName = p.guest ? `${p.name} (Convidado)` : p.name;
+                      const displayPos = p.guest ? abbrevPos(p.position) : (p.position || "");
                       return `
                       <li
                         class="flex items-center justify-between gap-1 bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
@@ -2121,9 +2134,9 @@
                       >
                         <div class="flex flex-col">
                           <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
-                          <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
+                          <span class="text-horriver-orange text-[11px]">${displayPos}</span>
                         </div>
-                        <span class="text-horriver-gray">${Number(p.displayOverall ?? p.strength ?? 0).toFixed(1)}</span>
+                        <span class="text-horriver-gray">${Math.round(Number(p.displayOverall ?? p.strength ?? 0))}</span>
                       </li>
                     `;
                     }
@@ -2160,6 +2173,7 @@
         players
           .map((p) => {
             const displayName = p.guest ? `${p.name} (Convidado)` : p.name;
+            const displayPos = p.guest ? abbrevPos(p.position) : (p.position || "");
             return `
               <li
                 class="flex items-center justify-between bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
@@ -2174,9 +2188,9 @@
               >
                 <div class="flex flex-col">
                   <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
-                  <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
+                  <span class="text-horriver-orange text-[11px]">${displayPos}</span>
                 </div>
-                <span class="text-horriver-gray">${Number(p.displayOverall ?? p.strength ?? 0).toFixed(1)}</span>
+                <span class="text-horriver-gray">${Math.round(Number(p.displayOverall ?? p.strength ?? 0))}</span>
               </li>
             `;
           })
@@ -2279,7 +2293,7 @@
         const players = box.querySelectorAll("li[data-player-strength]");
         const total = Array.from(players).reduce((sum, li) => sum + parseFloat(li.dataset.playerStrength || "0"), 0);
         const powerEl = box.querySelector("[data-team-power]");
-        if (powerEl) powerEl.textContent = `Forca: ${total.toFixed(1)}`;
+        if (powerEl) powerEl.textContent = `Forca: ${Math.round(total)}`;
       });
 
       if (goalkeeperBenchBox) {
@@ -2706,7 +2720,7 @@
           const headerHtml = `
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
               <div style="display:flex;flex-direction:column;gap:8px;">
-                <span style="font-size:11px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:1.6px;opacity:0.7;">Craque da semana - Times</span>
+                <span style="font-size:12px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.8;">Times Sorteados</span>
                 <span style="font-size:34px;font-weight:900;letter-spacing:-0.4px;line-height:1.05;">Pelada ${matchDateLabel}</span>
                 <span style="height:2px;width:160px;border-radius:999px;background:linear-gradient(90deg, rgba(249,115,22,0.85) 0%, rgba(249,115,22,0) 100%);"></span>
               </div>
@@ -2722,10 +2736,10 @@
             const raw = String(pos || "").toUpperCase();
             const key = raw.includes("GOL") ? "GOL" : raw.includes("ZAG") ? "ZAG" : raw.includes("MEI") ? "MEI" : raw.includes("ATA") ? "ATA" : raw.slice(0, 3);
             const colorMap = {
-              ATA: "#ff00ff",
-              MEI: "#ff00ff",
-              ZAG: "#ff00ff",
-              GOL: "#ff00ff",
+              ATA: "#b84040",
+              MEI: "#3a6fae",
+              ZAG: "#3f9a63",
+              GOL: "#c9a227",
             };
             const bg = colorMap[key] || "#94a3b8";
             return {
@@ -2749,7 +2763,7 @@
                       <div style="position:absolute;inset:0;background:rgba(0,0,0,0.24);"></div>
                       <div style="position:absolute;right:12px;bottom:10px;width:132px;height:132px;opacity:0.05;background:url('/img/logo.jpg') center/contain no-repeat;pointer-events:none;z-index:0;"></div>
                       <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:${headerBg};color:${headerText};font-weight:800;letter-spacing:0.6px;font-size:15px;">
-                        <span>${t.name}</span>
+                        <span style="font-size:21px;font-weight:800;letter-spacing:0.4px;line-height:1.1;">${t.name}</span>
                         <span style="font-size:11px;opacity:0.8;">${t.players.length} jogadores</span>
                       </div>
                       <div style="position:relative;z-index:1;padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;color:${bodyText};">
@@ -2760,7 +2774,7 @@
                               return `
                               <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 6px 8px 0;border-bottom:1px solid ${lineColor};">
                                 <span style="font-weight:700;font-size:16px;letter-spacing:0.1px;line-height:1.2;flex:1;min-width:0;word-break:break-word;">${p.nome}</span>
-                                <span style="font-size:11px;color:#f8fafc;background:${badge.bg};padding:0 10px;border-radius:999px;letter-spacing:0.6px;text-transform:uppercase;font-weight:700;border:1px solid rgba(255,255,255,0.25);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);white-space:nowrap;line-height:22px;display:inline-block;height:22px;margin:0 8px 0 0;transform:translateY(-1px);">${badge.label}</span>
+                                <span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.08em;color:rgba(255,255,255,0.65);line-height:1;margin:0 8px 0 0;white-space:nowrap;">${badge.label}</span>
                                 </span>
                               </div>
                             `;
@@ -2780,7 +2794,7 @@
               ? `
             <div style="margin-top:18px;border:1px solid rgba(255,122,0,0.28);border-radius:18px;padding:14px 16px;background:rgba(12,12,16,0.7);box-shadow:0 10px 22px rgba(0,0,0,0.22);">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <span style="font-weight:800;color:#f97316;letter-spacing:0.6px;">Goleiros (banco)</span>
+                <span style="font-weight:800;color:#f97316;letter-spacing:0.6px;">Goleiros</span>
                 <span style="font-size:12px;color:rgba(243,244,246,0.8);">${goalkeepersForShare.length} jogador(es)</span>
               </div>
               <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
@@ -2795,7 +2809,7 @@
                             <span style="font-size:10px;color:rgba(203,213,225,0.7);text-transform:uppercase;letter-spacing:0.5px;">${gk.pos}</span>
                           </div>
                         </div>
-                        <span style="font-size:11px;color:#f8fafc;background:#ff00ff;padding:0 10px;border-radius:999px;letter-spacing:0.6px;text-transform:uppercase;font-weight:700;border:1px solid rgba(255,255,255,0.25);opacity:0.9;line-height:22px;display:inline-block;height:22px;margin:0;transform:translateY(-1px);">GOL</span>
+                        <span style="display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.08em;color:rgba(255,255,255,0.65);line-height:1;margin:0;white-space:nowrap;">GOL</span>
                       </div>
                     `
                   )
