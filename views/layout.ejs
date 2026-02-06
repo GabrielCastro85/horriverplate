@@ -817,7 +817,36 @@
         const token = meta && meta.content ? meta.content : null;
         if (!token) return;
 
-        const ensureToken = (form) => {
+        const isMultipart = (form) => {
+          if (!form || !form.enctype) return false;
+          return String(form.enctype).toLowerCase().includes("multipart/form-data");
+        };
+
+        const ensureActionToken = (form) => {
+          if (!form) return;
+          if (!isMultipart(form)) return;
+          const actionAttr = form.getAttribute("action") || window.location.pathname;
+          try {
+            const url = new URL(actionAttr, window.location.origin);
+            if (!url.searchParams.has("_csrf")) {
+              url.searchParams.set("_csrf", token);
+              const nextAction = actionAttr.startsWith("http")
+                ? url.toString()
+                : `${url.pathname}${url.search}${url.hash}`;
+              form.setAttribute("action", nextAction);
+            }
+          } catch (err) {
+            if (!actionAttr.includes("_csrf=")) {
+              const sep = actionAttr.includes("?") ? "&" : "?";
+              form.setAttribute(
+                "action",
+                `${actionAttr}${sep}_csrf=${encodeURIComponent(token)}`
+              );
+            }
+          }
+        };
+
+        const ensureBodyToken = (form) => {
           if (!form || !form.method || form.method.toLowerCase() !== "post") return;
           if (form.querySelector('input[name="_csrf"]')) return;
           const input = document.createElement("input");
@@ -825,6 +854,12 @@
           input.name = "_csrf";
           input.value = token;
           form.appendChild(input);
+        };
+
+        const ensureToken = (form) => {
+          if (!form) return;
+          ensureActionToken(form);
+          ensureBodyToken(form);
         };
 
         document.addEventListener("submit", (event) => {
