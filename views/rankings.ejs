@@ -1,4 +1,4 @@
-<%
+﻿<%
   // ===============================
   // Helpers e preparação de dados
   // ===============================
@@ -60,6 +60,23 @@
     if (idx === 2) return "rk-row-bronze";
     return "";
   };
+
+  const colorMeta = {
+    Amarelo: "border-yellow-400/40 text-yellow-300 bg-yellow-400/10",
+    Azul: "border-blue-400/40 text-blue-300 bg-blue-400/10",
+    Preto: "border-slate-400/40 text-slate-200 bg-slate-500/10",
+    Vermelho: "border-red-400/40 text-red-300 bg-red-500/10",
+  };
+  const colorBoxClass = (name) =>
+    colorMeta[name] || "border-horriver-border text-horriver-light bg-white/5";
+
+  const sponsorNameByLabel = {
+    Amarelo: "Natureza em Flores",
+    Vermelho: "Matheus Gomes Barbearia",
+    Azul: "Carrocerias Santana",
+    Preto: "Advance Compressores",
+  };
+  const colorDisplayName = (name) => sponsorNameByLabel[name] || name;
 %>
 
 <style>
@@ -218,6 +235,55 @@
       </div>
     </form>
   </header>
+
+  <!-- VITORIAS POR COR -->
+  <section class="space-y-6 mt-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Vitorias por cor
+    </h2>
+
+    <div class="card-highlight rounded-3xl p-[1px]">
+      <div class="card-inner p-4 md:p-5">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="font-title text-lg text-horriver-light">
+              Times vencedores por cor
+            </h3>
+            <p class="text-[11px] text-horriver-gray">
+              Contagem das peladas filtradas com cor do time vencedor.
+            </p>
+          </div>
+          <span
+            class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                   bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+          >
+            Cores
+          </span>
+        </div>
+
+        <div class="mt-4">
+          <% if (!colorWins.length) { %>
+            <p class="text-sm text-horriver-gray">
+              Nenhum dado para este periodo.
+            </p>
+          <% } else { %>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <% colorWins.forEach((row) => { %>
+                <div class="rounded-2xl border px-3 py-3 text-center <%= colorBoxClass(row.name) %>">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-horriver-gray">
+                    <%= colorDisplayName(row.name) %>
+                  </p>
+                  <p class="text-2xl font-semibold text-horriver-light">
+                    <%= row.count || 0 %>
+                  </p>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- GRID DE RANKINGS PRINCIPAIS -->
   <section class="space-y-6">

@@ -205,19 +205,31 @@ router.get("/", async (req, res) => {
 
     let weeklyStats = null;
     if (weeklyAward?.bestPlayerId) {
-      const weekStart = startOfDay(weeklyAward.weekStart);
-      const weekEnd = endOfDay(
-        new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
-      );
+      const matchId =
+        weeklyAward.winningMatchId || weeklyAward.winningMatch?.id || null;
 
-      const stats = await prisma.playerStat.findMany({
-        where: {
-          playerId: weeklyAward.bestPlayerId,
-          match: {
-            playedAt: { gte: weekStart, lte: weekEnd },
+      let stats = [];
+      if (matchId) {
+        stats = await prisma.playerStat.findMany({
+          where: {
+            playerId: weeklyAward.bestPlayerId,
+            matchId,
           },
-        },
-      });
+        });
+      } else {
+        const weekStart = startOfDay(weeklyAward.weekStart);
+        const weekEnd = endOfDay(
+          new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+        );
+        stats = await prisma.playerStat.findMany({
+          where: {
+            playerId: weeklyAward.bestPlayerId,
+            match: {
+              playedAt: { gte: weekStart, lte: weekEnd },
+            },
+          },
+        });
+      }
 
       let goals = 0,
         assists = 0,
@@ -624,16 +636,28 @@ router.get("/fotos", async (req, res) => {
             stats: null,
           };
         }
-        const weekStart = startOfDay(award.weekStart);
-        const weekEnd = endOfDay(
-          new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
-        );
-        const stats = await prisma.playerStat.findMany({
-          where: {
-            playerId: award.bestPlayerId,
-            match: { playedAt: { gte: weekStart, lte: weekEnd } },
-          },
-        });
+
+        const matchId = award.winningMatchId || award.winningMatch?.id || null;
+        let stats = [];
+        if (matchId) {
+          stats = await prisma.playerStat.findMany({
+            where: {
+              playerId: award.bestPlayerId,
+              matchId,
+            },
+          });
+        } else {
+          const weekStart = startOfDay(award.weekStart);
+          const weekEnd = endOfDay(
+            new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+          );
+          stats = await prisma.playerStat.findMany({
+            where: {
+              playerId: award.bestPlayerId,
+              match: { playedAt: { gte: weekStart, lte: weekEnd } },
+            },
+          });
+        }
 
         return {
           award,
