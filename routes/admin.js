@@ -829,20 +829,132 @@ router.post(
 router.post("/players/:id/delete", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.redirect("/admin");
+    if (Number.isNaN(id)) return res.redirect("/admin#jogadores");
 
-    await prisma.playerStat.deleteMany({
-      where: { playerId: id },
-    });
-
-    await prisma.player.delete({
+    const player = await prisma.player.findUnique({
       where: { id },
+      select: { id: true },
+    });
+    if (!player) return res.redirect("/admin#jogadores");
+
+    await prisma.$transaction(async (tx) => {
+      const [playerVoteLinks, playerVoteTokens, playerMonthlyVoteTokens] = await Promise.all([
+        tx.voteLink.findMany({
+          where: { playerId: id },
+          select: { id: true },
+        }),
+        tx.voteToken.findMany({
+          where: { playerId: id },
+          select: { id: true },
+        }),
+        tx.monthlyVoteToken.findMany({
+          where: { playerId: id },
+          select: { id: true },
+        }),
+      ]);
+
+      const voteLinkIds = playerVoteLinks.map((row) => row.id);
+      const voteTokenIds = playerVoteTokens.map((row) => row.id);
+      const monthlyVoteTokenIds = playerMonthlyVoteTokens.map((row) => row.id);
+
+      const playerBallots = voteTokenIds.length
+        ? await tx.voteBallot.findMany({
+            where: { voteTokenId: { in: voteTokenIds } },
+            select: { id: true },
+          })
+        : [];
+      const playerVoteBallotIds = playerBallots.map((row) => row.id);
+
+      if (voteLinkIds.length) {
+        await tx.voteChoice.deleteMany({
+          where: { voteLinkId: { in: voteLinkIds } },
+        });
+      }
+
+      await tx.voteChoice.deleteMany({
+        where: { targetPlayerId: id },
+      });
+
+      if (playerVoteBallotIds.length) {
+        await tx.voteRanking.deleteMany({
+          where: { voteBallotId: { in: playerVoteBallotIds } },
+        });
+        await tx.voteRating.deleteMany({
+          where: { voteBallotId: { in: playerVoteBallotIds } },
+        });
+      }
+
+      await tx.voteRanking.deleteMany({
+        where: { playerId: id },
+      });
+      await tx.voteRating.deleteMany({
+        where: { playerId: id },
+      });
+
+      await tx.voteBallot.updateMany({
+        where: { bestOverallPlayerId: id },
+        data: { bestOverallPlayerId: null },
+      });
+
+      if (voteTokenIds.length) {
+        await tx.voteBallot.deleteMany({
+          where: { voteTokenId: { in: voteTokenIds } },
+        });
+      }
+      await tx.voteToken.deleteMany({
+        where: { playerId: id },
+      });
+
+      if (monthlyVoteTokenIds.length) {
+        await tx.monthlyVoteBallot.deleteMany({
+          where: { tokenId: { in: monthlyVoteTokenIds } },
+        });
+      }
+      await tx.monthlyVoteBallot.deleteMany({
+        where: { candidateId: id },
+      });
+      await tx.monthlyVoteToken.deleteMany({
+        where: { playerId: id },
+      });
+
+      await tx.weeklyAward.updateMany({
+        where: { bestPlayerId: id },
+        data: { bestPlayerId: null },
+      });
+      await tx.monthlyAward.updateMany({
+        where: { craqueId: id },
+        data: { craqueId: null },
+      });
+
+      await tx.seasonAward.deleteMany({
+        where: { playerId: id },
+      });
+      await tx.playerAchievement.deleteMany({
+        where: { playerId: id },
+      });
+      await tx.overallHistory.deleteMany({
+        where: { playerId: id },
+      });
+      await tx.playerStat.deleteMany({
+        where: { playerId: id },
+      });
+
+      await tx.voteLink.deleteMany({
+        where: { playerId: id },
+      });
+
+      await tx.player.delete({
+        where: { id },
+      });
+    }, {
+      maxWait: 10000,
+      timeout: 30000,
     });
 
-    res.redirect("/admin");
+    return res.redirect("/admin#jogadores");
   } catch (err) {
     console.error("Erro ao excluir jogador:", err);
-    res.redirect("/admin");
+    return res.redirect("/admin?error=deletePlayer#jogadores");
   }
 });
 
