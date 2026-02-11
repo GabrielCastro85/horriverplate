@@ -458,9 +458,9 @@
     <div class="min-h-screen flex flex-col layout-bg">
       <!-- HEADER -->
       <header class="sticky top-0 z-40 bg-black/80 border-b border-horriver-border backdrop-blur">
-        <nav class="max-w-6xl mx-auto flex items-center gap-4 px-4 py-3">
+        <nav class="max-w-6xl mx-auto flex w-full items-center gap-2 md:gap-4 px-4 py-3">
           <!-- ESQUERDA -->
-          <a href="/" class="flex items-center gap-2 shrink-0">
+          <a href="/" class="flex items-center gap-2 min-w-0 flex-1 md:flex-none">
             <div class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70">
               <img
                 src="/img/logo-128x128.svg"
@@ -474,11 +474,11 @@
               />
             </div>
 
-            <div class="flex flex-col leading-tight whitespace-nowrap">
-              <span class="font-title text-sm md:text-base text-horriver-orange tracking-wide">
+            <div class="min-w-0 flex flex-col leading-tight">
+              <span class="font-title text-sm md:text-base text-horriver-orange tracking-wide truncate">
                 Horriver Plate
               </span>
-              <span class="text-[10px] text-horriver-gray">Pelada - Stats - Resenha</span>
+              <span class="text-[10px] text-horriver-gray truncate">Pelada - Stats - Resenha</span>
             </div>
           </a>
 
@@ -632,7 +632,7 @@
             aria-label="Menu"
             aria-expanded="false"
             aria-controls="mobileMenu"
-            class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full border border-horriver-orange/70"
+            class="ml-auto md:hidden inline-flex items-center justify-center w-9 h-9 shrink-0 rounded-full border border-horriver-orange/70"
           >
             <span class="flex flex-col gap-[5px]">
               <span class="hamburger-line line-1"></span>

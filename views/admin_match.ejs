@@ -604,6 +604,7 @@
     const filterToggle = document.getElementById("filterPresentOnly");
     const countEl = document.getElementById("presentCount");
     if (!filterToggle || !countEl) return;
+    const filterStorageKey = "admin_match_<%= match.id %>_filter_present_only";
 
     const rows = Array.from(document.querySelectorAll("tbody tr"));
     const cards = Array.from(document.querySelectorAll("[data-player-card]"));
@@ -617,6 +618,24 @@
         checkbox: card.querySelector('input[name^="present_"]'),
       })),
     ].filter((item) => item.checkbox);
+
+    const restoreFilterState = () => {
+      try {
+        const stored = window.localStorage.getItem(filterStorageKey);
+        if (stored === "1") filterToggle.checked = true;
+        if (stored === "0") filterToggle.checked = false;
+      } catch (_) {
+        // Sem acesso ao localStorage (modo privado/restricao): segue sem persistir.
+      }
+    };
+
+    const persistFilterState = () => {
+      try {
+        window.localStorage.setItem(filterStorageKey, filterToggle.checked ? "1" : "0");
+      } catch (_) {
+        // Ignora erro de persistencia para nao quebrar a pagina.
+      }
+    };
 
     const update = () => {
       let count = 0;
@@ -632,7 +651,11 @@
     entries.forEach(({ checkbox }) => {
       checkbox.addEventListener("change", update);
     });
-    filterToggle.addEventListener("change", update);
+    restoreFilterState();
+    filterToggle.addEventListener("change", () => {
+      persistFilterState();
+      update();
+    });
     update();
   })();
 </script>
@@ -2062,6 +2085,18 @@
     };
 
     function renderTeams(teams, bench) {
+      const overallByPresentPlayerId = new Map(
+        getPresentPlayersDetail().map((p) => [String(p.id), Number(p.strength || 0)])
+      );
+      const resolveDisplayOverall = (player) => {
+        const presentOverall = overallByPresentPlayerId.get(String(player?.id || ""));
+        if (Number.isFinite(presentOverall) && presentOverall > 0) {
+          return Math.round(presentOverall);
+        }
+        const fallback = Number(player?.displayOverall ?? player?.strength ?? 0);
+        return Number.isFinite(fallback) ? Math.round(fallback) : 0;
+      };
+
       const abbrevPos = (pos) => {
         const p = String(pos || "").toLowerCase();
         if (!p) return "";
@@ -2126,7 +2161,7 @@
                         class="flex items-center justify-between gap-1 bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
                         data-player-id="${p.id}"
                         data-player-strength="${p.strength}"
-                        data-player-overall="${p.displayOverall ?? ""}"
+                        data-player-overall="${resolveDisplayOverall(p)}"
                         data-player-position="${p.position}"
                         data-player-name="${p.name}"
                         data-player-nickname="${p.nickname || ""}"
@@ -2136,7 +2171,7 @@
                           <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
                           <span class="text-horriver-orange text-[11px]">${displayPos}</span>
                         </div>
-                        <span class="text-horriver-gray">${Math.round(Number(p.displayOverall ?? p.strength ?? 0))}</span>
+                        <span class="text-horriver-gray">${resolveDisplayOverall(p)}</span>
                       </li>
                     `;
                     }
@@ -2179,7 +2214,7 @@
                 class="flex items-center justify-between bg-white/5 rounded-lg px-2 py-1 text-horriver-light text-[12px]"
                 data-player-id="${p.id}"
                 data-player-strength="${p.strength}"
-                data-player-overall="${p.displayOverall ?? ""}"
+                data-player-overall="${resolveDisplayOverall(p)}"
                 data-player-position="${p.position}"
                 data-player-name="${p.name}"
                 data-player-nickname="${p.nickname || ""}"
@@ -2190,7 +2225,7 @@
                   <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
                   <span class="text-horriver-orange text-[11px]">${displayPos}</span>
                 </div>
-                <span class="text-horriver-gray">${Math.round(Number(p.displayOverall ?? p.strength ?? 0))}</span>
+                <span class="text-horriver-gray">${resolveDisplayOverall(p)}</span>
               </li>
             `;
           })

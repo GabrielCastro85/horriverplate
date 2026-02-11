@@ -10,7 +10,7 @@ const {
   uploadWeeklyTeamPhoto,
 } = require("../utils/upload");
 
-const { computeOverallFromEntries } = require("../utils/overall");
+const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
 const { rebuildAchievementsForAllPlayers } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
@@ -118,7 +118,8 @@ async function computeMonthlyVoteData(month, year) {
 function sanitizeAuditPayload(input) {
   const MAX_STRING = 300;
   const MAX_ARRAY = 50;
-  const SENSITIVE_KEYS = ["password", "senha", "token", "adminToken"];
+  const MAX_OBJECT_KEYS = 120;
+  const SENSITIVE_KEYS = ["password", "senha", "token", "admintoken", "_csrf", "csrf"];
 
   const trimString = (value) => {
     if (typeof value !== "string") return value;
@@ -135,16 +136,373 @@ function sanitizeAuditPayload(input) {
     if (typeof value === "object") {
       if (depth > 2) return "[obj]";
       const out = {};
-      Object.entries(value).forEach(([key, val]) => {
-        if (SENSITIVE_KEYS.some((k) => key.toLowerCase().includes(k))) return;
-        out[key] = walk(val, depth + 1);
-      });
+      Object.entries(value)
+        .slice(0, MAX_OBJECT_KEYS)
+        .forEach(([key, val]) => {
+          if (SENSITIVE_KEYS.some((k) => key.toLowerCase().includes(k))) return;
+          out[key] = walk(val, depth + 1);
+        });
       return out;
     }
     return String(value);
   };
 
   return walk(input);
+}
+
+function formatDateBR(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+function formatMonthYearBR(month, year) {
+  if (!month || !year) return null;
+  return `${String(month).padStart(2, "0")}/${year}`;
+}
+
+function formatPlayerLabel(player, fallbackId = null) {
+  if (!player) return fallbackId != null ? `#${fallbackId}` : "jogador desconhecido";
+  const nick = player.nickname ? ` (${player.nickname})` : "";
+  return `${player.name}${nick}`;
+}
+
+function formatMatchLabel(match, fallbackId = null) {
+  if (!match) return fallbackId != null ? `#${fallbackId}` : "pelada desconhecida";
+  const date = formatDateBR(match.playedAt) || "sem data";
+  const desc = match.description ? ` - ${match.description}` : "";
+  return `${date}${desc}`;
+}
+
+function countBodyKeys(body, prefix, valueCheck = null) {
+  if (!body || typeof body !== "object") return 0;
+  return Object.entries(body).filter(([key, value]) => {
+    if (!key.startsWith(prefix)) return false;
+    if (typeof valueCheck === "function") return valueCheck(value);
+    return true;
+  }).length;
+}
+
+function hasMeaningfulData(value) {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return true;
+}
+
+async function buildAuditMetadata(req) {
+  const path = req.path || "";
+  const method = req.method || "POST";
+  const body = req.body || {};
+
+  const meta = {
+    action: path,
+    summary: `${method} ${path}`,
+    context: {},
+    includePayload: true,
+  };
+
+  let m = null;
+
+  const getPlayer = async (id) => {
+    if (!Number.isFinite(id)) return null;
+    return prisma.player.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        nickname: true,
+        position: true,
+        whatsapp: true,
+      },
+    });
+  };
+
+  const getMatch = async (id) => {
+    if (!Number.isFinite(id)) return null;
+    return prisma.match.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        playedAt: true,
+        description: true,
+        winnerTeam: true,
+        winnerColor: true,
+      },
+    });
+  };
+
+  if (path === "/senha") {
+    meta.action = "admin.password.change";
+    meta.summary = "Admin alterou a propria senha.";
+    meta.includePayload = false;
+    return meta;
+  }
+
+  if (path === "/players") {
+    const name = body.name ? String(body.name).trim() : "";
+    const position = body.position ? String(body.position).trim() : "";
+    meta.action = "player.create";
+    meta.summary = `Admin criou jogador ${name || "(sem nome)"}${position ? ` (${position})` : ""}.`;
+    meta.context = {
+      playerInput: {
+        name: name || null,
+        nickname: body.nickname || null,
+        position: position || null,
+      },
+    };
+    return meta;
+  }
+
+  m = path.match(/^\/players\/(\d+)\/edit$/);
+  if (m) {
+    const id = Number(m[1]);
+    const before = await getPlayer(id);
+    const newName = body.name ? String(body.name).trim() : null;
+    meta.action = "player.update";
+    meta.summary = `Admin editou jogador ${formatPlayerLabel(before, id)}${newName && before && newName !== before.name ? ` -> ${newName}` : ""}.`;
+    meta.context = {
+      playerId: id,
+      before,
+    };
+    return meta;
+  }
+
+  m = path.match(/^\/players\/(\d+)\/delete$/);
+  if (m) {
+    const id = Number(m[1]);
+    const before = await getPlayer(id);
+    meta.action = "player.delete";
+    meta.summary = `Admin excluiu jogador ${formatPlayerLabel(before, id)}.`;
+    meta.context = {
+      playerId: id,
+      before,
+    };
+    meta.includePayload = false;
+    return meta;
+  }
+
+  if (path === "/matches") {
+    const played = formatDateBR(body.playedAt || body.playedDate);
+    const description = body.description ? String(body.description).trim() : "";
+    meta.action = "match.create";
+    meta.summary = `Admin criou pelada ${played || "sem data"}${description ? ` - ${description}` : ""}.`;
+    return meta;
+  }
+
+  m = path.match(/^\/matches\/(\d+)\/edit$/);
+  if (m) {
+    const id = Number(m[1]);
+    const before = await getMatch(id);
+    meta.action = "match.update";
+    meta.summary = `Admin editou pelada ${formatMatchLabel(before, id)}.`;
+    meta.context = {
+      matchId: id,
+      before,
+    };
+    return meta;
+  }
+
+  m = path.match(/^\/matches\/(\d+)\/delete$/);
+  if (m) {
+    const id = Number(m[1]);
+    const before = await getMatch(id);
+    meta.action = "match.delete";
+    meta.summary = `Admin excluiu pelada ${formatMatchLabel(before, id)}.`;
+    meta.context = {
+      matchId: id,
+      before,
+    };
+    meta.includePayload = false;
+    return meta;
+  }
+
+  m = path.match(/^\/matches\/(\d+)\/stats\/bulk$/);
+  if (m) {
+    const id = Number(m[1]);
+    const match = await getMatch(id);
+    const presentCount = countBodyKeys(body, "present_");
+    const goalsCount = countBodyKeys(body, "goals_", (v) => String(v || "").trim() !== "" && Number(v) > 0);
+    const assistsCount = countBodyKeys(body, "assists_", (v) => String(v || "").trim() !== "" && Number(v) > 0);
+    const ratingsCount = countBodyKeys(body, "rating_", (v) => String(v || "").trim() !== "");
+    const photosCount = countBodyKeys(body, "photo_");
+    meta.action = "match.stats.bulk";
+    meta.summary = `Admin atualizou estatisticas da pelada ${formatMatchLabel(match, id)} (presentes: ${presentCount}).`;
+    meta.context = {
+      matchId: id,
+      metrics: {
+        presentesMarcados: presentCount,
+        golsInformados: goalsCount,
+        assistenciasInformadas: assistsCount,
+        notasInformadas: ratingsCount,
+        fotosMarcadas: photosCount,
+      },
+    };
+    meta.includePayload = false;
+    return meta;
+  }
+
+  if (path === "/weekly-awards") {
+    const weekLabel = formatDateBR(body.weekStart);
+    const bestId = body.bestPlayerId && String(body.bestPlayerId).trim() !== "" ? Number(body.bestPlayerId) : null;
+    const bestPlayer = bestId ? await getPlayer(bestId) : null;
+    meta.action = "weekly_award.upsert";
+    meta.summary = `Admin salvou destaque semanal${weekLabel ? ` (${weekLabel})` : ""}${bestPlayer ? ` - craque: ${formatPlayerLabel(bestPlayer)}` : ""}.`;
+    meta.context = {
+      weekStart: weekLabel || null,
+      bestPlayer: bestPlayer ? { id: bestPlayer.id, name: bestPlayer.name } : null,
+      winningMatchId: body.winningMatchId ? Number(body.winningMatchId) : null,
+    };
+    return meta;
+  }
+
+  m = path.match(/^\/weekly-awards\/(\d+)\/delete$/);
+  if (m) {
+    const id = Number(m[1]);
+    const award = await prisma.weeklyAward.findUnique({
+      where: { id },
+      include: {
+        bestPlayer: { select: { id: true, name: true, nickname: true } },
+      },
+    });
+    const weekLabel = award ? formatDateBR(award.weekStart) : null;
+    meta.action = "weekly_award.delete";
+    meta.summary = `Admin excluiu destaque semanal${weekLabel ? ` (${weekLabel})` : ""}${award?.bestPlayer ? ` - ${formatPlayerLabel(award.bestPlayer)}` : ""}.`;
+    meta.context = { weeklyAwardId: id, before: sanitizeAuditPayload(award || {}) };
+    meta.includePayload = false;
+    return meta;
+  }
+
+  if (path === "/monthly-awards") {
+    const month = Number(body.month);
+    const year = Number(body.year);
+    const craqueId = body.craqueId && String(body.craqueId).trim() !== "" ? Number(body.craqueId) : null;
+    const craque = craqueId ? await getPlayer(craqueId) : null;
+    meta.action = "monthly_award.upsert";
+    meta.summary = `Admin salvou craque do mes${formatMonthYearBR(month, year) ? ` ${formatMonthYearBR(month, year)}` : ""}${craque ? ` - ${formatPlayerLabel(craque)}` : ""}.`;
+    meta.context = {
+      month: Number.isFinite(month) ? month : null,
+      year: Number.isFinite(year) ? year : null,
+      craque: craque ? { id: craque.id, name: craque.name } : null,
+    };
+    return meta;
+  }
+
+  m = path.match(/^\/monthly-awards\/(\d+)\/delete$/);
+  if (m) {
+    const id = Number(m[1]);
+    const award = await prisma.monthlyAward.findUnique({
+      where: { id },
+      include: {
+        craque: { select: { id: true, name: true, nickname: true } },
+      },
+    });
+    const monthYear = award ? formatMonthYearBR(award.month, award.year) : null;
+    meta.action = "monthly_award.delete";
+    meta.summary = `Admin excluiu premio mensal${monthYear ? ` ${monthYear}` : ""}${award?.craque ? ` - ${formatPlayerLabel(award.craque)}` : ""}.`;
+    meta.context = { monthlyAwardId: id, before: sanitizeAuditPayload(award || {}) };
+    meta.includePayload = false;
+    return meta;
+  }
+
+  if (path === "/season-awards") {
+    const year = Number(body.year);
+    const category = body.category ? String(body.category) : "";
+    const playerId = body.playerId && String(body.playerId).trim() !== "" ? Number(body.playerId) : null;
+    const player = playerId ? await getPlayer(playerId) : null;
+    meta.action = "season_award.upsert";
+    meta.summary = `Admin salvou premio de temporada${category ? ` ${category}` : ""}${Number.isFinite(year) ? ` (${year})` : ""}${player ? ` - ${formatPlayerLabel(player)}` : ""}.`;
+    meta.context = {
+      year: Number.isFinite(year) ? year : null,
+      category: category || null,
+      player: player ? { id: player.id, name: player.name } : null,
+    };
+    return meta;
+  }
+
+  m = path.match(/^\/season-awards\/(\d+)\/delete$/);
+  if (m) {
+    const id = Number(m[1]);
+    const award = await prisma.seasonAward.findUnique({
+      where: { id },
+      include: {
+        player: { select: { id: true, name: true, nickname: true } },
+      },
+    });
+    meta.action = "season_award.delete";
+    meta.summary = `Admin excluiu premio de temporada${award ? ` ${award.category} (${award.year})` : ""}${award?.player ? ` - ${formatPlayerLabel(award.player)}` : ""}.`;
+    meta.context = { seasonAwardId: id, before: sanitizeAuditPayload(award || {}) };
+    meta.includePayload = false;
+    return meta;
+  }
+
+  if (path === "/monthly-vote-session") {
+    const month = Number(body.month);
+    const year = Number(body.year);
+    meta.action = "monthly_vote_session.upsert";
+    meta.summary = `Admin gerou votacao do mes${formatMonthYearBR(month, year) ? ` ${formatMonthYearBR(month, year)}` : ""}.`;
+    return meta;
+  }
+
+  m = path.match(/^\/monthly-vote\/(\d+)\/close$/);
+  if (m) {
+    meta.action = "monthly_vote_session.close";
+    meta.summary = `Admin encerrou votacao do mes #${Number(m[1])}.`;
+    meta.includePayload = false;
+    return meta;
+  }
+
+  m = path.match(/^\/monthly-vote\/(\d+)\/delete$/);
+  if (m) {
+    meta.action = "monthly_vote_session.delete";
+    meta.summary = `Admin excluiu votacao do mes #${Number(m[1])}.`;
+    meta.includePayload = false;
+    return meta;
+  }
+
+  m = path.match(/^\/matches\/(\d+)\/sort-teams$/);
+  if (m) {
+    const id = Number(m[1]);
+    const match = await getMatch(id);
+    const presentIds = Array.isArray(body.presentIds) ? body.presentIds.length : 0;
+    const seedIds = Array.isArray(body.seedIds) ? body.seedIds.length : 0;
+    meta.action = "lineup.sort";
+    meta.summary = `Admin sorteou times da pelada ${formatMatchLabel(match, id)}.`;
+    meta.context = {
+      matchId: id,
+      presentIdsCount: presentIds,
+      seedIdsCount: seedIds,
+    };
+    return meta;
+  }
+
+  m = path.match(/^\/matches\/(\d+)\/save-lineup$/);
+  if (m) {
+    const id = Number(m[1]);
+    const match = await getMatch(id);
+    const teams = Array.isArray(body.teams) ? body.teams.length : 0;
+    meta.action = "lineup.save";
+    meta.summary = `Admin salvou times da pelada ${formatMatchLabel(match, id)}.`;
+    meta.context = { matchId: id, teamCount: teams, source: body.source || null };
+    return meta;
+  }
+
+  if (path === "/recalculate-overall") {
+    meta.action = "overall.recalculate";
+    meta.summary = "Admin recalculou overall de todos os jogadores.";
+    meta.includePayload = false;
+    return meta;
+  }
+
+  if (path === "/recalculate-totals") {
+    meta.action = "player_totals.recalculate";
+    meta.summary = "Admin recalculou totais de todos os jogadores.";
+    meta.includePayload = false;
+    return meta;
+  }
+
+  return meta;
 }
 
 // ==============================
@@ -154,26 +512,63 @@ router.use((req, res, next) => {
   if (!req.admin) return next();
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
 
-  const auditData = {
-    adminId: req.admin.id,
-    adminEmail: req.admin.email,
-    method: req.method,
-    path: req.originalUrl,
-    action: req.path,
-    summary: `${req.method} ${req.originalUrl}`,
-    details: sanitizeAuditPayload(req.body || {}),
-  };
+  const cleanPath = (req.originalUrl || req.path || "").split("?")[0];
 
-  res.on("finish", async () => {
-    if (res.statusCode >= 400) return;
-    try {
-      await prisma.auditLog.create({ data: auditData });
-    } catch (err) {
-      console.warn("Falha ao gravar auditoria:", err && err.message ? err.message : err);
-    }
-  });
+  buildAuditMetadata(req)
+    .then((meta) => {
+      const payloadDetails = meta.includePayload ? sanitizeAuditPayload(req.body || {}) : null;
+      const contextDetails = sanitizeAuditPayload(meta.context || {});
 
-  next();
+      let details = null;
+      if (hasMeaningfulData(payloadDetails) || hasMeaningfulData(contextDetails)) {
+        details = {};
+        if (hasMeaningfulData(payloadDetails)) details.payload = payloadDetails;
+        if (hasMeaningfulData(contextDetails)) details.context = contextDetails;
+      }
+
+      const auditData = {
+        adminId: req.admin.id,
+        adminEmail: req.admin.email,
+        method: req.method,
+        path: cleanPath,
+        action: meta.action || req.path,
+        summary: meta.summary || `${req.method} ${cleanPath}`,
+        details,
+      };
+
+      res.on("finish", async () => {
+        if (res.statusCode >= 400) return;
+        try {
+          await prisma.auditLog.create({ data: auditData });
+        } catch (err) {
+          console.warn("Falha ao gravar auditoria:", err && err.message ? err.message : err);
+        }
+      });
+    })
+    .catch((err) => {
+      console.warn("Falha ao montar auditoria:", err && err.message ? err.message : err);
+      const fallbackData = {
+        adminId: req.admin.id,
+        adminEmail: req.admin.email,
+        method: req.method,
+        path: cleanPath,
+        action: req.path,
+        summary: `${req.method} ${cleanPath}`,
+        details: sanitizeAuditPayload(req.body || {}),
+      };
+      res.on("finish", async () => {
+        if (res.statusCode >= 400) return;
+        try {
+          await prisma.auditLog.create({ data: fallbackData });
+        } catch (persistErr) {
+          console.warn(
+            "Falha ao gravar auditoria:",
+            persistErr && persistErr.message ? persistErr.message : persistErr
+          );
+        }
+      });
+    })
+    .finally(() => next());
 });
 
 // ==============================
@@ -2320,10 +2715,12 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
         rating: p.totalRating || 0,
       }))
     );
-    const overallById = new Map(playersOverall.map((o) => [o.player.id, o.overall]));
+    const overallById = new Map(
+      playersOverall.map((o) => [o.player.id, resolveOverallScore(o.player, o.overall)])
+    );
     const playersWithOverall = players.map((p) => ({
       ...p,
-      overall: overallById.get(p.id) ?? null,
+      overall: overallById.get(p.id) ?? resolveOverallScore(p, null),
     }));
     
     const voteSession = match.voteSessions.length > 0 ? match.voteSessions[0] : null;
@@ -2789,7 +3186,9 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
         rating: p.totalRating || 0,
       }))
     );
-    const overallMap = new Map(computed.map((c) => [c.player.id, c.overall]));
+    const overallMap = new Map(
+      computed.map((c) => [c.player.id, resolveOverallScore(c.player, c.overall)])
+    );
 
     // 3.1 últimas 10 peladas de cada jogador presente (para balancear for–a recente)
     const recentStatsRaw = await prisma.playerStat.findMany({

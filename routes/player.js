@@ -1,6 +1,6 @@
 const express = require("express");
 const prisma = require("../utils/db");
-const { computeOverallFromEntries } = require("../utils/overall");
+const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
 const { evaluateAchievementsForPlayer, getPlayerAchievements } = require("../utils/achievements");
 
 const router = express.Router();
@@ -72,7 +72,9 @@ router.get("/:id", async (req, res) => {
     });
 
     const { computed: rankingOverallComputed } = computeOverallFromEntries(overallEntries);
-    const rankingOverallMap = new Map(rankingOverallComputed.map((o) => [o.player.id, o.overall]));
+    const rankingOverallMap = new Map(
+      rankingOverallComputed.map((o) => [o.player.id, resolveOverallScore(o.player, o.overall)])
+    );
 
     const totals = {
       goals: player.totalGoals || 0,
@@ -164,8 +166,8 @@ router.get("/:id", async (req, res) => {
         : syntheticOverallSeries;
 
     let latestOverall =
-      player.overallDynamic ??
       rankingOverallMap.get(player.id) ??
+      resolveOverallScore(player, null) ??
       (overallSeries.length ? overallSeries[overallSeries.length - 1].overall : null);
 
     if (latestOverall == null) {
@@ -178,7 +180,9 @@ router.get("/:id", async (req, res) => {
           rating: avgRating,
         },
       ]);
-      latestOverall = computed && computed.length ? computed[0].overall : 0;
+      latestOverall = computed && computed.length
+        ? resolveOverallScore(player, computed[0].overall)
+        : resolveOverallScore(player, null);
     }
 
     if (!overallSeries.length && latestOverall != null) {

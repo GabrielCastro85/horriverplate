@@ -59,7 +59,12 @@
                 <%= log.adminEmail || "admin" %>
               </td>
               <td class="px-3 py-2 text-[12px] text-horriver-orange">
-                <%= log.summary || `${log.method} ${log.path}` %>
+                <div class="space-y-1">
+                  <p><%= log.summary || `${log.method} ${log.path}` %></p>
+                  <% if (log.action) { %>
+                    <p class="text-[10px] text-horriver-gray"><%= log.action %></p>
+                  <% } %>
+                </div>
               </td>
               <td class="px-3 py-2 text-[11px] text-horriver-gray">
                 <%= log.path %>

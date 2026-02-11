@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
-const { computeOverallFromEntries } = require("../utils/overall");
+const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 const cache = new Map();
@@ -352,8 +352,7 @@ router.get("/", async (req, res) => {
     const overallRanking = overallComputed
       .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
       .map((e) => {
-        const manual = e.player?.overallDynamic ?? e.player?.baseOverall ?? null;
-        const score = manual != null ? Math.round(manual) : Math.round(e.overall);
+        const score = resolveOverallScore(e.player, e.overall);
         return { ...e, overallScore: score };
       })
       .sort((a, b) => {

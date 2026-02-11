@@ -73,6 +73,30 @@ function computeOverallFromEntries(entries) {
   };
 }
 
+function resolveOverallScore(player, computedOverall, fallback = 60) {
+  const manual = player?.overallDynamic ?? player?.baseOverall ?? null;
+  if (manual != null && Number.isFinite(Number(manual))) {
+    return Math.round(Number(manual));
+  }
+  if (computedOverall != null && Number.isFinite(Number(computedOverall))) {
+    return Math.round(Number(computedOverall));
+  }
+  return fallback;
+}
+
+function buildOverallScoreMap(computedRows) {
+  const rows = Array.isArray(computedRows) ? computedRows : [];
+  const map = new Map();
+  rows.forEach((row) => {
+    const playerId = row?.player?.id;
+    if (playerId == null) return;
+    map.set(playerId, resolveOverallScore(row.player, row.overall));
+  });
+  return map;
+}
+
 module.exports = {
   computeOverallFromEntries,
+  resolveOverallScore,
+  buildOverallScoreMap,
 };
