@@ -5,7 +5,28 @@
 // Aqui é só o conteúdo interno do <main>.
   const fmtDateTimeBR = (d) =>
     d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "-";
+  const hasVoteSessionTokens = !!(voteSession && voteSession.tokens && voteSession.tokens.length);
+  const voteSessionClosed = !!(
+    voteSession &&
+    voteSession.expiresAt &&
+    new Date(voteSession.expiresAt).getTime() <= Date.now()
+  );
 %>
+
+<style>
+  .admin-panel {
+    background: linear-gradient(180deg, rgba(20, 20, 24, 0.72), rgba(10, 10, 14, 0.82));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(4px);
+  }
+  .admin-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.82);
+  }
+</style>
 
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
   <div>
@@ -31,13 +52,18 @@
   </a>
 </div>
 
-<div class="sticky top-20 z-40 bg-black/70 border border-horriver-border rounded-2xl px-4 py-3 mb-4">
+<div class="sticky top-20 z-40 admin-panel rounded-2xl px-4 py-3 mb-4">
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-[11px]">
     <span class="text-horriver-gray uppercase tracking-[0.2em]">Acoes rapidas</span>
     <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:overflow-visible overflow-x-auto whitespace-nowrap pb-1">
       <a href="#stats" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Stats</a>
       <a href="#votacao" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Votacao</a>
       <a href="#sorteador" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Sorteador</a>
+      <button type="submit" form="voteSessionForm" class="px-3 py-1 rounded-full border border-horriver-orange/60 text-horriver-orange font-semibold hover:bg-horriver-orange hover:text-black transition">Gerar links</button>
+      <% if (hasVoteSessionTokens) { %>
+        <button type="submit" form="applyVotesForm" class="px-3 py-1 rounded-full border border-horriver-orange/60 text-horriver-orange font-semibold hover:bg-horriver-orange hover:text-black transition">Aplicar votos</button>
+        <button type="submit" form="closeVotesForm" class="px-3 py-1 rounded-full border border-red-500/70 text-red-300 font-semibold hover:bg-red-500 hover:text-white transition">Encerrar votacao</button>
+      <% } %>
       <button type="submit" form="statsForm" class="px-3 py-1 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Salvar stats</button>
       <a href="/admin" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Cancelar</a>
     </div>
@@ -81,9 +107,9 @@
     </label>
     <span id="presentCount"></span>
   </div>
-  <div class="hidden sm:block overflow-x-auto rounded-2xl border border-horriver-border bg-black/50">
-    <table class="min-w-full text-xs md:text-sm">
-      <thead class="bg-black/60">
+  <div class="hidden sm:block overflow-x-auto rounded-2xl border border-horriver-border bg-black/50 max-h-[70vh]">
+    <table class="min-w-full text-xs md:text-sm admin-table">
+      <thead class="bg-black/80">
         <tr>
           <th class="px-3 py-3 text-left font-semibold text-horriver-gray">Jogador</th>
           <th class="px-3 py-3 text-center font-semibold text-horriver-gray">OVR</th>
@@ -95,10 +121,10 @@
         </tr>
       </thead>
       <tbody>
-        <% players.forEach(function(player) { 
+        <% players.forEach(function(player, idx) { 
              const stat = stats.find(s => s.playerId === player.id);
         %>
-        <tr class="border-t border-horriver-border/40 hover:bg-white/5 transition">
+        <tr class="border-t border-horriver-border/40 hover:bg-white/10 transition" style="background:<%= idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)' %>;">
           <td class="px-3 py-2">
             <div class="flex flex-col">
               <span class="font-medium text-horriver-light"><%= player.name %></span>
@@ -135,7 +161,7 @@
               step="1"
               data-input-scope="desktop"
               class="w-20 sm:w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
-              value="<%= stat && stat.goals ? stat.goals : '' %>"
+              value="<%= stat && stat.goals != null ? stat.goals : 0 %>"
             />
           </td>
           <td class="px-3 py-2 text-center align-middle">
@@ -146,7 +172,7 @@
               step="1"
               data-input-scope="desktop"
               class="w-20 sm:w-16 bg-black/40 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs md:text-sm"
-              value="<%= stat && stat.assists ? stat.assists : '' %>"
+              value="<%= stat && stat.assists != null ? stat.assists : 0 %>"
             />
           </td>
           <td class="px-3 py-2 text-center align-middle">
@@ -232,7 +258,7 @@
               step="1"
               data-input-scope="mobile"
               class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
-              value="<%= stat && stat.goals ? stat.goals : '' %>"
+              value="<%= stat && stat.goals != null ? stat.goals : 0 %>"
             />
           </label>
 
@@ -245,7 +271,7 @@
               step="1"
               data-input-scope="mobile"
               class="w-full bg-black/20 border border-horriver-border rounded-md px-2 py-1 text-center text-horriver-light text-xs"
-              value="<%= stat && stat.assists ? stat.assists : '' %>"
+              value="<%= stat && stat.assists != null ? stat.assists : 0 %>"
             />
           </label>
 
@@ -304,6 +330,7 @@
       </p>
     </div>
     <form
+      id="voteSessionForm"
       action="/admin/matches/<%= match.id %>/vote-session"
       method="POST"
       class="flex flex-col sm:flex-row sm:items-center gap-2 text-[11px] w-full sm:w-auto"
@@ -336,6 +363,7 @@
   <% } else { %>
     <div class="flex flex-col md:flex-row md:items-center gap-2 mb-3 text-[12px]">
       <form
+        id="applyVotesForm"
         action="/admin/matches/<%= match.id %>/apply-votes"
         method="POST"
         class="flex items-center gap-2"
@@ -354,6 +382,7 @@
       </form>
 
       <form
+        id="closeVotesForm"
         action="/admin/matches/<%= match.id %>/close-votes"
         method="POST"
         class="flex items-center gap-2"
@@ -372,7 +401,7 @@
       </form>
     </div>
 
-    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 w-full">
+    <div class="admin-panel rounded-2xl p-4 w-full">
       <p class="text-xs text-horriver-gray mb-2">
         Sessão criada em <%= fmtDateTimeBR(voteSession.createdAt) %>
         <% if (voteSession.expiresAt) { %>
@@ -381,10 +410,15 @@
           · sem expiração
         <% } %>
       </p>
+      <div class="mb-3">
+        <span class="status-chip <%= voteSessionClosed ? 'status-danger' : 'status-info' %>">
+          <%= voteSessionClosed ? 'Votacao encerrada' : 'Votacao ativa' %>
+        </span>
+      </div>
 
-      <div class="overflow-x-auto text-[11px] md:text-xs w-full">
-        <table class="w-full min-w-[640px] border-collapse">
-          <thead>
+      <div class="overflow-x-auto text-[11px] md:text-xs w-full max-h-[60vh]">
+        <table class="w-full min-w-[640px] border-collapse admin-table">
+          <thead class="bg-black/80">
             <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
               <th class="py-2 pr-3 text-left font-normal">Jogador</th>
               <th class="py-2 pr-3 text-left font-normal">Posição</th>
@@ -394,14 +428,14 @@
             </tr>
           </thead>
           <tbody>
-            <% voteSession.tokens.forEach((t) => {
+            <% voteSession.tokens.forEach((t, idx) => {
                  const link = `${voteBaseUrl}/vote/${t.token}`;
                  const waRaw = t.player.whatsapp || "";
                  const waDigits = waRaw.replace(/\\D/g, "");
                  const msg = `Fala ${t.player.name}! Seu link de votação da pelada: ${link}`;
                  const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
             %>
-                <tr class="border-b border-horriver-border/40 last:border-0">
+                <tr class="border-b border-horriver-border/40 last:border-0 hover:bg-white/10 transition" style="background:<%= idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)' %>;">
                 <td class="py-2 pr-3 text-horriver-light">
                   <%= t.player.name %>
                   <% if (t.player.nickname) { %>
@@ -430,14 +464,14 @@
                       Mandar link
                     </a>
                   <% } else { %>
-                    <span class="text-horriver-gray">Sem número</span>
+                    <span class="status-chip status-warning">Sem numero</span>
                   <% } %>
                 </td>
                 <td class="py-2 pr-3">
                   <% if (t.usedAt) { %>
-                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">✓</span>
+                    <span class="status-chip status-ok">Votou</span>
                   <% } else { %>
-                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/10 text-horriver-gray text-[11px]">—</span>
+                    <span class="status-chip status-pending">Pendente</span>
                   <% } %>
                 </td>
               </tr>

@@ -11,6 +11,7 @@
   };
 
   const featured = hallFeatured || {};
+  const seasonStats = latestSeasonPlayerStats || {};
 
   const catLabel = {
     MELHOR_JOGADOR: "Melhor jogador",
@@ -23,17 +24,22 @@
     MELHOR_ATACANTE: "Melhor atacante",
   };
 
+  const getSeasonPlayerStats = (playerId) => {
+    if (!playerId) return { goals: 0, assists: 0, photos: 0, ratingAvg: 0 };
+    return seasonStats[playerId] || { goals: 0, assists: 0, photos: 0, ratingAvg: 0 };
+  };
+
   const statValue = (award) => {
     if (!award || !award.player) return null;
-    const p = award.player;
+    const s = getSeasonPlayerStats(award.player.id);
     const cat = (award.category || "").toLowerCase();
     switch (cat) {
       case "artilheiro":
-        return p.totalGoals || 0;
+        return s.goals || 0;
       case "assistente":
-        return p.totalAssists || 0;
+        return s.assists || 0;
       case "rei_das_fotos":
-        return p.totalPhotos || 0;
+        return s.photos || 0;
       default:
         return null;
     }
@@ -48,6 +54,7 @@
 
   <% if (featured.best && featured.best.player) { 
        const hero = featured.best.player;
+       const heroSeason = getSeasonPlayerStats(hero.id);
     %>
     <div class="relative overflow-hidden rounded-3xl border border-horriver-orange/40 bg-gradient-to-br from-black/80 via-black/60 to-horriver-red/20 shadow-card-soft">
       <div class="absolute inset-0 pointer-events-none">
@@ -70,15 +77,15 @@
             </div>
             <div class="bg-black/40 border border-horriver-border/60 rounded-xl px-3 py-2">
               <p class="text-horriver-gray text-[11px]">Média</p>
-              <p class="text-horriver-light font-semibold"><%= (hero.totalRating || 0).toFixed(2) %></p>
+              <p class="text-horriver-light font-semibold"><%= (heroSeason.ratingAvg || 0).toFixed(2) %></p>
             </div>
             <div class="bg-black/40 border border-horriver-border/60 rounded-xl px-3 py-2">
               <p class="text-horriver-gray text-[11px]">Gols</p>
-              <p class="text-horriver-light font-semibold"><%= hero.totalGoals || 0 %></p>
+              <p class="text-horriver-light font-semibold"><%= heroSeason.goals || 0 %></p>
             </div>
             <div class="bg-black/40 border border-horriver-border/60 rounded-xl px-3 py-2">
               <p class="text-horriver-gray text-[11px]">Assist.</p>
-              <p class="text-horriver-light font-semibold"><%= hero.totalAssists || 0 %></p>
+              <p class="text-horriver-light font-semibold"><%= heroSeason.assists || 0 %></p>
             </div>
           </div>
         </div>

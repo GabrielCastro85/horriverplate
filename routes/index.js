@@ -207,6 +207,25 @@ router.get("/", async (req, res) => {
     if (weeklyAward?.bestPlayerId) {
       const matchId =
         weeklyAward.winningMatchId || weeklyAward.winningMatch?.id || null;
+      let computedWeeklyRating = null;
+
+      if (matchId) {
+        try {
+          const result = await computeMatchRatingsAndAwards(matchId);
+          if (!result.error && result.scores && typeof result.scores.get === "function") {
+            const playerScore = result.scores.get(weeklyAward.bestPlayerId);
+            if (
+              playerScore &&
+              playerScore.finalRating != null &&
+              !Number.isNaN(Number(playerScore.finalRating))
+            ) {
+              computedWeeklyRating = Number(playerScore.finalRating);
+            }
+          }
+        } catch (calcErr) {
+          console.warn("Falha ao calcular nota final do craque da semana:", calcErr);
+        }
+      }
 
       let stats = [];
       if (matchId) {
@@ -254,7 +273,12 @@ router.get("/", async (req, res) => {
         assists,
         matches,
         photos,
-        avgRating: ratingCount ? ratingSum / ratingCount : 0,
+        avgRating:
+          computedWeeklyRating != null
+            ? computedWeeklyRating
+            : ratingCount
+              ? ratingSum / ratingCount
+              : 0,
       };
     }
 
@@ -764,6 +788,7 @@ router.get("/hall-da-fama", async (req, res) => {
     let latestSeasonYear = null;
     let latestSeasonAwards = [];
     let hallFeatured = null;
+    let latestSeasonPlayerStats = {};
     let previousSeasonYear = null;
     let previousSeasonAwards = [];
     let seasonHistory = [];
@@ -787,6 +812,73 @@ router.get("/hall-da-fama", async (req, res) => {
         midfielder: byCategory("MELHOR_MEIA"),
         forward: byCategory("MELHOR_ATACANTE"),
       };
+
+      // Stats da temporada em destaque (evita mostrar totais da carreira na UI).
+      // Faixa anual no fuso de Sao Paulo (UTC-3) para manter consistencia com o resto do app.
+      const seasonStart = new Date(Date.UTC(latestSeasonYear, 0, 1, 3, 0, 0, 0));
+      const seasonEnd = new Date(Date.UTC(latestSeasonYear + 1, 0, 1, 3, 0, 0, 0));
+      const featuredPlayerIds = Array.from(
+        new Set(
+          Object.values(hallFeatured)
+            .map((award) => award?.playerId)
+            .filter((id) => Number.isFinite(id))
+        )
+      );
+
+      if (featuredPlayerIds.length) {
+        const seasonStats = await prisma.playerStat.findMany({
+          where: {
+            playerId: { in: featuredPlayerIds },
+            match: {
+              playedAt: {
+                gte: seasonStart,
+                lt: seasonEnd,
+              },
+            },
+          },
+          select: {
+            playerId: true,
+            goals: true,
+            assists: true,
+            appearedInPhoto: true,
+            rating: true,
+          },
+        });
+
+        latestSeasonPlayerStats = featuredPlayerIds.reduce((acc, playerId) => {
+          acc[playerId] = {
+            goals: 0,
+            assists: 0,
+            photos: 0,
+            ratingAvg: 0,
+          };
+          return acc;
+        }, {});
+
+        const ratingBuckets = {};
+        for (const s of seasonStats) {
+          const current = latestSeasonPlayerStats[s.playerId];
+          if (!current) continue;
+          current.goals += s.goals || 0;
+          current.assists += s.assists || 0;
+          if (s.appearedInPhoto) current.photos += 1;
+
+          if (typeof s.rating === "number") {
+            if (!ratingBuckets[s.playerId]) {
+              ratingBuckets[s.playerId] = { sum: 0, count: 0 };
+            }
+            ratingBuckets[s.playerId].sum += s.rating;
+            ratingBuckets[s.playerId].count += 1;
+          }
+        }
+
+        for (const [playerIdRaw, bucket] of Object.entries(ratingBuckets)) {
+          const playerId = Number(playerIdRaw);
+          if (!latestSeasonPlayerStats[playerId]) continue;
+          latestSeasonPlayerStats[playerId].ratingAvg =
+            bucket.count > 0 ? bucket.sum / bucket.count : 0;
+        }
+      }
 
       // pega o ano anterior (se existir) para histórico
       const otherYear = seasonAwards.find((a) => a.year < latestSeasonYear);
@@ -825,6 +917,7 @@ router.get("/hall-da-fama", async (req, res) => {
       latestSeasonYear,
       latestSeasonAwards,
       hallFeatured,
+      latestSeasonPlayerStats,
       previousSeasonYear,
       previousSeasonAwards,
       seasonHistory,

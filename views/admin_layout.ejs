@@ -1,4 +1,4 @@
-?<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -46,6 +46,52 @@
       .field-invalid {
         border-color: rgba(248, 113, 113, 0.8) !important;
         box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.18);
+      }
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        color: #c4ccde;
+        font-size: 11px;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+      .status-chip::before {
+        content: "";
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.9;
+      }
+      .status-ok {
+        border-color: rgba(16, 185, 129, 0.55);
+        background: rgba(16, 185, 129, 0.16);
+        color: #86efac;
+      }
+      .status-pending {
+        border-color: rgba(148, 163, 184, 0.55);
+        background: rgba(148, 163, 184, 0.12);
+        color: #cbd5e1;
+      }
+      .status-warning {
+        border-color: rgba(245, 158, 11, 0.55);
+        background: rgba(245, 158, 11, 0.16);
+        color: #fcd34d;
+      }
+      .status-danger {
+        border-color: rgba(239, 68, 68, 0.6);
+        background: rgba(239, 68, 68, 0.18);
+        color: #fca5a5;
+      }
+      .status-info {
+        border-color: rgba(59, 130, 246, 0.55);
+        background: rgba(59, 130, 246, 0.16);
+        color: #93c5fd;
       }
     </style>
   </head>
