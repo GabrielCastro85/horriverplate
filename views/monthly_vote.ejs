@@ -1,11 +1,112 @@
 <section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+  <style>
+    .monthly-vote-card {
+      position: relative;
+      display: block;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease,
+        background 0.2s ease;
+    }
+    .monthly-vote-card:hover,
+    .monthly-vote-card:focus-within {
+      border-color: rgba(255, 122, 26, 0.55);
+      transform: translateY(-1px);
+    }
+    .monthly-vote-card.is-selected {
+      border-color: rgba(255, 122, 26, 0.85);
+      background: linear-gradient(180deg, rgba(255, 122, 26, 0.12), rgba(0, 0, 0, 0.38));
+      box-shadow: 0 0 0 1px rgba(255, 122, 26, 0.45), 0 16px 32px rgba(0, 0, 0, 0.28);
+      transform: translateY(-2px);
+    }
+    .monthly-vote-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0);
+      transition: box-shadow 0.2s ease;
+    }
+    .monthly-vote-card.is-selected::after {
+      box-shadow: inset 0 0 0 1px rgba(255, 122, 26, 0.55);
+    }
+    .monthly-vote-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 104px;
+      justify-content: center;
+      padding: 0.5rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 600;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .monthly-vote-card.is-selected .monthly-vote-state {
+      border-color: rgba(255, 122, 26, 0.7);
+      background: #ff7a1a;
+      color: #0b0b0b;
+    }
+    .monthly-vote-check {
+      width: 0.7rem;
+      height: 0.7rem;
+      border-radius: 999px;
+      border: 2px solid currentColor;
+      opacity: 0.55;
+      transition: opacity 0.2s ease, background 0.2s ease;
+    }
+    .monthly-vote-card.is-selected .monthly-vote-check {
+      background: currentColor;
+      opacity: 1;
+    }
+    .monthly-vote-badge {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .monthly-vote-card.is-selected .monthly-vote-badge {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .monthly-vote-summary {
+      position: sticky;
+      bottom: 0.75rem;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.9rem 1rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(11, 11, 15, 0.92);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 30px rgba(0, 0, 0, 0.28);
+    }
+    @media (min-width: 640px) {
+      .monthly-vote-summary {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+  </style>
+
   <header class="text-center space-y-2">
-    <h1 class="font-title text-3xl text-horriver-light">Votação do melhor do mês</h1>
+    <h1 class="font-title text-3xl text-horriver-light">Votacao do melhor do mes</h1>
     <% if (monthLabel) { %>
-      <p class="text-sm text-horriver-gray">Mês: <span class="text-horriver-orange"><%= monthLabel %></span></p>
+      <p class="text-sm text-horriver-gray">
+        Mes: <span class="text-horriver-orange"><%= monthLabel %></span>
+      </p>
     <% } %>
     <% if (voter) { %>
-      <p class="text-xs text-horriver-gray">Link gerado para: <span class="text-horriver-light"><%= voter.name %></span></p>
+      <p class="text-xs text-horriver-gray">
+        Link gerado para: <span class="text-horriver-light"><%= voter.name %></span>
+      </p>
     <% } %>
   </header>
 
@@ -22,36 +123,59 @@
   <% } %>
 
   <% if (!error && !success) { %>
-    <form method="POST" class="space-y-4">
+    <form method="POST" class="space-y-4" id="monthly-vote-form">
+      <div class="rounded-2xl border border-horriver-border/70 bg-black/30 px-4 py-3 text-[12px] text-horriver-gray">
+        Clique ou toque no card do jogador. O escolhido fica destacado em laranja antes do envio.
+      </div>
+
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <% candidates.forEach((c) => { %>
-          <label class="rounded-2xl border border-horriver-border bg-black/40 p-4 cursor-pointer hover:border-horriver-orange transition peer-checked:border-horriver-orange peer-checked:shadow-[0_0_0_1px_rgba(255,122,26,0.6),0_10px_30px_rgba(0,0,0,0.35)]">
-            <input type="radio" name="candidateId" value="<%= c.id %>" class="hidden peer" required />
-            <div class="flex items-center gap-3">
-              <img
-                src="<%= thumbUrl(c.photoUrl || '/img/logo-128x128.svg', 96) %>"
-                alt="<%= c.name %>"
-                class="w-16 h-16 rounded-full object-cover border border-horriver-orange/60 peer-checked:ring-2 peer-checked:ring-horriver-orange/70"
-              />
-              <div class="min-w-0">
-                <p class="text-sm font-semibold text-horriver-light truncate"><%= c.name %></p>
-                <% if (c.nickname) { %>
-                  <p class="text-[11px] text-horriver-gray truncate">"<%= c.nickname %>"</p>
-                <% } %>
-                <p class="text-[11px] text-horriver-gray">Peladas no mês: <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span></p>
+          <label
+            class="monthly-vote-card p-4 cursor-pointer"
+            data-vote-card
+            data-candidate-name="<%= c.name %>"
+            tabindex="0"
+          >
+            <input type="radio" name="candidateId" value="<%= c.id %>" class="hidden" required />
+
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <img
+                  src="<%= thumbUrl(c.photoUrl || '/img/logo-128x128.svg', 96) %>"
+                  alt="<%= c.name %>"
+                  class="w-16 h-16 rounded-full object-cover border border-horriver-orange/60"
+                />
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-horriver-light truncate"><%= c.name %></p>
+                  <% if (c.nickname) { %>
+                    <p class="text-[11px] text-horriver-gray truncate">"<%= c.nickname %>"</p>
+                  <% } %>
+                  <p class="text-[11px] text-horriver-gray">
+                    Peladas no mes:
+                    <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span>
+                  </p>
+                </div>
               </div>
+
+              <span class="monthly-vote-state shrink-0">
+                <span class="monthly-vote-check" aria-hidden="true"></span>
+                <span class="monthly-vote-state-label">Selecionar</span>
+              </span>
             </div>
+
             <div class="mt-3 grid grid-cols-4 gap-2 text-[11px] text-horriver-gray">
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= (c.goals ?? c.avgGoals ?? 0) %></p>
+                <p class="text-horriver-orange font-semibold"><%= c.goals ?? c.avgGoals ?? 0 %></p>
                 <p>Gols</p>
               </div>
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= (c.assists ?? c.avgAssists ?? 0) %></p>
+                <p class="text-horriver-orange font-semibold"><%= c.assists ?? c.avgAssists ?? 0 %></p>
                 <p>Assist.</p>
               </div>
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= (c.avgRating ?? 0).toFixed ? c.avgRating.toFixed(2).replace('.', ',') : c.avgRating %></p>
+                <p class="text-horriver-orange font-semibold">
+                  <%= (c.avgRating ?? 0).toFixed ? c.avgRating.toFixed(2).replace('.', ',') : c.avgRating %>
+                </p>
                 <p>Nota</p>
               </div>
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
@@ -59,19 +183,32 @@
                 <p>Fotos</p>
               </div>
             </div>
-            <div class="mt-3 flex items-center gap-2 text-[11px] text-horriver-gray">
-              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-horriver-orange text-horriver-orange">?</span>
-              <span class="peer-checked:text-horriver-orange">Selecionar este jogador</span>
+
+            <div class="mt-3 flex items-center justify-between gap-2 text-[11px]">
+              <span class="text-horriver-gray">Confirme o destaque antes de enviar</span>
+              <span class="monthly-vote-badge text-horriver-orange font-semibold uppercase tracking-[0.16em]">
+                Selecionado
+              </span>
             </div>
           </label>
         <% }) %>
       </div>
 
-      <div class="text-right">
+      <div id="monthlyVoteSummary" class="monthly-vote-summary">
+        <div class="space-y-1">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-gray">Seu voto</p>
+          <p id="monthlyVoteSelection" class="text-sm font-semibold text-horriver-light">
+            Nenhum jogador selecionado
+          </p>
+          <p class="text-[11px] text-horriver-gray">
+            Revise o card destacado antes de enviar.
+          </p>
+        </div>
+
         <button
           type="submit"
           data-submit-label="Enviando..."
-          class="inline-flex items-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
+          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
         >
           Enviar voto
         </button>
@@ -79,3 +216,54 @@
     </form>
   <% } %>
 </section>
+
+<script>
+  (() => {
+    const form = document.getElementById("monthly-vote-form");
+    if (!form) return;
+
+    const cards = Array.from(form.querySelectorAll("[data-vote-card]"));
+    const selectionEl = document.getElementById("monthlyVoteSelection");
+
+    const syncSelection = () => {
+      let selectedCard = null;
+
+      cards.forEach((card) => {
+        const input = card.querySelector('input[type="radio"]');
+        const checked = !!input && input.checked;
+        card.classList.toggle("is-selected", checked);
+
+        const stateLabel = card.querySelector(".monthly-vote-state-label");
+        if (stateLabel) {
+          stateLabel.textContent = checked ? "Selecionado" : "Selecionar";
+        }
+
+        if (checked) selectedCard = card;
+      });
+
+      if (selectionEl) {
+        selectionEl.textContent = selectedCard
+          ? selectedCard.dataset.candidateName || "Jogador selecionado"
+          : "Nenhum jogador selecionado";
+        selectionEl.classList.toggle("text-horriver-orange", !!selectedCard);
+        selectionEl.classList.toggle("text-horriver-light", !selectedCard);
+      }
+    };
+
+    cards.forEach((card) => {
+      const input = card.querySelector('input[type="radio"]');
+      if (!input) return;
+
+      input.addEventListener("change", syncSelection);
+
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        input.checked = true;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+
+    syncSelection();
+  })();
+</script>
