@@ -8,6 +8,19 @@
   // controla exibicao do botao de recalcular (vira da rota /admin)
   const showResetButton =
     typeof showReset !== "undefined" ? !!showReset : false;
+
+  const adminRestoreNowParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const adminRestoreDefaultMonth = Number(
+    adminRestoreNowParts.find((part) => part.type === "month")?.value || 1
+  );
+  const adminRestoreDefaultYear = Number(
+    adminRestoreNowParts.find((part) => part.type === "year")?.value ||
+      new Date().getFullYear()
+  );
 %>
 
 <style>
@@ -636,6 +649,7 @@
         action="/admin/monthly-awards"
         method="POST"
         class="space-y-4 text-xs md:text-sm"
+        autocomplete="off"
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
@@ -645,21 +659,22 @@
             id="monthly_month"
             name="month"
             class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
+            data-default-month="<%= adminRestoreDefaultMonth %>"
             required
           >
             <option value="">Selecione</option>
-            <option value="1">Janeiro</option>
-            <option value="2">Fevereiro</option>
-            <option value="3">Marco</option>
-            <option value="4">Abril</option>
-            <option value="5">Maio</option>
-            <option value="6">Junho</option>
-            <option value="7">Julho</option>
-            <option value="8">Agosto</option>
-            <option value="9">Setembro</option>
-            <option value="10">Outubro</option>
-            <option value="11">Novembro</option>
-            <option value="12">Dezembro</option>
+            <option value="1" <%= adminRestoreDefaultMonth === 1 ? "selected" : "" %>>Janeiro</option>
+            <option value="2" <%= adminRestoreDefaultMonth === 2 ? "selected" : "" %>>Fevereiro</option>
+            <option value="3" <%= adminRestoreDefaultMonth === 3 ? "selected" : "" %>>Marco</option>
+            <option value="4" <%= adminRestoreDefaultMonth === 4 ? "selected" : "" %>>Abril</option>
+            <option value="5" <%= adminRestoreDefaultMonth === 5 ? "selected" : "" %>>Maio</option>
+            <option value="6" <%= adminRestoreDefaultMonth === 6 ? "selected" : "" %>>Junho</option>
+            <option value="7" <%= adminRestoreDefaultMonth === 7 ? "selected" : "" %>>Julho</option>
+            <option value="8" <%= adminRestoreDefaultMonth === 8 ? "selected" : "" %>>Agosto</option>
+            <option value="9" <%= adminRestoreDefaultMonth === 9 ? "selected" : "" %>>Setembro</option>
+            <option value="10" <%= adminRestoreDefaultMonth === 10 ? "selected" : "" %>>Outubro</option>
+            <option value="11" <%= adminRestoreDefaultMonth === 11 ? "selected" : "" %>>Novembro</option>
+            <option value="12" <%= adminRestoreDefaultMonth === 12 ? "selected" : "" %>>Dezembro</option>
           </select>
         </div>
 
@@ -671,7 +686,8 @@
             id="monthly_year"
             type="number"
             name="year"
-            value="<%= new Date().getFullYear() %>"
+            value="<%= adminRestoreDefaultYear %>"
+            data-default-year="<%= adminRestoreDefaultYear %>"
             class="w-full bg-black/40 border border-horriver-border rounded-lg px-3 py-2 text-horriver-light"
             required
           />
@@ -969,6 +985,17 @@
     const monthlyMonth = document.getElementById("monthly_month");
     const monthlyYear = document.getElementById("monthly_year");
     const monthlyCraque = document.getElementById("monthly_craque");
+    const applyMonthlyDefaults = () => {
+      if (monthlyMonth?.dataset.defaultMonth) {
+        monthlyMonth.value = monthlyMonth.dataset.defaultMonth;
+      }
+      if (monthlyYear?.dataset.defaultYear) {
+        monthlyYear.value = monthlyYear.dataset.defaultYear;
+      }
+    };
+
+    applyMonthlyDefaults();
+    window.addEventListener("pageshow", applyMonthlyDefaults);
 
     document.querySelectorAll("[data-monthly-edit]").forEach((btn) => {
       btn.addEventListener("click", () => {

@@ -24,6 +24,16 @@
   }
 </style>
 
+<%
+  const adminNowParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const adminDefaultMonth = Number(adminNowParts.find((part) => part.type === "month")?.value || 1);
+  const adminDefaultYear = Number(adminNowParts.find((part) => part.type === "year")?.value || new Date().getFullYear());
+%>
+
 <div class="space-y-10">
   <!-- Header + acoes rapidas -->
   <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -321,19 +331,19 @@
       <!-- Craque do mes -->
       <div class="admin-panel rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold text-lg text-horriver-light">Craque do Mes</h3>
-        <form action="/admin/monthly-awards" method="POST" class="space-y-3" data-autosave="true" data-toast="Craque do mes salvo.">
+        <form id="monthlyAwardForm" action="/admin/monthly-awards" method="POST" class="space-y-3" data-autosave="true" data-toast="Craque do mes salvo." autocomplete="off">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-horriver-gray">
             <label class="flex flex-col gap-1">
               Mes
-              <select name="month" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
+              <select id="monthlyAwardMonth" name="month" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" data-default-month="<%= adminDefaultMonth %>">
                 <% for (let i = 1; i <= 12; i++) { %>
-                  <option value="<%= i %>"><%= new Date(2000, i - 1, 1).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', month: 'long' }) %></option>
+                  <option value="<%= i %>" <%= i === adminDefaultMonth ? "selected" : "" %>><%= new Date(2000, i - 1, 1).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', month: 'long' }) %></option>
                 <% } %>
               </select>
             </label>
             <label class="flex flex-col gap-1">
               Ano
-              <input type="number" name="year" value="<%= new Date().getFullYear() %>" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
+              <input id="monthlyAwardYear" type="number" name="year" value="<%= adminDefaultYear %>" data-default-year="<%= adminDefaultYear %>" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
             </label>
           </div>
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
@@ -544,6 +554,25 @@
     };
 
     setDefaultDate();
+  })();
+</script>
+
+<script>
+  (function () {
+    const monthlyMonth = document.getElementById("monthlyAwardMonth");
+    const monthlyYear = document.getElementById("monthlyAwardYear");
+
+    const applyMonthlyDefaults = () => {
+      if (monthlyMonth?.dataset.defaultMonth) {
+        monthlyMonth.value = String(monthlyMonth.dataset.defaultMonth);
+      }
+      if (monthlyYear?.dataset.defaultYear) {
+        monthlyYear.value = String(monthlyYear.dataset.defaultYear);
+      }
+    };
+
+    applyMonthlyDefaults();
+    window.addEventListener("pageshow", applyMonthlyDefaults);
   })();
 </script>
 
