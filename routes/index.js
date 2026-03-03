@@ -4,23 +4,8 @@ const router = express.Router();
 const prisma = require("../utils/db");
 const { getAchievementsStats } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
-
-const cache = new Map();
+const { getCache, setCache, deleteCache } = require("../utils/page_cache");
 const CACHE_TTL_MS = 60 * 1000;
-
-function getCache(key) {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
-    cache.delete(key);
-    return null;
-  }
-  return entry.value;
-}
-
-function setCache(key, value) {
-  cache.set(key, { value, timestamp: Date.now() });
-}
 
 
 // ==============================
@@ -69,6 +54,17 @@ function getMonthRangeSaoPaulo(year, month) {
   return { start, end };
 }
 
+function getSaoPauloMonthYear(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  return { year, month };
+}
+
 async function ensureNextTuesdayMatch(baseDate) {
   const target = getNextTuesdayAtHour(baseDate, 20);
   const dayStart = startOfDay(target);
@@ -98,10 +94,10 @@ router.get("/", async (req, res) => {
     const now = new Date();
     const scheduleResult = await ensureNextTuesdayMatch(now);
     if (scheduleResult.created) {
-      cache.delete("home");
+      deleteCache("home");
     }
 
-    const cached = getCache("home");
+    const cached = getCache("home", CACHE_TTL_MS);
     if (cached) {
       return res.render("index", cached);
     }
@@ -117,7 +113,18 @@ router.get("/", async (req, res) => {
     // =====================================================
     // CRAQUE DO M–S
     // =====================================================
+    const currentSaoPaulo = getSaoPauloMonthYear(now);
     const monthlyCraque = await prisma.monthlyAward.findFirst({
+      where: {
+        craqueId: { not: null },
+        OR: [
+          { year: { lt: currentSaoPaulo.year } },
+          {
+            year: currentSaoPaulo.year,
+            month: { lte: currentSaoPaulo.month },
+          },
+        ],
+      },
       orderBy: [{ year: "desc" }, { month: "desc" }],
       include: { craque: true },
     });

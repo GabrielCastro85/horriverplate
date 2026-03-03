@@ -9,6 +9,7 @@ const {
   uploadPlayerPhoto,
   uploadWeeklyTeamPhoto,
 } = require("../utils/upload");
+const { deleteCache } = require("../utils/page_cache");
 
 const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
 const { rebuildAchievementsForAllPlayers } = require("../utils/achievements");
@@ -2387,6 +2388,7 @@ router.post(
         });
       }
 
+      deleteCache("home");
       res.redirect("/admin");
     } catch (err) {
       console.error("Erro ao salvar destaque da semana:", err);
@@ -2405,6 +2407,7 @@ router.post("/weekly-awards/:id/delete", requireAdmin, async (req, res) => {
       where: { id },
     });
 
+    deleteCache("home");
     res.redirect("/admin");
   } catch (err) {
     console.error("Erro ao excluir destaque da semana:", err);
@@ -2462,6 +2465,7 @@ router.post("/monthly-awards", requireAdmin, async (req, res) => {
       });
     }
 
+    deleteCache("home");
     res.redirect("/admin");
   } catch (err) {
     console.error("Erro ao salvar craque do mês:", err);
@@ -2560,6 +2564,7 @@ router.post("/monthly-awards/:id/delete", requireAdmin, async (req, res) => {
       where: { id },
     });
 
+    deleteCache("home");
     res.redirect("/admin");
   } catch (err) {
     console.error("Erro ao excluir craque do mês:", err);
