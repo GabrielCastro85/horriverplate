@@ -32,6 +32,20 @@
   }).formatToParts(new Date());
   const adminDefaultMonth = Number(adminNowParts.find((part) => part.type === "month")?.value || 1);
   const adminDefaultYear = Number(adminNowParts.find((part) => part.type === "year")?.value || new Date().getFullYear());
+  const adminMonthNames = [
+    "janeiro",
+    "fevereiro",
+    "marco",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro",
+  ];
 %>
 
 <div class="space-y-10">
@@ -337,7 +351,7 @@
               Mes
               <select id="monthlyAwardMonth" name="month" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" data-default-month="<%= adminDefaultMonth %>">
                 <% for (let i = 1; i <= 12; i++) { %>
-                  <option value="<%= i %>" <%= i === adminDefaultMonth ? "selected" : "" %>><%= new Date(2000, i - 1, 1).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', month: 'long' }) %></option>
+                  <option value="<%= i %>" <%= i === adminDefaultMonth ? "selected" : "" %>><%= adminMonthNames[i - 1] %></option>
                 <% } %>
               </select>
             </label>
@@ -362,7 +376,7 @@
             <p class="font-semibold text-horriver-light">Ultimos premiados</p>
             <% monthlyAwards.forEach(award => { %>
               <div class="admin-row flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg px-2 py-1">
-                <span><%= new Date(award.year, award.month - 1, 1).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', month: 'long' }) %>/<%= award.year %> - <%= award.craque?.name || 'N/A' %></span>
+                <span><%= adminMonthNames[award.month - 1] || award.month %>/<%= award.year %> - <%= award.craque?.name || 'N/A' %></span>
                 <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiação?');" class="w-full sm:w-auto">
                   <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
                 </form>

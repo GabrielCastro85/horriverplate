@@ -707,15 +707,15 @@ router.get("/fotos", async (req, res) => {
         if (!award.craqueId) {
           return { award, stats: null };
         }
-        const monthStart = new Date(award.year, award.month - 1, 1);
-        const monthEnd = new Date(award.year, award.month, 0);
-        monthStart.setHours(0, 0, 0, 0);
-        monthEnd.setHours(23, 59, 59, 999);
+        const { start: monthStart, end: monthEnd } = getMonthRangeSaoPaulo(
+          award.year,
+          award.month
+        );
 
         const stats = await prisma.playerStat.findMany({
           where: {
             playerId: award.craqueId,
-            match: { playedAt: { gte: monthStart, lte: monthEnd } },
+            match: { playedAt: { gte: monthStart, lt: monthEnd } },
           },
         });
 
