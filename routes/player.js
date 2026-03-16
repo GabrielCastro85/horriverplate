@@ -51,9 +51,11 @@ router.get("/:id", async (req, res) => {
       let ratingCount = 0;
 
       for (const s of p.stats) {
+        if (!s.present) continue;
+
         goals += s.goals || 0;
         assists += s.assists || 0;
-        if (s.present) matches++;
+        matches++;
         if (s.rating != null) {
           ratingSum += s.rating;
           ratingCount++;
@@ -84,7 +86,7 @@ router.get("/:id", async (req, res) => {
     };
 
     const ratingsSeries = player.stats
-      .filter((s) => s.rating != null)
+      .filter((s) => s.present && s.rating != null)
       .map((s) => ({
         date: s.match?.playedAt,
         rating: s.rating,
@@ -97,6 +99,8 @@ router.get("/:id", async (req, res) => {
 
     const goalsByMonthMap = {};
     player.stats.forEach((s) => {
+      if (!s.present) return;
+
       const d = new Date(s.match?.playedAt || Date.now());
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       goalsByMonthMap[key] = (goalsByMonthMap[key] || 0) + (s.goals || 0);
@@ -106,7 +110,7 @@ router.get("/:id", async (req, res) => {
       .sort((a, b) => new Date(a.label + "-01") - new Date(b.label + "-01"))
       .slice(-12); // últimos 12 meses
 
-    const recentMatches = player.stats.slice(0, 8).map((s) => ({
+    const recentMatches = player.stats.filter((s) => s.present).slice(0, 8).map((s) => ({
       date: s.match?.playedAt,
       desc: s.match?.description,
       goals: s.goals,
@@ -131,9 +135,11 @@ router.get("/:id", async (req, res) => {
       let rCount = 0;
 
       chronoStats.forEach((s) => {
+        if (!s.present) return;
+
         g += s.goals || 0;
         a += s.assists || 0;
-        if (s.present) m += 1;
+        m += 1;
         if (s.rating != null) {
           rSum += s.rating;
           rCount += 1;

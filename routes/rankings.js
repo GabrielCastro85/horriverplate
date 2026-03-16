@@ -7,6 +7,7 @@ const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 const cache = new Map();
 const CACHE_TTL_MS = 60 * 1000;
+const RANKINGS_RATING_CONCURRENCY = 6;
 
 function getCache(key) {
   const entry = cache.get(key);
@@ -20,6 +21,48 @@ function getCache(key) {
 
 function setCache(key, value) {
   cache.set(key, { value, timestamp: Date.now() });
+}
+
+function getSaoPauloMonthYear(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  return { year, month };
+}
+
+function getMonthRangeSaoPaulo(year, month) {
+  const from = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0, 0));
+  const to = new Date(Date.UTC(year, month, 1, 3, 0, 0, 0));
+  return { from, to };
+}
+
+function getYearRangeSaoPaulo(year) {
+  const from = new Date(Date.UTC(year, 0, 1, 3, 0, 0, 0));
+  const to = new Date(Date.UTC(year + 1, 0, 1, 3, 0, 0, 0));
+  return { from, to };
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  if (!items.length) return [];
+
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (true) {
+      const currentIndex = nextIndex++;
+      if (currentIndex >= items.length) break;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  };
+
+  const workerCount = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return results;
 }
 
 
@@ -39,20 +82,16 @@ function getDateRange(year, month) {
 
   // Se tiver m+–s v+–lido, filtra aquele m+–s
   if (!Number.isNaN(m) && m > 0 && m <= 12) {
-    const from = new Date(y, m - 1, 1);
-    const to = new Date(y, m, 1);
-    return { from, to };
+    return getMonthRangeSaoPaulo(y, m);
   }
 
   // Sen+–o, filtra o ano inteiro
-  const from = new Date(y, 0, 1);
-  const to = new Date(y + 1, 0, 1);
-  return { from, to };
+  return getYearRangeSaoPaulo(y);
 }
 
 router.get("/", async (req, res) => {
   try {
-    const currentYear = new Date().getFullYear();
+    const { year: currentYear } = getSaoPauloMonthYear();
 
     let { year, month, position } = req.query;
 
@@ -104,20 +143,31 @@ router.get("/", async (req, res) => {
     });
 
     const finalRatingsByMatch = new Map();
-    for (const matchId of matchIds) {
-      try {
-        const result = await computeMatchRatingsAndAwards(matchId);
-        if (!result.error && result.scores && typeof result.scores.forEach === "function") {
-          const map = new Map();
-          result.scores.forEach((score) => {
-            map.set(score.player.id, score.finalRating);
-          });
-          finalRatingsByMatch.set(matchId, map);
+    const matchIdList = Array.from(matchIds);
+    const ratingRows = await mapWithConcurrency(
+      matchIdList,
+      RANKINGS_RATING_CONCURRENCY,
+      async (matchId) => {
+        try {
+          const result = await computeMatchRatingsAndAwards(matchId);
+          if (!result.error && result.scores && typeof result.scores.forEach === "function") {
+            const map = new Map();
+            result.scores.forEach((score) => {
+              map.set(score.player.id, score.finalRating);
+            });
+            return { matchId, map };
+          }
+        } catch (err) {
+          console.warn("Falha ao calcular notas finais no ranking:", err);
         }
-      } catch (err) {
-        console.warn("Falha ao calcular notas finais no ranking:", err);
+        return null;
       }
-    }
+    );
+    ratingRows.forEach((row) => {
+      if (row?.map) {
+        finalRatingsByMatch.set(row.matchId, row.map);
+      }
+    });
 
     const getFinalRating = (stat) => {
       const matchId = stat.match && stat.match.id;
@@ -137,9 +187,11 @@ router.get("/", async (req, res) => {
       let ratingCount = 0;
 
       for (const s of p.stats) {
+        if (!s.present) continue;
+
         goals += s.goals || 0;
         assists += s.assists || 0;
-        if (s.present) matches++;
+        matches++;
         if (s.appearedInPhoto) photos++;
         const finalRating = getFinalRating(s);
         if (finalRating != null) {
@@ -194,9 +246,11 @@ router.get("/", async (req, res) => {
         let ratingCount = 0;
 
         for (const s of recentStats) {
+          if (!s.present) continue;
+
           goals += s.goals || 0;
           assists += s.assists || 0;
-          if (s.present) matches++;
+          matches++;
           const finalRating = getFinalRating(s);
           if (finalRating != null) {
             ratingSum += finalRating;

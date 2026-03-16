@@ -1,7 +1,10 @@
 const prisma = require("./db");
 
 function normalizeRatingStats(stats) {
-  const ratings = stats.map((s) => s.rating).filter((r) => r != null);
+  const ratings = stats
+    .filter((s) => s.present)
+    .map((s) => s.rating)
+    .filter((r) => r != null);
   const avg = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
   const count8 = ratings.filter((r) => r >= 8).length;
   const count9 = ratings.filter((r) => r >= 9).length;
@@ -27,10 +30,12 @@ function findUnlockDate(stats, category, code, target, playerPosition) {
   const isDef = (playerPosition || "").toLowerCase().includes("zag") || (playerPosition || "").toLowerCase().includes("def");
 
   for (const s of sorted) {
+    if (!s.present) continue;
+
     const playedAt = s.match?.playedAt || s.createdAt || null;
     accGoals += s.goals || 0;
     accAssists += s.assists || 0;
-    if (s.present) accMatches += 1;
+    accMatches += 1;
     if (s.rating != null) {
       accRatings += s.rating;
       accRatingCount += 1;

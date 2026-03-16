@@ -33,8 +33,9 @@ const MONTHLY_VOTE_WEIGHTS = {
 const MONTHLY_VOTE_MIN_MATCHES = 2;
 
 function getMonthRange(year, month) {
-  const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
-  const end = new Date(year, month, 1, 0, 0, 0, 0);
+  // Usa fronteiras em UTC para refletir corretamente o mes de America/Sao_Paulo.
+  const start = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0, 0));
+  const end = new Date(Date.UTC(year, month, 1, 3, 0, 0, 0));
   return { start, end };
 }
 
@@ -704,9 +705,11 @@ async function recomputeTotalsForPlayers(playerIds) {
     let ratingCount = 0;
 
     for (const s of stats) {
+      if (!s.present) continue;
+
       goals += s.goals || 0;
       assists += s.assists || 0;
-      if (s.present) matches++;
+      matches++;
       if (s.appearedInPhoto) photos++;
       if (s.rating != null) {
         ratingSum += s.rating;
@@ -2240,8 +2243,8 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
       const ratingRaw = req.body[`rating_${playerId}`];
       const photo = !!req.body[`photo_${playerId}`];
 
-      const goals = goalsRaw ? parseInt(goalsRaw, 10) || 0 : 0;
-      const assists = assistsRaw ? parseInt(assistsRaw, 10) || 0 : 0;
+      let goals = goalsRaw ? parseInt(goalsRaw, 10) || 0 : 0;
+      let assists = assistsRaw ? parseInt(assistsRaw, 10) || 0 : 0;
 
       let rating = null;
       if (ratingRaw && ratingRaw.trim() !== "") {
@@ -2252,7 +2255,14 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
         }
       }
 
-      const appearedInPhoto = photo;
+      let appearedInPhoto = photo;
+
+      if (!present) {
+        goals = 0;
+        assists = 0;
+        rating = null;
+        appearedInPhoto = false;
+      }
 
       const hasAnyData =
         present || goals > 0 || assists > 0 || rating !== null || appearedInPhoto;
@@ -3236,6 +3246,8 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       let ratingCount = 0;
 
       arr.forEach((s) => {
+        if (!s.present) return;
+
         goals += s.goals || 0;
         assists += s.assists || 0;
         if (s.rating != null) {

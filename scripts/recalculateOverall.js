@@ -48,9 +48,11 @@ async function main() {
       let ratingCount = 0;
 
       for (const s of p.stats || []) {
+        if (!s.present) continue;
+
         goals += s.goals || 0;
         assists += s.assists || 0;
-        if (s.present) matches++;
+        matches++;
         if (s.rating != null) {
           ratingSum += s.rating;
           ratingCount++;

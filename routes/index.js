@@ -176,9 +176,11 @@ router.get("/", async (req, res) => {
         ratingCount = 0;
 
       stats.forEach((s) => {
+        if (!s.present) return;
+
         goals += s.goals || 0;
         assists += s.assists || 0;
-        if (s.present) matches++;
+        matches++;
         if (s.appearedInPhoto) photos++;
         if (s.rating != null) {
           ratingSum += s.rating;
@@ -265,9 +267,11 @@ router.get("/", async (req, res) => {
         ratingCount = 0;
 
       stats.forEach((s) => {
+        if (!s.present) return;
+
         goals += s.goals || 0;
         assists += s.assists || 0;
-        if (s.present) matches++;
+        matches++;
         if (s.appearedInPhoto) photos++;
         if (s.rating != null) {
           ratingSum += s.rating;
@@ -437,7 +441,7 @@ router.get("/matches/:id", async (req, res) => {
     });
 
 
-    let publicStats = match.stats || [];
+    let publicStats = (match.stats || []).filter((stat) => stat.present);
     try {
       const result = await computeMatchRatingsAndAwards(id);
       if (!result.error && result.scores && typeof result.scores.forEach === 'function') {
@@ -635,9 +639,11 @@ router.get("/fotos", async (req, res) => {
         ratingCount = 0;
 
       stats.forEach((s) => {
+        if (!s.present) return;
+
         goals += s.goals || 0;
         assists += s.assists || 0;
-        if (s.present) matches++;
+        matches++;
         if (s.appearedInPhoto) photos++;
         if (s.rating != null) {
           ratingSum += s.rating;
@@ -864,10 +870,12 @@ router.get("/hall-da-fama", async (req, res) => {
 
         const ratingBuckets = {};
         for (const s of seasonStats) {
-          const current = latestSeasonPlayerStats[s.playerId];
-          if (!current) continue;
-          current.goals += s.goals || 0;
-          current.assists += s.assists || 0;
+        if (!s.present) continue;
+
+        const current = latestSeasonPlayerStats[s.playerId];
+        if (!current) continue;
+        current.goals += s.goals || 0;
+        current.assists += s.assists || 0;
           if (s.appearedInPhoto) current.photos += 1;
 
           if (typeof s.rating === "number") {
