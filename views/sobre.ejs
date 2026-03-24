@@ -1,6 +1,12 @@
-<section class="space-y-8 animate-fadeIn">
-  <!-- Cabecalho -->
-  <header class="page-hero text-center space-y-3">
+<%
+  const pillClass = "inline-flex items-center gap-2 rounded-full border border-horriver-border bg-white/[0.04] px-3 py-2 text-[11px] leading-none text-horriver-light";
+  const statCardClass = "rounded-[1.35rem] border border-horriver-border bg-white/[0.04] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
+  const statCardAccentClass = "rounded-[1.35rem] border border-horriver-orange/30 bg-gradient-to-br from-horriver-orange/12 via-black/35 to-black/60 px-4 py-4 shadow-[0_14px_36px_rgba(0,0,0,0.22)]";
+  const eyebrowClass = "inline-flex items-center rounded-full border border-horriver-orange/20 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#ffb685]";
+%>
+
+<section class="space-y-7 animate-fadeIn">
+  <header class="page-hero text-center space-y-4">
     <span class="hero-badge text-horriver-gray mx-auto">
       <span class="hero-icon">SB</span>
       Sobre
@@ -9,62 +15,126 @@
       Sobre o Horriver Plate
     </h1>
     <p class="text-sm text-horriver-gray max-w-2xl mx-auto">
-      Onde o futebol raiz encontra a amizade, a resenha e a competicao de terca-feira a noite.
+      Onde o futebol raiz encontra amizade, estatisticas e a resenha de terca-feira a noite.
     </p>
+
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold">Pelada</strong> organizada</span>
+      <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold">Stats</strong> registradas</span>
+      <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold">Resenha</strong> eternizada</span>
+    </div>
   </header>
 
-  <!-- Logo -->
-  <div class="flex justify-center">
-    <img
-      src="/img/logo.jpg"
-      alt="Escudo Horriver Plate"
-      class="w-48 h-48 object-contain drop-shadow-[0_0_25px_rgba(255,122,26,0.4)]"
-    />
-  </div>
-
-  <!-- Texto principal -->
-  <article
-    class="max-w-3xl mx-auto rounded-3xl border border-horriver-red/50
-           bg-gradient-to-b from-black/80 via-horriver-dark to-black/95
-           shadow-card-soft p-6 md:p-10 space-y-5 text-[15px] leading-relaxed"
-  >
-    <p>
-      O <span class="text-horriver-orange font-semibold">Horriver Plate</span> nasceu de um grupo de amigos apaixonados
-      por futebol e resenha. Toda terca-feira, os craques e os bagres se reunem pra jogar, rir, discutir os lances e
-      criar historias que viram lendas da pelada.
-    </p>
-
-    <p>
-      Aqui, a competitividade e real, mas o espirito e leve. Cada gol, assistencia e ate mesmo aquele chute na lua
-      fazem parte da nossa tradicao. E o mais importante: todos tem espaco, do artilheiro ao goleiro que defende com a cara e com o coracao.
-    </p>
-
-    <p>
-      O site do Horriver Plate surgiu pra registrar tudo isso: gols, presencas, notas, e claro, as
-      fotos historicas da pelada. E a forma de eternizar a resenha e dar o destaque que cada jogador merece.
-    </p>
-
-    <div class="pt-4 border-t border-horriver-border">
-      <p class="text-horriver-gray text-sm italic text-center">
-        Pelada, stats e muita resenha. E o Horriver Plate.
-      </p>
+  <section class="grid lg:grid-cols-[220px,1fr] gap-6 items-start">
+    <div class="page-section">
+      <div class="page-section__inner page-section__inner--lg flex justify-center">
+        <img
+          src="/img/logo.jpg"
+          alt="Escudo Horriver Plate"
+          class="w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-[0_0_25px_rgba(255,122,26,0.4)]"
+        />
+      </div>
     </div>
-  </article>
 
-  <!-- Creditos -->
-  <footer class="text-center text-[12px] text-horriver-gray/80 mt-6">
+    <article class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-5 text-[15px] leading-relaxed">
+        <p>
+          O <span class="text-horriver-orange font-semibold">Horriver Plate</span> nasceu de um grupo de amigos apaixonados
+          por futebol e resenha. Toda terca-feira, os craques e os bagres se reunem para jogar, rir,
+          discutir os lances e criar historias que viram lenda.
+        </p>
+
+        <p>
+          Aqui a competitividade existe, mas o espirito continua leve. Cada gol, assistencia, defesa e
+          ate aquele chute isolado entram para a memoria da pelada e fazem parte da tradicao do grupo.
+        </p>
+
+        <p>
+          O site surgiu para organizar tudo isso com cara de produto de verdade: gols, presencas, notas,
+          fotos, rankings e destaques da temporada, sem perder a identidade de futebol raiz.
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid gap-4 lg:grid-cols-3">
+    <div class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-3">
+        <span class="<%= eyebrowClass %>">Essencia</span>
+        <h2 class="font-title text-2xl text-horriver-light">Futebol raiz</h2>
+        <p class="text-sm text-horriver-gray leading-relaxed">
+          A base do projeto e simples: bola rolando, amizade forte e competitividade na medida certa.
+        </p>
+      </div>
+    </div>
+
+    <div class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-3">
+        <span class="<%= eyebrowClass %>">Produto</span>
+        <h2 class="font-title text-2xl text-horriver-light">Memoria da pelada</h2>
+        <p class="text-sm text-horriver-gray leading-relaxed">
+          O que antes ficava so na conversa agora vira historico: artilharia, notas, fotos, premios e recordes.
+        </p>
+      </div>
+    </div>
+
+    <div class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-3">
+        <span class="<%= eyebrowClass %>">Visao</span>
+        <h2 class="font-title text-2xl text-horriver-light">Cara de clube</h2>
+        <p class="text-sm text-horriver-gray leading-relaxed">
+          A ideia e tratar a resenha com capricho visual e estatistico, como se a pelada fosse um clube grande.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="page-section__inner page-section__inner--lg">
+      <div class="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h2 class="font-title text-2xl text-horriver-light">O que voce encontra aqui</h2>
+          <p class="text-xs text-horriver-gray/80">Uma visao completa da vida do Horriver dentro e fora da quadra.</p>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <article class="<%= statCardAccentClass %>">
+          <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Rankings</span>
+          <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-orange font-semibold">01</strong>
+          <span class="mt-2 block text-sm text-horriver-light/90">gols, assistencias, notas, fotos e overall</span>
+        </article>
+        <article class="<%= statCardClass %>">
+          <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Peladas</span>
+          <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold">02</strong>
+          <span class="mt-2 block text-sm text-horriver-gray">historico das partidas com estatisticas organizadas</span>
+        </article>
+        <article class="<%= statCardClass %>">
+          <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Elenco</span>
+          <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold">03</strong>
+          <span class="mt-2 block text-sm text-horriver-gray">perfil de jogador, conquistas e fase recente</span>
+        </article>
+        <article class="<%= statCardClass %>">
+          <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Destaques</span>
+          <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold">04</strong>
+          <span class="mt-2 block text-sm text-horriver-gray">hall da fama, craques e premiacoes da temporada</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <footer class="text-center text-[12px] text-horriver-gray/80 mt-2">
     <p>
       Projeto idealizado e mantido por
       <span class="text-horriver-orange font-semibold">Gabriel Castro</span>
     </p>
 
-    <!-- Instagram na pagina Sobre -->
     <div class="flex justify-center mt-4">
       <a
         href="https://www.instagram.com/_hpfrc/"
         target="_blank"
         rel="noopener noreferrer"
-        class="flex items-center gap-2 text-horriver-orange hover:text-horriver-red transition-colors text-sm"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-horriver-orange/50 bg-black/30 text-horriver-orange hover:bg-horriver-orange hover:text-black transition-colors text-sm"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
           <path d="M7.75 2C4.678 2 2 4.678 2 7.75v8.5C2 19.322 4.678 22 7.75 22h8.5c3.072 0 5.75-2.678 5.75-5.75v-8.5C22 4.678 19.322 2 16.25 2h-8.5zM12 7.25a4.75 4.75 0 1 1 0 9.5a4.75 4.75 0 0 1 0-9.5zm0 1.5a3.25 3.25 0 1 0 0 6.5a3.25 3.25 0 0 0 0-6.5zm5.25-.75a.75.75 0 1 1 0-1.5a.75.75 0 0 1 0 1.5z"/>

@@ -1,19 +1,253 @@
 <section class="space-y-6 max-w-3xl mx-auto animate-fadeIn">
   <style>
+    .vote-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .vote-meta #vote-progress {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.36rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: #f5f5f5;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    .vote-meta span:last-child {
+      letter-spacing: 0.04em;
+    }
+    .vote-carousel {
+      position: relative;
+    }
+    .vote-carousel__viewport {
+      position: relative;
+      overflow: hidden;
+      padding: 10px 0 14px;
+      isolation: isolate;
+    }
+    .vote-carousel__viewport::before,
+    .vote-carousel__viewport::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 52px;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .vote-carousel__viewport::before {
+      left: 0;
+      background: linear-gradient(90deg, rgba(16, 3, 8, 0.82), rgba(16, 3, 8, 0.34), rgba(16, 3, 8, 0));
+    }
+    .vote-carousel__viewport::after {
+      right: 0;
+      background: linear-gradient(270deg, rgba(16, 3, 8, 0.82), rgba(16, 3, 8, 0.34), rgba(16, 3, 8, 0));
+    }
     .vote-card {
-      background: rgba(255,255,255,0.04);
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: calc(100% - 4.5rem);
+      max-width: 640px;
+      box-sizing: border-box;
+      background:
+        radial-gradient(circle at top left, rgba(255, 122, 26, 0.11), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+        rgba(255,255,255,0.035);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 18px;
       padding: 16px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateX(calc(-50% + 110%)) scale(0.88);
+      clip-path: inset(0 round 18px);
+      transform-origin: center center;
+      transition:
+        transform 0.42s ease,
+        opacity 0.32s ease,
+        filter 0.32s ease,
+        box-shadow 0.32s ease,
+        border-color 0.32s ease,
+        clip-path 0.32s ease;
+      will-change: transform, opacity;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(8px);
+    }
+    .vote-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(150deg, rgba(255,255,255,0.045), transparent 36%);
+      pointer-events: none;
+    }
+    .vote-card.is-active {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+      visibility: visible;
+      z-index: 3;
+      pointer-events: auto;
+      clip-path: inset(0 round 18px);
+      border-color: rgba(255, 122, 26, 0.42);
+      box-shadow:
+        0 18px 36px rgba(0, 0, 0, 0.22),
+        0 0 0 1px rgba(255, 122, 26, 0.05);
+    }
+    .vote-card.is-prev,
+    .vote-card.is-next {
+      opacity: 0.32;
+      visibility: visible;
+      z-index: 2;
+      pointer-events: none;
+      filter: blur(0.2px) saturate(0.72);
+    }
+    .vote-card.is-prev {
+      transform: translateX(calc(-50% - 84%)) scale(0.95);
+      clip-path: inset(0 0 0 76% round 18px);
+    }
+    .vote-card.is-next {
+      transform: translateX(calc(-50% + 84%)) scale(0.95);
+      clip-path: inset(0 76% 0 0 round 18px);
+    }
+    .vote-card.is-before,
+    .vote-card.is-after {
+      opacity: 0;
+      z-index: 1;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    .vote-card.is-before {
+      transform: translateX(calc(-50% - 110%)) scale(0.88);
+    }
+    .vote-card.is-after {
+      transform: translateX(calc(-50% + 110%)) scale(0.88);
+    }
+    .vote-card > .flex:first-child,
+    .vote-card > .grid,
+    .vote-card > .rating-row {
+      position: relative;
+      z-index: 1;
+    }
+    .vote-card > .flex:first-child img {
+      box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.28),
+        0 0 0 4px rgba(255, 122, 26, 0.05);
+    }
+    .vote-card > .flex:first-child .font-semibold {
+      color: #fff7f2;
+      letter-spacing: -0.01em;
+    }
+    .vote-card > .grid {
+      gap: 0.7rem;
+    }
+    .vote-card > .grid > div {
+      border-color: rgba(148, 163, 184, 0.24);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(0,0,0,0.22)),
+        rgba(0, 0, 0, 0.22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .vote-card > .grid > div p:first-child {
+      font-size: 0.98rem;
+      line-height: 1.1;
+    }
+    .vote-card > .grid > div p:last-child {
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.62rem;
+    }
+    .rating-pill span {
+      min-width: 38px;
+      min-height: 38px;
+      background: rgba(255, 255, 255, 0.025);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+    .rating-pill:hover span {
+      transform: translateY(-1px);
+      border-color: rgba(255, 122, 26, 0.48);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.16);
     }
     .rating-pill input:checked + span {
-      background: #ff7a1a;
+      background: linear-gradient(180deg, #ff983d, #ff7a1a);
       color: #0b0b0b;
       border-color: #ff7a1a;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+      box-shadow:
+        0 10px 18px rgba(255,122,26,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.2);
     }
     .rating-row {
       justify-content: center;
+      gap: 0.55rem;
+    }
+    .vote-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.9rem;
+      padding-top: 0.25rem;
+    }
+    #vote-prev,
+    #vote-next,
+    #vote-submit {
+      min-width: 110px;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+    }
+    #vote-prev {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    #vote-next,
+    #vote-submit {
+      box-shadow: 0 14px 28px rgba(255, 122, 26, 0.24);
+    }
+    @media (max-width: 640px) {
+      .vote-meta {
+        align-items: stretch;
+      }
+      .vote-meta #vote-progress,
+      .vote-meta span:last-child {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+      }
+      .vote-carousel__viewport::before,
+      .vote-carousel__viewport::after {
+        width: 18px;
+      }
+      .vote-card {
+        width: calc(100% - 2.5rem);
+      }
+      .vote-card.is-prev {
+        transform: translateX(calc(-50% - 74%)) scale(0.97);
+        clip-path: inset(0 0 0 82% round 18px);
+      }
+      .vote-card.is-next {
+        transform: translateX(calc(-50% + 74%)) scale(0.97);
+        clip-path: inset(0 82% 0 0 round 18px);
+      }
+      .vote-nav {
+        flex-wrap: wrap;
+      }
+      .vote-nav > * {
+        width: 100%;
+      }
+      .vote-nav > div {
+        display: flex;
+        width: 100%;
+      }
+      .vote-nav > div > * {
+        flex: 1;
+      }
     }
   </style>
 
@@ -22,7 +256,7 @@
     <% if (match) { %>
       <p class="text-sm text-horriver-gray">
         Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %></span>
-        <% if (match.description) { %> · <%= match.description %> <% } %>
+        <% if (match.description) { %> - <%= match.description %> <% } %>
       </p>
     <% } %>
     <% if (voter) { %>
@@ -49,16 +283,17 @@
 
   <% if (!error && !success) { %>
     <form method="POST" class="space-y-4" id="vote-flow-form">
-      <div class="flex items-center justify-between text-xs text-horriver-gray">
+      <div class="vote-meta text-xs text-horriver-gray">
         <span id="vote-progress">Jogador 1 de <%= players.length %></span>
         <span>Notas de 1 a 5 (obrigatorio)</span>
       </div>
 
       <div id="vote-alert" class="hidden text-xs text-red-300 bg-red-900/30 border border-red-700/40 rounded-lg px-3 py-2"></div>
 
-      <div class="space-y-4">
+      <div class="vote-carousel">
+        <div class="vote-carousel__viewport" id="vote-carousel-viewport">
         <% players.forEach((p, idx) => { %>
-          <div class="vote-card <%= idx === 0 ? '' : 'hidden' %>" data-vote-card data-index="<%= idx %>">
+          <div class="vote-card" data-vote-card data-index="<%= idx %>">
             <div class="flex items-center gap-4">
               <img
                 src="<%= p.photoUrl || '/img/logo-64x64.svg' %>"
@@ -103,9 +338,10 @@
             </div>
           </div>
         <% }) %>
+        </div>
       </div>
 
-      <div class="flex items-center justify-between pt-2">
+      <div class="vote-nav">
         <button
           type="button"
           id="vote-prev"
@@ -138,18 +374,41 @@
 <script>
   (() => {
     const cards = Array.from(document.querySelectorAll("[data-vote-card]"));
+    const viewport = document.getElementById("vote-carousel-viewport");
     const alertBox = document.getElementById("vote-alert");
     const progress = document.getElementById("vote-progress");
     const prevBtn = document.getElementById("vote-prev");
     const nextBtn = document.getElementById("vote-next");
     const submitBtn = document.getElementById("vote-submit");
     const form = document.getElementById("vote-flow-form");
-    if (!cards.length || !form) return;
+    if (!cards.length || !form || !viewport) return;
 
     let index = 0;
+    const stateClasses = ["is-before", "is-prev", "is-active", "is-next", "is-after"];
+
+    const syncViewportHeight = () => {
+      const tallest = cards.reduce((maxHeight, card) => {
+        return Math.max(maxHeight, card.scrollHeight);
+      }, 0);
+      viewport.style.height = `${tallest + 6}px`;
+    };
 
     const showCard = (idx) => {
-      cards.forEach((card, i) => card.classList.toggle("hidden", i !== idx));
+      cards.forEach((card, i) => {
+        const offset = i - idx;
+        const state =
+          offset < -1 ? "is-before" :
+          offset === -1 ? "is-prev" :
+          offset === 0 ? "is-active" :
+          offset === 1 ? "is-next" :
+          "is-after";
+        card.classList.remove(...stateClasses);
+        card.classList.add(state);
+        card.setAttribute("aria-hidden", offset === 0 ? "false" : "true");
+        card.querySelectorAll('input[type="radio"]').forEach((input) => {
+          input.tabIndex = offset === 0 ? 0 : -1;
+        });
+      });
       progress.textContent = `Jogador ${idx + 1} de ${cards.length}`;
       prevBtn.disabled = idx === 0;
       nextBtn.classList.toggle("hidden", idx === cards.length - 1);
@@ -158,6 +417,7 @@
         alertBox.classList.add("hidden");
         alertBox.textContent = "";
       }
+      syncViewportHeight();
     };
 
     const currentHasRating = () => {
@@ -193,7 +453,8 @@
       }
     });
 
+    window.addEventListener("resize", syncViewportHeight);
+    window.addEventListener("load", syncViewportHeight);
     showCard(index);
   })();
 </script>
-

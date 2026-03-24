@@ -7,6 +7,12 @@
   const safeMonths = Array.isArray(monthOptions) ? monthOptions : [];
   const selYear = selectedYear || (safeYears[0] || "all");
   const selMonth = selectedMonth || (safeMonths[0] && safeMonths[0].value) || "";
+  const currentMonthLabel =
+    (safeMonths.find((m) => String(m.value) === String(selMonth)) || {}).label || "Todos";
+  const pillClass = "inline-flex items-center gap-2 rounded-full border border-horriver-border bg-white/[0.04] px-3 py-2 text-[11px] leading-none text-horriver-light";
+  const accentPillClass = "inline-flex items-center gap-2 rounded-full border border-horriver-orange/30 bg-horriver-orange/10 px-3 py-2 text-[11px] leading-none text-horriver-light";
+  const emptyStateClass = "rounded-[1.5rem] border border-dashed border-horriver-border bg-gradient-to-br from-horriver-orange/8 via-black/30 to-black/40 px-5 py-5";
+  const emptyEyebrowClass = "inline-flex items-center rounded-full border border-horriver-orange/20 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#ffb685]";
 
   const monthLabel = (d) =>
     d
@@ -26,7 +32,7 @@
   }
 </style>
 
-<section class="space-y-8 animate-fadeIn">
+<section class="page-shell animate-fadeIn">
   <header class="page-hero space-y-4">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
       <div class="space-y-2">
@@ -42,45 +48,68 @@
         </p>
       </div>
 
-      <form
-        action="/peladas"
-        method="GET"
-        class="card-unified flex flex-wrap items-center gap-2 px-3 py-2"
-      >
-        <label for="year" class="text-[12px] text-horriver-gray/80">Ano</label>
-        <select
-          id="year"
-          name="year"
-          class="bg-transparent text-sm text-horriver-light focus:outline-none"
-          onchange="this.form.submit()"
-        >
-          <% safeYears.forEach((y) => { %>
-            <option value="<%= y %>" <%= String(y) === String(selYear) ? 'selected' : '' %>>
-              <%= y === 'all' ? 'Todos os anos' : y %>
-            </option>
-          <% }) %>
-        </select>
-
-        <label for="month" class="text-[12px] text-horriver-gray/80">Mes</label>
-        <select
-          id="month"
-          name="month"
-          class="bg-transparent text-sm text-horriver-light focus:outline-none"
-          onchange="this.form.submit()"
-        >
-          <% safeMonths.forEach((m) => { %>
-            <option value="<%= m.value %>" <%= m.value === selMonth ? 'selected' : '' %>>
-              <%= m.label %>
-            </option>
-          <% }) %>
-        </select>
-      </form>
+      <div class="flex flex-wrap gap-2 md:justify-end">
+        <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= safeMatches.length %></strong> peladas</span>
+        <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= selYear === "all" ? "geral" : selYear %></strong> ano</span>
+        <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= currentMonthLabel %></strong> mes</span>
+      </div>
     </div>
+
+    <form
+      action="/peladas"
+      method="GET"
+      class="page-section"
+    >
+      <div class="page-section__inner">
+        <div class="page-toolbar text-[11px] md:text-xs">
+          <div class="flex flex-wrap gap-2">
+            <span class="<%= accentPillClass %>">Filtro rapido</span>
+          </div>
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-[130px]">
+              <label for="year" class="block text-horriver-gray/80 mb-1">Ano</label>
+              <select
+                id="year"
+                name="year"
+                class="w-full rounded-xl border border-horriver-border bg-black/30 px-3 py-2 text-sm text-horriver-light"
+                onchange="this.form.submit()"
+              >
+                <% safeYears.forEach((y) => { %>
+                  <option value="<%= y %>" <%= String(y) === String(selYear) ? 'selected' : '' %>>
+                    <%= y === 'all' ? 'Todos os anos' : y %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="min-w-[150px]">
+              <label for="month" class="block text-horriver-gray/80 mb-1">Mes</label>
+              <select
+                id="month"
+                name="month"
+                class="w-full rounded-xl border border-horriver-border bg-black/30 px-3 py-2 text-sm text-horriver-light"
+                onchange="this.form.submit()"
+              >
+                <% safeMonths.forEach((m) => { %>
+                  <option value="<%= m.value %>" <%= m.value === selMonth ? 'selected' : '' %>>
+                    <%= m.label %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
   </header>
 
   <% if (!safeMatches.length) { %>
-    <div class="rounded-2xl border border-horriver-border/60 bg-black/40 px-4 py-5 text-sm text-horriver-gray">
-      Nenhuma pelada encontrada para este mes.
+    <div class="<%= emptyStateClass %>">
+      <span class="<%= emptyEyebrowClass %>">Sem resultado</span>
+      <h2 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Nenhuma pelada encontrada nesse filtro</h2>
+      <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
+        Tente trocar o ano ou mes para abrir mais resultados. Quando novas peladas forem registradas, elas vao aparecer aqui automaticamente.
+      </p>
     </div>
   <% } else { %>
     <div class="grid gap-4 md:gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -116,6 +145,11 @@
               </p>
             </div>
 
+            <div class="flex flex-wrap gap-2 text-[11px]">
+              <span class="<%= pillClass %>">ID #<%= m.id %></span>
+              <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= m._count?.stats || 0 %></strong> stats</span>
+            </div>
+
             <div class="flex items-center justify-between pt-1">
               <a
                 href="/matches/<%= m.id %>"
@@ -124,9 +158,7 @@
                 Ver estatisticas
                 <span class="text-[13px]">-></span>
               </a>
-              <span class="text-[12px] text-horriver-gray/70">
-                ID #<%= m.id %>
-              </span>
+              <span class="text-[12px] text-horriver-gray/70">Pelada registrada</span>
             </div>
           </div>
         </div>

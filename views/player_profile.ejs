@@ -1,143 +1,235 @@
-<section class="w-full max-w-5xl mx-auto px-4 sm:px-6 space-y-6 animate-fadeIn">
-  <header class="flex flex-col md:flex-row gap-4 items-center md:items-start">
-    <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange shadow-card-soft">
-      <% if (player.photoUrl) { %>
-        <img
-          src="<%= thumbUrl(player.photoUrl, 320) %>"
-          srcset="<%= thumbUrl(player.photoUrl, 320) %> 1x, <%= thumbUrl(player.photoUrl, 640) %> 2x"
-          sizes="128px"
-          class="w-full h-full object-cover"
-        />
-      <% } else { %>
-        <div class="w-full h-full bg-black/40 flex items-center justify-center text-horriver-gray">Sem foto</div>
-      <% } %>
+<%
+  const pillClass = "inline-flex items-center gap-2 rounded-full border border-horriver-border bg-white/[0.04] px-3 py-2 text-[11px] leading-none text-horriver-light";
+  const statCardClass = "rounded-[1.35rem] border border-horriver-border bg-white/[0.04] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
+  const statCardAccentClass = "rounded-[1.35rem] border border-horriver-orange/30 bg-gradient-to-br from-horriver-orange/12 via-black/35 to-black/60 px-4 py-4 shadow-[0_14px_36px_rgba(0,0,0,0.22)]";
+  const emptyStateClass = "rounded-[1.5rem] border border-dashed border-horriver-border bg-gradient-to-br from-horriver-orange/8 via-black/30 to-black/40 px-5 py-5";
+  const emptyEyebrowClass = "inline-flex items-center rounded-full border border-horriver-orange/20 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[#ffb685]";
+  const sectionHeadingClass = "flex items-end justify-between gap-3 flex-wrap";
+  const sectionMetaClass = "text-xs text-horriver-gray/80";
+  const surfaceSoftClass = "rounded-[1.25rem] border border-horriver-border bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
+%>
+
+<section class="w-full max-w-5xl mx-auto px-4 sm:px-6 space-y-7 animate-fadeIn">
+  <header class="page-hero space-y-6">
+    <div class="flex flex-col md:flex-row gap-5 items-center md:items-start">
+      <div class="relative w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange shadow-card-soft shrink-0">
+        <% if (player.photoUrl) { %>
+          <img
+            src="<%= thumbUrl(player.photoUrl, 320) %>"
+            srcset="<%= thumbUrl(player.photoUrl, 320) %> 1x, <%= thumbUrl(player.photoUrl, 640) %> 2x"
+            sizes="128px"
+            alt="<%= player.name %>"
+            class="w-full h-full object-cover"
+          />
+        <% } else { %>
+          <div class="w-full h-full bg-black/40 flex items-center justify-center text-horriver-gray text-sm">
+            Sem foto
+          </div>
+        <% } %>
+      </div>
+
+      <div class="flex-1 space-y-3 text-center md:text-left">
+        <div class="space-y-2">
+          <span class="hero-badge text-horriver-gray">
+            <span class="hero-icon">JP</span>
+            Perfil do jogador
+          </span>
+          <h1 class="text-3xl md:text-4xl font-title text-horriver-light"><%= player.name %></h1>
+          <% if (player.nickname) { %>
+            <p class="text-horriver-orange text-sm">(<%= player.nickname %>)</p>
+          <% } %>
+          <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= player.position || "Sem posicao" %></strong> posicao</span>
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= Math.round(latestOverall || 0) %></strong> overall</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 text-sm">
+          <button
+            type="button"
+            id="copyProfileLink"
+            class="px-4 py-2 rounded-full border border-horriver-border bg-black/35 text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+          >
+            Copiar link do perfil
+          </button>
+          <span id="copyStatus" class="text-[11px] text-horriver-gray hidden">Copiado!</span>
+        </div>
+      </div>
     </div>
-    <div class="flex-1 space-y-1">
-      <h1 class="text-3xl font-title text-horriver-light"><%= player.name %></h1>
-      <% if (player.nickname) { %><p class="text-horriver-orange text-sm">(<%= player.nickname %>)</p><% } %>
-      <p class="text-sm text-horriver-gray">Posição: <span class="text-horriver-orange"><%= player.position %></span></p>
-            <div class="mt-2">
-        <span class="px-3 py-1 rounded-full bg-horriver-red/20 text-horriver-orange text-sm">
-          Overall: <%= Math.round(latestOverall || 0) %>
-        </span>
-      </div>
-      <div class="flex items-center gap-2 mt-3 text-sm">
-        <button
-          type="button"
-          id="copyProfileLink"
-          class="px-3 py-1 rounded-full border border-horriver-border bg-black/40 text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
-        >
-          Copiar link do perfil
-        </button>
-        <span id="copyStatus" class="text-[11px] text-horriver-gray hidden">Copiado!</span>
-      </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <article class="<%= statCardAccentClass %>">
+        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Jogos</span>
+        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-orange font-semibold"><%= totals.matches %></strong>
+        <span class="mt-2 block text-sm text-horriver-light/90">presencas registradas</span>
+      </article>
+      <article class="<%= statCardClass %>">
+        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Gols</span>
+        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold"><%= totals.goals %></strong>
+        <span class="mt-2 block text-sm text-horriver-gray">bolas na rede</span>
+      </article>
+      <article class="<%= statCardClass %>">
+        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Assistencias</span>
+        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold"><%= totals.assists %></strong>
+        <span class="mt-2 block text-sm text-horriver-gray">passes para gol</span>
+      </article>
+      <article class="<%= statCardClass %>">
+        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Fotos</span>
+        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold"><%= totals.photos %></strong>
+        <span class="mt-2 block text-sm text-horriver-gray">registros em imagem</span>
+      </article>
     </div>
   </header>
 
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-    <% [['Jogos', totals.matches], ['Gols', totals.goals], ['Assistências', totals.assists], ['Fotos', totals.photos]].forEach(([label, val]) => { %>
-      <div class="card-inner rounded-2xl p-4 text-center">
-        <p class="text-horriver-gray text-xs"><%= label %></p>
-        <p class="text-2xl text-horriver-light font-semibold"><%= val %></p>
+  <section class="page-section">
+    <div class="page-section__inner page-section__inner--lg space-y-4">
+      <div class="<%= sectionHeadingClass %>">
+        <div>
+          <h2 class="font-title text-2xl text-horriver-light">Conquistas</h2>
+          <p class="<%= sectionMetaClass %>">Historico de desbloqueios e marcos do jogador.</p>
+        </div>
+        <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= achievements.length %></strong> desbloqueadas</span>
       </div>
-    <% }) %>
-  </div>
 
-  <div class="card-inner rounded-2xl p-4 space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="font-title text-xl text-horriver-light">Conquistas</h2>
-      <span class="text-xs text-horriver-gray"><%= achievements.length %> desbloqueadas</span>
+      <% if (!achievements.length) { %>
+        <div class="<%= emptyStateClass %>">
+          <span class="<%= emptyEyebrowClass %>">Sem conquista</span>
+          <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda nao ha badges liberadas</h3>
+          <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
+            Assim que o jogador atingir os proximos marcos, as conquistas vao aparecer aqui.
+          </p>
+        </div>
+      <% } else { %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <% achievements.forEach(pa => { %>
+            <%- include('partials/achievementCard', { ach: {
+                  title: pa.achievement.title || pa.achievement.name,
+                  description: pa.achievement.description || '',
+                  category: pa.achievement.category,
+                  rarity: pa.achievement.rarity || 'prata',
+                  targetValue: pa.achievement.targetValue,
+                  unlockedAt: pa.unlockedAt
+            } }) %>
+          <% }) %>
+        </div>
+      <% } %>
     </div>
-    <% if (!achievements.length) { %>
-      <p class="text-horriver-gray text-sm">Nenhuma conquista desbloqueada ainda.</p>
-    <% } else { %>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <% achievements.forEach(pa => { %>
-          <%- include('partials/achievementCard', { ach: {
-                title: pa.achievement.title || pa.achievement.name,
-                description: pa.achievement.description || '',
-                category: pa.achievement.category,
-                rarity: pa.achievement.rarity || 'prata',
-                targetValue: pa.achievement.targetValue,
-                unlockedAt: pa.unlockedAt
-          } }) %>
-        <% }) %>
+  </section>
+
+  <div class="grid lg:grid-cols-2 gap-4">
+    <section class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-4">
+        <div class="<%= sectionHeadingClass %>">
+          <div>
+            <h2 class="font-title text-2xl text-horriver-light">Evolucao das notas</h2>
+            <p class="<%= sectionMetaClass %>">Linha de desempenho com base nas notas registradas.</p>
+          </div>
+        </div>
+
+        <% if (!ratingsSeries.length) { %>
+          <div class="<%= emptyStateClass %>">
+            <span class="<%= emptyEyebrowClass %>">Sem notas</span>
+            <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda nao existem avaliacoes suficientes</h3>
+            <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
+              As notas das proximas peladas vao desenhar a curva de desempenho aqui.
+            </p>
+          </div>
+        <% } else { %>
+          <div class="<%= surfaceSoftClass %> p-4">
+            <svg viewBox="0 0 100 40" class="w-full h-36 text-horriver-orange">
+              <% const maxR = 10, minR = 0; const n = ratingsSeries.length; const step = n > 1 ? 100/(n-1) : 0; let path=''; ratingsSeries.forEach((p,i)=>{ const x = i*step; const y = 40 - ((p.rating - minR)/(maxR-minR))*40; path += (i===0? 'M':' L')+x+','+y; }); %>
+              <path d="<%= path %>" fill="none" stroke="currentColor" stroke-width="1.8" />
+            </svg>
+          </div>
+        <% } %>
       </div>
-    <% } %>
-  </div>
+    </section>
 
-  <div class="card-inner rounded-2xl p-4 space-y-2">
-    <h2 class="font-title text-xl text-horriver-light">Evolução das notas</h2>
-    <% if (!ratingsSeries.length) { %>
-      <p class="text-sm text-horriver-gray">Sem notas ainda.</p>
-    <% } else { %>
-      <svg viewBox="0 0 100 40" class="w-full h-32 text-horriver-orange">
-        <% const maxR = 10, minR = 0; const n = ratingsSeries.length; const step = n > 1 ? 100/(n-1) : 0; let path=''; ratingsSeries.forEach((p,i)=>{ const x = i*step; const y = 40 - ((p.rating - minR)/(maxR-minR))*40; path += (i===0? 'M':' L')+x+','+y; }); %>
-        <path d="<%= path %>" fill="none" stroke="currentColor" stroke-width="1.5" />
-      </svg>
-    <% } %>
-  </div>
+    <section class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-4">
+        <div class="<%= sectionHeadingClass %>">
+          <div>
+            <h2 class="font-title text-2xl text-horriver-light">Gols por mes</h2>
+            <p class="<%= sectionMetaClass %>">Distribuicao de gols ao longo do tempo.</p>
+          </div>
+        </div>
 
-  <div class="card-inner rounded-2xl p-4 space-y-2">
-    <h2 class="font-title text-xl text-horriver-light">Gols por mês</h2>
-    <% if (!goalsByMonth.length) { %>
-      <p class="text-sm text-horriver-gray">Sem gols registrados.</p>
-    <% } else { 
-         // Ordena por ano-mês para garantir sequência correta e formata label manualmente
-         const sortedGoals = [...goalsByMonth].sort((a, b) => new Date(a.label + "-01") - new Date(b.label + "-01"));
-         const monthNames = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-         const maxG = Math.max(...sortedGoals.map(g => g.value), 1);
-    %>
-      <div class="w-full overflow-x-auto">
-        <div class="flex items-end gap-3 h-48 min-w-[640px]">
-        <% sortedGoals.forEach(g => { 
-             const [year, month] = g.label.split("-");
-             const monthIdx = Math.max(1, Math.min(12, parseInt(month, 10)));
-             const monthLabel = monthNames[monthIdx - 1] || month;
-             const maxBarPx = 160; // altura máxima da barra em px
-             const barHeight = Math.max(8, Math.round((g.value / maxG) * maxBarPx));
+        <% if (!goalsByMonth.length) { %>
+          <div class="<%= emptyStateClass %>">
+            <span class="<%= emptyEyebrowClass %>">Sem gols</span>
+            <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Nenhum gol registrado ainda</h3>
+            <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
+              Quando os gols entrarem na conta, o historico mensal aparece aqui automaticamente.
+            </p>
+          </div>
+        <% } else { 
+             const sortedGoals = [...goalsByMonth].sort((a, b) => new Date(a.label + "-01") - new Date(b.label + "-01"));
+             const monthNames = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+             const maxG = Math.max(...sortedGoals.map(g => g.value), 1);
         %>
-          <div class="flex-1 flex flex-col items-center">
-            <div class="flex flex-col items-center w-full">
-              <div class="w-full rounded-t-md bg-gradient-to-t from-horriver-red to-horriver-orange relative" style="height:<%= barHeight %>px">
-                <span class="absolute inset-0 bg-horriver-orange/30 rounded-t-md"></span>
+          <div class="w-full overflow-x-auto <%= surfaceSoftClass %> p-4">
+            <div class="flex items-end gap-3 h-48 min-w-[640px]">
+            <% sortedGoals.forEach(g => { 
+                 const [year, month] = g.label.split("-");
+                 const monthIdx = Math.max(1, Math.min(12, parseInt(month, 10)));
+                 const monthLabel = monthNames[monthIdx - 1] || month;
+                 const maxBarPx = 160;
+                 const barHeight = Math.max(8, Math.round((g.value / maxG) * maxBarPx));
+            %>
+              <div class="flex-1 flex flex-col items-center">
+                <div class="flex flex-col items-center w-full">
+                  <div class="w-full rounded-t-md bg-gradient-to-t from-horriver-red to-horriver-orange relative" style="height:<%= barHeight %>px">
+                    <span class="absolute inset-0 bg-horriver-orange/30 rounded-t-md"></span>
+                  </div>
+                  <span class="text-[11px] text-horriver-light mt-1"><%= g.value %></span>
+                  <span class="text-[10px] text-horriver-gray mt-1"><%= monthLabel %>/<%= year.slice(-2) %></span>
+                </div>
               </div>
-              <span class="text-[11px] text-horriver-light mt-1"><%= g.value %></span>
-              <span class="text-[10px] text-horriver-gray mt-1"><%= monthLabel %>/<%= year.slice(-2) %></span>
+            <% }) %>
             </div>
           </div>
-        <% }) %>
+        <% } %>
+      </div>
+    </section>
+  </div>
+
+  <section class="page-section">
+    <div class="page-section__inner page-section__inner--lg space-y-4">
+      <div class="<%= sectionHeadingClass %>">
+        <div>
+          <h2 class="font-title text-2xl text-horriver-light">Partidas recentes</h2>
+          <p class="<%= sectionMetaClass %>">Recorte das aparicoes mais novas do jogador.</p>
         </div>
       </div>
-    <% } %>
-  </div>
 
-  <div class="card-inner rounded-2xl p-4 space-y-2">
-    <h2 class="font-title text-xl text-horriver-light">Partidas recentes</h2>
-    <% if (!recentMatches.length) { %>
-      <p class="text-sm text-horriver-gray">Sem partidas.</p>
-    <% } else { %>
-      <div class="space-y-2">
-        <% recentMatches.forEach(m => { %>
-          <div class="flex items-center justify-between text-sm border border-horriver-border/60 rounded-lg px-3 py-2 bg-black/30">
-            <div>
-              <p class="text-horriver-light"><%= m.desc || 'Pelada' %></p>
-              <p class="text-[11px] text-horriver-gray"><%= new Date(m.date).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
+      <% if (!recentMatches.length) { %>
+        <div class="<%= emptyStateClass %>">
+          <span class="<%= emptyEyebrowClass %>">Sem partidas</span>
+          <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda nao ha historico recente</h3>
+          <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
+            Conforme novas peladas forem registradas, os ultimos jogos aparecem aqui com gols, assistencias e nota.
+          </p>
+        </div>
+      <% } else { %>
+        <div class="space-y-2">
+          <% recentMatches.forEach(m => { %>
+            <div class="<%= surfaceSoftClass %> p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-sm">
+              <div>
+                <p class="text-horriver-light font-medium"><%= m.desc || 'Pelada' %></p>
+                <p class="text-[11px] text-horriver-gray"><%= new Date(m.date).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
+              </div>
+              <div class="flex flex-wrap gap-2 text-[11px] text-horriver-gray">
+                <span class="<%= pillClass %>">G <strong class="text-horriver-orange font-semibold"><%= m.goals || 0 %></strong></span>
+                <span class="<%= pillClass %>">A <strong class="text-horriver-orange font-semibold"><%= m.assists || 0 %></strong></span>
+                <span class="<%= pillClass %>">Nota <strong class="text-horriver-orange font-semibold"><%= m.rating ?? '-' %></strong></span>
+              </div>
             </div>
-            <div class="flex gap-3 text-[11px] text-horriver-gray">
-              <span>G: <span class="text-horriver-orange"><%= m.goals || 0 %></span></span>
-              <span>A: <span class="text-horriver-orange"><%= m.assists || 0 %></span></span>
-              <span>Nota: <span class="text-horriver-orange"><%= m.rating ?? '-' %></span></span>
-            </div>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
-  </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </section>
 </section>
-
-
-
 
 <script>
   (function () {
@@ -163,4 +255,3 @@
     });
   })();
 </script>
-
