@@ -6,6 +6,16 @@ const { getAchievementsStats } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 const { getCache, setCache, deleteCache } = require("../utils/page_cache");
 const CACHE_TTL_MS = 60 * 1000;
+const SAO_PAULO_UTC_OFFSET_HOURS = 3;
+const SAO_PAULO_WEEKDAY_INDEX = {
+  sun: 0,
+  mon: 1,
+  tue: 2,
+  wed: 3,
+  thu: 4,
+  fri: 5,
+  sat: 6,
+};
 
 
 // ==============================
@@ -29,24 +39,6 @@ function monthKey(date) {
   return `${y}-${m}`;
 }
 
-function getNextTuesdayAtHour(baseDate, hour = 20) {
-  const base = new Date(baseDate);
-  const day = base.getDay(); // 0=Sun, 1=Mon, 2=Tue
-  let diff = (2 - day + 7) % 7;
-  const target = new Date(base);
-  if (diff === 0) {
-    const sameDay = new Date(base);
-    sameDay.setHours(hour, 0, 0, 0);
-    if (base.getTime() < sameDay.getTime()) {
-      return sameDay;
-    }
-    diff = 7;
-  }
-  target.setDate(base.getDate() + diff);
-  target.setHours(hour, 0, 0, 0);
-  return target;
-}
-
 function getMonthRangeSaoPaulo(year, month) {
   // Sao Paulo is UTC-3; use UTC boundaries to avoid TZ drift in DB comparisons.
   const start = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0, 0));
@@ -55,20 +47,71 @@ function getMonthRangeSaoPaulo(year, month) {
 }
 
 function getSaoPauloMonthYear(date = new Date()) {
+  const parts = getSaoPauloDateParts(date);
+  return { year: parts.year, month: parts.month };
+}
+
+function getSaoPauloDateParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
+    weekday: "short",
     year: "numeric",
     month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
   }).formatToParts(date);
-  const year = Number(parts.find((part) => part.type === "year")?.value);
-  const month = Number(parts.find((part) => part.type === "month")?.value);
-  return { year, month };
+  const pick = (type) => parts.find((part) => part.type === type)?.value;
+  const weekday = String(pick("weekday") || "sun").toLowerCase();
+  return {
+    year: Number(pick("year")),
+    month: Number(pick("month")),
+    day: Number(pick("day")),
+    hour: Number(pick("hour") || 0) % 24,
+    minute: Number(pick("minute") || 0),
+    second: Number(pick("second") || 0),
+    weekday: SAO_PAULO_WEEKDAY_INDEX[weekday] ?? 0,
+  };
+}
+
+function createSaoPauloDate(year, month, day, hour = 0, minute = 0, second = 0, ms = 0) {
+  return new Date(Date.UTC(year, month - 1, day, hour + SAO_PAULO_UTC_OFFSET_HOURS, minute, second, ms));
+}
+
+function getAutomaticTuesdayTarget(baseDate) {
+  const current = getSaoPauloDateParts(baseDate);
+  const todayStart = createSaoPauloDate(current.year, current.month, current.day);
+
+  let daysUntilTuesday = (2 - current.weekday + 7) % 7;
+  if (daysUntilTuesday === 0 && current.hour >= 20) {
+    daysUntilTuesday = 7;
+  }
+
+  const candidateTuesdayStart = new Date(todayStart);
+  candidateTuesdayStart.setUTCDate(candidateTuesdayStart.getUTCDate() + daysUntilTuesday);
+
+  const releaseStart = new Date(candidateTuesdayStart);
+  releaseStart.setUTCDate(releaseStart.getUTCDate() - 5);
+
+  if (baseDate.getTime() < releaseStart.getTime()) {
+    return null;
+  }
+
+  return new Date(candidateTuesdayStart.getTime() + 20 * 60 * 60 * 1000);
 }
 
 async function ensureNextTuesdayMatch(baseDate) {
-  const target = getNextTuesdayAtHour(baseDate, 20);
-  const dayStart = startOfDay(target);
-  const dayEnd = endOfDay(target);
+  const target = getAutomaticTuesdayTarget(baseDate);
+  if (!target) return { match: null, created: false };
+
+  const dayStart = new Date(target);
+  dayStart.setUTCHours(SAO_PAULO_UTC_OFFSET_HOURS, 0, 0, 0);
+
+  const dayEnd = new Date(dayStart);
+  dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+  dayEnd.setUTCMilliseconds(dayEnd.getUTCMilliseconds() - 1);
 
   const existing = await prisma.match.findFirst({
     where: { playedAt: { gte: dayStart, lte: dayEnd } },
