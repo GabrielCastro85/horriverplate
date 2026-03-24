@@ -429,7 +429,7 @@
           </thead>
           <tbody>
             <% voteSession.tokens.forEach((t, idx) => {
-                 const link = `${voteBaseUrl}/vote/${t.token}`;
+                 const link = `${voteBaseUrl}/votar/${t.token}`;
                  const waRaw = t.player.whatsapp || "";
                  const waDigits = waRaw.replace(/\\D/g, "");
                  const msg = `Fala ${t.player.name}! Seu link de votação da pelada: ${link}`;
@@ -481,6 +481,7 @@
       </div>
     </div>
   <% } %>
+
 </section>
 
 <!-- ========================= -->
@@ -2912,6 +2913,7 @@
   }
   })();
 </script>
+
 
 
 

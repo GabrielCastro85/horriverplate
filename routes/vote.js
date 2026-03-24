@@ -202,11 +202,6 @@ router.post("/:token", async (req, res) => {
   }
 });
 
-// Alias legacy /votar/:token -> /vote/:token
-router.get("/votar/:token", (req, res) => {
-  return res.redirect(`/vote/${req.params.token}`);
-});
-
 // ==============================
 // 🗳️ Votação Pública
 // ==============================

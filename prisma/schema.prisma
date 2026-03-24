@@ -9,11 +9,11 @@ datasource db {
 }
 
 model Admin {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  passwordHash String
-  voteSessions VoteSession[] @relation("AdminVoteSessions")
-  auditLogs    AuditLog[]
+  id                  Int                  @id @default(autoincrement())
+  email               String               @unique
+  passwordHash        String
+  voteSessions        VoteSession[]        @relation("AdminVoteSessions")
+  auditLogs           AuditLog[]
   monthlyVoteSessions MonthlyVoteSession[]
 }
 
@@ -115,24 +115,24 @@ model TournamentTeam {
 }
 
 model TournamentGame {
-  id              Int                      @id @default(autoincrement())
-  tournamentId    Int
-  stage           TournamentStage
-  round           Int?
-  homeTeamId      Int
-  awayTeamId      Int
-  homeGoals       Int?
-  awayGoals       Int?
-  homePenalties   Int?
-  awayPenalties   Int?
-  winnerTeamId    Int?
-  decidedBy       TournamentGameDecidedBy?
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  tournament      Tournament               @relation(fields: [tournamentId], references: [id])
-  homeTeam        TournamentTeam           @relation("HomeTeam", fields: [homeTeamId], references: [id])
-  awayTeam        TournamentTeam           @relation("AwayTeam", fields: [awayTeamId], references: [id])
-  winnerTeam      TournamentTeam?          @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
+  id            Int                      @id @default(autoincrement())
+  tournamentId  Int
+  stage         TournamentStage
+  round         Int?
+  homeTeamId    Int
+  awayTeamId    Int
+  homeGoals     Int?
+  awayGoals     Int?
+  homePenalties Int?
+  awayPenalties Int?
+  winnerTeamId  Int?
+  decidedBy     TournamentGameDecidedBy?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  tournament    Tournament               @relation(fields: [tournamentId], references: [id])
+  homeTeam      TournamentTeam           @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam      TournamentTeam           @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  winnerTeam    TournamentTeam?          @relation("WinnerTeam", fields: [winnerTeamId], references: [id])
 }
 
 model PlayerStat {

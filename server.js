@@ -22,7 +22,6 @@ const awardsRouter = require("./routes/awards"); // ? NOVO: rota da premiação
 const playerRouter = require("./routes/player");
 const voteRouter = require("./routes/vote");
 const monthlyVoteRouter = require("./routes/monthly_vote");
-
 let sharp = null;
 try {
   sharp = require("sharp");
@@ -82,6 +81,7 @@ const csrfProtection = csrf({
 app.use((req, res, next) => {
   if (
     req.path.startsWith("/vote") ||
+    req.path.startsWith("/votar") ||
     req.path.startsWith("/monthly-vote") ||
     req.path.startsWith("/monitoring/frontend-error")
   ) {
@@ -160,6 +160,7 @@ app.use((req, res, next) => {
     req.path.startsWith("/admin") ||
     req.path.startsWith("/login") ||
     req.path.startsWith("/vote") ||
+    req.path.startsWith("/votar") ||
     req.path.startsWith("/logout")
   ) {
     return next();
@@ -298,6 +299,7 @@ app.use("/sobre", sobreRouter);
 app.use("/premiacao", awardsRouter); // ? NOVO: página de premiação
 app.use("/jogador", playerRouter);
 app.use("/admin", adminRouter);
+app.use("/votar", voteRouter);
 app.use("/vote", voteRouter);
 app.use("/monthly-vote", monthlyVoteRouter);
 

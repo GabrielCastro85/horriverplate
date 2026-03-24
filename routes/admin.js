@@ -2739,7 +2739,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
     }));
     
     const voteSession = match.voteSessions.length > 0 ? match.voteSessions[0] : null;
-    const voteBaseUrl = `${req.protocol}://${req.get('host')}`;
+    const voteBaseUrl = `${req.protocol}://${req.get("host")}`;
 
     const lastLineupDraw = await prisma.lineupDraw.findFirst({
       where: { matchId: id },
@@ -2822,7 +2822,6 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// ==============================
 // Vota––es privadas por link (admin)
 // ==============================
 router.post("/matches/:id/vote-session", requireAdmin, async (req, res) => {
@@ -3640,6 +3639,7 @@ router.post("/rebuild-achievements", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
