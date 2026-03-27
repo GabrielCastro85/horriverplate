@@ -1,10 +1,46 @@
+<%
+  const matchDateLabel = new Date(match.playedAt).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
+  const craque = awards?.craque || null;
+  const awardList = [
+    ["Melhor Goleiro", awards?.melhor_goleiro || null],
+    ["Melhor Zagueiro", awards?.melhor_zagueiro || null],
+    ["Melhor Meia", awards?.melhor_meia || null],
+    ["Melhor Atacante", awards?.melhor_atacante || null],
+  ];
+  const topFive = (Array.isArray(scores) ? [...scores] : [])
+    .sort((a, b) => (b.finalRating || 0) - (a.finalRating || 0))
+    .slice(0, 5);
+  const firstPlace = topFive[0] || null;
+  const secondRow = topFive.slice(1, 3);
+  const thirdRow = topFive.slice(3, 5);
+
+  const fmtScore = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num.toFixed(2) : "-";
+  };
+
+  const photoFor = (player, size = 160) => {
+    if (!player?.photoUrl) return "/img/logo-128x128.svg";
+    return typeof thumbUrl === "function" ? thumbUrl(player.photoUrl, size) : player.photoUrl;
+  };
+
+  const numberTone = (index) => {
+    if (index === 0) return "text-[#f5c451]";
+    if (index === 1) return "text-[#d4dbe7]";
+    if (index === 2) return "text-[#cd8a5a]";
+    return "text-horriver-orange";
+  };
+%>
+
 <section class="min-h-screen bg-gradient-to-b from-black via-[#120008] to-[#1b0a0f] px-4 py-10 text-horriver-light">
   <div class="max-w-5xl mx-auto space-y-8">
     <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Resultados da pelada</p>
         <h1 class="text-2xl font-semibold text-horriver-orange">
-          <%= match.description || 'Pelada' %> — <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %>
+          <%= match.description || "Pelada" %> - <%= matchDateLabel %>
         </h1>
       </div>
       <a
@@ -17,75 +53,176 @@
 
     <div
       id="awards-card"
-      class="rounded-3xl bg-gradient-to-br from-black/80 via-[#1c0b10]/80 to-[#2a0f16]/80 border border-horriver-border/60 shadow-2xl overflow-hidden"
+      class="mx-auto max-w-[860px] overflow-hidden rounded-[2rem] border border-horriver-border/60 bg-gradient-to-br from-[#12070b] via-[#1b0c12] to-[#2d1118] shadow-2xl"
     >
-      <div class="p-6 md:p-8 space-y-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Horriver Plate</p>
-            <h2 class="text-xl font-semibold text-horriver-light">Prêmios oficiais da pelada</h2>
+      <div class="space-y-7 p-6 md:p-8">
+        <header class="flex items-start justify-between gap-4">
+          <div class="space-y-2">
+            <p class="text-[11px] uppercase tracking-[0.22em] text-horriver-gray">Horriver Plate</p>
+            <h2 class="font-title text-4xl leading-none text-horriver-light">Resultado da votacao</h2>
+            <p class="text-sm text-horriver-gray">
+              Imagem pronta para compartilhar com os destaques da noite.
+            </p>
           </div>
-          <div class="text-right text-xs text-horriver-gray">
-            <p><%= match.description || 'Pelada' %></p>
-            <p><%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
+          <div class="shrink-0 rounded-2xl border border-horriver-orange/25 bg-black/25 px-4 py-3 text-right">
+            <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray">Pelada</p>
+            <p class="mt-1 text-sm font-semibold text-horriver-light"><%= match.description || "Pelada" %></p>
+            <p class="mt-1 text-xs text-horriver-orange"><%= matchDateLabel %></p>
           </div>
-        </div>
+        </header>
 
-        <div class="grid md:grid-cols-2 gap-4">
-          <% const awardList = [ ['Craque da Pelada', awards.craque], ['Melhor Goleiro', awards.melhor_goleiro], ['Melhor Zagueiro', awards.melhor_zagueiro], ['Melhor Meia', awards.melhor_meia], ['Melhor Atacante', awards.melhor_atacante] ]; %>
-          <% awardList.forEach(([label, item]) => { %>
-            <div class="rounded-2xl border border-horriver-border/50 bg-black/40 p-4">
-              <p class="text-xs uppercase tracking-[0.18em] text-horriver-gray mb-2"><%= label %></p>
-              <% if (item) { %>
-                <p class="text-lg font-semibold text-horriver-light"><%= item.player?.name || 'Jogador' %></p>
-                <p class="text-xs text-horriver-orange">
-                  <%= item.player?.position || item.positionNorm || '-' %> • Nota: <%= item.finalRating?.toFixed(2) %>
-                </p>
-                <p class="text-[11px] text-horriver-gray mt-1">
-                  Gols: <%= item.goals || 0 %> · Assist: <%= item.assists || 0 %> · Votos: <%= item.votesCount || 0 %>
-                </p>
-              <% } else { %>
-                <p class="text-sm text-horriver-gray">Sem dados suficientes.</p>
-              <% } %>
+        <section class="rounded-[1.8rem] border border-horriver-orange/30 bg-gradient-to-br from-horriver-orange/12 via-black/25 to-black/45 p-5 md:p-6">
+          <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center gap-4">
+              <div class="h-24 w-24 overflow-hidden rounded-[1.4rem] border border-horriver-orange/35 bg-black/35 shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
+                <img
+                  src="<%= photoFor(craque?.player, 192) %>"
+                  alt="<%= craque?.player?.name || 'Craque da Pelada' %>"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+              <div class="space-y-2">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Craque da Pelada</p>
+                <% if (craque) { %>
+                  <p class="font-title text-5xl leading-none text-horriver-light"><%= craque.player?.name || "Jogador" %></p>
+                  <p class="text-base text-horriver-gray">
+                    <%= craque.player?.position || craque.positionNorm || "-" %>
+                  </p>
+                <% } else { %>
+                  <p class="text-base text-horriver-gray">Sem dados suficientes para definir o craque.</p>
+                <% } %>
+              </div>
             </div>
-          <% }); %>
-        </div>
 
-        <div class="border-t border-horriver-border/30 pt-6">
-          <h3 class="text-sm uppercase tracking-[0.18em] text-horriver-gray mb-3">Notas finais por jogador</h3>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm text-horriver-light">
-              <thead>
-                <tr class="text-xs uppercase tracking-[0.18em] text-horriver-gray">
-                  <th class="text-left py-2 pr-4">Jogador</th>
-                  <th class="text-left py-2 pr-4">Posição</th>
-                  <th class="text-left py-2 pr-4">Nota final</th>
-                  <th class="text-left py-2 pr-4">Votação</th>
-                  <th class="text-left py-2 pr-4">Stats</th>
-                  <th class="text-left py-2 pr-4">Gols</th>
-                  <th class="text-left py-2 pr-4">Assist</th>
-                  <th class="text-left py-2 pr-4">Votos</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-horriver-border/20">
-                <% scores.sort((a,b)=>b.finalRating-a.finalRating).slice(0,10).forEach((s) => { %>
-                  <tr class="hover:bg-white/5 transition">
-                    <td class="py-2 pr-4 font-semibold"><%= s.player?.name || 'Jogador' %></td>
-                    <td class="py-2 pr-4 text-horriver-gray"><%= s.player?.position || '-' %></td>
-                    <td class="py-2 pr-4 text-horriver-orange font-semibold"><%= s.finalRating?.toFixed(2) %></td>
-                    <td class="py-2 pr-4"><%= s.voteRating?.toFixed(2) %></td>
-                    <td class="py-2 pr-4"><%= s.statsRating?.toFixed(2) %></td>
-                    <td class="py-2 pr-4"><%= s.goals || 0 %></td>
-                    <td class="py-2 pr-4"><%= s.assists || 0 %></td>
-                    <td class="py-2 pr-4"><%= s.votesCount || 0 %></td>
-                  </tr>
-                <% }); %>
-              </tbody>
-            </table>
+            <div class="min-w-[180px] rounded-[1.4rem] border border-horriver-orange/35 bg-black/35 px-5 py-4 text-center">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray">Nota final</p>
+              <p class="mt-2 font-title text-6xl leading-none text-horriver-orange">
+                <%= craque ? fmtScore(craque.finalRating) : "-" %>
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <footer class="pt-4 border-t border-horriver-border/40 text-xs text-horriver-gray flex items-center justify-between">
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <% awardList.forEach(([label, item]) => { %>
+            <article class="rounded-[1.55rem] border border-horriver-border/45 bg-black/28 p-5">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray"><%= label %></p>
+              <% if (item) { %>
+                <div class="mt-4 flex items-center justify-between gap-4">
+                  <div class="flex items-center gap-3">
+                    <div class="h-16 w-16 overflow-hidden rounded-2xl border border-horriver-border/35 bg-black/30">
+                      <img
+                        src="<%= photoFor(item.player, 128) %>"
+                        alt="<%= item.player?.name || 'Jogador' %>"
+                        class="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p class="text-[1.2rem] font-semibold leading-tight text-horriver-light">
+                        <%= item.player?.name || "Jogador" %>
+                      </p>
+                      <p class="mt-1 text-sm text-horriver-gray">
+                        <%= item.player?.position || item.positionNorm || "-" %>
+                      </p>
+                    </div>
+                  </div>
+                  <div class="rounded-2xl border border-horriver-border/40 bg-white/[0.04] px-4 py-3 text-center">
+                    <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Final</p>
+                    <p class="mt-1 text-2xl font-semibold text-horriver-orange"><%= fmtScore(item.finalRating) %></p>
+                  </div>
+                </div>
+              <% } else { %>
+                <p class="mt-4 text-sm text-horriver-gray">Sem dados suficientes.</p>
+              <% } %>
+            </article>
+          <% }); %>
+        </section>
+
+        <section class="space-y-4 border-t border-horriver-border/30 pt-6">
+          <div>
+            <p class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5 da noite</p>
+            <h3 class="mt-1 font-title text-3xl leading-none text-horriver-light">Ranking final</h3>
+          </div>
+
+          <% if (firstPlace) { %>
+            <article class="flex items-center justify-between gap-4 rounded-[1.6rem] border border-horriver-border/45 bg-white/[0.035] px-5 py-5">
+              <div class="flex items-center gap-4">
+                <span class="font-title text-6xl leading-none <%= numberTone(0) %>">1</span>
+                <div class="h-20 w-20 overflow-hidden rounded-[1.2rem] border border-horriver-border/35 bg-black/30">
+                  <img
+                    src="<%= photoFor(firstPlace.player, 160) %>"
+                    alt="<%= firstPlace.player?.name || 'Jogador' %>"
+                    class="h-full w-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p class="text-2xl font-semibold text-horriver-light"><%= firstPlace.player?.name || "Jogador" %></p>
+                  <p class="mt-1 text-sm text-horriver-gray"><%= firstPlace.player?.position || "-" %></p>
+                </div>
+              </div>
+              <div class="rounded-2xl border border-horriver-border/35 bg-black/25 px-5 py-4 text-right">
+                <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Nota final</p>
+                <p class="mt-1 text-3xl font-semibold text-horriver-orange"><%= fmtScore(firstPlace.finalRating) %></p>
+              </div>
+            </article>
+          <% } %>
+
+          <% if (secondRow.length) { %>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <% secondRow.forEach((s, index) => { const absoluteIndex = index + 1; %>
+                <article class="flex items-center justify-between gap-4 rounded-[1.4rem] border border-horriver-border/40 bg-white/[0.03] px-4 py-4">
+                  <div class="flex items-center gap-3">
+                    <span class="font-title text-5xl leading-none <%= numberTone(absoluteIndex) %>"><%= absoluteIndex + 1 %></span>
+                    <div class="h-16 w-16 overflow-hidden rounded-[1rem] border border-horriver-border/35 bg-black/30">
+                      <img
+                        src="<%= photoFor(s.player, 128) %>"
+                        alt="<%= s.player?.name || 'Jogador' %>"
+                        class="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p class="text-lg font-semibold text-horriver-light"><%= s.player?.name || "Jogador" %></p>
+                      <p class="mt-1 text-sm text-horriver-gray"><%= s.player?.position || "-" %></p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Nota final</p>
+                    <p class="mt-1 text-2xl font-semibold text-horriver-orange"><%= fmtScore(s.finalRating) %></p>
+                  </div>
+                </article>
+              <% }); %>
+            </div>
+          <% } %>
+
+          <% if (thirdRow.length) { %>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <% thirdRow.forEach((s, index) => { const absoluteIndex = index + 3; %>
+                <article class="flex items-center justify-between gap-4 rounded-[1.4rem] border border-horriver-border/40 bg-white/[0.03] px-4 py-4">
+                  <div class="flex items-center gap-3">
+                    <span class="font-title text-5xl leading-none <%= numberTone(absoluteIndex) %>"><%= absoluteIndex + 1 %></span>
+                    <div class="h-16 w-16 overflow-hidden rounded-[1rem] border border-horriver-border/35 bg-black/30">
+                      <img
+                        src="<%= photoFor(s.player, 128) %>"
+                        alt="<%= s.player?.name || 'Jogador' %>"
+                        class="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p class="text-lg font-semibold text-horriver-light"><%= s.player?.name || "Jogador" %></p>
+                      <p class="mt-1 text-sm text-horriver-gray"><%= s.player?.position || "-" %></p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Nota final</p>
+                    <p class="mt-1 text-2xl font-semibold text-horriver-orange"><%= fmtScore(s.finalRating) %></p>
+                  </div>
+                </article>
+              <% }); %>
+            </div>
+          <% } %>
+        </section>
+
+        <footer class="flex items-center justify-between border-t border-horriver-border/35 pt-4 text-xs text-horriver-gray">
           <span>horriverplate.onrender.com</span>
           <span>@_hpfrc</span>
         </footer>
@@ -98,7 +235,7 @@
         id="download-awards-image"
         class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
       >
-        Baixar imagem dos prêmios
+        Baixar imagem dos premios
       </button>
     </div>
   </div>
@@ -129,4 +266,3 @@
     });
   }
 </script>
-
