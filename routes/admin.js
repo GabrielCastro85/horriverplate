@@ -1,9 +1,11 @@
 // routes/admin.js
 const express = require("express");
 const crypto = require("crypto");
+const fs = require("fs");
 const router = express.Router();
 const prisma = require("../utils/db");
 const bcrypt = require("bcryptjs");
+let puppeteer = null;
 const { scheduleBackup } = require("../utils/backup");
 const {
   uploadPlayerPhoto,
@@ -191,6 +193,131 @@ function hasMeaningfulData(value) {
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === "object") return Object.keys(value).length > 0;
   return true;
+}
+
+function resolveBrowserExecutablePath() {
+  const explicitPaths = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_PATH,
+  ].filter(Boolean);
+
+  for (const candidate of explicitPaths) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  if (puppeteer && typeof puppeteer.executablePath === "function") {
+    try {
+      const bundledPath = puppeteer.executablePath();
+      if (bundledPath && fs.existsSync(bundledPath)) {
+        return bundledPath;
+      }
+    } catch (err) {}
+  }
+
+  const commonPaths = [
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium",
+  ];
+
+  return commonPaths.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+async function captureAwardsCardPng(matchId, adminToken) {
+  if (!adminToken) {
+    throw new Error("Sessao de admin ausente para exportar a imagem.");
+  }
+
+  if (!puppeteer) {
+    puppeteer = require("puppeteer");
+  }
+
+  const executablePath = resolveBrowserExecutablePath();
+  const browser = await puppeteer.launch({
+    headless: true,
+    ...(executablePath ? { executablePath } : {}),
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--font-render-hinting=medium",
+      "--force-color-profile=srgb",
+    ],
+  });
+
+  try {
+    const page = await browser.newPage();
+    const baseUrl = `http://127.0.0.1:${process.env.PORT || 3000}`;
+
+    await page.setViewport({
+      width: 1600,
+      height: 2200,
+      deviceScaleFactor: 2,
+    });
+
+    await page.setCookie({
+      name: "adminToken",
+      value: adminToken,
+      url: baseUrl,
+      httpOnly: true,
+      sameSite: "Lax",
+    });
+
+    await page.goto(`${baseUrl}/admin/matches/${matchId}/awards`, {
+      waitUntil: "networkidle2",
+      timeout: 60000,
+    });
+
+    await page.emulateMediaType("screen");
+    await page.waitForSelector("#awards-card", { visible: true, timeout: 60000 });
+
+    await page.evaluate(async () => {
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (err) {}
+      }
+
+      const images = Array.from(document.querySelectorAll("#awards-card img"));
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            let settled = false;
+            const finish = () => {
+              if (settled) return;
+              settled = true;
+              resolve();
+            };
+            img.addEventListener("load", finish, { once: true });
+            img.addEventListener("error", finish, { once: true });
+            setTimeout(finish, 5000);
+          });
+        })
+      );
+
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+
+    const card = await page.$("#awards-card");
+    if (!card) {
+      throw new Error("Card de premios nao encontrado para exportacao.");
+    }
+
+    return await card.screenshot({
+      type: "png",
+      omitBackground: false,
+    });
+  } finally {
+    await browser.close();
+  }
 }
 
 async function buildAuditMetadata(req) {
@@ -459,6 +586,45 @@ async function buildAuditMetadata(req) {
   if (m) {
     meta.action = "monthly_vote_session.delete";
     meta.summary = `Admin excluiu votacao do mes #${Number(m[1])}.`;
+    meta.includePayload = false;
+    return meta;
+  }
+
+  m = path.match(/^\/matches\/(\d+)\/votes\/(\d+)\/delete$/);
+  if (m) {
+    const matchId = Number(m[1]);
+    const ballotId = Number(m[2]);
+    const ballot = await prisma.voteBallot.findUnique({
+      where: { id: ballotId },
+      include: {
+        token: {
+          include: {
+            player: { select: { id: true, name: true, nickname: true } },
+            session: {
+              include: {
+                match: { select: { id: true, playedAt: true, description: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    meta.action = "match_vote.delete";
+    meta.summary = `Admin excluiu voto da pelada ${formatMatchLabel(ballot?.token?.session?.match, matchId)}${ballot?.token?.player ? ` - ${formatPlayerLabel(ballot.token.player)}` : ""}.`;
+    meta.context = {
+      matchId,
+      voteBallotId: ballotId,
+      voter: ballot?.token?.player
+        ? { id: ballot.token.player.id, name: ballot.token.player.name }
+        : null,
+      before: ballot
+        ? {
+            id: ballot.id,
+            createdAt: ballot.createdAt,
+            voteTokenId: ballot.voteTokenId,
+          }
+        : null,
+    };
     meta.includePayload = false;
     return meta;
   }
@@ -2183,10 +2349,59 @@ router.get("/matches/:id/votes", requireAdmin, async (req, res) => {
       match,
       session,
       ballots,
+      voteDeleted: req.query.voteDeleted === "1",
+      voteDeleteError: req.query.voteDeleteError || null,
     });
   } catch (err) {
     console.error("Erro ao listar votos da pelada:", err);
     return res.redirect("/admin");
+  }
+});
+
+router.post("/matches/:id/votes/:ballotId/delete", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    const ballotId = Number(req.params.ballotId);
+    if (Number.isNaN(matchId) || Number.isNaN(ballotId)) {
+      return res.redirect("/admin");
+    }
+
+    const ballot = await prisma.voteBallot.findUnique({
+      where: { id: ballotId },
+      include: {
+        token: {
+          include: {
+            session: true,
+            player: true,
+          },
+        },
+      },
+    });
+
+    if (!ballot || !ballot.token || ballot.token.session?.matchId !== matchId) {
+      return res.redirect(`/admin/matches/${matchId}/votes?voteDeleteError=notFound`);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.voteRanking.deleteMany({
+        where: { voteBallotId: ballotId },
+      });
+      await tx.voteRating.deleteMany({
+        where: { voteBallotId: ballotId },
+      });
+      await tx.voteBallot.delete({
+        where: { id: ballotId },
+      });
+      await tx.voteToken.update({
+        where: { id: ballot.voteTokenId },
+        data: { usedAt: null },
+      });
+    });
+
+    return res.redirect(`/admin/matches/${matchId}/votes?voteDeleted=1`);
+  } catch (err) {
+    console.error("Erro ao excluir voto da pelada:", err);
+    return res.redirect(`/admin/matches/${req.params.id}/votes?voteDeleteError=server`);
   }
 });
 
@@ -3622,6 +3837,40 @@ router.get("/matches/:id/awards", requireAdmin, async (req, res) => {
   } catch (err) {
     console.error("Erro ao exibir resultados/prêmios:", err);
     return res.redirect("/admin");
+  }
+});
+
+router.get("/matches/:id/awards/export", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) return res.redirect("/admin");
+
+    const match = await prisma.match.findUnique({
+      where: { id: matchId },
+      select: { id: true, description: true, playedAt: true },
+    });
+    if (!match) return res.redirect("/admin");
+
+    const pngBuffer = await captureAwardsCardPng(matchId, req.cookies?.adminToken);
+    const dateLabel = new Date(match.playedAt)
+      .toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+      .replace(/\//g, "-");
+    const descLabel = String(match.description || "pelada")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase();
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="resultado-votacao-${descLabel || "pelada"}-${dateLabel}.png"`
+    );
+    return res.end(pngBuffer);
+  } catch (err) {
+    console.error("Erro ao exportar imagem dos premios:", err);
+    return res.status(500).send("Nao foi possivel gerar a imagem agora.");
   }
 });
 

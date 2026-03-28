@@ -44,6 +44,22 @@
     </a>
   </div>
 
+  <% if (voteDeleted) { %>
+    <div class="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+      Voto excluido com sucesso. O link desse jogador foi liberado para votar novamente.
+    </div>
+  <% } %>
+
+  <% if (voteDeleteError === "notFound") { %>
+    <div class="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+      Nao foi possivel localizar esse voto para exclusao.
+    </div>
+  <% } else if (voteDeleteError === "server") { %>
+    <div class="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+      Ocorreu um erro ao excluir o voto. Tente novamente.
+    </div>
+  <% } %>
+
   <% if (!session || !ballots.length) { %>
     <p class="text-sm text-horriver-gray">
       Nenhum voto registrado para esta pelada.
@@ -52,7 +68,7 @@
     <div class="space-y-4">
       <% ballots.forEach((b, idx) => { %>
         <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[12px]">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 text-[12px]">
             <div class="space-y-1">
               <p class="text-horriver-light font-semibold">
                 Voto <%= idx + 1 %> - <%= b.token.player?.name || "Jogador" %>
@@ -66,15 +82,30 @@
                 Enviado em <%= fmtDateTimeBR(b.createdAt) %>
               </p>
             </div>
-            <div class="text-[11px] text-horriver-gray flex flex-col gap-1 sm:text-right sm:items-end">
-              <span class="status-chip <%= b.token.usedAt ? 'status-ok' : 'status-pending' %>">
-                <%= b.token.usedAt ? "Token usado" : "Token pendente" %>
-              </span>
-              <% if (b.token.usedAt) { %>
-                <span>em <%= fmtDateTimeBR(b.token.usedAt) %></span>
-              <% } else { %>
-                <span>ainda nao utilizado</span>
-              <% } %>
+            <div class="flex flex-col gap-2 sm:items-end">
+              <div class="text-[11px] text-horriver-gray flex flex-col gap-1 sm:text-right sm:items-end">
+                <span class="status-chip <%= b.token.usedAt ? 'status-ok' : 'status-pending' %>">
+                  <%= b.token.usedAt ? "Token usado" : "Token pendente" %>
+                </span>
+                <% if (b.token.usedAt) { %>
+                  <span>em <%= fmtDateTimeBR(b.token.usedAt) %></span>
+                <% } else { %>
+                  <span>ainda nao utilizado</span>
+                <% } %>
+              </div>
+
+              <form
+                action="/admin/matches/<%= match.id %>/votes/<%= b.id %>/delete"
+                method="POST"
+                onsubmit="return confirm('Excluir o voto de <%= (b.token.player?.name || 'este jogador').replace(/'/g, '\\\\\'') %> e liberar o link para votar novamente?');"
+              >
+                <button
+                  type="submit"
+                  class="w-full sm:w-auto px-3 py-2 rounded-full border border-red-500/60 text-[11px] font-semibold text-red-200 hover:bg-red-500 hover:text-white transition"
+                >
+                  Excluir voto
+                </button>
+              </form>
             </div>
           </div>
 
