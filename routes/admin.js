@@ -1029,7 +1029,7 @@ router.get("/", requireAdmin, async (req, res) => {
       .slice(0, 5);
 
     const monthNames = [
-      "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+      "Janeiro", "Fevereiro", "Mar\u00E7o", "Abril", "Maio", "Junho",
       "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
     ];
     const monthLabel = `${monthNames[referenceDate.getMonth()]} ${referenceDate.getFullYear()}`;
@@ -1064,7 +1064,7 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
     const referenceDate = latestMatch ? new Date(latestMatch.playedAt) : new Date();
 
     const monthNames = [
-      "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+      "Janeiro", "Fevereiro", "Mar\u00E7o", "Abril", "Maio", "Junho",
       "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
     ];
 

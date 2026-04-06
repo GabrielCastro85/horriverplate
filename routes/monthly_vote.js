@@ -6,7 +6,7 @@ const prisma = require("../utils/db");
 const monthNames = [
   "Janeiro",
   "Fevereiro",
-  "Mar–o",
+  "Mar\u00E7o",
   "Abril",
   "Maio",
   "Junho",

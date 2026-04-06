@@ -1,8 +1,8 @@
 ﻿<%
 // views/admin_match.ejs
-// VariÃ¡veis recebidas: match, players, stats
-// O layout.ejs jÃ¡ cuida de <html>, <body>, header, footer etc.
-// Aqui Ã© sÃ³ o conteÃºdo interno do <main>.
+// Variáveis recebidas: match, players, stats
+// O layout.ejs já cuida de <html>, <body>, header, footer etc.
+// Aqui é só o conteúdo interno do <main>.
   const fmtDateTimeBR = (d) =>
     d ? new Date(d).toLocaleString("pt-BR", { timeZone: "UTC", hour12: false }) : "-";
   const hasVoteSessionTokens = !!(voteSession && voteSession.tokens && voteSession.tokens.length);
@@ -650,8 +650,8 @@
     <div id="tournament-standings-export-admin" class="tournament-export" data-export-root>
       <div class="export-header export-only">
         <div>
-          <div class="export-title">HORRIVER PLATE â€” TORNEIO</div>
-          <div class="export-subtitle">Classificacao</div>
+          <div class="export-title">HORRIVER PLATE - TORNEIO</div>
+          <div class="export-subtitle">Classificação</div>
         </div>
         <div class="export-logo">
           <img src="/img/logo-64x64.svg" alt="Horriver Plate" />
@@ -659,7 +659,7 @@
       </div>
 
       <div class="export-card rounded-2xl border border-horriver-border/60 bg-black/40 p-2">
-        <h3 class="text-sm font-semibold text-horriver-light mb-2">Classificacao</h3>
+        <h3 class="text-sm font-semibold text-horriver-light mb-2">Classificação</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-[11px] standings-table">
             <thead class="text-horriver-gray">
@@ -709,7 +709,7 @@
     <div id="tournament-games-export-admin" class="tournament-export" data-export-root>
       <div class="export-header export-only">
         <div>
-          <div class="export-title">HORRIVER PLATE â€” TORNEIO</div>
+          <div class="export-title">HORRIVER PLATE - TORNEIO</div>
           <div class="export-subtitle">Jogos e resultados</div>
         </div>
         <div class="export-logo">
@@ -730,7 +730,7 @@
             <% if (stage === "FINAL") { %>
               <% if (thirdPlaceGame) { const home = teamById.get(thirdPlaceGame.homeTeamId); const away = teamById.get(thirdPlaceGame.awayTeamId); const played = thirdPlaceGame.homeGoals != null && thirdPlaceGame.awayGoals != null; %>
                 <div class="export-card rounded-xl border border-white/10 bg-black/40 p-3">
-                  <div class="export-section-sub mb-2">Disputa 3Âº lugar</div>
+                  <div class="export-section-sub mb-2">Disputa 3º lugar</div>
                   <div class="game-card <%= played ? '' : 'game-pending' %>">
                     <div class="team-side">
                       <div class="team-name text-horriver-light">
@@ -742,10 +742,10 @@
                       <div class="team-meta">Mandante</div>
                     </div>
                     <div class="text-center">
-                      <div class="score"><%= thirdPlaceGame.homeGoals ?? "â€”" %> x <%= thirdPlaceGame.awayGoals ?? "â€”" %></div>
+                      <div class="score"><%= thirdPlaceGame.homeGoals ?? "-" %> x <%= thirdPlaceGame.awayGoals ?? "-" %></div>
                       <% if (thirdPlaceGame.decidedBy === "PENALTIES") { %>
                         <div class="score-note">
-                          PÃªnaltis: <%= thirdPlaceGame.homePenalties %>-<%= thirdPlaceGame.awayPenalties %>
+                          Pênaltis: <%= thirdPlaceGame.homePenalties %>-<%= thirdPlaceGame.awayPenalties %>
                         </div>
                       <% } %>
                     </div>
@@ -775,10 +775,10 @@
                       <div class="team-meta">Mandante</div>
                     </div>
                     <div class="text-center">
-                      <div class="score"><%= finalGame.homeGoals ?? "â€”" %> x <%= finalGame.awayGoals ?? "â€”" %></div>
+                      <div class="score"><%= finalGame.homeGoals ?? "-" %> x <%= finalGame.awayGoals ?? "-" %></div>
                       <% if (finalGame.decidedBy === "PENALTIES") { %>
                         <div class="score-note">
-                          PÃªnaltis: <%= finalGame.homePenalties %>-<%= finalGame.awayPenalties %>
+                          Pênaltis: <%= finalGame.homePenalties %>-<%= finalGame.awayPenalties %>
                         </div>
                       <% } %>
                     </div>
@@ -807,10 +807,10 @@
                     <div class="team-meta">Mandante</div>
                   </div>
                   <div class="text-center">
-                    <div class="score"><%= game.homeGoals ?? "â€”" %> x <%= game.awayGoals ?? "â€”" %></div>
+                    <div class="score"><%= game.homeGoals ?? "-" %> x <%= game.awayGoals ?? "-" %></div>
                     <% if (game.decidedBy === "PENALTIES") { %>
                       <div class="score-note">
-                        PÃªnaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
+                        Pênaltis: <%= game.homePenalties %>-<%= game.awayPenalties %>
                       </div>
                     <% } %>
                   </div>
@@ -1453,7 +1453,7 @@
       });
       localStorage.setItem(seedStorageKey, JSON.stringify(Array.from(seedIds)));
       if (!presentPlayers.length) {
-        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenÃ§as para escolher os cabeÃ§as de chave.</span>`;
+        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenças para escolher os cabeças de chave.</span>`;
         return;
       }
       seedList.innerHTML = presentPlayers
@@ -1487,7 +1487,7 @@
       });
     });
 
-    // Restaura cabeÃ§as de chave ao recarregar
+    // Restaura cabeças de chave ao recarregar
     try {
       const storedSeeds = JSON.parse(localStorage.getItem(seedStorageKey) || "[]");
       if (Array.isArray(storedSeeds)) {
@@ -1522,7 +1522,7 @@
         const position = (g.position || "Outros").trim();
         const strength = Math.max(40, Math.min(100, parseInt(g.strength || "60", 10) || 60));
         const key = name.toLowerCase();
-        // Se repetir nome, mantÃ©m a entrada mais recente
+        // Se repetir nome, mantém a entrada mais recente
         unique.set(key, { name, position, strength });
       });
       guests.length = 0;
@@ -2099,7 +2099,7 @@
 
       const presentIds = getPresentIdsFromForm();
       if (!presentIds.length) {
-        statusEl.textContent = "Sorteando com os presentes jÃ¡ salvos (marque acima se quiser alterar).";
+        statusEl.textContent = "Sorteando com os presentes já salvos (marque acima se quiser alterar).";
       }
 
       syncGuestsField();
@@ -2211,7 +2211,7 @@
         }
         try {
           navigator.clipboard.writeText(text);
-          if (shareStatus) shareStatus.textContent = "Times copiados para a Ã¡rea de transferÃªncia.";
+          if (shareStatus) shareStatus.textContent = "Times copiados para a área de transferência.";
         } catch (err) {
           if (shareStatus) shareStatus.textContent = "Falha ao copiar. Copie manualmente.";
         }
@@ -2222,7 +2222,7 @@
       imgBtn.addEventListener("click", async () => {
         shareStatus.textContent = "Gerando imagem...";
         try {
-          // carrega html2canvas se ainda nÃ£o estiver presente
+          // Carrega html2canvas se ainda não estiver presente
           if (typeof html2canvas === "undefined") {
             await new Promise((resolve, reject) => {
               const s = document.createElement("script");
@@ -2582,7 +2582,7 @@
           const footerHtml = `
             <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);font-size:10.5px;color:rgba(226,232,240,0.34);text-transform:uppercase;letter-spacing:0.15em;">
               <span>@_hpfrc</span>
-              <span style="opacity:0.42;">â€¢</span>
+              <span style="opacity:0.42;">•</span>
               <span>horriverplate</span>
             </div>
           `;

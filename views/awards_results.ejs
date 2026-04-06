@@ -26,16 +26,133 @@
     return typeof thumbUrl === "function" ? thumbUrl(player.photoUrl, size) : player.photoUrl;
   };
 
+  const playerPosition = (item) => item?.player?.position || item?.positionNorm || "-";
   const numberTone = (index) => {
-    if (index === 0) return "text-[#f5c451]";
-    if (index === 1) return "text-[#d4dbe7]";
-    if (index === 2) return "text-[#cd8a5a]";
-    return "text-horriver-orange";
+    if (index === 0) return "color:#f5c451;";
+    if (index === 1) return "color:#d4dbe7;";
+    if (index === 2) return "color:#cd8a5a;";
+    return "color:#ff7a1a;";
   };
 %>
 
-<section class="min-h-screen bg-gradient-to-b from-black via-[#120008] to-[#1b0a0f] px-4 py-10 text-horriver-light">
-  <div class="max-w-5xl mx-auto space-y-8">
+<style>
+  .awards-page-shell {
+    min-height: 100vh;
+    padding: 40px 16px;
+    color: #f3f4f6;
+    background:
+      radial-gradient(circle at top left, rgba(118, 24, 50, 0.12) 0%, transparent 32%),
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.04) 0%, transparent 18%),
+      radial-gradient(circle at bottom right, rgba(24, 44, 82, 0.12) 0%, transparent 28%),
+      linear-gradient(180deg, #2a0005 0%, #160208 34%, #050509 100%);
+  }
+  .awards-export-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 34px;
+    border: 1px solid rgba(255, 122, 26, 0.16);
+    background:
+      radial-gradient(circle at top left, rgba(118, 24, 50, 0.12) 0%, transparent 32%),
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.04) 0%, transparent 18%),
+      radial-gradient(circle at bottom right, rgba(24, 44, 82, 0.12) 0%, transparent 28%),
+      linear-gradient(180deg, #2a0005 0%, #160208 34%, #050509 100%);
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
+  }
+  .awards-export-watermark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 560px;
+    height: 560px;
+    transform: translate(-50%, -44%);
+    opacity: 0.025;
+    filter: grayscale(1) brightness(0.96) blur(2px);
+    pointer-events: none;
+    user-select: none;
+  }
+  .awards-export-meta {
+    min-width: 240px;
+    padding-top: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .awards-export-meta-line {
+    width: 92px;
+    height: 1px;
+    opacity: 0.66;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.22) 100%);
+  }
+  .awards-export-divider {
+    height: 1px;
+    margin: 0 0 38px;
+    opacity: 0.62;
+    background: linear-gradient(90deg, rgba(34,197,94,0.50) 0%, rgba(250,204,21,0.52) 28%, rgba(239,68,68,0.48) 58%, rgba(59,130,246,0.50) 100%);
+  }
+  .awards-hero-panel {
+    border-radius: 30px;
+    border: 1px solid rgba(255, 122, 26, 0.22);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0, 0, 0, 0.14);
+  }
+  .awards-score-box {
+    min-width: 180px;
+    min-height: 150px;
+    border-radius: 26px;
+    border: 1px solid rgba(255, 122, 26, 0.24);
+    background: rgba(0, 0, 0, 0.22);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .awards-grid-card {
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12)),
+      rgba(0, 0, 0, 0.16);
+  }
+  .awards-rank-card {
+    border-radius: 26px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12)),
+      rgba(0, 0, 0, 0.14);
+  }
+  .awards-rank-card--hero {
+    border-color: rgba(255, 122, 26, 0.18);
+    background:
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.08), transparent 34%),
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0, 0, 0, 0.16);
+  }
+  .awards-footer-line {
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  @media (max-width: 900px) {
+    .awards-export-meta {
+      min-width: 0;
+      width: 100%;
+      align-items: flex-start;
+      padding-top: 0;
+    }
+    .awards-export-meta-line {
+      width: 76px;
+    }
+    .awards-score-box {
+      min-width: 0;
+      width: 100%;
+      min-height: 120px;
+    }
+  }
+</style>
+
+<section class="awards-page-shell">
+  <div class="mx-auto max-w-6xl space-y-8">
     <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Resultados da pelada</p>
@@ -53,180 +170,192 @@
 
     <div
       id="awards-card"
-      class="mx-auto max-w-[860px] overflow-hidden rounded-[2rem] border border-horriver-border/60 bg-gradient-to-br from-[#12070b] via-[#1b0c12] to-[#2d1118] shadow-2xl"
+      class="awards-export-card mx-auto max-w-[920px] p-7 md:p-8"
     >
-      <div class="space-y-7 p-6 md:p-8">
-        <header class="flex items-start justify-between gap-4">
+      <img src="/img/logo-32x32.svg" alt="" class="awards-export-watermark" />
+
+      <header class="relative z-[1] flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <img src="/img/logo-32x32.svg" alt="Horriver Plate" class="h-7 w-7 object-contain opacity-80" />
+            <span class="text-[14px] font-extrabold uppercase tracking-[0.24em] text-[#ffb36a]">Horriver Plate</span>
+          </div>
           <div class="space-y-2">
-            <p class="text-[11px] uppercase tracking-[0.22em] text-horriver-gray">Horriver Plate</p>
-            <h2 class="font-title text-4xl leading-none text-horriver-light">Resultado da votacao</h2>
-            <p class="text-sm text-horriver-gray">
-              Imagem pronta para compartilhar com os destaques da noite.
+            <h2 class="font-title text-[4.4rem] leading-[0.94] text-horriver-light">Resultado da votação</h2>
+            <p class="text-[1rem] font-medium leading-relaxed text-horriver-gray/80">
+              Publicação oficial com os destaques da rodada e o ranking final da noite.
             </p>
           </div>
-          <div class="shrink-0 rounded-2xl border border-horriver-orange/25 bg-black/25 px-4 py-3 text-right">
-            <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray">Pelada</p>
-            <p class="mt-1 text-sm font-semibold text-horriver-light"><%= match.description || "Pelada" %></p>
-            <p class="mt-1 text-xs text-horriver-orange"><%= matchDateLabel %></p>
-          </div>
-        </header>
+        </div>
 
-        <section class="rounded-[1.8rem] border border-horriver-orange/30 bg-gradient-to-br from-horriver-orange/12 via-black/25 to-black/45 p-5 md:p-6">
-          <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div class="awards-export-meta relative z-[1]">
+          <span class="awards-export-meta-line"></span>
+          <div class="text-[2.35rem] font-black leading-[0.98] tracking-[-0.04em] text-horriver-light text-right md:text-right">
+            <%= matchDateLabel %>
+          </div>
+          <div class="text-[0.76rem] font-bold uppercase tracking-[0.16em] text-horriver-gray/60 md:text-right">
+            <%= match.description || "Pelada da semana" %>
+          </div>
+        </div>
+      </header>
+
+      <div class="awards-export-divider relative z-[1] mt-8"></div>
+
+      <section class="awards-hero-panel relative z-[1] p-5 md:p-6">
+        <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-4">
+            <div class="h-28 w-28 overflow-hidden rounded-[1.7rem] border border-horriver-orange/25 bg-black/30 shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
+              <img
+                src="<%= photoFor(craque?.player, 224) %>"
+                alt="<%= craque?.player?.name || 'Craque da Pelada' %>"
+                class="h-full w-full object-cover"
+              />
+            </div>
+            <div class="space-y-2">
+              <p class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray/76">Craque da Pelada</p>
+              <% if (craque) { %>
+                <p class="font-title text-[4rem] leading-[0.92] text-horriver-light"><%= craque.player?.name || "Jogador" %></p>
+                <p class="text-[15px] font-medium tracking-[0.05em] uppercase text-horriver-gray/66">
+                  <%= playerPosition(craque) %>
+                </p>
+              <% } else { %>
+                <p class="text-base text-horriver-gray">Sem dados suficientes para definir o craque.</p>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="awards-score-box">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-gray/74">Nota final</p>
+            <p class="mt-3 font-title text-[5.4rem] leading-none text-horriver-orange">
+              <%= craque ? fmtScore(craque.finalRating) : "-" %>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="relative z-[1] mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <% awardList.forEach(([label, item]) => { %>
+          <article class="awards-grid-card p-5">
+            <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72"><%= label %></p>
+            <% if (item) { %>
+              <div class="mt-4 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div class="h-16 w-16 overflow-hidden rounded-[1.05rem] border border-white/8 bg-black/28">
+                    <img
+                      src="<%= photoFor(item.player, 128) %>"
+                      alt="<%= item.player?.name || 'Jogador' %>"
+                      class="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[1.18rem] font-semibold leading-tight tracking-[0.01em] text-horriver-light">
+                      <%= item.player?.name || "Jogador" %>
+                    </p>
+                    <p class="text-[12px] uppercase tracking-[0.12em] text-horriver-gray/60">
+                      <%= playerPosition(item) %>
+                    </p>
+                  </div>
+                </div>
+                <div class="rounded-[1.25rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-center">
+                  <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray/68">Final</p>
+                  <p class="mt-2 text-[1.9rem] font-semibold leading-none text-horriver-orange"><%= fmtScore(item.finalRating) %></p>
+                </div>
+              </div>
+            <% } else { %>
+              <p class="mt-4 text-sm text-horriver-gray">Sem dados suficientes.</p>
+            <% } %>
+          </article>
+        <% }); %>
+      </section>
+
+      <section class="relative z-[1] mt-7 space-y-4 pt-6 awards-footer-line">
+        <div class="space-y-1">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray/72">Top 5 da noite</p>
+          <h3 class="font-title text-[3rem] leading-none text-horriver-light">Ranking final</h3>
+        </div>
+
+        <% if (firstPlace) { %>
+          <article class="awards-rank-card awards-rank-card--hero flex items-center justify-between gap-4 px-5 py-5">
             <div class="flex items-center gap-4">
-              <div class="h-24 w-24 overflow-hidden rounded-[1.4rem] border border-horriver-orange/35 bg-black/35 shadow-[0_12px_28px_rgba(0,0,0,0.22)]">
+              <span class="font-title text-[4.5rem] leading-none" style="<%= numberTone(0) %>">1</span>
+              <div class="h-20 w-20 overflow-hidden rounded-[1.2rem] border border-white/8 bg-black/28">
                 <img
-                  src="<%= photoFor(craque?.player, 192) %>"
-                  alt="<%= craque?.player?.name || 'Craque da Pelada' %>"
+                  src="<%= photoFor(firstPlace.player, 160) %>"
+                  alt="<%= firstPlace.player?.name || 'Jogador' %>"
                   class="h-full w-full object-cover"
                 />
               </div>
-              <div class="space-y-2">
-                <p class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Craque da Pelada</p>
-                <% if (craque) { %>
-                  <p class="font-title text-5xl leading-none text-horriver-light"><%= craque.player?.name || "Jogador" %></p>
-                  <p class="text-base text-horriver-gray">
-                    <%= craque.player?.position || craque.positionNorm || "-" %>
-                  </p>
-                <% } else { %>
-                  <p class="text-base text-horriver-gray">Sem dados suficientes para definir o craque.</p>
-                <% } %>
+              <div class="space-y-1">
+                <p class="text-[1.8rem] font-semibold leading-tight tracking-[0.01em] text-horriver-light"><%= firstPlace.player?.name || "Jogador" %></p>
+                <p class="text-[12px] uppercase tracking-[0.12em] text-horriver-gray/60"><%= firstPlace.player?.position || "-" %></p>
               </div>
             </div>
-
-            <div data-export-score-box class="flex min-h-[148px] min-w-[180px] flex-col items-center justify-center rounded-[1.4rem] border border-horriver-orange/35 bg-black/35 px-5 py-4 text-center">
-              <p data-export-score-label class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray">Nota final</p>
-              <p data-export-score-value class="mt-3 font-title text-6xl leading-none text-horriver-orange">
-                <%= craque ? fmtScore(craque.finalRating) : "-" %>
-              </p>
+            <div class="rounded-[1.35rem] border border-white/8 bg-white/[0.03] px-5 py-4 text-center">
+              <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray/68">Nota final</p>
+              <p class="mt-3 text-[2.15rem] font-semibold leading-none text-horriver-orange"><%= fmtScore(firstPlace.finalRating) %></p>
             </div>
+          </article>
+        <% } %>
+
+        <% if (secondRow.length) { %>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <% secondRow.forEach((s, index) => { const absoluteIndex = index + 1; %>
+              <article class="awards-rank-card flex items-center justify-between gap-4 px-4 py-4">
+                <div class="flex items-center gap-3">
+                  <span class="font-title text-[3.5rem] leading-none" style="<%= numberTone(absoluteIndex) %>"><%= absoluteIndex + 1 %></span>
+                  <div class="h-16 w-16 overflow-hidden rounded-[1rem] border border-white/8 bg-black/28">
+                    <img
+                      src="<%= photoFor(s.player, 128) %>"
+                      alt="<%= s.player?.name || 'Jogador' %>"
+                      class="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-lg font-semibold leading-tight tracking-[0.01em] text-horriver-light"><%= s.player?.name || "Jogador" %></p>
+                    <p class="text-[12px] uppercase tracking-[0.12em] text-horriver-gray/60"><%= s.player?.position || "-" %></p>
+                  </div>
+                </div>
+                <div class="rounded-[1.15rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-center">
+                  <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray/68">Nota final</p>
+                  <p class="mt-2 text-[1.85rem] font-semibold leading-none text-horriver-orange"><%= fmtScore(s.finalRating) %></p>
+                </div>
+              </article>
+            <% }); %>
           </div>
-        </section>
+        <% } %>
 
-        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <% awardList.forEach(([label, item]) => { %>
-            <article class="rounded-[1.55rem] border border-horriver-border/45 bg-black/28 p-5">
-              <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray"><%= label %></p>
-              <% if (item) { %>
-                <div class="mt-4 flex items-center justify-between gap-4">
-                  <div class="flex items-center gap-3">
-                    <div class="h-16 w-16 overflow-hidden rounded-2xl border border-horriver-border/35 bg-black/30">
-                      <img
-                        src="<%= photoFor(item.player, 128) %>"
-                        alt="<%= item.player?.name || 'Jogador' %>"
-                        class="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p class="text-[1.2rem] font-semibold leading-tight text-horriver-light">
-                        <%= item.player?.name || "Jogador" %>
-                      </p>
-                      <p class="mt-1 text-sm text-horriver-gray">
-                        <%= item.player?.position || item.positionNorm || "-" %>
-                      </p>
-                    </div>
+        <% if (thirdRow.length) { %>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <% thirdRow.forEach((s, index) => { const absoluteIndex = index + 3; %>
+              <article class="awards-rank-card flex items-center justify-between gap-4 px-4 py-4">
+                <div class="flex items-center gap-3">
+                  <span class="font-title text-[3.5rem] leading-none" style="<%= numberTone(absoluteIndex) %>"><%= absoluteIndex + 1 %></span>
+                  <div class="h-16 w-16 overflow-hidden rounded-[1rem] border border-white/8 bg-black/28">
+                    <img
+                      src="<%= photoFor(s.player, 128) %>"
+                      alt="<%= s.player?.name || 'Jogador' %>"
+                      class="h-full w-full object-cover"
+                    />
                   </div>
-                  <div data-export-score-box class="flex min-h-[94px] min-w-[118px] flex-col items-center justify-center rounded-2xl border border-horriver-border/40 bg-white/[0.04] px-4 py-3 text-center">
-                    <p data-export-score-label class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Final</p>
-                    <p data-export-score-value class="mt-2 text-2xl font-semibold text-horriver-orange"><%= fmtScore(item.finalRating) %></p>
+                  <div class="space-y-1">
+                    <p class="text-lg font-semibold leading-tight tracking-[0.01em] text-horriver-light"><%= s.player?.name || "Jogador" %></p>
+                    <p class="text-[12px] uppercase tracking-[0.12em] text-horriver-gray/60"><%= s.player?.position || "-" %></p>
                   </div>
                 </div>
-              <% } else { %>
-                <p class="mt-4 text-sm text-horriver-gray">Sem dados suficientes.</p>
-              <% } %>
-            </article>
-          <% }); %>
-        </section>
-
-        <section class="space-y-4 border-t border-horriver-border/30 pt-6">
-          <div>
-            <p class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5 da noite</p>
-            <h3 class="mt-1 font-title text-3xl leading-none text-horriver-light">Ranking final</h3>
+                <div class="rounded-[1.15rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-center">
+                  <p class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray/68">Nota final</p>
+                  <p class="mt-2 text-[1.85rem] font-semibold leading-none text-horriver-orange"><%= fmtScore(s.finalRating) %></p>
+                </div>
+              </article>
+            <% }); %>
           </div>
+        <% } %>
+      </section>
 
-          <% if (firstPlace) { %>
-            <article class="flex items-center justify-between gap-4 rounded-[1.6rem] border border-horriver-border/45 bg-white/[0.035] px-5 py-5">
-              <div class="flex items-center gap-4">
-                <span class="font-title text-6xl leading-none <%= numberTone(0) %>">1</span>
-                <div class="h-20 w-20 overflow-hidden rounded-[1.2rem] border border-horriver-border/35 bg-black/30">
-                  <img
-                    src="<%= photoFor(firstPlace.player, 160) %>"
-                    alt="<%= firstPlace.player?.name || 'Jogador' %>"
-                    class="h-full w-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p class="text-2xl font-semibold text-horriver-light"><%= firstPlace.player?.name || "Jogador" %></p>
-                  <p class="mt-1 text-sm text-horriver-gray"><%= firstPlace.player?.position || "-" %></p>
-                </div>
-              </div>
-              <div data-export-score-box class="flex min-h-[126px] min-w-[168px] flex-col items-center justify-center rounded-2xl border border-horriver-border/35 bg-black/25 px-5 py-4 text-center">
-                <p data-export-score-label class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Nota final</p>
-                <p data-export-score-value class="mt-3 text-3xl font-semibold text-horriver-orange"><%= fmtScore(firstPlace.finalRating) %></p>
-              </div>
-            </article>
-          <% } %>
-
-          <% if (secondRow.length) { %>
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <% secondRow.forEach((s, index) => { const absoluteIndex = index + 1; %>
-                <article class="flex items-center justify-between gap-4 rounded-[1.4rem] border border-horriver-border/40 bg-white/[0.03] px-4 py-4">
-                  <div class="flex items-center gap-3">
-                    <span class="font-title text-5xl leading-none <%= numberTone(absoluteIndex) %>"><%= absoluteIndex + 1 %></span>
-                    <div class="h-16 w-16 overflow-hidden rounded-[1rem] border border-horriver-border/35 bg-black/30">
-                      <img
-                        src="<%= photoFor(s.player, 128) %>"
-                        alt="<%= s.player?.name || 'Jogador' %>"
-                        class="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p class="text-lg font-semibold text-horriver-light"><%= s.player?.name || "Jogador" %></p>
-                      <p class="mt-1 text-sm text-horriver-gray"><%= s.player?.position || "-" %></p>
-                    </div>
-                  </div>
-                  <div data-export-score-box class="flex min-h-[96px] min-w-[132px] shrink-0 flex-col items-center justify-center rounded-2xl border border-horriver-border/35 bg-black/25 px-4 py-3 text-center">
-                    <p data-export-score-label class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Nota final</p>
-                    <p data-export-score-value class="mt-2 text-2xl font-semibold text-horriver-orange"><%= fmtScore(s.finalRating) %></p>
-                  </div>
-                </article>
-              <% }); %>
-            </div>
-          <% } %>
-
-          <% if (thirdRow.length) { %>
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <% thirdRow.forEach((s, index) => { const absoluteIndex = index + 3; %>
-                <article class="flex items-center justify-between gap-4 rounded-[1.4rem] border border-horriver-border/40 bg-white/[0.03] px-4 py-4">
-                  <div class="flex items-center gap-3">
-                    <span class="font-title text-5xl leading-none <%= numberTone(absoluteIndex) %>"><%= absoluteIndex + 1 %></span>
-                    <div class="h-16 w-16 overflow-hidden rounded-[1rem] border border-horriver-border/35 bg-black/30">
-                      <img
-                        src="<%= photoFor(s.player, 128) %>"
-                        alt="<%= s.player?.name || 'Jogador' %>"
-                        class="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p class="text-lg font-semibold text-horriver-light"><%= s.player?.name || "Jogador" %></p>
-                      <p class="mt-1 text-sm text-horriver-gray"><%= s.player?.position || "-" %></p>
-                    </div>
-                  </div>
-                  <div data-export-score-box class="flex min-h-[96px] min-w-[132px] shrink-0 flex-col items-center justify-center rounded-2xl border border-horriver-border/35 bg-black/25 px-4 py-3 text-center">
-                    <p data-export-score-label class="text-[10px] uppercase tracking-[0.16em] text-horriver-gray">Nota final</p>
-                    <p data-export-score-value class="mt-2 text-2xl font-semibold text-horriver-orange"><%= fmtScore(s.finalRating) %></p>
-                  </div>
-                </article>
-              <% }); %>
-            </div>
-          <% } %>
-        </section>
-
-        <footer class="flex items-center justify-between border-t border-horriver-border/35 pt-4 text-xs text-horriver-gray">
-          <span>horriverplate.onrender.com</span>
-          <span>@_hpfrc</span>
-        </footer>
-      </div>
+      <footer class="relative z-[1] mt-7 flex items-center justify-between pt-4 text-[10.5px] uppercase tracking-[0.15em] text-horriver-gray/36 awards-footer-line">
+        <span>horriverplate.onrender.com</span>
+        <span>@_hpfrc</span>
+      </footer>
     </div>
 
     <div class="flex justify-end">

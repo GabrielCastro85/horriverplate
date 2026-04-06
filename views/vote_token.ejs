@@ -252,7 +252,7 @@
   </style>
 
   <header class="text-center space-y-2">
-    <h1 class="font-title text-3xl text-horriver-light">Votacao da pelada</h1>
+    <h1 class="font-title text-3xl text-horriver-light">Vota&ccedil;&atilde;o da pelada</h1>
     <% if (match) { %>
       <p class="text-sm text-horriver-gray">
         Pelada de <span class="text-horriver-orange"><%= new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' }) %></span>
@@ -264,7 +264,7 @@
         Link gerado para: <span class="text-horriver-light"><%= voter.name %></span>
       </p>
       <p class="text-[11px] text-horriver-gray">
-        Voce nao pode votar em si mesmo.
+        Voc&ecirc; n&atilde;o pode votar em si mesmo.
       </p>
     <% } %>
   </header>
@@ -285,7 +285,7 @@
     <form method="POST" class="space-y-4" id="vote-flow-form">
       <div class="vote-meta text-xs text-horriver-gray">
         <span id="vote-progress">Jogador 1 de <%= players.length %></span>
-        <span>Notas de 1 a 5 (obrigatorio)</span>
+        <span>Notas de 1 a 5 (obrigat&oacute;rio)</span>
       </div>
 
       <div id="vote-alert" class="hidden text-xs text-red-300 bg-red-900/30 border border-red-700/40 rounded-lg px-3 py-2"></div>
@@ -306,7 +306,7 @@
                   <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
                 <% } %>
                 <p class="text-[11px] text-horriver-gray">
-                  Posicao: <span class="text-horriver-light"><%= p.positionLabel || p.position || "Outros" %></span>
+                  Posi&ccedil;&atilde;o: <span class="text-horriver-light"><%= p.positionLabel || p.position || "Outros" %></span>
                 </p>
               </div>
             </div>
@@ -321,7 +321,7 @@
                 <p>Assist.</p>
               </div>
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= p.appearedInPhoto ? "SIM" : "NAO" %></p>
+                <p class="text-horriver-orange font-semibold"><%= p.appearedInPhoto ? "SIM" : "N&Atilde;O" %></p>
                 <p>Foto</p>
               </div>
             </div>
@@ -356,7 +356,7 @@
             id="vote-next"
             class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
           >
-            Proximo
+            Pr&oacute;ximo
           </button>
           <button
             type="submit"
