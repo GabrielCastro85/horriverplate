@@ -1,6 +1,6 @@
 <%
   const fmtDateTimeBR = (d) =>
-    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "-";
+    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "UTC", hour12: false }) : "-";
   const monthlyVoteStatusClass = monthlyVoteClosed ? "status-danger" : "status-info";
   const monthlyVoteStatusLabel = monthlyVoteClosed ? "Votacao encerrada" : "Votacao ativa";
 %>

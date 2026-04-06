@@ -2,14 +2,26 @@
 
 <style>
   .admin-panel {
-    background: linear-gradient(180deg, rgba(20, 20, 24, 0.72), rgba(10, 10, 14, 0.82));
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
-    backdrop-filter: blur(4px);
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
+      linear-gradient(180deg, rgba(20, 20, 24, 0.74), rgba(10, 10, 14, 0.84));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.26);
+    backdrop-filter: blur(6px);
+  }
+  .admin-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,122,26,0), rgba(255,122,26,0.42), rgba(255,122,26,0));
+    opacity: 0.72;
   }
   .admin-row {
     background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     transition: background 0.18s ease, border-color 0.18s ease;
   }
   .admin-row:hover {
@@ -21,6 +33,79 @@
     top: 0;
     background: rgba(0, 0, 0, 0.82);
     z-index: 2;
+  }
+  .admin-summary-card {
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 1.35rem;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.028), rgba(0,0,0,0.16)),
+      rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .admin-summary-card--accent {
+    border-color: rgba(255, 122, 26, 0.26);
+    background:
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.12), transparent 34%),
+      linear-gradient(180deg, rgba(255,255,255,0.028), rgba(0,0,0,0.16)),
+      rgba(0, 0, 0, 0.18);
+  }
+  .admin-toolbar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.4rem 0.92rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #f5f5f5;
+    background: rgba(255,255,255,0.03);
+    transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+  }
+  .admin-toolbar-link:hover {
+    border-color: rgba(255, 122, 26, 0.4);
+    color: #ffb685;
+    background: rgba(255, 122, 26, 0.08);
+  }
+  .admin-mini-panel {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 1.3rem;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0,0,0,0.16);
+  }
+  .admin-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .admin-ranking-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: rgba(226, 232, 240, 0.82);
+    font-size: 12px;
+  }
+  .admin-ranking-row:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .admin-ranking-empty {
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12px;
+    color: rgba(178, 184, 194, 0.8);
+  }
+  .admin-focus-panel {
+    border: 1px solid rgba(255, 122, 26, 0.22);
+    border-radius: 1.45rem;
+    background:
+      radial-gradient(circle at top right, rgba(255, 122, 26, 0.14), transparent 34%),
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.18)),
+      rgba(0,0,0,0.2);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
   }
 </style>
 
@@ -50,113 +135,164 @@
 
 <div class="space-y-10">
   <!-- Header + acoes rapidas -->
-  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-    <div>
-      <p class="text-xs text-horriver-gray uppercase tracking-[0.2em]">Painel</p>
-      <h1 class="font-title text-2xl text-horriver-light">Admin Horriver Plate</h1>
-      <p class="text-sm text-horriver-gray">Gerencie peladas, jogadores e destaques.</p>
+  <header class="admin-panel rounded-[1.9rem] p-5 md:p-6">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+      <div class="space-y-3">
+        <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffb685]">
+          <span class="inline-flex h-4 w-4 items-center justify-center rounded-md border border-horriver-orange/40 text-[9px] text-horriver-orange">AD</span>
+          Painel
+        </span>
+        <div class="space-y-2">
+          <h1 class="font-title text-3xl md:text-4xl text-horriver-light">Admin Horriver Plate</h1>
+          <p class="max-w-2xl text-sm leading-relaxed text-horriver-gray/82">Gerencie peladas, jogadores, destaques e processos do site com a mesma linguagem visual do produto publico.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <% if (admin) { %>
+          <a
+            href="/admin/auditoria"
+            class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+          >
+            Auditoria
+          </a>
+          <a
+            href="/admin/senha"
+            class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+          >
+            Trocar senha
+          </a>
+        <% } %>
+      </div>
     </div>
-    <div class="flex flex-wrap items-center gap-2 text-xs">
-      <% if (admin) { %>
-        <a
-          href="/admin/auditoria"
-          class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
-        >
-          Auditoria
-        </a>
-        <a
-          href="/admin/senha"
-          class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
-        >
-          Trocar senha
-        </a>
-      <% } %>
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="admin-summary-card admin-summary-card--accent p-4 space-y-2">
+        <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/78">Operacao</span>
+        <strong class="block text-lg leading-none text-horriver-orange font-semibold">Peladas</strong>
+        <p class="text-sm text-horriver-gray/84">Crie novas rodadas, abra stats e mantenha o historico organizado.</p>
+      </div>
+      <div class="admin-summary-card p-4 space-y-2">
+        <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/78">Conteudo</span>
+        <strong class="block text-lg leading-none text-horriver-light font-semibold">Destaques</strong>
+        <p class="text-sm text-horriver-gray/84">Atualize premios da semana, votacao do mes e publicacoes do projeto.</p>
+      </div>
+      <div class="admin-summary-card p-4 space-y-2">
+        <span class="block text-[10px] uppercase tracking-[0.16em] text-horriver-gray/78">Elenco</span>
+        <strong class="block text-lg leading-none text-horriver-light font-semibold">Jogadores</strong>
+        <p class="text-sm text-horriver-gray/84">Cadastre nomes, fotos e dados do plantel sem perder o contexto do site.</p>
+      </div>
     </div>
   </header>
 
-  <div class="sticky top-20 z-40 admin-panel rounded-2xl px-4 py-3">
-    <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-      <span class="text-horriver-gray uppercase tracking-[0.2em]">Navegacao rapida</span>
+  <div class="admin-panel rounded-2xl px-4 py-3">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 text-[11px]">
+      <div class="space-y-1">
+        <span class="text-horriver-gray uppercase tracking-[0.2em]">Navegacao rapida</span>
+        <p class="text-[12px] text-horriver-gray/72">Atalhos para os blocos que mais pedem ajustes no dia a dia.</p>
+      </div>
       <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1 sm:flex-wrap sm:overflow-visible sm:whitespace-normal">
-        <a href="#peladas" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Peladas</a>
-        <a href="#destaques" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Destaques</a>
-        <a href="#jogadores" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Jogadores</a>
+        <a href="#peladas" class="admin-toolbar-link">Peladas</a>
+        <a href="#destaques" class="admin-toolbar-link">Destaques</a>
+        <a href="#jogadores" class="admin-toolbar-link">Jogadores</a>
         <a href="/admin/monthly-vote" class="px-3 py-1 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Votacao do mes</a>
       </div>
     </div>
   </div>
 
-  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div class="admin-panel rounded-2xl p-4 space-y-2">
-      <h3 class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5</h3>
-      <p class="text-sm text-horriver-light font-semibold">Artilheiros do mes</p>
-      <p class="text-[11px] text-horriver-gray">Mes: <%= monthLabel %></p>
-      <% if (monthTopGoals && monthTopGoals.length) { %>
-        <div class="space-y-2 text-xs text-horriver-gray">
-          <% monthTopGoals.forEach((row, idx) => { %>
-            <div class="flex items-center justify-between">
-              <span><%= idx + 1 %>. <%= row.player.name %></span>
-              <span class="text-horriver-orange"><%= row.goals || 0 %></span>
-            </div>
-          <% }) %>
+  <section class="grid grid-cols-1 xl:grid-cols-[1.35fr,0.85fr] gap-4">
+    <div class="admin-panel rounded-2xl p-4 md:p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div>
+          <h2 class="font-title text-xl text-horriver-light">Radar do mes</h2>
+          <p class="text-xs text-horriver-gray/76">Leitura rapida do que esta puxando a narrativa do periodo atual.</p>
         </div>
-      <% } else { %>
-        <p class="text-xs text-horriver-gray">Sem dados neste mes.</p>
-      <% } %>
-    </div>
-
-    <div class="admin-panel rounded-2xl p-4 space-y-2">
-      <h3 class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5</h3>
-      <p class="text-sm text-horriver-light font-semibold">Assistencias do mes</p>
-      <p class="text-[11px] text-horriver-gray">Mes: <%= monthLabel %></p>
-      <% if (monthTopAssists && monthTopAssists.length) { %>
-        <div class="space-y-2 text-xs text-horriver-gray">
-          <% monthTopAssists.forEach((row, idx) => { %>
-            <div class="flex items-center justify-between">
-              <span><%= idx + 1 %>. <%= row.player.name %></span>
-              <span class="text-horriver-orange"><%= row.assists || 0 %></span>
-            </div>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <p class="text-xs text-horriver-gray">Sem dados neste mes.</p>
-      <% } %>
-    </div>
-
-    <div class="admin-panel rounded-2xl p-4 space-y-2">
-      <h3 class="text-[11px] uppercase tracking-[0.2em] text-horriver-gray">Top 5</h3>
-      <p class="text-sm text-horriver-light font-semibold">Notas do mes</p>
-      <p class="text-[11px] text-horriver-gray">Mes: <%= monthLabel %></p>
-      <% const fmtRating = (val) => (val || val === 0 ? Number(val).toFixed(2).replace(".", ",") : "0,00"); %>
-      <% if (monthTopRatings && monthTopRatings.length) { %>
-        <div class="space-y-2 text-xs text-horriver-gray">
-          <% monthTopRatings.forEach((row, idx) => { %>
-            <div class="flex items-center justify-between">
-              <span><%= idx + 1 %>. <%= row.player.name %></span>
-              <span class="text-horriver-orange"><%= fmtRating(row.avgRating) %></span>
-            </div>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <p class="text-xs text-horriver-gray">Sem dados neste mes.</p>
-      <% } %>
-    </div>
-  </section>
-
-  <!-- Votacao do mes -->
-  <section class="scroll-mt-16">
-    <div class="admin-panel rounded-2xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <div>
-        <h2 class="font-title text-xl text-horriver-orange">Votacao do mes</h2>
-        <p class="text-xs text-horriver-gray">Top 5 (minimo 2 peladas no mes) e links para votar.</p>
+        <span class="text-[11px] uppercase tracking-[0.18em] text-horriver-gray/72">Mes: <%= monthLabel %></span>
       </div>
-      <a
-        href="/admin/monthly-vote"
-        class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-orange-500 transition"
-      >
-        Abrir painel
-      </a>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="admin-mini-panel rounded-2xl p-4 space-y-3">
+          <div class="space-y-1">
+            <span class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72">Top 5</span>
+            <p class="text-sm text-horriver-light font-semibold">Artilheiros do mes</p>
+          </div>
+          <% if (monthTopGoals && monthTopGoals.length) { %>
+            <div class="admin-ranking-list">
+              <% monthTopGoals.forEach((row, idx) => { %>
+                <div class="admin-ranking-row">
+                  <span><%= idx + 1 %>. <%= row.player.name %></span>
+                  <span class="text-horriver-orange font-semibold"><%= row.goals || 0 %></span>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p class="admin-ranking-empty">Sem dados neste mes.</p>
+          <% } %>
+        </div>
+
+        <div class="admin-mini-panel rounded-2xl p-4 space-y-3">
+          <div class="space-y-1">
+            <span class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72">Top 5</span>
+            <p class="text-sm text-horriver-light font-semibold">Assistencias do mes</p>
+          </div>
+          <% if (monthTopAssists && monthTopAssists.length) { %>
+            <div class="admin-ranking-list">
+              <% monthTopAssists.forEach((row, idx) => { %>
+                <div class="admin-ranking-row">
+                  <span><%= idx + 1 %>. <%= row.player.name %></span>
+                  <span class="text-horriver-orange font-semibold"><%= row.assists || 0 %></span>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p class="admin-ranking-empty">Sem dados neste mes.</p>
+          <% } %>
+        </div>
+
+        <div class="admin-mini-panel rounded-2xl p-4 space-y-3">
+          <div class="space-y-1">
+            <span class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/72">Top 5</span>
+            <p class="text-sm text-horriver-light font-semibold">Notas do mes</p>
+          </div>
+          <% const fmtRating = (val) => (val || val === 0 ? Number(val).toFixed(2).replace(".", ",") : "0,00"); %>
+          <% if (monthTopRatings && monthTopRatings.length) { %>
+            <div class="admin-ranking-list">
+              <% monthTopRatings.forEach((row, idx) => { %>
+                <div class="admin-ranking-row">
+                  <span><%= idx + 1 %>. <%= row.player.name %></span>
+                  <span class="text-horriver-orange font-semibold"><%= fmtRating(row.avgRating) %></span>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p class="admin-ranking-empty">Sem dados neste mes.</p>
+          <% } %>
+        </div>
+      </div>
     </div>
+
+    <!-- Votacao do mes -->
+    <section class="scroll-mt-16">
+      <div class="admin-focus-panel rounded-2xl p-5 h-full flex flex-col justify-between gap-4">
+        <div class="space-y-3">
+          <span class="inline-flex items-center gap-2 rounded-full border border-horriver-orange/25 bg-horriver-orange/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#ffb685]">
+            Votacao do mes
+          </span>
+          <div>
+            <h2 class="font-title text-2xl text-horriver-orange">Painel da votacao</h2>
+            <p class="mt-2 text-sm leading-relaxed text-horriver-gray/84">Acompanhe os classificados do mes, gere links e publique a disputa do Top 6 com menos atrito.</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-[11px]">
+            <span class="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-horriver-gray">Top 6 do mes</span>
+            <span class="px-3 py-1 rounded-full border border-white/10 bg-white/[0.03] text-horriver-gray">Minimo 2 peladas</span>
+          </div>
+        </div>
+        <a
+          href="/admin/monthly-vote"
+          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-orange-500 transition"
+        >
+          Abrir painel
+        </a>
+      </div>
+    </section>
   </section>
 
   <!-- Peladas -->

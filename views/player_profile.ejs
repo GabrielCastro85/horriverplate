@@ -9,10 +9,10 @@
   const surfaceSoftClass = "rounded-[1.25rem] border border-horriver-border bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
 %>
 
-<section class="w-full max-w-5xl mx-auto px-4 sm:px-6 space-y-7 animate-fadeIn">
+<section class="page-shell w-full max-w-5xl mx-auto px-4 sm:px-6 animate-fadeIn">
   <header class="page-hero space-y-6">
-    <div class="flex flex-col md:flex-row gap-5 items-center md:items-start">
-      <div class="relative w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange shadow-card-soft shrink-0">
+    <div class="grid gap-5 lg:grid-cols-[auto,1fr,0.9fr] lg:items-start">
+      <div class="relative w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange/90 shadow-card-soft shrink-0 mx-auto md:mx-0">
         <% if (player.photoUrl) { %>
           <img
             src="<%= thumbUrl(player.photoUrl, 320) %>"
@@ -28,7 +28,7 @@
         <% } %>
       </div>
 
-      <div class="flex-1 space-y-3 text-center md:text-left">
+      <div class="space-y-4 text-center md:text-left">
         <div class="space-y-2">
           <span class="hero-badge text-horriver-gray">
             <span class="hero-icon">JP</span>
@@ -55,28 +55,43 @@
           <span id="copyStatus" class="text-[11px] text-horriver-gray hidden">Copiado!</span>
         </div>
       </div>
+
+      <aside class="page-section">
+        <div class="page-section__inner space-y-3">
+          <span class="text-[11px] uppercase tracking-[0.16em] text-horriver-gray/78">Radar do jogador</span>
+          <h2 class="font-title text-2xl text-horriver-light">Fase atual</h2>
+          <p class="text-sm leading-relaxed text-horriver-gray/84">
+            Um resumo rapido da presenca, producao e impacto recente de <span class="text-horriver-light font-semibold"><%= player.name %></span>.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= totals.matches %></strong> jogos</span>
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= totals.goals %></strong> gols</span>
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= totals.assists %></strong> assist.</span>
+          </div>
+        </div>
+      </aside>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <article class="<%= statCardAccentClass %>">
-        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Jogos</span>
-        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-orange font-semibold"><%= totals.matches %></strong>
-        <span class="mt-2 block text-sm text-horriver-light/90">presencas registradas</span>
+    <div class="quick-stats">
+      <article class="quick-stat quick-stat--accent">
+        <span class="quick-stat__label">Jogos</span>
+        <strong class="quick-stat__value"><%= totals.matches %></strong>
+        <span class="quick-stat__sub text-horriver-light/90">presencas registradas</span>
       </article>
-      <article class="<%= statCardClass %>">
-        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Gols</span>
-        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold"><%= totals.goals %></strong>
-        <span class="mt-2 block text-sm text-horriver-gray">bolas na rede</span>
+      <article class="quick-stat">
+        <span class="quick-stat__label">Gols</span>
+        <strong class="quick-stat__value"><%= totals.goals %></strong>
+        <span class="quick-stat__sub">bolas na rede</span>
       </article>
-      <article class="<%= statCardClass %>">
-        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Assistencias</span>
-        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold"><%= totals.assists %></strong>
-        <span class="mt-2 block text-sm text-horriver-gray">passes para gol</span>
+      <article class="quick-stat">
+        <span class="quick-stat__label">Assistencias</span>
+        <strong class="quick-stat__value"><%= totals.assists %></strong>
+        <span class="quick-stat__sub">passes para gol</span>
       </article>
-      <article class="<%= statCardClass %>">
-        <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">Fotos</span>
-        <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold"><%= totals.photos %></strong>
-        <span class="mt-2 block text-sm text-horriver-gray">registros em imagem</span>
+      <article class="quick-stat">
+        <span class="quick-stat__label">Fotos</span>
+        <strong class="quick-stat__value"><%= totals.photos %></strong>
+        <span class="quick-stat__sub">registros em imagem</span>
       </article>
     </div>
   </header>
@@ -211,12 +226,12 @@
           </p>
         </div>
       <% } else { %>
-        <div class="space-y-2">
+        <div class="space-y-3">
           <% recentMatches.forEach(m => { %>
             <div class="<%= surfaceSoftClass %> p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-sm">
-              <div>
+              <div class="space-y-1">
                 <p class="text-horriver-light font-medium"><%= m.desc || 'Pelada' %></p>
-                <p class="text-[11px] text-horriver-gray"><%= new Date(m.date).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
+                <p class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/72"><%= new Date(m.date).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %></p>
               </div>
               <div class="flex flex-wrap gap-2 text-[11px] text-horriver-gray">
                 <span class="<%= pillClass %>">G <strong class="text-horriver-orange font-semibold"><%= m.goals || 0 %></strong></span>

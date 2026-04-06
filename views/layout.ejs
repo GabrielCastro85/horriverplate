@@ -120,21 +120,36 @@
       }
 
       .layout-bg {
-        background-image: radial-gradient(
-          circle at top,
-          #2d0509 0,
-          #120106 35%,
-          #050509 70%,
-          #000000 100%
-        ),
-        repeating-linear-gradient(
-          135deg,
-          rgba(255, 122, 26, 0.035) 0,
-          rgba(255, 122, 26, 0.035) 1px,
-          transparent 1px,
-          transparent 8px
-        );
+        position: relative;
+        isolation: isolate;
+        background:
+          radial-gradient(circle at 12% -8%, rgba(139, 19, 32, 0.34), transparent 28%),
+          radial-gradient(circle at 88% 0%, rgba(255, 122, 26, 0.08), transparent 22%),
+          linear-gradient(180deg, #190308 0%, #09070d 44%, #030307 100%);
         background-attachment: fixed;
+      }
+      .layout-bg::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: radial-gradient(circle at center, black 24%, transparent 88%);
+        opacity: 0.2;
+        z-index: -2;
+      }
+      .layout-bg::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at top, rgba(255, 122, 26, 0.06), transparent 32%),
+          radial-gradient(circle at 18% 78%, rgba(148, 163, 184, 0.05), transparent 26%);
+        z-index: -1;
       }
 
       .card-highlight {
@@ -164,9 +179,11 @@
         position: relative;
         overflow: hidden;
         border: 1px solid rgba(148, 163, 184, 0.35);
-        background: rgba(0, 0, 0, 0.35);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)),
+          rgba(0, 0, 0, 0.32);
         border-radius: 1.5rem;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32);
         transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
       }
       [data-skeleton] {
@@ -207,7 +224,7 @@
       .card-unified:hover {
         transform: translateY(-2px);
         border-color: rgba(255, 122, 26, 0.55);
-        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 20px 38px rgba(0, 0, 0, 0.38);
       }
       .card-unified:hover::before {
         opacity: 1;
@@ -226,25 +243,36 @@
         transform: scale(1.02);
       }
       .page-hero {
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        border-radius: 1.75rem;
-        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 2rem;
+        padding: clamp(1.5rem, 3vw, 2rem);
         background:
-          radial-gradient(circle at top left, rgba(255, 122, 26, 0.16), transparent 55%),
-          linear-gradient(135deg, rgba(0, 0, 0, 0.75), rgba(5, 5, 9, 0.9));
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+          radial-gradient(circle at top left, rgba(255, 122, 26, 0.15), transparent 38%),
+          radial-gradient(circle at bottom right, rgba(139, 19, 32, 0.14), transparent 42%),
+          linear-gradient(145deg, rgba(10, 10, 14, 0.92), rgba(5, 5, 9, 0.84));
+        box-shadow: 0 22px 48px rgba(0, 0, 0, 0.38);
+      }
+      .page-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(255, 122, 26, 0), rgba(255, 122, 26, 0.7), rgba(255, 122, 26, 0));
+        opacity: 0.72;
       }
       .hero-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.35rem 0.8rem;
+        padding: 0.42rem 0.9rem;
         border-radius: 999px;
-        border: 1px solid rgba(255, 122, 26, 0.45);
-        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 122, 26, 0.32);
+        background: rgba(0, 0, 0, 0.42);
         font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.2em;
+        letter-spacing: 0.18em;
       }
       .hero-icon {
         width: 16px;
@@ -257,6 +285,69 @@
         border: 1px solid rgba(255, 122, 26, 0.4);
         font-size: 10px;
         color: #ff7a1a;
+      }
+      .site-header-shell {
+        min-height: 72px;
+      }
+      .site-nav-list {
+        min-width: 0;
+      }
+      .site-nav-link {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 32px;
+        padding: 0.38rem 0.62rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        color: rgba(178, 184, 194, 0.9);
+        letter-spacing: 0.03em;
+        transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+      }
+      .site-nav-link:hover {
+        color: #fff7f2;
+        border-color: rgba(148, 163, 184, 0.18);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .site-nav-link[aria-current="page"] {
+        color: #fff7f2;
+        border-color: rgba(255, 122, 26, 0.28);
+        background: linear-gradient(180deg, rgba(255, 122, 26, 0.16), rgba(255, 122, 26, 0.05));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 12px 24px rgba(0,0,0,0.18);
+      }
+      .site-mobile-link {
+        display: block;
+        padding: 0.72rem 0.85rem;
+        border-radius: 1rem;
+        color: rgba(226, 232, 240, 0.88);
+        transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+        border: 1px solid transparent;
+      }
+      .site-mobile-link:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(148, 163, 184, 0.18);
+      }
+      .site-mobile-link[aria-current="page"] {
+        color: #fff7f2;
+        border-color: rgba(255, 122, 26, 0.24);
+        background: linear-gradient(180deg, rgba(255,122,26,0.14), rgba(255,122,26,0.04));
+      }
+      .site-footer {
+        background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.28));
+      }
+      .site-footer-bar {
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+      }
+      .site-footer-note {
+        color: rgba(178, 184, 194, 0.8);
+      }
+      @media (max-width: 1380px) {
+        .site-nav-link {
+          min-height: 30px;
+          padding: 0.34rem 0.5rem;
+          letter-spacing: 0.02em;
+        }
       }
       .table-sticky thead th {
         position: sticky;
@@ -461,7 +552,7 @@
     <div class="min-h-screen flex flex-col layout-bg">
       <!-- HEADER -->
       <header class="sticky top-0 z-40 bg-black/80 border-b border-horriver-border backdrop-blur">
-        <nav class="max-w-6xl mx-auto flex w-full items-center gap-2 md:gap-4 px-4 py-3">
+        <nav class="site-header-shell max-w-6xl mx-auto flex w-full items-center gap-2 md:gap-4 px-4 py-3">
           <!-- ESQUERDA -->
           <a href="/" class="flex items-center gap-2 min-w-0 flex-1 md:flex-none">
             <div class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70">
@@ -486,12 +577,12 @@
           </a>
 
           <!-- CENTRO -->
-          <ul class="hidden md:flex flex-1 flex-wrap items-center justify-center gap-5 text-[11px] md:text-xs whitespace-nowrap">
+          <ul class="site-nav-list hidden md:flex flex-1 flex-nowrap items-center justify-center gap-1 xl:gap-2 text-[10px] lg:text-[11px] xl:text-xs whitespace-nowrap">
             <li>
               <a
                 href="/"
                 <%= currentPage==='home' ? 'aria-current="page"' : '' %>
-                class="<%= currentPage==='home' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                class="site-nav-link"
               >
                 Home
               </a>
@@ -500,7 +591,7 @@
               <a
                 href="/rankings"
                 <%= currentPage==='rankings' ? 'aria-current="page"' : '' %>
-                class="<%= currentPage==='rankings' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                class="site-nav-link"
               >
                 Rankings
               </a>
@@ -509,7 +600,7 @@
               <a
                 href="/peladas"
                 <%= currentPage==='peladas' ? 'aria-current="page"' : '' %>
-                class="<%= currentPage==='peladas' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                class="site-nav-link"
               >
                 Peladas
               </a>
@@ -518,7 +609,7 @@
               <a
                 href="/elenco"
                 <%= currentPage==='elenco' ? 'aria-current="page"' : '' %>
-                class="<%= currentPage==='elenco' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                class="site-nav-link"
               >
                 Elenco
               </a>
@@ -527,7 +618,7 @@
               <a
                 href="/tierlist"
                 <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %>
-                class="<%= currentPage==='tierlist' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                class="site-nav-link"
               >
                 Tierlist
               </a>
@@ -538,7 +629,7 @@
                 <a
                   href="/hall-da-fama"
                   <%= currentPage==='hall' ? 'aria-current="page"' : '' %>
-                  class="<%= currentPage==='hall' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                  class="site-nav-link"
                 >
                   Hall da Fama
                 </a>
@@ -549,7 +640,7 @@
               <a
                 href="/fotos"
                 <%= currentPage==='fotos' ? 'aria-current="page"' : '' %>
-                class="<%= currentPage==='fotos' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                class="site-nav-link"
               >
                 Fotos
               </a>
@@ -559,7 +650,7 @@
               <a
                 href="/sobre"
                 <%= currentPage==='sobre' ? 'aria-current="page"' : '' %>
-                class="<%= currentPage==='sobre' ? 'text-horriver-orange' : 'text-horriver-gray hover:text-horriver-orange' %>"
+                class="site-nav-link"
               >
                 Sobre
               </a>
@@ -567,9 +658,9 @@
           </ul>
 
           <!-- DIREITA -->
-          <div class="hidden md:flex items-center gap-2 shrink-0 whitespace-nowrap">
+          <div class="hidden md:flex items-center gap-1.5 lg:gap-2 shrink-0 whitespace-nowrap">
             <% if (adminLabel) { %>
-              <span class="text-[11px] md:text-xs text-horriver-gray">
+              <span class="hidden 2xl:inline text-[11px] md:text-xs text-horriver-gray">
                 Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
               </span>
             <% } %>
@@ -670,18 +761,18 @@
           </div>
 
           <nav class="p-2 text-[13px] overflow-y-auto">
-            <a href="/" <%= currentPage==='home' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Home</a>
-            <a href="/rankings" <%= currentPage==='rankings' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Rankings</a>
-            <a href="/peladas" <%= currentPage==='peladas' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Peladas</a>
-            <a href="/elenco" <%= currentPage==='elenco' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Elenco</a>
+            <a href="/" <%= currentPage==='home' ? 'aria-current="page"' : '' %> class="site-mobile-link">Home</a>
+            <a href="/rankings" <%= currentPage==='rankings' ? 'aria-current="page"' : '' %> class="site-mobile-link">Rankings</a>
+            <a href="/peladas" <%= currentPage==='peladas' ? 'aria-current="page"' : '' %> class="site-mobile-link">Peladas</a>
+            <a href="/elenco" <%= currentPage==='elenco' ? 'aria-current="page"' : '' %> class="site-mobile-link">Elenco</a>
 
             <% if (showHallLink) { %>
-              <a href="/hall-da-fama" <%= currentPage==='hall' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Hall da Fama</a>
+              <a href="/hall-da-fama" <%= currentPage==='hall' ? 'aria-current="page"' : '' %> class="site-mobile-link">Hall da Fama</a>
             <% } %>
-            <a href="/fotos" <%= currentPage==='fotos' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Fotos</a>
-            <a href="/tierlist" <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Tierlist</a>
+            <a href="/fotos" <%= currentPage==='fotos' ? 'aria-current="page"' : '' %> class="site-mobile-link">Fotos</a>
+            <a href="/tierlist" <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="site-mobile-link">Tierlist</a>
 
-            <a href="/sobre" <%= currentPage==='sobre' ? 'aria-current="page"' : '' %> class="block px-3 py-2 rounded-lg hover:bg-white/5">Sobre</a>
+            <a href="/sobre" <%= currentPage==='sobre' ? 'aria-current="page"' : '' %> class="site-mobile-link">Sobre</a>
 
             <div class="mt-2 flex flex-wrap items-center gap-2 px-2">
               <% if (adminLabel) { %>
@@ -781,23 +872,23 @@
       </main>
 
       <!-- FOOTER -->
-      <footer class="mt-8 border-t border-horriver-border text-[10px] md:text-xs text-horriver-gray/80">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p>&copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os direitos reservados.</p>
-          <nav class="footer-links flex flex-wrap items-center gap-3">
+      <footer class="site-footer mt-8 text-[10px] md:text-xs text-horriver-gray/80">
+        <div class="site-footer-bar max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3">
+          <p class="site-footer-note">&copy; <%= new Date().getFullYear() %> Horriver Plate. Todos os direitos reservados.</p>
+          <nav class="footer-links flex flex-wrap items-center justify-center gap-3">
             <a href="/">Home</a>
-            <span class="text-horriver-gray/40">|</span>
+            <span class="text-horriver-gray/30">•</span>
             <a href="/rankings">Rankings</a>
-            <span class="text-horriver-gray/40">|</span>
+            <span class="text-horriver-gray/30">•</span>
             <a href="/peladas">Peladas</a>
-            <span class="text-horriver-gray/40">|</span>
+            <span class="text-horriver-gray/30">•</span>
             <a href="/elenco">Elenco</a>
-            <span class="text-horriver-gray/40">|</span>
+            <span class="text-horriver-gray/30">•</span>
             <a href="/fotos">Fotos</a>
-            <span class="text-horriver-gray/40">|</span>
+            <span class="text-horriver-gray/30">•</span>
             <a href="/sobre">Sobre</a>
           </nav>
-          <p>
+          <p class="site-footer-note">
             Projeto feito com
             <span class="text-horriver-orange font-semibold">futebol raiz</span>
             e muita resenha.

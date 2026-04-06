@@ -141,7 +141,7 @@
   }
 </style>
 
-<section class="space-y-8 animate-fadeIn">
+<section class="page-shell animate-fadeIn">
   <!-- TITULO E FILTROS -->
   <header class="page-hero space-y-4">
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
@@ -260,51 +260,51 @@
     </form>
   </header>
 
-  <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-    <article class="rounded-[1.35rem] border border-horriver-orange/30 bg-gradient-to-br from-horriver-orange/12 via-black/35 to-black/60 px-4 py-4 shadow-[0_14px_36px_rgba(0,0,0,0.22)]">
-      <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">
+  <section class="quick-stats">
+    <article class="quick-stat quick-stat--accent">
+      <span class="quick-stat__label">
         Artilheiro do filtro
       </span>
-      <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-orange font-semibold">
+      <strong class="quick-stat__value">
         <%= topGoal ? topGoal.goals || 0 : 0 %>
       </strong>
-      <span class="mt-2 block text-sm text-horriver-light/90">
+      <span class="quick-stat__sub text-horriver-light/90">
         <%= leaderName(topGoal) %>
       </span>
     </article>
 
-    <article class="rounded-[1.35rem] border border-horriver-border bg-white/[0.04] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-      <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">
+    <article class="quick-stat">
+      <span class="quick-stat__label">
         Lider em assistencias
       </span>
-      <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold">
+      <strong class="quick-stat__value">
         <%= topAssist ? topAssist.assists || 0 : 0 %>
       </strong>
-      <span class="mt-2 block text-sm text-horriver-gray">
+      <span class="quick-stat__sub">
         <%= leaderName(topAssist) %>
       </span>
     </article>
 
-    <article class="rounded-[1.35rem] border border-horriver-border bg-white/[0.04] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-      <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">
+    <article class="quick-stat">
+      <span class="quick-stat__label">
         Melhor media
       </span>
-      <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold">
+      <strong class="quick-stat__value">
         <%= topRating ? fmtRating(topRating.rating) : "0,00" %>
       </strong>
-      <span class="mt-2 block text-sm text-horriver-gray">
+      <span class="quick-stat__sub">
         <%= leaderName(topRating) %>
       </span>
     </article>
 
-    <article class="rounded-[1.35rem] border border-horriver-border bg-white/[0.04] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-      <span class="block text-[11px] uppercase tracking-[0.16em] text-horriver-gray/90">
+    <article class="quick-stat">
+      <span class="quick-stat__label">
         Overall lider
       </span>
-      <strong class="mt-3 block text-[clamp(1.4rem,2vw,2rem)] leading-none text-horriver-light font-semibold">
+      <strong class="quick-stat__value">
         <%= topOverall ? topOverall.overallScore || 60 : 60 %>
       </strong>
-      <span class="mt-2 block text-sm text-horriver-gray">
+      <span class="quick-stat__sub">
         <%= leaderName(topOverall) %>
       </span>
     </article>

@@ -1,132 +1,236 @@
-<section class="space-y-10 animate-fadeIn">
-  <!-- Destaques da Semana -->
-  <div class="bg-horriver-red/10 rounded-2xl p-6 shadow-card">
-    <h2 class="font-title text-2xl text-horriver-orange mb-4">
-      Destaques da Semana
-    </h2>
+<%
+  const topScorer = Array.isArray(topScorers) && topScorers.length ? topScorers[0] : null;
+  const weeklyCraqueName = weekly && weekly.craque && weekly.craque.name ? weekly.craque.name : "Aguardando destaque";
+  const weeklyMatchLabel =
+    weekly && weekly.craqueMatch && weekly.craqueMatch.description
+      ? weekly.craqueMatch.description
+      : "Semana atual";
+  const weeklyTeamName = weekly && weekly.teamName ? weekly.teamName : "Time vencedor em breve";
+  const weeklyPeriod =
+    weekly && weekly.week && weekly.year
+      ? `Semana ${weekly.week} / ${weekly.year}`
+      : "Atualização em andamento";
+  const leadScorerGoals = topScorer && topScorer.totalGoals ? topScorer.totalGoals : 0;
+  const leadScorerName = topScorer ? topScorer.name : "Sem dados";
+%>
 
-    <% if (weekly) { %>
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="space-y-2">
-          <h3 class="font-title text-lg text-horriver-light">
-            Craque da Semana
-          </h3>
-          <p class="text-sm text-horriver-gray">
-            <strong><%= weekly.craque?.name || "Jogador" %></strong>
-            <% if (weekly.craqueMatch) { %>
-              da partida: <%= weekly.craqueMatch.description || "" %>
-            <% } %>
-          </p>
-          <p class="text-xs text-horriver-gray">
-            Semana <%= weekly.week %> / <%= weekly.year %>
+<section class="page-shell animate-fadeIn">
+  <header class="page-hero space-y-6">
+    <div class="grid gap-5 xl:grid-cols-[1.2fr,0.95fr]">
+      <div class="space-y-5">
+        <span class="hero-badge text-horriver-gray">
+          <span class="hero-icon">HP</span>
+          Publicacao oficial da resenha
+        </span>
+
+        <div class="space-y-3">
+          <h1 class="font-title text-4xl md:text-6xl leading-none text-horriver-light">
+            Pelada, estatisticas e resenha com cara de clube
+          </h1>
+          <p class="max-w-2xl text-sm md:text-base leading-relaxed text-horriver-gray/85">
+            O Horriver Plate organiza os jogos de terca, registra os numeros da turma e transforma a pelada em um produto esportivo com identidade propria.
           </p>
         </div>
 
-        <div class="space-y-2">
-          <h3 class="font-title text-lg text-horriver-light">
-            Time da Semana
-          </h3>
-          <p class="text-sm text-horriver-gray">
-            <strong><%= weekly.teamName || "Time vencedor" %></strong>
-          </p>
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="/peladas"
+            class="inline-flex items-center gap-2 rounded-full bg-horriver-orange px-4 py-2.5 text-sm font-semibold text-black hover:bg-orange-500 transition"
+          >
+            Ver peladas
+            <span class="text-[13px]">-></span>
+          </a>
+          <a
+            href="/rankings"
+            class="inline-flex items-center gap-2 rounded-full border border-horriver-border bg-black/25 px-4 py-2.5 text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+          >
+            Explorar rankings
+          </a>
+          <a
+            href="/sobre"
+            class="inline-flex items-center gap-2 rounded-full border border-horriver-border bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-horriver-gray hover:border-horriver-orange hover:text-horriver-light transition"
+          >
+            Conhecer o projeto
+          </a>
         </div>
       </div>
-    <% } else { %>
-      <p class="text-sm text-horriver-gray">
-        Ainda não há destaques cadastrados. Lance os dados pelo painel admin.
-      </p>
-    <% } %>
-  </div>
 
-  <!-- Rankings: Top 10 Artilheiros -->
-  <div class="space-y-4">
-    <div class="flex items-center justify-between gap-2">
-      <h2 class="font-title text-2xl text-horriver-orange">
-        Top 10 Artilheiros
-      </h2>
-      <a
-        href="/rankings?tipo=artilheiros"
-        class="text-xs text-horriver-orange hover:underline"
-      >
-        Ver rankings completos
-      </a>
+      <section class="page-section">
+        <div class="page-section__inner page-section__inner--lg space-y-4">
+          <div class="section-heading">
+            <div>
+              <h2 class="font-title text-2xl text-horriver-light">Radar da semana</h2>
+              <p class="section-heading__meta">O que esta puxando a narrativa da rodada agora.</p>
+            </div>
+            <span class="toolbar-pill"><strong><%= weeklyPeriod %></strong></span>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <article class="surface-soft surface-soft--pad space-y-2">
+              <span class="text-[11px] uppercase tracking-[0.16em] text-horriver-gray/80">Craque da semana</span>
+              <h3 class="text-xl font-semibold text-horriver-light"><%= weeklyCraqueName %></h3>
+              <p class="text-sm text-horriver-gray/85">Em destaque na <span class="text-horriver-orange font-medium"><%= weeklyMatchLabel %></span>.</p>
+            </article>
+
+            <article class="surface-soft surface-soft--pad space-y-2">
+              <span class="text-[11px] uppercase tracking-[0.16em] text-horriver-gray/80">Time da semana</span>
+              <h3 class="text-xl font-semibold text-horriver-light"><%= weeklyTeamName %></h3>
+              <p class="text-sm text-horriver-gray/85">Destaque coletivo da rodada com cara de post oficial.</p>
+            </article>
+          </div>
+
+          <div class="rounded-[1.4rem] border border-horriver-border bg-black/25 px-4 py-4 text-sm leading-relaxed text-horriver-gray/85">
+            Toda terca a resenha gera novos numeros, rankings e imagens para compartilhar. O site acompanha essa rotina como se fosse o hub oficial do time.
+          </div>
+        </div>
+      </section>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-horriver-red/40 bg-horriver-dark">
-      <table class="min-w-full text-sm">
-        <thead class="bg-horriver-red/20 text-horriver-light">
-          <tr>
-            <th class="text-left px-3 py-2">#</th>
-            <th class="text-left px-3 py-2">Jogador</th>
-            <th class="text-left px-3 py-2">Posição</th>
-            <th class="text-left px-3 py-2">Gols</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (topScorers && topScorers.length) { %>
-            <% topScorers.forEach((p, idx) => { %>
-              <tr class="border-t border-horriver-red/30 hover:bg-horriver-red/10 transition">
-                <td class="px-3 py-2"><%= idx + 1 %></td>
-                <td class="px-3 py-2"><%= p.name %></td>
-                <td class="px-3 py-2 text-xs uppercase text-horriver-gray"><%= p.position %></td>
-                <td class="px-3 py-2 font-semibold"><%= p.totalGoals %></td>
-              </tr>
-            <% }) %>
-          <% } else { %>
+    <div class="quick-stats">
+      <article class="quick-stat quick-stat--accent">
+        <span class="quick-stat__label">Artilharia atual</span>
+        <strong class="quick-stat__value"><%= leadScorerGoals %></strong>
+        <span class="quick-stat__sub"><%= leadScorerName %></span>
+      </article>
+      <article class="quick-stat">
+        <span class="quick-stat__label">Ritmo da casa</span>
+        <strong class="quick-stat__value">Toda terca</strong>
+        <span class="quick-stat__sub">Futebol raiz, estatisticas e resenha</span>
+      </article>
+      <article class="quick-stat">
+        <span class="quick-stat__label">Canal oficial</span>
+        <strong class="quick-stat__value">@_hpfrc</strong>
+        <span class="quick-stat__sub">Instagram, updates e artes da semana</span>
+      </article>
+    </div>
+  </header>
+
+  <section class="page-section">
+    <div class="page-section__inner page-section__inner--lg space-y-4">
+      <div class="section-heading">
+        <div>
+          <h2 class="font-title text-2xl text-horriver-light">Top 10 artilheiros</h2>
+          <p class="section-heading__meta">Recorte rapido dos nomes que mais balancam a rede.</p>
+        </div>
+        <a
+          href="/rankings?tipo=artilheiros"
+          class="toolbar-pill hover:border-horriver-orange/40 hover:text-horriver-light transition"
+        >
+          <strong>Ver rankings completos</strong>
+        </a>
+      </div>
+
+      <div class="overflow-x-auto rounded-[1.4rem] border border-horriver-border bg-black/25">
+        <table class="min-w-full text-sm">
+          <thead class="bg-white/[0.04] text-horriver-light">
             <tr>
-              <td class="px-3 py-2 text-center text-horriver-gray" colspan="4">
-                Nenhum jogador cadastrado ainda.
-              </td>
+              <th class="text-left px-4 py-3">#</th>
+              <th class="text-left px-4 py-3">Jogador</th>
+              <th class="text-left px-4 py-3">Posicao</th>
+              <th class="text-left px-4 py-3">Gols</th>
             </tr>
-          <% } %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% if (topScorers && topScorers.length) { %>
+              <% topScorers.forEach((p, idx) => { %>
+                <tr class="border-t border-white/5">
+                  <td class="px-4 py-3 font-semibold text-horriver-orange"><%= idx + 1 %></td>
+                  <td class="px-4 py-3 text-horriver-light"><%= p.name %></td>
+                  <td class="px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-horriver-gray"><%= p.position %></td>
+                  <td class="px-4 py-3 font-semibold text-horriver-light"><%= p.totalGoals %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td class="px-4 py-4 text-center text-horriver-gray" colspan="4">
+                  Nenhum jogador cadastrado ainda.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Preview Elenco -->
-  <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="font-title text-2xl text-horriver-orange">Nossos Jogadores</h2>
-      <a
-        href="/elenco"
-        class="text-xs text-horriver-orange hover:underline"
-      >
-        Ver elenco completo
-      </a>
-    </div>
-    <p class="text-sm text-horriver-gray">
-      Elenco ilustrativo. Os dados oficiais vêm do painel admin.
-    </p>
-  </div>
+  <section class="grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
+    <div class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-4">
+        <div class="section-heading">
+          <div>
+            <h2 class="font-title text-2xl text-horriver-light">Explore o site</h2>
+            <p class="section-heading__meta">Atalhos para as areas que mais puxam o dia a dia da pelada.</p>
+          </div>
+        </div>
 
-  <!-- Sobre + Instagram -->
-  <div class="bg-horriver-red/10 rounded-2xl p-6 shadow-card grid md:grid-cols-2 gap-6 items-center">
-    <div class="flex flex-col items-center md:items-start gap-4">
-      <img src="/img/logo.png" alt="Horriver Plate" class="h-20 w-20 object-contain" />
-      <h2 class="font-title text-2xl text-horriver-orange">
-        Sobre o Projeto
-      </h2>
-      <p class="text-sm text-horriver-gray">
-        O Horriver Plate é a nossa pelada organizada, com estatísticas,
-        rankings, craque da semana e aquele clima de resenha de time profissional.
-      </p>
-      <a
-        href="https://instagram.com"
-        target="_blank"
-        class="inline-flex items-center justify-center px-4 py-2 text-xs rounded-full bg-gradient-horriver text-horriver-light shadow-glow hover:opacity-90 transition"
-      >
-        Ver no Instagram
-      </a>
+        <div class="grid gap-3 md:grid-cols-3">
+          <a href="/peladas" class="card-unified p-4 space-y-3">
+            <span class="hero-badge text-horriver-gray">
+              <span class="hero-icon">PL</span>
+              Historico
+            </span>
+            <div>
+              <h3 class="font-title text-2xl text-horriver-light">Peladas</h3>
+              <p class="mt-2 text-sm leading-relaxed text-horriver-gray/85">Consulte partidas, resultados e o contexto de cada noite.</p>
+            </div>
+          </a>
+
+          <a href="/rankings" class="card-unified p-4 space-y-3">
+            <span class="hero-badge text-horriver-gray">
+              <span class="hero-icon">RK</span>
+              Performance
+            </span>
+            <div>
+              <h3 class="font-title text-2xl text-horriver-light">Rankings</h3>
+              <p class="mt-2 text-sm leading-relaxed text-horriver-gray/85">Veja artilharia, assistencias, media e overall em um so lugar.</p>
+            </div>
+          </a>
+
+          <a href="/elenco" class="card-unified p-4 space-y-3">
+            <span class="hero-badge text-horriver-gray">
+              <span class="hero-icon">EL</span>
+              Jogadores
+            </span>
+            <div>
+              <h3 class="font-title text-2xl text-horriver-light">Elenco</h3>
+              <p class="mt-2 text-sm leading-relaxed text-horriver-gray/85">Acompanhe perfis, conquistas, fase e memoria individual da turma.</p>
+            </div>
+          </a>
+        </div>
+      </div>
     </div>
-    <div class="hidden md:block text-sm text-horriver-gray">
-      <p>
-        Aqui você acompanha artilheiros, assistentes, notas, presença, time da semana,
-        craque da galera e muito mais. Tudo isso com visual inspirado em sites de clubes
-        profissionais e portais esportivos.
-      </p>
-    </div>
-  </div>
+
+    <aside class="page-section">
+      <div class="page-section__inner page-section__inner--lg space-y-4">
+        <div class="flex items-center gap-4">
+          <img src="/img/logo.png" alt="Horriver Plate" class="h-16 w-16 rounded-2xl border border-horriver-border bg-black/25 p-2 object-contain" />
+          <div>
+            <h2 class="font-title text-2xl text-horriver-light">Sobre o projeto</h2>
+            <p class="text-sm text-horriver-gray/85">Uma pelada organizada com identidade, memoria e publicacao propria.</p>
+          </div>
+        </div>
+
+        <p class="text-sm leading-relaxed text-horriver-gray/88">
+          O Horriver Plate mistura futebol raiz, amizade e cuidado visual. O site organiza estatisticas, imagens e destaques para que cada terca tenha registro de verdade.
+        </p>
+
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="/sobre"
+            class="inline-flex items-center gap-2 rounded-full border border-horriver-border bg-black/25 px-4 py-2 text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+          >
+            Ler mais
+          </a>
+          <a
+            href="https://www.instagram.com/_hpfrc/"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-2 rounded-full bg-horriver-orange px-4 py-2 text-sm font-semibold text-black hover:bg-orange-500 transition"
+          >
+            Instagram oficial
+          </a>
+        </div>
+      </div>
+    </aside>
+  </section>
 </section>
-
-

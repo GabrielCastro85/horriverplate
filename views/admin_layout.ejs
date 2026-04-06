@@ -43,6 +43,32 @@
         border-color: rgba(248, 113, 113, 0.8);
         color: #fca5a5;
       }
+      .admin-shell {
+        background:
+          radial-gradient(circle at top left, rgba(139, 19, 32, 0.28), transparent 24%),
+          radial-gradient(circle at top right, rgba(255, 122, 26, 0.08), transparent 18%),
+          linear-gradient(180deg, #110307 0%, #07070b 42%, #020207 100%);
+      }
+      .admin-header {
+        background: rgba(5, 5, 9, 0.84);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        backdrop-filter: blur(12px);
+      }
+      .admin-nav-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 0.4rem 0.82rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        color: rgba(226, 232, 240, 0.78);
+        transition: color 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+      }
+      .admin-nav-link:hover {
+        color: #fff7f2;
+        border-color: rgba(148, 163, 184, 0.18);
+        background: rgba(255,255,255,0.04);
+      }
       .field-invalid {
         border-color: rgba(248, 113, 113, 0.8) !important;
         box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.18);
@@ -95,8 +121,8 @@
       }
     </style>
   </head>
-  <body class="bg-horriver-dark text-horriver-light">
-    <header class="fixed top-0 left-0 right-0 z-50 bg-horriver-dark border-b border-horriver-red/40">
+  <body class="admin-shell bg-horriver-dark text-horriver-light">
+    <header class="admin-header fixed top-0 left-0 right-0 z-50">
       <div class="max-w-6xl mx-auto px-4 py-3 space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
@@ -142,14 +168,14 @@
         </div>
 
         <% if (admin) { %>
-          <nav class="flex flex-wrap items-center gap-4 text-xs">
-            <a href="#fotos" class="hover:text-horriver-orange transition">
+          <nav class="flex flex-wrap items-center gap-2 text-xs">
+            <a href="#destaques" class="admin-nav-link">
               Fotos / Destaques
             </a>
-            <a href="#pelada" class="hover:text-horriver-orange transition">
+            <a href="#peladas" class="admin-nav-link">
               Peladas
             </a>
-            <a href="#jogadores" class="hover:text-horriver-orange transition">
+            <a href="#jogadores" class="admin-nav-link">
               Jogadores
             </a>
           </nav>

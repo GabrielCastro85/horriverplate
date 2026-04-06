@@ -3266,7 +3266,7 @@ router.post("/recalculate-overall", requireAdmin, async (req, res) => {
 
 
 // ==============================
-// ?? Sorteador de times (6 por time, usa OVERALL do ranking)
+// ?? Sorteador de times (configuravel, usa OVERALL do ranking)
 // ==============================
 
 // Distribui––o "snake" para balancear times
@@ -3344,6 +3344,8 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
           .map((id) => Number(id))
           .filter((n) => Number.isFinite(n))
       : [];
+    const requestedPlayersPerTeam = Number(req.body.playersPerTeam);
+    const playersPerTeam = [5, 6, 7, 8].includes(requestedPlayersPerTeam) ? requestedPlayersPerTeam : 6;
 
     // 1. Convidados
     const guestsRaw = req.body.guests || "";
@@ -3527,16 +3529,17 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
     });
 
     // 6. Validar n–mero m–nimo de jogadores (linha + goleiros)
-    const MIN_PLAYERS_PER_TEAM = 6;
+    const MIN_PLAYERS_PER_TEAM = playersPerTeam;
     const totalPlayers = fieldPlayers.length;
     const minPlayersForTwoTeams = MIN_PLAYERS_PER_TEAM * 2;
     if (totalPlayers < minPlayersForTwoTeams) {
-      return res.status(400).json({ error: `S–o necess–rios pelo menos ${minPlayersForTwoTeams} jogadores para formar 2 times. Atualmente: ${totalPlayers}.` });
+      return res.status(400).json({
+        error: `Sao necessarios pelo menos ${minPlayersForTwoTeams} jogadores de linha para formar 2 times com ${playersPerTeam} por time. Atualmente: ${totalPlayers}.`,
+      });
     }
 
     // 7. Definir quantos times e quantos v–o pro banco (m–x 4)
     const teamCount = Math.min(4, Math.floor(totalPlayers / MIN_PLAYERS_PER_TEAM));
-    const playersPerTeam = MIN_PLAYERS_PER_TEAM;
     const totalPlayersForTeams = teamCount * playersPerTeam;
 
     // Goleiros ficam separados no banco (não entram no sorteio automático)
@@ -3636,6 +3639,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
             presentIds: playerIds,
             guests: guestEntries,
             seeds: seedIds,
+            playersPerTeam,
           },
           result: { teams: lineup.teams, bench: lineup.bench },
         },
