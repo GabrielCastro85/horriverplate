@@ -1,4 +1,4 @@
-<section class="space-y-6 animate-fadeIn">
+﻿<section class="space-y-6 animate-fadeIn">
   <header class="page-hero space-y-3">
     <span class="hero-badge text-horriver-gray">
       <span class="hero-icon">TL</span>
@@ -42,18 +42,19 @@
   </div>
 
   <div id="tier-board" class="space-y-3" data-export-root>
-  <div class="tier-export-header export-only">
-    <div class="tier-export-title">
-      <span class="tier-export-title-text">HORRIVER PLATE — TIER LIST</span>
+    <div class="tier-export-header export-only">
+      <div class="tier-export-title">
+        <span class="tier-export-title-text">HORRIVER PLATE - TIER LIST</span>
+      </div>
+      <div class="tier-export-logo">
+        <img src="/img/logo-128x128.svg" alt="Horriver Plate" />
+      </div>
     </div>
-    <div class="tier-export-logo">
-      <img src="/img/logo-128x128.svg" alt="Horriver Plate" />
-    </div>
-  </div>
+
     <div id="tiers" class="space-y-3"></div>
 
     <section class="rounded-3xl border border-horriver-border bg-black/40 p-4 tier-pool-section">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-3 gap-3">
         <h2 class="font-title text-xl text-horriver-light">Jogadores</h2>
         <span class="text-[11px] text-horriver-gray"><%= players.length %> jogadores</span>
       </div>
@@ -80,7 +81,7 @@
     padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
   .tier-name {
@@ -91,6 +92,7 @@
     font-size: 16px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    min-width: 0;
   }
   .tier-name:focus {
     outline: none;
@@ -126,15 +128,38 @@
   }
   .tier-actions {
     display: flex;
+    align-items: center;
     gap: 6px;
+  }
+  .tier-color {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: transparent;
+    overflow: hidden;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .tier-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  .tier-color::-webkit-color-swatch {
+    border: none;
+    border-radius: 999px;
+  }
+  .tier-color::-moz-color-swatch {
+    border: none;
+    border-radius: 999px;
   }
   .tier-actions button {
     font-size: 10px;
     border-radius: 999px;
-    border: 1px solid rgba(0, 0, 0, 0.35);
-    background: rgba(0, 0, 0, 0.2);
-    color: #0b0b0b;
-    padding: 4px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.28);
+    color: rgba(248, 250, 252, 0.72);
+    padding: 4px 8px;
   }
   .tier-letter {
     display: none;
@@ -175,11 +200,6 @@
     font-weight: 800;
     letter-spacing: 0.08em;
     color: #f8fafc;
-  }
-  #tier-board.is-exporting .tier-export-subtitle {
-    font-size: 16px;
-    color: #cbd5f5;
-    opacity: 0.9;
   }
   #tier-board.is-exporting .tier-export-logo img {
     width: 64px;
@@ -266,209 +286,203 @@
 </style>
 
 <script>
-  (function () {
-    const tierContainer = document.getElementById("tiers");
-    const pool = document.getElementById("tier-pool");
-    const addTierBtn = document.getElementById("addTierBtn");
-    const downloadBtn = document.getElementById("downloadTierBtn");
-    const titleInput = document.getElementById("tierTitle");
-
-    const defaultTiers = [
-      { label: "S", color: "#c62828" },
-      { label: "A", color: "#ef6c00" },
-      { label: "B", color: "#f9a825" },
-      { label: "C", color: "#2e7d32" },
-      { label: "D", color: "#1565c0" },
-    ];
-
-    const playerData = <%- JSON.stringify(
-      (players || []).map((p) => ({
-        id: p.id,
-        name: p.name,
-        nickname: p.nickname,
-        avatar: thumbUrl(p.photoUrl || "/img/logo-128x128.svg", 48),
-      }))
-    ) %>;
-
-    const toRgba = (hex, alpha = 0.35) => {
-      if (!hex || !hex.startsWith("#") || (hex.length !== 7 && hex.length !== 4)) {
-        return `rgba(255,255,255,${alpha})`;
+  (() => {
+    const start = () => {
+      if (typeof Sortable === "undefined") {
+        console.error("SortableJS não foi carregado para a tierlist.");
+        return;
       }
-      const full = hex.length === 4
-        ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
-        : hex;
-      const r = parseInt(full.slice(1, 3), 16);
-      const g = parseInt(full.slice(3, 5), 16);
-      const b = parseInt(full.slice(5, 7), 16);
-      return `rgba(${r},${g},${b},${alpha})`;
-    };
 
-    const createTierRow = (tier) => {
-      const row = document.createElement("div");
-      row.className = "tier-row";
-      row.dataset.tier = tier.label;
+      const tierContainer = document.getElementById("tiers");
+      const pool = document.getElementById("tier-pool");
+      const addTierBtn = document.getElementById("addTierBtn");
+      const downloadBtn = document.getElementById("downloadTierBtn");
+      const titleInput = document.getElementById("tierTitle");
+      if (!tierContainer || !pool || !addTierBtn || !downloadBtn || !titleInput) return;
 
-      const label = document.createElement("div");
-      label.className = "tier-label";
-      label.setAttribute("data-tier-handle", "true");
-      label.style.background = `${tier.color}33`;
-      label.style.borderColor = `${tier.color}80`;
+      const defaultTiers = [
+        { label: "S", color: "#c62828" },
+        { label: "A", color: "#ef6c00" },
+        { label: "B", color: "#f9a825" },
+        { label: "C", color: "#2e7d32" },
+        { label: "D", color: "#1565c0" },
+      ];
 
-      row.style.setProperty("--tier-color", tier.color);
-      row.style.setProperty("--tier-color-soft", toRgba(tier.color));
+      const playerData = <%- JSON.stringify(
+        (players || []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          nickname: p.nickname,
+          avatar: thumbUrl(p.photoUrl || "/img/logo-128x128.svg", 48),
+        }))
+      ) %>;
 
-      const letter = document.createElement("div");
-      letter.className = "tier-letter";
-      letter.textContent = tier.label;
-
-      const nameInput = document.createElement("input");
-      nameInput.type = "text";
-      nameInput.className = "tier-name";
-      nameInput.value = tier.label;
-
-      const colorInput = document.createElement("input");
-      colorInput.type = "color";
-      colorInput.value = tier.color;
-
-      const actions = document.createElement("div");
-      actions.className = "tier-actions";
-      const removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.textContent = "Remover";
-      actions.appendChild(removeBtn);
-
-      label.appendChild(letter);
-      label.appendChild(nameInput);
-      label.appendChild(colorInput);
-      label.appendChild(actions);
-
-      const list = document.createElement("ul");
-      list.className = "tier-list";
-      list.dataset.list = "tier";
-
-      row.appendChild(label);
-      row.appendChild(list);
-
-      colorInput.addEventListener("input", () => {
-        label.style.background = `${colorInput.value}33`;
-        label.style.borderColor = `${colorInput.value}80`;
-        row.style.setProperty("--tier-color", colorInput.value);
-        row.style.setProperty("--tier-color-soft", toRgba(colorInput.value));
-      });
-
-      nameInput.addEventListener("input", () => {
-        letter.textContent = nameInput.value || tier.label;
-      });
-
-      removeBtn.addEventListener("click", () => {
-        const items = Array.from(list.querySelectorAll(".player-item"));
-        items.forEach((item) => pool.appendChild(item));
-        row.remove();
-      });
-
-      return row;
-    };
-
-    const setupSortable = (el) => {
-      new Sortable(el, {
-        group: "tiers",
-        animation: 150,
-        ghostClass: "bg-horriver-orange/30",
-        draggable: ".player-item",
-      });
-    };
-
-    defaultTiers.forEach((tier) => {
-      const row = createTierRow(tier);
-      tierContainer.appendChild(row);
-      setupSortable(row.querySelector(".tier-list"));
-    });
-
-    playerData.forEach((p) => {
-      const item = document.createElement("li");
-      item.className = "player-item";
-      item.dataset.playerId = p.id;
-      const img = document.createElement("img");
-      img.src = p.avatar;
-      const name = document.createElement("span");
-      name.textContent = p.nickname ? `${p.name} (${p.nickname})` : p.name;
-      item.appendChild(img);
-      item.appendChild(name);
-      pool.appendChild(item);
-    });
-
-    setupSortable(pool);
-
-    new Sortable(tierContainer, {
-      animation: 150,
-      handle: "[data-tier-handle]",
-      draggable: ".tier-row",
-      ghostClass: "bg-horriver-orange/20",
-    });
-
-    addTierBtn.addEventListener("click", () => {
-      const row = createTierRow({ label: "Novo", color: "#f97316" });
-      tierContainer.appendChild(row);
-      setupSortable(row.querySelector(".tier-list"));
-      row.querySelector(".tier-name").focus();
-    });
-
-    downloadBtn.addEventListener("click", async () => {
-      let board = null;
-      try {
-        board = document.querySelector("[data-export-root]");
-        if (!board) return;
-        if (typeof html2canvas === "undefined") return;
-        if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready;
+      const toRgba = (hex, alpha = 0.35) => {
+        if (!hex || !hex.startsWith("#") || (hex.length !== 7 && hex.length !== 4)) {
+          return `rgba(255,255,255,${alpha})`;
         }
-        document.body.classList.add("is-exporting");
-        board.classList.add("is-exporting");
+        const full = hex.length === 4
+          ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+          : hex;
+        const r = parseInt(full.slice(1, 3), 16);
+        const g = parseInt(full.slice(3, 5), 16);
+        const b = parseInt(full.slice(5, 7), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+      };
 
-        const exportHeight = Math.ceil(board.scrollHeight || board.getBoundingClientRect().height || 0);
-        const canvas = await html2canvas(board, {
-          backgroundColor: "#0f1115",
-          scale: 2,
-          height: exportHeight,
-          windowHeight: exportHeight,
+      const createTierRow = (tier) => {
+        const row = document.createElement("div");
+        row.className = "tier-row";
+        row.dataset.tier = tier.label;
+
+        const label = document.createElement("div");
+        label.className = "tier-label";
+        label.setAttribute("data-tier-handle", "true");
+        label.style.background = `${tier.color}33`;
+        label.style.borderColor = `${tier.color}80`;
+
+        row.style.setProperty("--tier-color", tier.color);
+        row.style.setProperty("--tier-color-soft", toRgba(tier.color));
+
+        const letter = document.createElement("div");
+        letter.className = "tier-letter";
+        letter.textContent = tier.label;
+
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.className = "tier-name";
+        nameInput.value = tier.label;
+
+        const colorInput = document.createElement("input");
+        colorInput.type = "color";
+        colorInput.className = "tier-color";
+        colorInput.value = tier.color;
+
+        const actions = document.createElement("div");
+        actions.className = "tier-actions";
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.textContent = "Remover";
+        actions.appendChild(removeBtn);
+
+        label.appendChild(letter);
+        label.appendChild(nameInput);
+        label.appendChild(colorInput);
+        label.appendChild(actions);
+
+        const list = document.createElement("ul");
+        list.className = "tier-list";
+        list.dataset.list = "tier";
+
+        row.appendChild(label);
+        row.appendChild(list);
+
+        colorInput.addEventListener("input", () => {
+          label.style.background = `${colorInput.value}33`;
+          label.style.borderColor = `${colorInput.value}80`;
+          row.style.setProperty("--tier-color", colorInput.value);
+          row.style.setProperty("--tier-color-soft", toRgba(colorInput.value));
         });
 
-        board.classList.remove("is-exporting");
-        document.body.classList.remove("is-exporting");
-        const link = document.createElement("a");
-        link.download = "tierlist-horriver.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      } catch (err) {
-        console.error(err);
-        if (board) board.classList.remove("is-exporting");
-        document.body.classList.remove("is-exporting");
-      }
-    });
+        nameInput.addEventListener("input", () => {
+          letter.textContent = nameInput.value || tier.label;
+        });
+
+        removeBtn.addEventListener("click", () => {
+          const items = Array.from(list.querySelectorAll(".player-item"));
+          items.forEach((item) => pool.appendChild(item));
+          row.remove();
+        });
+
+        return row;
+      };
+
+      const setupSortable = (el) => {
+        new Sortable(el, {
+          group: "tiers",
+          animation: 150,
+          ghostClass: "bg-horriver-orange/30",
+          draggable: ".player-item",
+        });
+      };
+
+      defaultTiers.forEach((tier) => {
+        const row = createTierRow(tier);
+        tierContainer.appendChild(row);
+        setupSortable(row.querySelector(".tier-list"));
+      });
+
+      playerData.forEach((p) => {
+        const item = document.createElement("li");
+        item.className = "player-item";
+        item.dataset.playerId = p.id;
+
+        const img = document.createElement("img");
+        img.src = p.avatar;
+        img.alt = p.name;
+
+        const name = document.createElement("span");
+        name.textContent = p.nickname ? `${p.name} (${p.nickname})` : p.name;
+
+        item.appendChild(img);
+        item.appendChild(name);
+        pool.appendChild(item);
+      });
+
+      setupSortable(pool);
+
+      new Sortable(tierContainer, {
+        animation: 150,
+        handle: "[data-tier-handle]",
+        draggable: ".tier-row",
+        ghostClass: "bg-horriver-orange/20",
+      });
+
+      addTierBtn.addEventListener("click", () => {
+        const row = createTierRow({ label: "Novo", color: "#f97316" });
+        tierContainer.appendChild(row);
+        setupSortable(row.querySelector(".tier-list"));
+        row.querySelector(".tier-name").focus();
+      });
+
+      downloadBtn.addEventListener("click", async () => {
+        let board = null;
+        try {
+          board = document.querySelector("[data-export-root]");
+          if (!board) return;
+          if (typeof html2canvas === "undefined") return;
+          if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+          }
+          document.body.classList.add("is-exporting");
+          board.classList.add("is-exporting");
+
+          const exportHeight = Math.ceil(board.scrollHeight || board.getBoundingClientRect().height || 0);
+          const canvas = await html2canvas(board, {
+            backgroundColor: "#0f1115",
+            scale: 2,
+            height: exportHeight,
+            windowHeight: exportHeight,
+          });
+
+          board.classList.remove("is-exporting");
+          document.body.classList.remove("is-exporting");
+          const link = document.createElement("a");
+          link.download = "tierlist-horriver.png";
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        } catch (err) {
+          console.error(err);
+          if (board) board.classList.remove("is-exporting");
+          document.body.classList.remove("is-exporting");
+        }
+      });
+    };
+
+    if (document.readyState === "complete") {
+      start();
+    } else {
+      window.addEventListener("load", start, { once: true });
+    }
   })();
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
