@@ -69,7 +69,7 @@ const {
   buildMonthlyFeeAnalytics,
   buildPlayerRulesAnalytics,
 } = require("../services/financeAnalytics.service");
-const { getRecentFinanceEventLogs } = require("../services/financeEventLog.service");
+const { getRecentFinanceEventLogs, getFinanceCompetenceResetMarker } = require("../services/financeEventLog.service");
 const {
   REPORT_SCOPE_OPTIONS,
   REPORT_TYPE_OPTIONS,
@@ -475,7 +475,7 @@ async function buildFinancePageViewModel(filters) {
     referenceDate: today,
   });
 
-  const [recentMatches, monthFeesRaw, monthTransactionsRaw, guestPayments, allTransactions, recentFinanceEvents] =
+  const [recentMatches, monthFeesRaw, monthTransactionsRaw, guestPayments, allTransactions, recentFinanceEvents, competenceResetMarker] =
     await Promise.all([
       prisma.match.findMany({
         select: { id: true, playedAt: true, description: true },
@@ -533,6 +533,10 @@ async function buildFinancePageViewModel(filters) {
         },
       }),
       getRecentFinanceEventLogs(prisma, 8),
+      getFinanceCompetenceResetMarker(prisma, {
+        month: filters.month,
+        year: filters.year,
+      }),
     ]);
 
   const matchUsageMap = await fetchMonthlyMatchUsage({
@@ -566,6 +570,21 @@ async function buildFinancePageViewModel(filters) {
       return sum + decimalToNumber(projected.amountDue);
     }, 0)
   );
+  const competenceWasReset =
+    Boolean(competenceResetMarker) &&
+    monthFeesRaw.length === 0 &&
+    guestPayments.length === 0 &&
+    monthTransactionsRaw.length === 0;
+  const effectivePreparation = competenceWasReset
+    ? {
+        ...competencePreparation,
+        missingPlayers: [],
+        missingCount: 0,
+        prepared: true,
+        reset: true,
+      }
+    : competencePreparation;
+  const effectiveProjectedMissingAmount = competenceWasReset ? 0 : projectedMissingAmount;
 
   const feeMatchesSearch = (fee) => {
     if (!filters.search) return true;
@@ -598,17 +617,17 @@ async function buildFinancePageViewModel(filters) {
   const totalPredictedBase = monthFeesRaw
     .filter((fee) => fee.status !== "EXEMPT")
     .reduce((sum, fee) => sum + decimalToNumber(fee.amountDue), 0);
-  const totalPredicted = roundCurrency(totalPredictedBase + projectedMissingAmount);
+  const totalPredicted = roundCurrency(totalPredictedBase + effectiveProjectedMissingAmount);
   const totalReceivedFromFees = monthFeesRaw.reduce((sum, fee) => sum + decimalToNumber(fee.amountPaid), 0);
   const totalPendingExisting = monthFeesRaw.reduce((sum, fee) => sum + computeMonthlyFeeBalance(fee), 0);
-  const totalPending = roundCurrency(totalPendingExisting + projectedMissingAmount);
+  const totalPending = roundCurrency(totalPendingExisting + effectiveProjectedMissingAmount);
   const payersCount = monthFeesRaw.filter((fee) => decimalToNumber(fee.amountPaid) > 0).length;
   const paidCount = monthFeesDecorated.filter((fee) => fee.collectionStatus === "PAID").length;
   const partialCount = monthFeesDecorated.filter((fee) => fee.collectionStatus === "PARTIAL").length;
   const exemptCount = monthFeesRaw.filter((fee) => fee.status === "EXEMPT").length;
   const overdueFees = allPendingFees.filter((fee) => fee.chargePriorityBucket === 0);
   const dueTodayFees = allPendingFees.filter((fee) => fee.chargePriorityBucket === 1);
-  const delinquentCount = allPendingFees.length + competencePreparation.missingCount;
+  const delinquentCount = allPendingFees.length + effectivePreparation.missingCount;
 
   const monthTransactionsAll = monthTransactionsRaw.map((transaction) => ({
     ...transaction,
@@ -635,9 +654,9 @@ async function buildFinancePageViewModel(filters) {
   const manualExpenseTotal = monthTransactionsAll
     .filter((transaction) => transaction.type === "EXPENSE" && transaction.origin === "MANUAL")
     .reduce((sum, transaction) => sum + decimalToNumber(transaction.amount), 0);
-  const expectedPayers = Math.max(eligiblePlayers.length - exemptCount, 0);
+  const expectedPayers = competenceWasReset ? 0 : Math.max(eligiblePlayers.length - exemptCount, 0);
   const competenceState = buildCompetenceState({
-    preparation: competencePreparation,
+    preparation: effectivePreparation,
     expectedPayers,
     pendingCount: delinquentCount,
     totalPending,
@@ -657,7 +676,7 @@ async function buildFinancePageViewModel(filters) {
   });
   const alerts = buildFinanceAlerts({
     monthLabel: formatMonthYearLabel(filters.month, filters.year),
-    preparation: competencePreparation,
+    preparation: effectivePreparation,
     competenceState,
     overdueCount: overdueFees.length,
     overdueAmount: overdueFees.reduce((sum, fee) => sum + fee.balance, 0),
@@ -847,7 +866,7 @@ async function buildFinancePageViewModel(filters) {
     pendingWithoutWhatsappCount,
     automaticIncomeTotal,
     manualExpenseTotal,
-    projectedMissingAmount,
+    projectedMissingAmount: effectiveProjectedMissingAmount,
     participantTypeCounts: rulesAnalytics.counts,
     chargeBehavior: settings.chargeBehavior,
     autoGenerateCompetence: settings.autoGenerateCompetence,
@@ -922,10 +941,14 @@ async function buildFinancePageViewModel(filters) {
       recentEvents: recentFinanceEvents,
     },
     automation: {
-      preparation: competencePreparation,
+      preparation: effectivePreparation,
       competenceState,
       reportSummary,
       bulkChargeSummary,
+      competenceReset: {
+        active: competenceWasReset,
+        resetAt: competenceResetMarker?.createdAt || null,
+      },
     },
   };
 }

@@ -142,6 +142,27 @@ async function getRecentFinanceEventLogs(prisma, limit = 8) {
   return rows.map(mapFinanceEventRow);
 }
 
+async function getFinanceCompetenceResetMarker(prisma, { month, year, limit = 50 } = {}) {
+  const targetMonth = Number(month || 0);
+  const targetYear = Number(year || 0);
+  if (!targetMonth || !targetYear) return null;
+
+  const rows = await prisma.financeEventLog.findMany({
+    where: {
+      action: "finance.competence.reset",
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: limit,
+  });
+
+  const match = rows.find((row) => {
+    const metadata = row.payload?.metadata || null;
+    return Number(metadata?.month || 0) === targetMonth && Number(metadata?.year || 0) === targetYear;
+  });
+
+  return match ? mapFinanceEventRow(match) : null;
+}
+
 function buildFinanceReportHistoryDescription(event) {
   const reportType = event.metadata?.reportType;
   const reportLabel = REPORT_TYPE_META[reportType]?.label || event.metadata?.reportLabel || "Relatorio";
@@ -184,5 +205,6 @@ module.exports = {
   recordFinanceEvent,
   createFinanceEventLog: recordFinanceEvent,
   getRecentFinanceEventLogs,
+  getFinanceCompetenceResetMarker,
   getFinanceReportHistory,
 };

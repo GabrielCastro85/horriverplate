@@ -179,10 +179,24 @@ function buildCompetencePreparation({ eligiblePlayers, monthFees }) {
 }
 
 function buildCompetenceState({ preparation, expectedPayers, pendingCount, totalPending, totalPredicted }) {
+  if (preparation?.reset) {
+    return {
+      ...COMPETENCE_STATE_META.CLOSED,
+      missingCount: 0,
+    };
+  }
+
   if (!preparation.prepared) {
     return {
       ...COMPETENCE_STATE_META.NOT_PREPARED,
       missingCount: preparation.missingCount,
+    };
+  }
+
+  if (expectedPayers <= 0 && roundCurrency(totalPredicted) <= 0 && roundCurrency(totalPending) <= 0 && pendingCount <= 0) {
+    return {
+      ...COMPETENCE_STATE_META.CLOSED,
+      missingCount: 0,
     };
   }
 
