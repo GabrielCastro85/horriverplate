@@ -1,0 +1,18 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+%>
+
+<section class="finance-tab-panel">
+  <section class="finance-section-grid--monthly">
+    <%- include("./_finance_monthly_table", { financeView: currentFinanceView }) %>
+    <%- include("./_finance_fee_detail", {
+      financeView: currentFinanceView,
+      detailSectionId: "finance-fees",
+      detailKicker: "Edicao da mensalidade",
+      detailTitleEmpty: "Selecione uma linha do mes",
+      detailSelectedCopy: "Ajuste o registro selecionado, lance pagamento total ou parcial e acompanhe o historico recente do participante.",
+      detailEmptyCopy: "Clique em uma mensalidade da tabela para alimentar este painel com valor devido, saldo, historico e acoes do participante."
+    }) %>
+  </section>
+</section>

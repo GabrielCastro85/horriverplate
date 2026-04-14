@@ -1,0 +1,484 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    overview,
+    monthly,
+    charge,
+    automation,
+    summaries: summary,
+    filters,
+    ui,
+    helpers,
+    actions,
+  } = currentFinanceView;
+  const { monthReferenceLabel } = ui;
+  const {
+    decimalToNumber,
+    formatCurrencyBR,
+    formatDateBRShortYear,
+    formatDateBR,
+    getTransactionCategoryLabel,
+  } = helpers;
+  const { stateFields, buildFinanceQuery, financeStatusClass } = actions;
+
+  const overviewPendingItems = Array.isArray(overview.pendingPreview) ? overview.pendingPreview : [];
+  const overviewTransactionItems = Array.isArray(overview.transactionPreview) ? overview.transactionPreview : [];
+  const monthlyFees = Array.isArray(monthly.fees) ? monthly.fees : [];
+  const allPendingFees = Array.isArray(charge.allPendingFees) ? charge.allPendingFees : [];
+  const financeAlerts = Array.isArray(automation.alerts) ? automation.alerts.slice(0, 3) : [];
+  const delinquencyRate = summary.expectedPayers > 0
+    ? Math.round((summary.delinquentCount / summary.expectedPayers) * 100)
+    : 0;
+  const receivedPercentage = Math.min(Math.round(summary.receivedPercentage || 0), 100);
+
+  const topPayer = [...monthlyFees]
+    .filter((fee) => decimalToNumber(fee.amountPaid) > 0)
+    .sort((left, right) => decimalToNumber(right.amountPaid) - decimalToNumber(left.amountPaid))[0] || null;
+  const highestPending = [...allPendingFees]
+    .sort((left, right) => (right.balance || 0) - (left.balance || 0))[0] || null;
+  const partialAttention = [...monthlyFees]
+    .filter((fee) => fee.collectionStatus === "PARTIAL")
+    .sort((left, right) => (right.balance || 0) - (left.balance || 0))[0] || null;
+  const bestCompliance = [...monthlyFees]
+    .filter((fee) => fee.collectionStatus === "PAID")
+    .sort((left, right) => decimalToNumber(right.amountDue) - decimalToNumber(left.amountDue))[0] || null;
+
+  const rankingEntries = [
+    topPayer
+      ? {
+          rank: "01",
+          title: topPayer.player.name,
+          subtitle: "Maior valor recebido no mes",
+          value: formatCurrencyBR(topPayer.amountPaid),
+          meta: topPayer.collectionStatusMeta,
+        }
+      : null,
+    highestPending
+      ? {
+          rank: "02",
+          title: highestPending.player.name,
+          subtitle: "Maior saldo em aberto agora",
+          value: formatCurrencyBR(highestPending.balance),
+          meta: highestPending.collectionStatusMeta,
+        }
+      : null,
+    (partialAttention || bestCompliance)
+      ? {
+          rank: "03",
+          title: (partialAttention || bestCompliance).player.name,
+          subtitle: partialAttention ? "Parcial que pede acompanhamento" : "Maior compromisso quitado",
+          value: partialAttention
+            ? formatCurrencyBR((partialAttention || bestCompliance).balance)
+            : formatCurrencyBR((partialAttention || bestCompliance).amountPaid),
+          meta: (partialAttention || bestCompliance).collectionStatusMeta,
+        }
+      : null,
+  ].filter(Boolean);
+
+  const overviewChartItems = [
+    {
+      label: "Receita total",
+      shortLabel: "Receita",
+      value: summary.totalReceivedMonth,
+      valueLabel: formatCurrencyBR(summary.totalReceivedMonth),
+      barStyle: "background:linear-gradient(180deg, rgba(255,122,26,0.98), rgba(255,122,26,0.54));",
+      textClass: "text-horriver-orange",
+    },
+    {
+      label: "Mensalidades",
+      shortLabel: "Mens.",
+      value: summary.totalReceivedFromFees,
+      valueLabel: formatCurrencyBR(summary.totalReceivedFromFees),
+      barStyle: "background:linear-gradient(180deg, rgba(255,239,223,0.96), rgba(255,209,168,0.46));",
+      textClass: "text-horriver-light",
+    },
+    {
+      label: "Pendente",
+      shortLabel: "Pendente",
+      value: summary.totalPending,
+      valueLabel: formatCurrencyBR(summary.totalPending),
+      barStyle: "background:linear-gradient(180deg, rgba(239,68,68,0.88), rgba(127,29,29,0.52));",
+      textClass: "text-[#fecaca]",
+    },
+    {
+      label: "Saidas",
+      shortLabel: "Saidas",
+      value: summary.totalExpensesMonth,
+      valueLabel: formatCurrencyBR(summary.totalExpensesMonth),
+      barStyle: "background:linear-gradient(180deg, rgba(250,204,21,0.84), rgba(161,98,7,0.48));",
+      textClass: "text-[#fde68a]",
+    },
+  ];
+  const overviewChartMax = Math.max(
+    1,
+    ...overviewChartItems.map((item) => Math.abs(Number(item.value || 0)))
+  );
+
+  const reportPreviewHref = `/admin/finance/reports/preview?month=${filters.month}&year=${filters.year}&reportType=FULL&reportScope=MONTHLY`;
+  const reportPdfHref = `/admin/finance/reports/pdf?month=${filters.month}&year=${filters.year}&reportType=FULL&reportScope=MONTHLY`;
+%>
+
+<section class="finance-tab-panel" id="finance-overview">
+  <div class="space-y-4">
+    <section class="finance-overview-top">
+      <article class="finance-panel p-5 md:p-6 finance-overview-lead">
+        <div class="space-y-4">
+          <div class="space-y-3">
+            <span class="finance-chip finance-chip--accent">Visao geral</span>
+            <div class="space-y-2">
+              <h2 class="font-title text-2xl md:text-3xl text-horriver-light">
+                Resumo operacional de <%= monthReferenceLabel %>
+              </h2>
+              <p class="text-sm leading-relaxed text-horriver-gray/82 max-w-3xl">
+                O foco desta tela e mostrar o essencial primeiro: receita, pendencia, caixa,
+                inadimplencia e os proximos passos do fechamento, sem misturar a operacao inteira no mesmo bloco.
+              </p>
+            </div>
+          </div>
+
+          <div class="finance-section-badges">
+            <span class="finance-chip"><%= summary.payersCount %> pagante(s)</span>
+            <span class="finance-chip"><%= summary.delinquentCount %> pendente(s)</span>
+            <span class="finance-chip"><%= summary.partialCount %> parcial(is)</span>
+            <span class="finance-chip"><%= summary.guestsCount %> convidado(s)</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="finance-overview-callout">
+        <div class="space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="finance-kicker">Pulso da competencia</div>
+              <div class="finance-overview-callout__value"><%= automation.competenceState.label %></div>
+            </div>
+            <span class="finance-chip finance-chip--accent"><%= receivedPercentage %>% recebido</span>
+          </div>
+
+          <p class="text-sm leading-relaxed text-horriver-gray/82">
+            <strong class="text-horriver-light"><%= summary.expectedPayers %></strong> previstos,
+            com <strong class="text-horriver-light"><%= summary.paidCount %></strong> quitados e
+            <strong class="text-horriver-light"><%= summary.overdueCount %></strong> em atraso.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="finance-progress"><span style="width:<%= receivedPercentage %>%"></span></div>
+          <div class="finance-overview-callout__meta">
+            <span>Recebimento consolidado</span>
+            <strong><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <a href="<%= buildFinanceQuery({ tab: 'charge', chargeFilter: summary.overdueCount ? 'OVERDUE' : 'ALL' }) %>#finance-charge" class="finance-cta">Cobrar pendentes</a>
+          <a href="<%= buildFinanceQuery({ tab: 'reports' }) %>#finance-reports" class="finance-soft-button">Abrir relatorios</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="finance-overview-kpi-grid">
+      <article class="finance-overview-kpi finance-overview-kpi--revenue">
+        <div class="flex items-center justify-between gap-3">
+          <span class="finance-overview-kpi__label">Receita do mes</span>
+          <span class="finance-chip"><%= summary.guestsCount %> convidado(s)</span>
+        </div>
+        <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong>
+        <p class="finance-overview-kpi__text">
+          <strong><%= formatCurrencyBR(summary.totalReceivedFromFees) %></strong> vieram das mensalidades.
+        </p>
+      </article>
+
+      <article class="finance-overview-kpi finance-overview-kpi--pending">
+        <div class="flex items-center justify-between gap-3">
+          <span class="finance-overview-kpi__label">Pendencias</span>
+          <span class="finance-chip"><%= summary.overdueCount %> atrasado(s)</span>
+        </div>
+        <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.totalPending) %></strong>
+        <p class="finance-overview-kpi__text">
+          <strong><%= summary.delinquentCount %></strong> cobranca(s) ainda pedem acompanhamento.
+        </p>
+      </article>
+
+      <article class="finance-overview-kpi finance-overview-kpi--cash">
+        <div class="flex items-center justify-between gap-3">
+          <span class="finance-overview-kpi__label">Caixa atual</span>
+          <span class="finance-chip"><%= summary.currentMonthNet >= 0 ? "Superavit" : "Pressao" %></span>
+        </div>
+        <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.cashBalance) %></strong>
+        <p class="finance-overview-kpi__text">
+          Resultado do periodo em <strong><%= formatCurrencyBR(summary.currentMonthNet) %></strong>.
+        </p>
+      </article>
+
+      <article class="finance-overview-kpi finance-overview-kpi--risk">
+        <div class="flex items-center justify-between gap-3">
+          <span class="finance-overview-kpi__label">Inadimplencia</span>
+          <span class="finance-chip"><%= summary.expectedPayers %> previstos</span>
+        </div>
+        <strong class="finance-overview-kpi__value"><%= delinquencyRate %>%</strong>
+        <p class="finance-overview-kpi__text">
+          <strong><%= summary.delinquentCount %></strong> participante(s) ainda nao fecharam o mes.
+        </p>
+      </article>
+    </section>
+
+    <section class="finance-overview-dashboard">
+      <div class="finance-overview-column">
+        <article class="finance-panel p-5 md:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="finance-kicker">Pendencias recentes</div>
+              <h3 class="font-title text-2xl text-horriver-light mt-2">Fila prioritaria</h3>
+            </div>
+            <a href="<%= buildFinanceQuery({ tab: 'charge' }) %>#finance-charge" class="finance-soft-button">Ver todas</a>
+          </div>
+
+          <% if (overviewPendingItems.length) { %>
+            <div class="finance-list">
+              <% overviewPendingItems.forEach((fee) => { %>
+                <div class="finance-list-item finance-list-item--overview">
+                  <div class="finance-list-item__main">
+                    <div class="finance-list-item__title"><%= fee.player.name %></div>
+                    <div class="finance-list-item__text">
+                      <%= fee.player.position %><% if (fee.player.nickname) { %> - <%= fee.player.nickname %><% } %>
+                      - Venc. <%= formatDateBRShortYear(fee.dueDate) || "-" %>
+                    </div>
+                  </div>
+                  <div class="finance-list-item__aside">
+                    <span class="finance-status <%= financeStatusClass(fee.collectionStatusMeta) %>"><%= fee.collectionStatusMeta.label %></span>
+                    <span class="finance-list-item__value finance-balance--pending"><%= formatCurrencyBR(fee.balance) %></span>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <%- include("./_finance_empty_state", {
+              emptyStateMessage: "Nenhuma pendencia relevante para esta competencia no momento.",
+            }) %>
+          <% } %>
+        </article>
+
+        <article class="finance-panel p-5 md:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="finance-kicker">Ultimos lancamentos</div>
+              <h3 class="font-title text-2xl text-horriver-light mt-2">Movimentacao recente</h3>
+            </div>
+            <a href="<%= buildFinanceQuery({ tab: 'cash' }) %>#finance-cash" class="finance-soft-button">Abrir caixa</a>
+          </div>
+
+          <% if (overviewTransactionItems.length) { %>
+            <div class="finance-list">
+              <% overviewTransactionItems.forEach((transaction) => { %>
+                <div class="finance-list-item finance-list-item--overview">
+                  <div class="finance-list-item__main">
+                    <div class="finance-list-item__title"><%= transaction.description %></div>
+                    <div class="finance-list-item__text"><%= getTransactionCategoryLabel(transaction.category) %> - <%= transaction.originLabel %></div>
+                  </div>
+                  <div class="finance-list-item__aside">
+                    <span class="finance-chip"><%= formatDateBR(transaction.date) %></span>
+                    <span class="finance-list-item__value <%= transaction.type === 'INCOME' ? 'text-horriver-orange' : 'text-[#fecaca]' %>"><%= formatCurrencyBR(transaction.amount) %></span>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <%- include("./_finance_empty_state", {
+              emptyStateMessage: "Sem movimentacao recente neste recorte.",
+            }) %>
+          <% } %>
+        </article>
+      </div>
+
+      <article class="finance-panel p-5 md:p-6 space-y-5 finance-overview-chart-card">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="finance-kicker">Grafico financeiro</div>
+            <h3 class="font-title text-2xl text-horriver-light mt-2">Composicao do mes</h3>
+            <p class="finance-subtle">
+              Leitura rapida entre entradas, mensalidades, pendencias e saidas do recorte atual.
+            </p>
+          </div>
+          <span class="finance-chip finance-chip--accent"><%= receivedPercentage %>% recebido</span>
+        </div>
+
+        <div class="finance-chart-surface">
+          <div class="finance-chart-grid">
+            <% overviewChartItems.forEach((item) => {
+              const columnHeight = Math.max(14, Math.round((Math.abs(Number(item.value || 0)) / overviewChartMax) * 100));
+            %>
+              <div class="finance-chart-column">
+                <div class="finance-chart-column__surface">
+                  <span class="finance-chart-column__short"><%= item.shortLabel %></span>
+                  <div class="finance-chart-column__bar" style="<%= item.barStyle %>; height:<%= columnHeight %>%"></div>
+                  <span class="finance-chart-column__value <%= item.textClass %>"><%= item.valueLabel %></span>
+                </div>
+                <div class="finance-chart-column__label"><%= item.label %></div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="finance-overview-chart-metrics">
+          <div class="finance-quiet-card finance-overview-chart-metric-card p-4 space-y-2">
+            <div class="finance-kicker">Previsto</div>
+            <div class="text-lg font-semibold text-horriver-light"><%= formatCurrencyBR(summary.totalPredicted) %></div>
+            <div class="finance-subtle">Base total esperada na competencia.</div>
+          </div>
+
+          <div class="finance-quiet-card finance-overview-chart-metric-card p-4 space-y-2">
+            <div class="finance-kicker">Resultado do mes</div>
+            <div class="text-lg font-semibold <%= summary.currentMonthNet >= 0 ? 'text-horriver-orange' : 'text-[#fecaca]' %>"><%= formatCurrencyBR(summary.currentMonthNet) %></div>
+            <div class="finance-subtle">Entradas menos saidas do periodo.</div>
+          </div>
+
+          <div class="finance-quiet-card finance-overview-chart-metric-card p-4 space-y-2">
+            <div class="finance-kicker">Convidados</div>
+            <div class="text-lg font-semibold text-horriver-light"><%= summary.guestsCount %></div>
+            <div class="finance-subtle"><%= formatCurrencyBR(summary.automaticIncomeTotal) %> em entradas automaticas.</div>
+          </div>
+        </div>
+      </article>
+
+      <div class="finance-overview-column">
+        <article class="finance-panel p-5 md:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="finance-kicker">Ranking financeiro</div>
+              <h3 class="font-title text-2xl text-horriver-light mt-2">Destaques do recorte</h3>
+            </div>
+            <a href="<%= buildFinanceQuery({ tab: 'monthly' }) %>#finance-fees" class="finance-soft-button">Abrir lista</a>
+          </div>
+
+          <% if (rankingEntries.length) { %>
+            <div class="space-y-3">
+              <% rankingEntries.forEach((entry) => { %>
+                <div class="finance-list-item finance-list-item--overview">
+                  <div class="flex items-start gap-3 min-w-0">
+                    <span class="finance-ranking-badge"><%= entry.rank %></span>
+                    <div class="min-w-0">
+                      <div class="finance-list-item__title"><%= entry.title %></div>
+                      <div class="finance-list-item__text"><%= entry.subtitle %></div>
+                    </div>
+                  </div>
+                  <div class="finance-list-item__aside">
+                    <span class="finance-status <%= financeStatusClass(entry.meta) %>"><%= entry.meta.label %></span>
+                    <span class="finance-list-item__value text-horriver-light"><%= entry.value %></span>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <%- include("./_finance_empty_state", {
+              emptyStateMessage: "Sem dados suficientes para montar o ranking financeiro deste recorte.",
+            }) %>
+          <% } %>
+        </article>
+
+        <article class="finance-panel p-5 md:p-6 space-y-4">
+          <div>
+            <div class="finance-kicker">Acoes rapidas</div>
+            <h3 class="font-title text-2xl text-horriver-light mt-2">Rotina operacional</h3>
+            <p class="finance-subtle">Atalhos para agir no que mais pesa no fechamento do mes.</p>
+          </div>
+
+          <div class="finance-overview-actions">
+            <a href="<%= buildFinanceQuery({ tab: 'charge', chargeFilter: summary.overdueCount ? 'OVERDUE' : 'ALL' }) %>#finance-charge" class="finance-cta">Cobrar pendentes</a>
+            <a href="<%= buildFinanceQuery({ tab: 'monthly' }) %>#finance-fees" class="finance-soft-button">Abrir controle do mes</a>
+            <a href="<%= buildFinanceQuery({ tab: 'cash' }) %>#finance-cash" class="finance-soft-button">Registrar no caixa</a>
+            <a href="<%= buildFinanceQuery({ tab: 'guests' }) %>#finance-guests" class="finance-soft-button">Lancar convidado</a>
+            <% if (!automation.preparation.prepared) { %>
+              <form method="POST" action="/admin/finance/monthly/ensure">
+                <%- stateFields({ tab: 'overview' }) %>
+                <button type="submit" class="finance-soft-button w-full">Gerar mensalidades faltantes</button>
+              </form>
+            <% } %>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <article class="finance-panel p-5 md:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="finance-kicker">Relatorios</div>
+            <h3 class="font-title text-2xl text-horriver-light mt-2">Prestacao de contas pronta</h3>
+            <p class="finance-subtle">Resumo executivo do periodo com atalhos para previa e PDF completo.</p>
+          </div>
+          <span class="finance-chip finance-chip--accent"><%= monthReferenceLabel %></span>
+        </div>
+
+        <div class="finance-overview-report">
+          <div class="finance-overview-report__copy">
+            <div class="finance-subtle">
+              Em <strong class="text-horriver-light"><%= monthReferenceLabel %></strong>, o modulo registra
+              <strong class="text-horriver-light"><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong> de entradas,
+              <strong class="text-horriver-light"><%= formatCurrencyBR(summary.totalExpensesMonth) %></strong> em saidas
+              e <strong class="<%= summary.currentMonthNet >= 0 ? 'text-horriver-orange' : 'text-[#fecaca]' %>"><%= formatCurrencyBR(summary.currentMonthNet) %></strong> de resultado.
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="finance-inline-stat">
+                <span class="finance-inline-stat__label">Mensalidades pagas</span>
+                <span class="finance-inline-stat__value"><%= summary.paidCount %></span>
+              </div>
+              <div class="finance-inline-stat">
+                <span class="finance-inline-stat__label">Pendencias</span>
+                <span class="finance-inline-stat__value text-horriver-orange"><%= summary.delinquentCount %></span>
+              </div>
+              <div class="finance-inline-stat">
+                <span class="finance-inline-stat__label">Convidados</span>
+                <span class="finance-inline-stat__value"><%= summary.guestsCount %></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="finance-overview-report__actions">
+            <a href="<%= buildFinanceQuery({ tab: 'reports' }) %>#finance-reports" class="finance-cta">Abrir relatorios</a>
+            <a href="<%= reportPreviewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Previa HTML</a>
+            <a href="<%= reportPdfHref %>" target="_blank" rel="noopener" class="finance-soft-button">PDF completo</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="finance-panel p-5 md:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="finance-kicker">Acoes principais</div>
+            <h3 class="font-title text-2xl text-horriver-light mt-2">Alertas e proximos passos</h3>
+            <p class="finance-subtle">O sistema destaca o que merece acao imediata para o fechamento andar sem friccao.</p>
+          </div>
+          <span class="finance-chip"><%= financeAlerts.length %> alerta(s)</span>
+        </div>
+
+        <% if (financeAlerts.length) { %>
+          <div class="space-y-3">
+            <% financeAlerts.forEach((alert) => { %>
+              <article class="finance-priority-alert finance-priority-alert--<%= alert.tone %>">
+                <div class="space-y-2">
+                  <div class="finance-priority-alert__title"><%= alert.title %></div>
+                  <div class="finance-priority-alert__text"><%= alert.description %></div>
+                </div>
+                <% if (alert.actionType === "ensure_competence") { %>
+                  <form method="POST" action="/admin/finance/monthly/ensure">
+                    <%- stateFields({ tab: 'overview' }) %>
+                    <button type="submit" class="finance-soft-button w-full"><%= alert.actionLabel %></button>
+                  </form>
+                <% } else if (alert.href) { %>
+                  <a href="<%= alert.href %>" class="finance-soft-button w-full"><%= alert.actionLabel %></a>
+                <% } %>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <%- include("./_finance_empty_state", {
+            emptyStateMessage: "Nenhum alerta prioritario neste momento. O modulo esta pronto para seguir a rotina normal.",
+          }) %>
+        <% } %>
+      </article>
+    </section>
+  </div>
+</section>

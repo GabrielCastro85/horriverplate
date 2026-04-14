@@ -1,0 +1,318 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    monthly,
+    ui,
+    filters,
+    helpers,
+    actions,
+    settings,
+  } = currentFinanceView;
+  const selectedFee = monthly.selectedFee;
+  const feeHistory = monthly.feeHistory;
+  const paymentMethodOptions = settings.paymentMethodOptions;
+  const dueDay = settings.values?.dueDay || 10;
+  const {
+    monthReferenceLabel,
+    selectedFeeBalance,
+    selectedFeeMeta,
+    currentDateInputValue,
+  } = ui;
+  const {
+    decimalToNumber,
+    formatCurrencyBR,
+    formatDateInput,
+    formatMonthYearLabel,
+    getCollectionStatusMeta,
+  } = helpers;
+  const { stateFields, buildFinanceQuery, financeStatusClass } = actions;
+  const feeDetailSectionId = typeof detailSectionId === "string" ? detailSectionId : "finance-fees";
+  const feeDetailKicker = typeof detailKicker === "string" ? detailKicker : "Edicao da mensalidade";
+  const feeDetailTitleEmpty = typeof detailTitleEmpty === "string" ? detailTitleEmpty : "Selecione uma linha do mes";
+  const feeDetailSelectedCopy =
+    typeof detailSelectedCopy === "string"
+      ? detailSelectedCopy
+      : "Ajuste o registro selecionado, lance pagamento total ou parcial e acompanhe o historico recente do participante.";
+  const feeDetailEmptyCopy =
+    typeof detailEmptyCopy === "string"
+      ? detailEmptyCopy
+      : "Clique em uma mensalidade da tabela para alimentar este painel com valor devido, saldo, historico e acoes do participante.";
+  const selectedFeePaidAmount = selectedFee ? decimalToNumber(selectedFee.amountPaid) : 0;
+  const feeModeAlert =
+    selectedFee?.isLatePerMatch
+      ? {
+          tone: "warning",
+          title: "Virou avulso por atraso neste mes",
+          text: `Como o pagamento nao fechou ate o dia ${dueDay}, cada presenca apos essa data soma ${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} ao acumulado.`,
+        }
+      : selectedFee?.billingMode === "PER_MATCH"
+        ? {
+            tone: "info",
+            title: "Competencia atual no modo avulso mensal",
+            text: `Neste mes, o jogador paga ${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} por presenca, com acumulado recalculado pelas peladas marcadas.`,
+          }
+        : null;
+  const feeQuickSummary = selectedFee
+    ? [
+        selectedFee.billingModeMeta?.label,
+        selectedFee.billingMode === "PER_MATCH" || selectedFee.isLatePerMatch
+          ? `${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} / pelada`
+          : null,
+        selectedFee.matchesPlayed ? `${selectedFee.matchesPlayed} pelada(s)` : null,
+      ].filter(Boolean)
+    : [];
+%>
+
+<div class="finance-panel p-5 space-y-4" id="<%= feeDetailSectionId %>-detail">
+  <div class="flex items-center justify-between gap-3">
+    <div>
+      <div class="finance-kicker"><%= feeDetailKicker %></div>
+      <h3 class="font-title text-xl text-horriver-light"><%= selectedFee ? selectedFee.player.name : feeDetailTitleEmpty %></h3>
+      <p class="finance-subtle"><%= selectedFee ? feeDetailSelectedCopy : feeDetailEmptyCopy %></p>
+    </div>
+  </div>
+
+  <% if (selectedFee) { %>
+    <div class="finance-card finance-fee-detail p-4 space-y-4" data-fee-detail-panel="<%= selectedFee.id %>">
+      <div class="finance-fee-head">
+        <div class="finance-fee-head__copy space-y-1">
+          <div class="font-semibold text-horriver-light"><%= selectedFee.player.name %></div>
+          <div class="finance-subtle"><%= monthReferenceLabel %><% if (selectedFee.player.whatsapp) { %> - <%= selectedFee.player.whatsapp %><% } %></div>
+        </div>
+        <div class="finance-fee-head__aside">
+          <span class="finance-status <%= financeStatusClass(selectedFeeMeta) %>" data-fee-status><%= selectedFeeMeta.label %></span>
+          <% feeQuickSummary.forEach((item) => { %>
+            <span class="finance-chip"><%= item %></span>
+          <% }) %>
+          <a href="<%= buildFinanceQuery({ tab: filters.tab }) %>#<%= feeDetailSectionId %>" class="finance-chip">Limpar selecao</a>
+        </div>
+      </div>
+
+      <% if (feeModeAlert) { %>
+        <div class="finance-priority-alert finance-priority-alert--<%= feeModeAlert.tone %>">
+          <div class="finance-priority-alert__title"><%= feeModeAlert.title %></div>
+          <div class="finance-priority-alert__text"><%= feeModeAlert.text %></div>
+        </div>
+      <% } %>
+
+      <div class="finance-fee-metrics">
+        <div class="finance-fee-metric">
+          <div class="finance-fee-metric__label">Devido</div>
+          <span class="finance-fee-metric__value text-horriver-light" data-fee-due><%= formatCurrencyBR(selectedFee.amountDue) %></span>
+        </div>
+        <div class="finance-fee-metric">
+          <div class="finance-fee-metric__label">Pago</div>
+          <span class="finance-fee-metric__value text-horriver-light" data-fee-paid><%= formatCurrencyBR(selectedFee.amountPaid) %></span>
+        </div>
+        <div class="finance-fee-metric finance-fee-metric--balance">
+          <div class="finance-fee-metric__label">Saldo</div>
+          <span class="finance-fee-metric__value <%= selectedFeeBalance > 0 ? 'finance-balance--pending' : 'finance-balance--ok' %>" data-fee-balance><%= formatCurrencyBR(selectedFeeBalance) %></span>
+        </div>
+      </div>
+
+      <section class="finance-fee-section">
+        <div class="finance-fee-section__head">
+          <div>
+            <div class="finance-fee-section__eyebrow">1. Plano do mes</div>
+            <h4 class="font-semibold text-horriver-light">Como esse jogador vai pagar nesta competencia</h4>
+            <p class="finance-subtle">Troque apenas a regra deste mes sem mexer no cadastro padrao do jogador.</p>
+          </div>
+        </div>
+        <div class="finance-fee-plan-actions">
+          <form method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/update">
+            <%- stateFields({ editFeeId: selectedFee.id }) %>
+            <input type="hidden" name="billingMode" value="MONTHLY">
+            <input type="hidden" name="manualDiscountAmount" value="<%= decimalToNumber(selectedFee.manualDiscountAmount).toFixed(2).replace('.', ',') %>">
+            <input type="hidden" name="amountDue" value="<%= decimalToNumber(selectedFee.amountDue).toFixed(2).replace('.', ',') %>">
+            <input type="hidden" name="dueDate" value="<%= formatDateInput(selectedFee.dueDate) %>">
+            <input type="hidden" name="paymentMethod" value="<%= selectedFee.paymentMethod || '' %>">
+            <input type="hidden" name="note" value="<%= selectedFee.note || '' %>">
+            <input type="hidden" name="syncAmountWithRules" value="1">
+            <button type="submit" class="finance-soft-button w-full <%= selectedFee.billingMode === 'MONTHLY' ? 'border-horriver-orange text-horriver-light' : '' %>">Usar mensal neste mes</button>
+          </form>
+          <form method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/update">
+            <%- stateFields({ editFeeId: selectedFee.id }) %>
+            <input type="hidden" name="billingMode" value="PER_MATCH">
+            <input type="hidden" name="manualDiscountAmount" value="<%= decimalToNumber(selectedFee.manualDiscountAmount).toFixed(2).replace('.', ',') %>">
+            <input type="hidden" name="amountDue" value="<%= decimalToNumber(selectedFee.amountDue).toFixed(2).replace('.', ',') %>">
+            <input type="hidden" name="dueDate" value="<%= formatDateInput(selectedFee.dueDate) %>">
+            <input type="hidden" name="paymentMethod" value="<%= selectedFee.paymentMethod || '' %>">
+            <input type="hidden" name="note" value="<%= selectedFee.note || '' %>">
+            <input type="hidden" name="syncAmountWithRules" value="1">
+            <button type="submit" class="finance-soft-button w-full <%= selectedFee.billingMode === 'PER_MATCH' ? 'border-horriver-orange text-horriver-light' : '' %>">Usar avulso mensal neste mes</button>
+          </form>
+          <form method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/recalculate">
+            <%- stateFields({ editFeeId: selectedFee.id }) %>
+            <input type="hidden" name="manualDiscountAmount" value="<%= decimalToNumber(selectedFee.manualDiscountAmount).toFixed(2).replace('.', ',') %>">
+            <button type="submit" class="finance-soft-button w-full">Voltar ao plano padrao</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="finance-fee-section">
+        <div class="finance-fee-section__head">
+          <div>
+            <div class="finance-fee-section__eyebrow">2. Cobranca do mes</div>
+            <h4 class="font-semibold text-horriver-light">Ajustar valor e vencimento</h4>
+            <p class="finance-subtle">Use esse bloco para mudar a cobranca do mes. Isso nao registra pagamento.</p>
+          </div>
+        </div>
+
+        <form method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/update" class="finance-fee-form-grid">
+          <%- stateFields({ editFeeId: selectedFee.id }) %>
+          <input type="hidden" name="billingMode" value="<%= selectedFee.billingMode %>">
+          <label class="finance-label">Valor do mes
+            <input type="text" name="amountDue" value="<%= decimalToNumber(selectedFee.amountDue).toFixed(2).replace('.', ',') %>" class="finance-input">
+          </label>
+          <label class="finance-label">Vencimento
+            <input type="date" name="dueDate" value="<%= formatDateInput(selectedFee.dueDate) %>" class="finance-input">
+          </label>
+          <label class="finance-label">Abatimento manual
+            <input type="text" name="manualDiscountAmount" value="<%= decimalToNumber(selectedFee.manualDiscountAmount).toFixed(2).replace('.', ',') %>" class="finance-input" placeholder="0,00">
+          </label>
+          <label class="finance-label">Forma sugerida
+            <select name="paymentMethod" class="finance-select">
+              <option value="">Nao definida</option>
+              <% paymentMethodOptions.forEach((option) => { %><option value="<%= option.value %>" <%= selectedFee.paymentMethod === option.value ? 'selected' : '' %>><%= option.label %></option><% }) %>
+            </select>
+          </label>
+          <label class="finance-label finance-fee-form-grid__full">Situacao especial
+            <span class="inline-flex items-center gap-2 text-sm mt-2"><input type="checkbox" name="isExempt" <%= selectedFee.status === 'EXEMPT' ? 'checked' : '' %> /> <span>Marcar como isento</span></span>
+          </label>
+          <label class="finance-label finance-fee-form-grid__full">Observacao
+            <textarea name="note" class="finance-textarea" placeholder="Ex.: acerto combinado, cobranca diferenciada, observacao interna."><%= selectedFee.note || '' %></textarea>
+          </label>
+          <div class="finance-fee-form-grid__full flex justify-end">
+            <button type="submit" class="finance-soft-button">Salvar ajustes</button>
+          </div>
+        </form>
+      </section>
+
+      <form id="delete-fee-<%= selectedFee.id %>" method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/delete" class="hidden"><%- stateFields() %></form>
+      <% if (selectedFeePaidAmount > 0 && selectedFee.status !== 'EXEMPT') { %>
+        <form id="reset-fee-to-pending-<%= selectedFee.id %>" method="POST" action="/admin/finance/monthly-fees/bulk-status" class="hidden">
+          <%- stateFields({ editFeeId: selectedFee.id }) %>
+          <input type="hidden" name="bulkAction" value="PENDING" />
+          <input type="hidden" name="feeIds" value="<%= selectedFee.id %>" />
+        </form>
+      <% } %>
+
+      <section class="finance-fee-section">
+        <div class="finance-fee-section__head">
+          <div>
+            <div class="finance-fee-section__eyebrow">3. Pagamento</div>
+            <h4 class="font-semibold text-horriver-light">Registrar o dinheiro que entrou</h4>
+            <p class="finance-subtle">Use esse bloco para pagamento total ou parcial. Todo valor lancado entra automaticamente no caixa.</p>
+          </div>
+        </div>
+
+        <% if (selectedFee.analytics.quickAmounts.length) { %>
+          <div class="finance-quick-amounts">
+            <% selectedFee.analytics.quickAmounts.forEach((amount) => { %>
+              <button type="button" class="finance-chip" data-fill-payment="<%= amount.toFixed(2).replace('.', ',') %>"><%= formatCurrencyBR(amount) %></button>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <form method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/pay" class="finance-fee-form-grid">
+          <%- stateFields({ editFeeId: selectedFee.id }) %>
+          <label class="finance-label">Valor recebido
+            <input type="text" name="paymentAmount" value="<%= selectedFeeBalance > 0 ? selectedFeeBalance.toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="0,00" data-payment-input>
+          </label>
+          <label class="finance-label">Data do pagamento
+            <input type="date" name="paidAt" value="<%= currentDateInputValue %>" class="finance-input">
+          </label>
+          <label class="finance-label">Forma de pagamento
+            <select name="paymentMethod" class="finance-select">
+              <% paymentMethodOptions.forEach((option) => { %><option value="<%= option.value %>" <%= (selectedFee.paymentMethod || 'PIX') === option.value ? 'selected' : '' %>><%= option.label %></option><% }) %>
+            </select>
+          </label>
+          <label class="finance-label">Observacao do pagamento
+            <input type="text" name="note" class="finance-input" placeholder="Ex.: pagamento parcial, Pix, acerto manual.">
+          </label>
+          <div class="finance-fee-form-grid__full finance-inline-actions">
+            <% if (selectedFeeBalance > 0) { %>
+              <button
+                type="button"
+                class="finance-soft-button"
+                data-quick-pay-button
+                data-endpoint="/admin/finance/monthly-fees/<%= selectedFee.id %>/pay"
+                data-amount="<%= selectedFeeBalance.toFixed(2).replace('.', ',') %>"
+                data-payment-method="<%= selectedFee.paymentMethod || 'PIX' %>"
+                data-paid-at="<%= currentDateInputValue %>"
+                data-note="Quitacao rapida pelo painel lateral"
+                data-success-message="Mensalidade quitada."
+              >
+                Quitar saldo
+              </button>
+            <% } %>
+            <div class="flex justify-end flex-1"><button type="submit" class="finance-cta">Registrar pagamento</button></div>
+          </div>
+        </form>
+      </section>
+
+      <section class="finance-fee-section finance-fee-section--muted">
+        <div class="finance-fee-section__head">
+          <div>
+            <div class="finance-fee-section__eyebrow">4. Acoes extras</div>
+            <h4 class="font-semibold text-horriver-light">Acoes de manutencao</h4>
+            <p class="finance-subtle">
+              Reaplique a regra, volte para pendente ou exclua a mensalidade desta competencia.
+            </p>
+          </div>
+        </div>
+        <div class="finance-fee-actions">
+          <span class="finance-subtle">
+            Excluir remove esta cobranca da competencia
+            <% if (selectedFee.transactions?.length) { %>
+              e tambem <strong><%= selectedFee.transactions.length %> lancamento(s)</strong> automatico(s) do caixa ligado(s) a ela.
+            <% } else { %>
+              sem deixar lancamento automatico pendente no caixa.
+            <% } %>
+          </span>
+          <div class="finance-fee-actions__buttons">
+            <button type="submit" formmethod="POST" formaction="/admin/finance/monthly-fees/<%= selectedFee.id %>/recalculate" form="<%= '' %>" class="hidden"></button>
+            <form method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/recalculate">
+              <%- stateFields({ editFeeId: selectedFee.id }) %>
+              <input type="hidden" name="manualDiscountAmount" value="<%= decimalToNumber(selectedFee.manualDiscountAmount).toFixed(2).replace('.', ',') %>">
+              <button type="submit" class="finance-soft-button">Reaplicar regra do jogador</button>
+            </form>
+            <% if (selectedFeePaidAmount > 0 && selectedFee.status !== 'EXEMPT') { %>
+              <button
+                type="submit"
+                form="reset-fee-to-pending-<%= selectedFee.id %>"
+                class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
+                data-confirm="Voltar esta mensalidade para pendente e remover os lancamentos automaticos de pagamento do caixa?"
+              >
+                Marcar como pendente
+              </button>
+            <% } %>
+            <button type="submit" form="delete-fee-<%= selectedFee.id %>" class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white" data-confirm="Excluir esta mensalidade e seus lancamentos automaticos vinculados?">Excluir mensalidade</button>
+          </div>
+        </div>
+      </section>
+
+      <% if (feeHistory.length) { %>
+        <div class="space-y-2 border-t border-white/8 pt-4">
+          <h4 class="font-semibold text-horriver-light">Historico recente do participante</h4>
+          <div class="finance-fee-history">
+            <% feeHistory.forEach((item) => { const itemMeta = getCollectionStatusMeta(item.collectionStatus); %>
+              <div class="finance-stat-card finance-fee-history-item">
+                <div>
+                  <div class="font-medium text-horriver-light"><%= formatMonthYearLabel(item.month, item.year) %></div>
+                  <div class="finance-subtle">Pago: <%= formatCurrencyBR(item.amountPaid) %> - Devido: <%= formatCurrencyBR(item.amountDue) %></div>
+                </div>
+                <span class="finance-status <%= financeStatusClass(itemMeta) %>"><%= itemMeta.label %></span>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  <% } else { %>
+    <%- include("./_finance_empty_state", {
+      emptyStateMessage: "Selecione uma linha da lista para editar o mes, registrar pagamento parcial, reaplicar a regra do jogador ou revisar o historico do participante.",
+    }) %>
+  <% } %>
+</div>

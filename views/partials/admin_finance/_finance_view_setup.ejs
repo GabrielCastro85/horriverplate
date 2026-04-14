@@ -1,0 +1,297 @@
+<%
+  const vm = financePage;
+  const helpers = vm.helpers;
+  const filters = vm.filters;
+  const activeTab = vm.page.activeTab;
+  const financeTabs = vm.navigation.tabs;
+  const monthOptions = vm.navigation.monthOptions;
+  const yearOptions = vm.navigation.yearOptions;
+  const summary = vm.summaries;
+  const alerts = vm.alerts;
+  const overview = vm.overview;
+  const automation = {
+    ...vm.automation,
+    alerts,
+  };
+  const monthFees = vm.monthly.fees;
+  const monthFeesRaw = vm.monthly.allFees;
+  const selectedFee = vm.monthly.selectedFee;
+  const feeHistory = vm.monthly.feeHistory;
+  const monthlyStatusOptions = vm.monthly.statusOptions;
+  const pendingFees = vm.charge.pendingFees;
+  const allPendingFees = vm.charge.allPendingFees;
+  const chargeFilterOptions = vm.charge.filterOptions;
+  const monthTransactions = vm.cash.transactions;
+  const monthTransactionsAll = vm.cash.allTransactions;
+  const selectedTransaction = vm.cash.selectedTransaction;
+  const transactionTypeOptions = vm.cash.typeOptions;
+  const transactionCategoryOptions = vm.cash.categoryOptions;
+  const guestPayments = vm.guests.payments;
+  const selectedGuest = vm.guests.selectedGuest;
+  const reports = vm.reports.payload;
+  const reportScopeOptions = vm.reports.scopeOptions;
+  const reportTypeOptions = vm.reports.typeOptions;
+  const settings = vm.settings.values;
+  const allPlayers = vm.settings.players.all;
+  const eligiblePlayers = vm.settings.players.eligible;
+  const recentMatches = vm.settings.recentMatches;
+  const paymentMethodOptions = vm.settings.paymentMethodOptions;
+  const participantTypeOptions = vm.settings.participantTypeOptions;
+  const participantTypeMetaMap = vm.settings.participantTypeMetaMap;
+  const chargeBehaviorOptions = vm.settings.chargeBehaviorOptions;
+  const recentFinanceEvents = vm.settings.recentEvents;
+
+  const {
+    decimalToNumber,
+    formatCurrencyBR,
+    formatMonthYearLabel,
+    formatDateInput,
+    formatDateBR,
+    formatDateBRShortYear,
+    formatDateTimeBR,
+    getTransactionCategoryLabel,
+    getPaymentMethodLabel,
+    computeMonthlyFeeBalance,
+    getMonthlyFeeStatusMeta,
+    getCollectionStatusMeta,
+  } = helpers;
+
+  const noticeMessages = {
+    "configuracoes-salvas": "Configuracoes financeiras salvas.",
+    "jogador-salvo": "Participacao financeira do jogador atualizada.",
+    "mensalidades-geradas": "Mensalidades do mes geradas com sucesso.",
+    "competencia-preparada": "Competencia preparada com as mensalidades faltantes.",
+    "mensalidades-ja-existentes": "Nenhuma nova mensalidade foi criada; os registros ja existiam.",
+    "mensalidade-atualizada": "Mensalidade atualizada.",
+    "mensalidade-excluida": "Mensalidade excluida com os lancamentos automaticos vinculados.",
+    "pagamento-registrado": "Pagamento registrado e lancado no caixa.",
+    "mensalidade-isenta": "Mensalidade marcada como isenta.",
+    "charge-bulk-paid": "Mensalidades selecionadas marcadas como pagas em lote.",
+    "caixa-criado": "Lancamento criado no caixa.",
+    "caixa-atualizado": "Lancamento manual atualizado.",
+    "caixa-excluido": "Lancamento manual excluido.",
+    "convidado-criado": "Convidado registrado e lancado no caixa.",
+    "convidado-atualizado": "Convidado atualizado.",
+    "convidado-excluido": "Convidado excluido.",
+  };
+
+  const errorMessages = {
+    configuracoes: "Nao foi possivel salvar as configuracoes agora.",
+    "jogador-invalido": "Jogador invalido para este ajuste.",
+    "jogador-salvo": "Nao foi possivel atualizar a regra financeira deste jogador.",
+    "sem-jogadores-ativos": "Nenhum jogador esta ativo no financeiro para gerar mensalidades.",
+    mensalidades: "Nao foi possivel gerar as mensalidades.",
+    "mensalidade-invalida": "Mensalidade invalida.",
+    "mensalidade-nao-encontrada": "Mensalidade nao encontrada.",
+    "mensalidade-atualizar": "Nao foi possivel atualizar a mensalidade.",
+    "mensalidade-excluir": "Nao foi possivel excluir essa mensalidade.",
+    "pagamento-invalido": "Informe um valor de pagamento valido.",
+    pagamento: "Nao foi possivel registrar o pagamento.",
+    "mensalidade-isenta": "Nao foi possivel marcar a mensalidade como isenta.",
+    "charge-bulk-empty": "Selecione pelo menos uma cobranca pendente para a acao em lote.",
+    "charge-bulk-pay": "Nao foi possivel concluir a marcacao em lote das cobrancas.",
+    "categoria-caixa": "Escolha uma categoria compativel com o tipo de lancamento.",
+    "valor-caixa": "Informe um valor valido para o caixa.",
+    "caixa-criado": "Nao foi possivel criar o lancamento no caixa.",
+    "caixa-invalido": "Lancamento invalido.",
+    "caixa-bloqueado": "Esse lancamento e automatico; edite pela origem dele.",
+    "caixa-atualizado": "Nao foi possivel atualizar o lancamento.",
+    "caixa-excluir": "Nao foi possivel excluir esse lancamento.",
+    convidado: "Preencha nome e valor do convidado.",
+    "convidado-invalido": "Convidado invalido.",
+    "convidado-nao-encontrado": "Convidado nao encontrado.",
+    "convidado-atualizado": "Nao foi possivel atualizar o convidado.",
+    "convidado-excluir": "Nao foi possivel excluir o convidado.",
+  };
+
+  const noticeText = filters.notice ? noticeMessages[filters.notice] || "Acao concluida." : "";
+  const errorText = filters.error ? errorMessages[filters.error] || "Algo deu errado." : "";
+  const toneClasses = {
+    ok: "finance-status--ok",
+    warning: "finance-status--warning",
+    info: "finance-status--info",
+    pending: "finance-status--pending",
+    danger: "finance-status--danger",
+  };
+
+  const monthReferenceLabel = formatMonthYearLabel(filters.month, filters.year);
+  const selectedFeeBalance = selectedFee ? computeMonthlyFeeBalance(selectedFee) : 0;
+  const selectedFeeMeta = selectedFee ? getCollectionStatusMeta(selectedFee.collectionStatus) : null;
+  const selectedTransactionCategories = selectedTransaction
+    ? (transactionCategoryOptions[selectedTransaction.type] || [])
+    : (transactionCategoryOptions.EXPENSE || []);
+  const selectedTransactionIsManual = selectedTransaction?.origin === "MANUAL";
+  const activeTabMeta = financeTabs.find((item) => item.active) || financeTabs[0];
+  const currentDateInputValue = formatDateInput(new Date());
+
+  function escapeAttr(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;");
+  }
+
+  function stateFields(extra = {}, options = {}) {
+    const omit = new Set(options.omit || []);
+    const fields = {
+      month: filters.month,
+      year: filters.year,
+      tab: filters.tab,
+      status: filters.status,
+      search: filters.search,
+      cashType: filters.cashType,
+      chargeFilter: filters.chargeFilter,
+      reportType: filters.reportType,
+      reportScope: filters.reportScope,
+      reportStart: filters.reportStart,
+      reportEnd: filters.reportEnd,
+      ...extra,
+    };
+
+    return Object.entries(fields)
+      .filter(([name, value]) => !omit.has(name) && value !== null && value !== undefined && value !== "")
+      .map(([name, value]) => `<input type="hidden" name="${escapeAttr(name)}" value="${escapeAttr(value)}">`)
+      .join("");
+  }
+
+  function financeStatusClass(meta) {
+    return toneClasses[meta?.tone] || "finance-status--pending";
+  }
+
+  function buildFinanceQuery(extra = {}) {
+    const params = new URLSearchParams();
+    const hasOwn = (key) => Object.prototype.hasOwnProperty.call(extra, key);
+    const monthValue = hasOwn("month") ? extra.month : filters.month;
+    const yearValue = hasOwn("year") ? extra.year : filters.year;
+    const tabValue = hasOwn("tab") ? extra.tab : filters.tab;
+    const statusValue = hasOwn("status") ? extra.status : filters.status;
+    const searchValue = hasOwn("search") ? extra.search : filters.search;
+    const cashTypeValue = hasOwn("cashType") ? extra.cashType : filters.cashType;
+    const chargeFilterValue = hasOwn("chargeFilter") ? extra.chargeFilter : filters.chargeFilter;
+    const reportTypeValue = hasOwn("reportType") ? extra.reportType : filters.reportType;
+    const reportScopeValue = hasOwn("reportScope") ? extra.reportScope : filters.reportScope;
+    const reportStartValue = hasOwn("reportStart") ? extra.reportStart : filters.reportStart;
+    const reportEndValue = hasOwn("reportEnd") ? extra.reportEnd : filters.reportEnd;
+
+    params.set("month", String(monthValue));
+    params.set("year", String(yearValue));
+    params.set("tab", String(tabValue || "overview"));
+    if (statusValue && statusValue !== "ALL") params.set("status", String(statusValue));
+    if (searchValue) params.set("search", String(searchValue));
+    if (cashTypeValue && cashTypeValue !== "ALL") params.set("cashType", String(cashTypeValue));
+    if (chargeFilterValue && chargeFilterValue !== "ALL") params.set("chargeFilter", String(chargeFilterValue));
+    if (reportTypeValue && reportTypeValue !== "FULL") params.set("reportType", String(reportTypeValue));
+    if (reportScopeValue && reportScopeValue !== "MONTHLY") params.set("reportScope", String(reportScopeValue));
+    if (reportStartValue) params.set("reportStart", String(reportStartValue));
+    if (reportEndValue) params.set("reportEnd", String(reportEndValue));
+
+    Object.entries(extra).forEach(([key, value]) => {
+      if (["month", "year", "tab", "status", "search", "cashType", "chargeFilter", "reportType", "reportScope", "reportStart", "reportEnd"].includes(key)) return;
+      if (value !== null && value !== undefined && value !== "") params.set(key, String(value));
+    });
+
+    return `/admin/finance?${params.toString()}`;
+  }
+
+  const financeView = {
+    vm,
+    page: vm.page,
+    filters,
+    helpers,
+    navigation: vm.navigation,
+    summaries: summary,
+    alerts,
+    overview,
+    monthly: vm.monthly,
+    charge: vm.charge,
+    cash: vm.cash,
+    guests: vm.guests,
+    reports: vm.reports,
+    settings: vm.settings,
+    automation,
+    ui: {
+      noticeText,
+      errorText,
+      monthReferenceLabel,
+      selectedFeeBalance,
+      selectedFeeMeta,
+      selectedTransactionCategories,
+      selectedTransactionIsManual,
+      activeTabMeta,
+      currentDateInputValue,
+    },
+    actions: {
+      escapeAttr,
+      stateFields,
+      financeStatusClass,
+      buildFinanceQuery,
+    },
+  };
+
+  Object.assign(locals, {
+    financeView,
+    financePage: vm,
+    helpers,
+    filters,
+    activeTab,
+    financeTabs,
+    settings,
+    monthOptions,
+    yearOptions,
+    allPlayers,
+    eligiblePlayers,
+    recentMatches,
+    monthFees,
+    monthFeesRaw,
+    monthTransactions,
+    monthTransactionsAll,
+    guestPayments,
+    selectedFee,
+    selectedTransaction,
+    selectedGuest,
+    feeHistory,
+    pendingFees,
+    allPendingFees,
+    paymentMethodOptions,
+    transactionTypeOptions,
+    transactionCategoryOptions,
+    monthlyStatusOptions,
+    chargeFilterOptions,
+    participantTypeOptions,
+    participantTypeMetaMap,
+    chargeBehaviorOptions,
+    reportScopeOptions,
+    reportTypeOptions,
+    reports,
+    recentFinanceEvents,
+    summary,
+    overview,
+    automation,
+    alerts,
+    decimalToNumber,
+    formatCurrencyBR,
+    formatMonthYearLabel,
+    formatDateInput,
+    formatDateBR,
+    formatDateBRShortYear,
+    formatDateTimeBR,
+    getTransactionCategoryLabel,
+    getPaymentMethodLabel,
+    computeMonthlyFeeBalance,
+    getMonthlyFeeStatusMeta,
+    getCollectionStatusMeta,
+    noticeText,
+    errorText,
+    monthReferenceLabel,
+    selectedFeeBalance,
+    selectedFeeMeta,
+    selectedTransactionCategories,
+    selectedTransactionIsManual,
+    activeTabMeta,
+    currentDateInputValue,
+    escapeAttr,
+    stateFields,
+    financeStatusClass,
+    buildFinanceQuery,
+  });
+%>

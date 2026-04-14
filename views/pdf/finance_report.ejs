@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= report.title %> | Horriver Plate</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 10mm;
+    }
+
+    :root {
+      color-scheme: light;
+      --ink: #12141a;
+      --muted: #667085;
+      --line: #e5e7eb;
+      --line-strong: #d0d5dd;
+      --soft: #f5f7fb;
+      --panel: #ffffff;
+      --accent: #ff7a1a;
+      --accent-soft: rgba(255, 122, 26, 0.12);
+      --ok: #15803d;
+      --danger: #c2410c;
+      --warning: #b45309;
+      --blue: #1d4ed8;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Inter, Arial, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 22px 24px;
+      background:
+        radial-gradient(circle at top right, rgba(255, 122, 26, 0.12), transparent 34%),
+        linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .brand img {
+      width: 54px;
+      height: 54px;
+      object-fit: contain;
+    }
+
+    .brand-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .brand-kicker {
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      line-height: 0.98;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-sub {
+      margin-top: 8px;
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .meta-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.88);
+      padding: 12px 14px;
+    }
+
+    .meta-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .meta-value {
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      padding: 14px 15px;
+      min-height: 100%;
+    }
+
+    .summary-card--accent {
+      border-color: rgba(255, 122, 26, 0.26);
+      background:
+        radial-gradient(circle at top right, rgba(255, 122, 26, 0.12), transparent 42%),
+        var(--panel);
+    }
+
+    .summary-card__label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .summary-card__value {
+      margin-top: 8px;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+
+    .summary-card__value--accent {
+      color: var(--accent);
+    }
+
+    .summary-card__value--ok {
+      color: var(--ok);
+    }
+
+    .summary-card__value--danger {
+      color: var(--danger);
+    }
+
+    .summary-card__sub {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      page-break-inside: avoid;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+
+    .section-kicker {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .section-title {
+      margin-top: 6px;
+      font-size: 20px;
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .section-copy {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      max-width: 420px;
+      text-align: right;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .insight-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 13px 14px;
+    }
+
+    .insight-card__title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .insight-card__text {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead th {
+      padding: 11px 12px;
+      background: var(--soft);
+      color: #495265;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    tbody tr {
+      page-break-inside: avoid;
+    }
+
+    tbody td {
+      padding: 11px 12px;
+      font-size: 11px;
+      border-bottom: 1px solid #eef1f5;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: rgba(246, 247, 251, 0.62);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .align-right {
+      text-align: right;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .player {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .subline {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      border: 1px solid var(--line-strong);
+      background: rgba(15, 23, 42, 0.03);
+      white-space: nowrap;
+    }
+
+    .status::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .status--ok {
+      color: var(--ok);
+      border-color: rgba(21, 128, 61, 0.18);
+      background: rgba(22, 163, 74, 0.08);
+    }
+
+    .status--warning {
+      color: var(--warning);
+      border-color: rgba(180, 83, 9, 0.18);
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .status--danger {
+      color: var(--danger);
+      border-color: rgba(194, 65, 12, 0.16);
+      background: rgba(249, 115, 22, 0.1);
+    }
+
+    .status--info {
+      color: var(--blue);
+      border-color: rgba(29, 78, 216, 0.16);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .distribution-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .distribution-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 13px 14px;
+    }
+
+    .distribution-card__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .distribution-card__label {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .distribution-card__value {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .progress {
+      position: relative;
+      height: 8px;
+      margin-top: 10px;
+      border-radius: 999px;
+      background: #eef2f7;
+      overflow: hidden;
+    }
+
+    .progress span {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: linear-gradient(90deg, #ff7a1a, #ffb578);
+      border-radius: inherit;
+    }
+
+    .ranking-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .ranking-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .ranking-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .ranking-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .ranking-sub {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ranking-item {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eef1f5;
+    }
+
+    .ranking-item:last-child {
+      border-bottom: 0;
+    }
+
+    .ranking-item__index {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .ranking-item__value {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ink);
+      text-align: right;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .break-before {
+      break-before: page;
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="brand">
+            <img src="<%= logoUrl %>" alt="Horriver Plate" />
+            <div class="brand-copy">
+              <span class="brand-kicker">Horriver Plate</span>
+              <strong>Pelada - financeiro oficial</strong>
+            </div>
+          </div>
+          <h1><%= report.title %></h1>
+          <p class="hero-sub"><%= report.description %></p>
+        </div>
+
+        <div class="hero-meta">
+          <article class="meta-card">
+            <div class="meta-label">Competencia / periodo</div>
+            <div class="meta-value"><%= period.label %></div>
+          </article>
+          <article class="meta-card">
+            <div class="meta-label">Gerado em</div>
+            <div class="meta-value"><%= generatedAt %></div>
+          </article>
+          <article class="meta-card">
+            <div class="meta-label">Tipo de relatorio</div>
+            <div class="meta-value"><%= report.label %></div>
+          </article>
+          <article class="meta-card">
+            <div class="meta-label">Responsavel</div>
+            <div class="meta-value"><%= responsibleName || "Administracao Horriver Plate" %></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary-grid">
+      <article class="summary-card">
+        <div class="summary-card__label">Total arrecadado</div>
+        <div class="summary-card__value summary-card__value--ok"><%= executiveSummary.totalIncomeLabel %></div>
+        <div class="summary-card__sub">Entradas totais do periodo.</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Total gasto</div>
+        <div class="summary-card__value summary-card__value--danger"><%= executiveSummary.totalExpensesLabel %></div>
+        <div class="summary-card__sub">Saidas registradas no caixa.</div>
+      </article>
+      <article class="summary-card summary-card--accent">
+        <div class="summary-card__label">Saldo final</div>
+        <div class="summary-card__value summary-card__value--accent"><%= executiveSummary.netResultLabel %></div>
+        <div class="summary-card__sub">Resultado do periodo.</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Total pendente</div>
+        <div class="summary-card__value"><%= executiveSummary.totalPendingLabel %></div>
+        <div class="summary-card__sub">Saldo ainda em aberto.</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Mensalistas pagos</div>
+        <div class="summary-card__value"><%= executiveSummary.paidCount %></div>
+        <div class="summary-card__sub">Quitados por completo.</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Mensalistas pendentes</div>
+        <div class="summary-card__value"><%= executiveSummary.pendingCount %></div>
+        <div class="summary-card__sub">Em acompanhamento.</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Convidados</div>
+        <div class="summary-card__value"><%= executiveSummary.guestCount %></div>
+        <div class="summary-card__sub"><%= executiveSummary.guestIncomeLabel %> no periodo.</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Adimplencia</div>
+        <div class="summary-card__value"><%= executiveSummary.paidPercentageLabel %></div>
+        <div class="summary-card__sub">Percentual pago no recorte.</div>
+      </article>
+    </section>
+
+    <% if (sections.executive || sections.insights) { %>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Resumo executivo</div>
+            <div class="section-title">Narrativa do periodo</div>
+          </div>
+          <div class="section-copy"><%= narratives.detailed %></div>
+        </div>
+
+        <div class="insight-grid">
+          <% insights.forEach((insight) => { %>
+            <article class="insight-card">
+              <div class="insight-card__title"><%= insight.title %></div>
+              <div class="insight-card__text"><%= insight.text %></div>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (sections.expenses && expenseDistribution.length) { %>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Distribuicao de gastos</div>
+            <div class="section-title">Categorias que puxaram as saidas</div>
+          </div>
+          <div class="section-copy">
+            <% if (executiveSummary.mainExpenseCategory) { %>
+              Destaque para <strong><%= executiveSummary.mainExpenseCategory.label %></strong>,
+              com <%= executiveSummary.mainExpenseCategory.amountLabel %> e
+              <%= executiveSummary.mainExpenseCategory.percentageLabel %> das despesas.
+            <% } else { %>
+              Nao houve despesas neste recorte.
+            <% } %>
+          </div>
+        </div>
+
+        <div class="distribution-grid">
+          <% expenseDistribution.forEach((item) => { %>
+            <article class="distribution-card">
+              <div class="distribution-card__top">
+                <span class="distribution-card__label"><%= item.label %></span>
+                <span class="distribution-card__value"><%= item.amountLabel %></span>
+              </div>
+              <div class="progress"><span style="width:<%= Math.max(item.percentage, 4) %>%"></span></div>
+              <div class="insight-card__text"><%= item.percentageLabel %> do total de despesas do periodo.</div>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (sections.rankings && (rankings.topContributors.length || rankings.followUpRanking.length)) { %>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Rankings financeiros</div>
+            <div class="section-title">Contribuicao e acompanhamento</div>
+          </div>
+          <div class="section-copy">Blocos pensados para leitura rapida, com linguagem neutra e profissional.</div>
+        </div>
+
+        <div class="ranking-grid">
+          <article class="ranking-card">
+            <div class="ranking-head">
+              <div class="ranking-title">Maiores contribuintes do periodo</div>
+              <div class="ranking-sub">Jogadores com maior valor efetivamente pago dentro do recorte.</div>
+            </div>
+            <div class="ranking-list">
+              <% if (rankings.topContributors.length) { %>
+                <% rankings.topContributors.forEach((item, index) => { %>
+                  <div class="ranking-item">
+                    <div class="ranking-item__index"><%= index + 1 %></div>
+                    <div>
+                      <div class="player"><%= item.playerName %></div>
+                      <span class="subline"><%= item.position || '-' %><% if (item.nickname) { %> - <%= item.nickname %><% } %></span>
+                    </div>
+                    <div class="ranking-item__value"><%= item.totalPaidLabel %></div>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="ranking-item">
+                  <div></div>
+                  <div class="muted">Sem pagamentos registrados no periodo.</div>
+                  <div></div>
+                </div>
+              <% } %>
+            </div>
+          </article>
+
+          <article class="ranking-card">
+            <div class="ranking-head">
+              <div class="ranking-title">Pendencias em acompanhamento</div>
+              <div class="ranking-sub">Casos que pedem atencao por saldo em aberto ou mais de uma competencia pendente.</div>
+            </div>
+            <div class="ranking-list">
+              <% if (rankings.followUpRanking.length) { %>
+                <% rankings.followUpRanking.forEach((item, index) => { %>
+                  <div class="ranking-item">
+                    <div class="ranking-item__index"><%= index + 1 %></div>
+                    <div>
+                      <div class="player"><%= item.playerName %></div>
+                      <span class="subline"><%= item.pendingCompetences %> competencia(s) em acompanhamento</span>
+                    </div>
+                    <div class="ranking-item__value"><%= item.totalBalanceLabel %></div>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="ranking-item">
+                  <div></div>
+                  <div class="muted">Nao ha pendencias em aberto neste recorte.</div>
+                  <div></div>
+                </div>
+              <% } %>
+            </div>
+          </article>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (sections.annual && annualBreakdown.length) { %>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Consolidado anual</div>
+            <div class="section-title">Distribuicao mensal do ano</div>
+          </div>
+          <div class="section-copy">Tabela preparada para comparacao rapida entre os meses do ano selecionado.</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th class="align-right">Mensalidades</th>
+                <th class="align-right">Convidados</th>
+                <th class="align-right">Despesas</th>
+                <th class="align-right">Pendencias</th>
+                <th class="align-right">Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% annualBreakdown.forEach((row) => { %>
+                <tr>
+                  <td class="player"><%= row.label %></td>
+                  <td class="align-right"><%= row.monthlyIncomeLabel %></td>
+                  <td class="align-right"><%= row.guestIncomeLabel %></td>
+                  <td class="align-right"><%= row.expensesLabel %></td>
+                  <td class="align-right"><%= row.pendingLabel %></td>
+                  <td class="align-right"><%= row.netLabel %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (sections.monthly && monthlyRows.length) { %>
+      <section class="section <%= sections.cash || sections.guests ? 'break-before' : '' %>">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Mensalidades</div>
+            <div class="section-title">Tabela de cobrancas do periodo</div>
+          </div>
+          <div class="section-copy">Status, valores e vencimentos das mensalidades abrangidas pelo relatorio.</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 28%;">Participante</th>
+                <th style="width: 14%;">Status</th>
+                <th class="align-right" style="width: 11%;">Devido</th>
+                <th class="align-right" style="width: 11%;">Pago</th>
+                <th class="align-right" style="width: 11%;">Saldo</th>
+                <th style="width: 12%;">Vencimento</th>
+                <th style="width: 13%;">Pagamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% monthlyRows.forEach((row) => { %>
+                <% const tone = row.status === "PAID" ? "ok" : row.status === "OVERDUE" ? "danger" : row.status === "DUE_TODAY" ? "warning" : row.status === "PARTIAL" ? "info" : "warning"; %>
+                <tr>
+                  <td>
+                    <span class="player"><%= row.playerName %></span>
+                    <span class="subline"><%= row.playerSubtitle %></span>
+                  </td>
+                  <td><span class="status status--<%= tone %>"><%= row.statusLabel %></span></td>
+                  <td class="align-right"><%= row.dueLabel %></td>
+                  <td class="align-right"><%= row.paidLabel %></td>
+                  <td class="align-right"><%= row.balanceLabel %></td>
+                  <td><%= row.dueDateLabel %></td>
+                  <td>
+                    <%= row.paidAtLabel %>
+                    <span class="subline"><%= row.paymentMethodLabel %></span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (sections.guests && guestRows.length) { %>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Convidados</div>
+            <div class="section-title">Entradas avulsas do periodo</div>
+          </div>
+          <div class="section-copy">Convidados registrados e sua integracao com o caixa.</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 22%;">Nome</th>
+                <th style="width: 12%;">Data</th>
+                <th class="align-right" style="width: 12%;">Valor</th>
+                <th style="width: 24%;">Observacao</th>
+                <th style="width: 16%;">Pelada</th>
+                <th style="width: 14%;">Origem no caixa</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% guestRows.forEach((row) => { %>
+                <tr>
+                  <td class="player"><%= row.guestName %></td>
+                  <td><%= row.dateLabel %></td>
+                  <td class="align-right"><%= row.amountLabel %></td>
+                  <td><%= row.note %></td>
+                  <td><%= row.matchLabel %></td>
+                  <td><%= row.cashReference %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (sections.cash && cashRows.length) { %>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Extrato detalhado</div>
+            <div class="section-title">Livro-caixa do periodo</div>
+          </div>
+          <div class="section-copy">Cada linha mostra categoria, origem, valor e saldo acumulado apos o lancamento.</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 9%;">Data</th>
+                <th style="width: 8%;">Tipo</th>
+                <th style="width: 13%;">Categoria</th>
+                <th style="width: 25%;">Descricao</th>
+                <th style="width: 19%;">Origem</th>
+                <th class="align-right" style="width: 11%;">Valor</th>
+                <th class="align-right" style="width: 15%;">Saldo apos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% cashRows.forEach((row) => { %>
+                <tr>
+                  <td><%= row.dateLabel %></td>
+                  <td><%= row.typeLabel %></td>
+                  <td><%= row.categoryLabel %></td>
+                  <td>
+                    <span class="player"><%= row.description %></span>
+                    <span class="subline"><%= row.originModeLabel %></span>
+                  </td>
+                  <td><%= row.originLabel %></td>
+                  <td class="align-right"><%= row.amountLabel %></td>
+                  <td class="align-right"><%= row.balanceAfterLabel %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    <% } %>
+
+    <footer class="footer">
+      <span>Horriver Plate</span>
+      <span>Gerado automaticamente pelo modulo financeiro</span>
+      <span><%= generatedAt %></span>
+    </footer>
+  </main>
+</body>
+</html>

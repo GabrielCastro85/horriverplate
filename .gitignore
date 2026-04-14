@@ -1,6 +1,66 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Environment
 .env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
 npm-debug.log*
-.DS_Store
-PELADA RESENHA - Copia.xlsx
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Backups, extracts and local exports
 backups/
+backup_extract/
+exports/
+*.sql
+*.zip
+*.bak
+*.backup
+*.old
+
+# Uploads and generated local storage
+public/uploads/
+uploads/
+
+# Temporary files
+tmp/
+tmp-*
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+admin_match_head.txt
+admin_match_tail.txt
+
+# Cache and local tooling outputs
+.cache/
+.parcel-cache/
+coverage/
+.nyc_output/
+.eslintcache
+*.tsbuildinfo
+
+# Editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Runtime files
+*.pid
+*.pid.lock
+*.seed
+
+# Project-specific local files
+PELADA RESENHA - Copia.xlsx

@@ -1,0 +1,42 @@
+<%
+  const introChipLabel = typeof sectionChipLabel === "string" ? sectionChipLabel : "";
+  const introTitle = typeof sectionTitle === "string" ? sectionTitle : "";
+  const introDescription = typeof sectionDescription === "string" ? sectionDescription : "";
+  const introBadges = Array.isArray(sectionBadges) ? sectionBadges.filter(Boolean) : [];
+  const introChipTone = typeof sectionChipTone === "string" ? sectionChipTone : "";
+  const introChipClass = introChipTone === "accent" ? "finance-chip finance-chip--accent" : "finance-chip";
+  const introStatusBadge =
+    typeof sectionStatusBadgeMeta !== "undefined" && sectionStatusBadgeMeta
+      ? sectionStatusBadgeMeta
+      : null;
+%>
+
+<div class="space-y-3">
+  <% if (introChipLabel || introStatusBadge) { %>
+    <div class="flex flex-wrap items-center gap-2">
+      <% if (introChipLabel) { %>
+        <span class="<%= introChipClass %>"><%= introChipLabel %></span>
+      <% } %>
+      <% if (introStatusBadge) { %>
+        <span class="finance-competence-badge finance-competence-badge--<%= introStatusBadge.tone %>"><%= introStatusBadge.label %></span>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (introBadges.length) { %>
+    <div class="finance-section-badges finance-chip-rail text-xs">
+      <% introBadges.forEach((badge) => {
+        const badgeMeta = typeof badge === "string" ? { label: badge } : badge;
+        const badgeClassName = badgeMeta.className || (badgeMeta.accent ? "finance-chip finance-chip--accent" : "finance-chip");
+      %>
+        <span class="<%= badgeClassName %>"><%= badgeMeta.label %></span>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <h2 class="font-title text-2xl text-horriver-light"><%= introTitle %></h2>
+
+  <% if (introDescription) { %>
+    <p class="finance-subtle"><%= introDescription %></p>
+  <% } %>
+</div>

@@ -1,0 +1,8 @@
+<%
+  const emptyMessage = typeof emptyStateMessage === "string" ? emptyStateMessage : "";
+  const emptyClassName = typeof emptyStateClassName === "string" && emptyStateClassName
+    ? ` ${emptyStateClassName}`
+    : "";
+%>
+
+<div class="finance-empty<%= emptyClassName %>"><%= emptyMessage %></div>

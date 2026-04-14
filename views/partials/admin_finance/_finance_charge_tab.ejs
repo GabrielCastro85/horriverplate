@@ -1,0 +1,319 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    charge,
+    monthly,
+    summaries: summary,
+    settings: settingsSection,
+    automation,
+    ui,
+    filters,
+    helpers,
+    actions,
+  } = currentFinanceView;
+  const pendingFees = charge.pendingFees;
+  const chargeFilterOptions = charge.filterOptions;
+  const selectedFee = monthly.selectedFee;
+  const settings = settingsSection.values;
+  const chargeBehaviorOptions = settingsSection.chargeBehaviorOptions;
+  const { currentDateInputValue } = ui;
+  const {
+    formatCurrencyBR,
+    formatDateBRShortYear,
+    getPaymentMethodLabel,
+  } = helpers;
+  const { stateFields, buildFinanceQuery, escapeAttr, financeStatusClass } = actions;
+%>
+
+<section class="finance-tab-panel" id="finance-charge">
+  <section class="finance-section-grid--charge">
+    <div class="space-y-4" data-charge-bulk-root data-charge-behavior="<%= settings.chargeBehavior %>">
+      <section class="finance-module-top">
+        <article class="finance-panel p-5 md:p-6 finance-module-top__lead">
+          <%- include("./_finance_section_intro", {
+            sectionChipLabel: "Cobranca",
+            sectionChipTone: "accent",
+            sectionStatusBadgeMeta: automation.competenceState,
+            sectionBadges: [
+              { label: `${pendingFees.length} na fila` },
+              { label: `${summary.overdueCount} atrasado(s)` },
+              { label: `${summary.dueTodayCount} vence hoje` },
+              { label: `${summary.pendingWithWhatsappCount} com WhatsApp` },
+              { label: `${summary.pendingWithoutWhatsappCount} sem WhatsApp` },
+              { label: chargeBehaviorOptions.find((option) => option.value === settings.chargeBehavior)?.label || settings.chargeBehavior },
+            ],
+            sectionTitle: "Fila de cobranca do mes",
+            sectionDescription: "A aba agora funciona como uma central de cobranca: prioridade clara, acoes diretas e menos distração entre a fila e o painel lateral.",
+          }) %>
+        </article>
+
+        <aside class="finance-module-aside-card">
+          <div class="space-y-3">
+            <div class="finance-kicker">Acoes em lote</div>
+            <div class="text-2xl font-semibold text-horriver-light">Central de cobranca ativa</div>
+            <p class="finance-subtle">
+              Selecione pendentes para copiar mensagens, abrir WhatsApp ou quitar em lote sem sair da fila.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="finance-dashboard-mini-stat">
+              <span>Na fila</span>
+              <strong><%= pendingFees.length %></strong>
+            </div>
+            <div class="finance-dashboard-mini-stat">
+              <span>Com WA</span>
+              <strong><%= summary.pendingWithWhatsappCount %></strong>
+            </div>
+          </div>
+
+          <a href="<%= buildFinanceQuery({ tab: 'monthly', editFeeId: selectedFee?.id || '' }) %>#finance-fees" class="finance-soft-button w-full">Abrir controle do mes</a>
+        </aside>
+      </section>
+
+      <section class="finance-module-metric-strip">
+        <article class="finance-module-mini-card finance-module-mini-card--warning">
+          <span class="finance-kicker">Total pendente</span>
+          <strong><%= formatCurrencyBR(summary.totalPending) %></strong>
+          <span class="finance-subtle">Saldo da fila atual de cobranca.</span>
+        </article>
+        <article class="finance-module-mini-card">
+          <span class="finance-kicker">Atrasados</span>
+          <strong><%= summary.overdueCount %></strong>
+          <span class="finance-subtle">Cobrancas que merecem prioridade total.</span>
+        </article>
+        <article class="finance-module-mini-card finance-module-mini-card--accent">
+          <span class="finance-kicker">Vence hoje</span>
+          <strong><%= summary.dueTodayCount %></strong>
+          <span class="finance-subtle">Janela ideal para agir antes do atraso.</span>
+        </article>
+        <article class="finance-module-mini-card">
+          <span class="finance-kicker">WhatsApp pronto</span>
+          <strong><%= automation.bulkChargeSummary.chargeableCount %> / <%= automation.bulkChargeSummary.totalCount %></strong>
+          <span class="finance-subtle">Itens com envio imediato disponivel.</span>
+        </article>
+      </section>
+
+      <% if (!automation.preparation.prepared) { %>
+        <div class="finance-priority-alert finance-priority-alert--warning">
+          <div class="finance-priority-alert__title">Competencia ainda nao preparada por completo.</div>
+          <div class="finance-priority-alert__text">
+            Faltam <strong><%= automation.preparation.missingCount %></strong> mensalidade(s) para a fila de cobranca ficar completa.
+          </div>
+          <form method="POST" action="/admin/finance/monthly/ensure">
+            <%- stateFields({ tab: 'charge' }) %>
+            <button type="submit" class="finance-soft-button">Gerar mensalidades agora</button>
+          </form>
+        </div>
+      <% } %>
+
+      <form method="GET" action="/admin/finance" class="finance-card p-4 space-y-4">
+        <%- stateFields({ tab: 'charge' }, { omit: ['search', 'chargeFilter'] }) %>
+        <div class="finance-filter-bar finance-filter-bar--monthly">
+          <label class="finance-label">Fila prioritaria
+            <select name="chargeFilter" class="finance-select">
+              <% chargeFilterOptions.forEach((option) => { %>
+                <option value="<%= option.value %>" <%= filters.chargeFilter === option.value ? 'selected' : '' %>><%= option.label %></option>
+              <% }) %>
+            </select>
+          </label>
+          <label class="finance-label">Busca por participante
+            <input type="search" name="search" value="<%= filters.search %>" placeholder="Nome ou apelido" class="finance-input" data-finance-search />
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <button type="submit" class="finance-soft-button">Aplicar filtros</button>
+            <a href="<%= buildFinanceQuery({ tab: 'charge', chargeFilter: 'ALL', search: '' }) %>#finance-charge" class="finance-soft-button">Limpar</a>
+          </div>
+        </div>
+      </form>
+
+      <% if (pendingFees.length) { %>
+        <div class="finance-selection-bar">
+          <div class="space-y-2">
+            <label class="finance-inline-checkbox">
+              <input type="checkbox" data-charge-check-all />
+              <span>Selecionar todas as cobrancas visiveis</span>
+            </label>
+            <div class="finance-subtle">
+              <strong data-charge-selection-count>0 selecionada(s)</strong>
+              <span data-charge-selection-note>Sem selecao: o preview abaixo considera toda a fila com mensagem pronta.</span>
+            </div>
+          </div>
+          <div class="finance-selection-bar__actions">
+            <button type="button" class="finance-soft-button" data-charge-copy-selected>Copiar mensagens</button>
+            <button type="button" class="finance-soft-button" data-charge-open-selected>Abrir WhatsApp</button>
+            <button type="button" class="finance-soft-button" data-charge-copy-all>Copiar todos com WhatsApp</button>
+            <button type="button" class="finance-soft-button" data-charge-open-all>Cobrar todos com WhatsApp</button>
+            <form method="POST" action="/admin/finance/charge/bulk" data-charge-bulk-form>
+              <%- stateFields({ tab: 'charge' }) %>
+              <input type="hidden" name="paidAt" value="<%= currentDateInputValue %>" />
+              <input type="hidden" name="paymentMethod" value="PIX" />
+              <input type="hidden" name="note" value="Quitacao em lote pela aba de cobranca" />
+              <div data-bulk-selected-ids></div>
+              <button type="submit" class="finance-cta" data-charge-mark-paid disabled>Marcar selecionados como pagos</button>
+            </form>
+          </div>
+        </div>
+
+        <section class="finance-panel p-5 md:p-6 space-y-4">
+          <div class="finance-panel-section-head">
+            <div class="finance-panel-section-head__copy">
+              <div class="finance-kicker">Fila operacional</div>
+              <h3 class="font-title text-xl text-horriver-light mt-2">Pendentes priorizados</h3>
+            </div>
+            <div class="finance-panel-section-head__actions">
+              <span class="finance-chip"><%= pendingFees.length %> item(ns)</span>
+              <span class="finance-chip"><%= summary.pendingWithoutWhatsappCount %> sem WA</span>
+            </div>
+          </div>
+
+          <div class="finance-charge-list">
+            <% pendingFees.forEach((fee) => { %>
+              <article
+                class="finance-card finance-charge-item p-4 space-y-3"
+                data-charge-item
+                data-fee-id="<%= fee.id %>"
+                data-player-name="<%- escapeAttr(fee.player.name) %>"
+                data-balance-label="<%- escapeAttr(formatCurrencyBR(fee.balance)) %>"
+                data-whatsapp-url="<%- escapeAttr(fee.whatsappUrl || '') %>"
+                data-message="<%- escapeAttr(fee.whatsappMessage || '') %>"
+              >
+                <input type="checkbox" class="finance-charge-check" data-charge-select aria-label="Selecionar cobranca de <%= fee.player.name %>" />
+                <div class="finance-charge-item__body space-y-3">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="space-y-1 min-w-0">
+                      <div class="font-semibold text-horriver-light"><%= fee.player.name %></div>
+                      <div class="finance-subtle">
+                        <%= fee.player.position %><% if (fee.player.nickname) { %> - <%= fee.player.nickname %><% } %>
+                      </div>
+                      <div class="finance-subtle"><%= fee.player.whatsapp || 'Sem WhatsApp cadastrado' %></div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                      <span class="finance-status <%= financeStatusClass(fee.collectionStatusMeta) %>" data-fee-status><%= fee.collectionStatusMeta.label %></span>
+                      <span class="text-lg font-semibold finance-balance--pending" data-fee-balance><%= formatCurrencyBR(fee.balance) %></span>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2 text-xs">
+                    <span class="finance-chip">Venc. <%= formatDateBRShortYear(fee.dueDate) || '-' %></span>
+                    <span class="finance-chip"><%= fee.billingModeMeta.label %></span>
+                    <% if (fee.billingMode === 'MONTHLY') { %>
+                      <span class="finance-chip">Mensal <%= formatCurrencyBR(fee.baseAmount || fee.amountDue || settings.defaultMonthlyAmount) %></span>
+                    <% } %>
+                    <% if (fee.billingMode === 'PER_MATCH') { %>
+                      <span class="finance-chip"><%= formatCurrencyBR(fee.latePerMatchAmount || settings.latePerMatchAmount || 25) %> / pelada</span>
+                    <% } %>
+                    <% if (fee.chargePriorityBucket === 0) { %>
+                      <span class="finance-chip finance-chip--accent">Prioridade alta</span>
+                    <% } else if (fee.chargePriorityBucket === 1) { %>
+                      <span class="finance-chip finance-chip--accent">Acao hoje</span>
+                    <% } %>
+                    <% if (fee.isLatePerMatch) { %>
+                      <span class="finance-chip"><%= fee.lateMatchesPlayed || 0 %> pelada(s) x <%= formatCurrencyBR(fee.latePerMatchAmount || 25) %></span>
+                    <% } %>
+                    <% if (fee.paymentMethod) { %><span class="finance-chip"><%= getPaymentMethodLabel(fee.paymentMethod) %></span><% } %>
+                    <% if (fee.player.whatsapp) { %><span class="finance-chip">WhatsApp pronto</span><% } else { %><span class="finance-chip">Precisa contato manual</span><% } %>
+                  </div>
+
+                  <div class="finance-inline-actions">
+                    <a href="<%= buildFinanceQuery({ tab: 'charge', editFeeId: fee.id }) %>#finance-charge" class="finance-soft-button text-xs">Editar</a>
+                    <button type="button" class="finance-soft-button text-xs" data-copy-charge-message>Copiar mensagem</button>
+                    <% if (fee.whatsappUrl) { %>
+                      <a href="<%= fee.whatsappUrl %>" target="_blank" rel="noopener" class="finance-cta text-xs">WhatsApp</a>
+                    <% } else { %>
+                      <span class="finance-chip">Sem WA</span>
+                    <% } %>
+                    <button
+                      type="button"
+                      class="finance-soft-button text-xs"
+                      data-quick-pay-button
+                      data-endpoint="/admin/finance/monthly-fees/<%= fee.id %>/pay"
+                      data-amount="<%= fee.balance.toFixed(2).replace('.', ',') %>"
+                      data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
+                      data-paid-at="<%= currentDateInputValue %>"
+                      data-note="Quitacao rapida pela aba de cobranca"
+                      data-success-message="Mensalidade quitada pela fila de cobranca."
+                      data-hide-on-paid
+                    >
+                      Marcar como pago
+                    </button>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+      <% } else { %>
+        <%- include("./_finance_empty_state", {
+          emptyStateMessage: "Nada em aberto neste periodo. Quando surgirem pendencias, esta aba vira sua fila objetiva de cobranca.",
+        }) %>
+      <% } %>
+    </div>
+
+    <div class="finance-side-stack">
+      <div class="finance-summary-card finance-summary-card--alert p-5 space-y-4">
+        <div>
+          <div class="finance-kicker">Pulso da cobranca</div>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Resumo rapido</h3>
+        </div>
+        <div class="finance-inline-stats">
+          <div class="finance-inline-stat">
+            <span class="finance-inline-stat__label">Total pendente</span>
+            <span class="finance-inline-stat__value text-horriver-orange"><%= formatCurrencyBR(summary.totalPending) %></span>
+          </div>
+          <div class="finance-inline-stat">
+            <span class="finance-inline-stat__label">Atrasados</span>
+            <span class="finance-inline-stat__value"><%= summary.overdueCount %></span>
+          </div>
+          <div class="finance-inline-stat">
+            <span class="finance-inline-stat__label">Vence hoje</span>
+            <span class="finance-inline-stat__value"><%= summary.dueTodayCount %></span>
+          </div>
+          <div class="finance-inline-stat">
+            <span class="finance-inline-stat__label">WhatsApp pronto</span>
+            <span class="finance-inline-stat__value"><%= automation.bulkChargeSummary.chargeableCount %> / <%= automation.bulkChargeSummary.totalCount %></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="finance-panel p-5 space-y-4">
+        <div>
+          <div class="finance-kicker">Preview da cobranca</div>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Mensagens prontas</h3>
+          <p class="finance-subtle" data-bulk-preview-mode>
+            Sem selecao: o preview abaixo considera toda a fila com mensagem pronta.
+          </p>
+        </div>
+        <div class="finance-bulk-preview">
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="finance-soft-button text-xs" data-bulk-copy-preview>Copiar preview atual</button>
+            <button type="button" class="finance-soft-button text-xs" data-bulk-clear-selection>Limpar selecao</button>
+          </div>
+          <textarea class="finance-bulk-preview__textarea" data-bulk-preview-textarea readonly><%= automation.bulkChargeSummary.messageBundle %></textarea>
+          <div class="finance-bulk-preview__links" data-bulk-preview-links>
+            <% if (automation.bulkChargeSummary.linkBundle) { %>
+              <% automation.bulkChargeSummary.linkBundle.split('\n').forEach((line) => { const parts = line.split(': '); const label = parts[0]; const href = parts.slice(1).join(': '); if (href) { %>
+                <a href="<%= href %>" target="_blank" rel="noopener"><%= label %></a>
+              <% } }) %>
+            <% } else { %>
+              <div class="finance-subtle">Nenhum WhatsApp disponivel neste recorte.</div>
+            <% } %>
+          </div>
+          <div class="finance-subtle">
+            <strong><%= automation.bulkChargeSummary.withoutWhatsappCount %></strong> cobranca(s) sem WhatsApp seguem com mensagem pronta para copia, mas pedem contato manual.
+          </div>
+        </div>
+      </div>
+
+      <%- include("./_finance_fee_detail", {
+        financeView: currentFinanceView,
+        detailSectionId: "finance-charge",
+        detailKicker: "Cobranca selecionada",
+        detailTitleEmpty: "Selecione um pendente",
+        detailSelectedCopy: "Use o painel para acertar vencimento, pagamento, observacoes e status sem sair da fila de cobranca.",
+        detailEmptyCopy: "Clique em um pendente da lista para abrir os detalhes da cobranca e registrar pagamento com menos navegacao."
+      }) %>
+    </div>
+  </section>
+</section>

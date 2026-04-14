@@ -6,6 +6,12 @@
     const _isProdLayout = typeof isProd !== "undefined" && isProd;
   %>
   <head>
+    <%
+      const isFinanceModulePage =
+        typeof currentPath !== "undefined" &&
+        currentPath &&
+        String(currentPath).startsWith("/admin/finance");
+    %>
     <meta charset="UTF-8" />
     <title><%= typeof title !== 'undefined' ? title : 'Home' %> | Horriver Plate</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -51,6 +57,9 @@
     <link rel="stylesheet" href="/css/output.css?v=<%= assetVersion %>" />
     <link rel="stylesheet" href="/css/custom.css?v=<%= assetVersion %>" />
     <link rel="stylesheet" href="/css/theme.css?v=<%= assetVersion %>" />
+    <% if (isFinanceModulePage) { %>
+      <link rel="stylesheet" href="/css/admin-finance.css?v=<%= typeof financeAssetVersion !== 'undefined' ? financeAssetVersion : assetVersion %>" />
+    <% } %>
 
     <!-- Tailwind (runtime) -->
     <script src="https://cdn.tailwindcss.com"></script>

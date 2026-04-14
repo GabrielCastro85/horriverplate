@@ -1,0 +1,426 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    reports: reportsSection,
+    automation,
+    filters,
+    helpers,
+    actions,
+  } = currentFinanceView;
+  const reports = reportsSection.payload;
+  const reportTypeOptions = reportsSection.typeOptions;
+  const reportScopeOptions = reportsSection.scopeOptions;
+  const activeExportOption =
+    reports.exportOptions.find((item) => item.key === reports.reportMeta.key) || reports.exportOptions[0];
+  const { stateFields, buildFinanceQuery } = actions;
+%>
+
+<section class="finance-tab-panel" id="finance-reports">
+  <section class="finance-module-top">
+    <article class="finance-panel p-5 md:p-6 finance-module-top__lead">
+      <%- include("./_finance_section_intro", {
+        sectionChipLabel: "Relatorios",
+        sectionChipTone: "accent",
+        sectionStatusBadgeMeta: automation.competenceState,
+        sectionBadges: [
+          { label: reports.reportMeta.label },
+          { label: reports.period.label },
+          { label: `${reports.executiveSummary.paidPercentageLabel} de adimplencia` },
+        ],
+        sectionTitle: "Central avancada de prestacao de contas",
+        sectionDescription: "A prestacao de contas agora abre com cara de area premium: contexto forte, exportacoes claras e leitura executiva antes de chegar no PDF.",
+      }) %>
+    </article>
+
+    <aside class="finance-module-aside-card">
+      <div class="space-y-3">
+        <div class="finance-kicker">Recorte ativo</div>
+        <div class="text-2xl font-semibold text-horriver-light"><%= reports.period.label %></div>
+        <p class="finance-subtle">
+          Altere o tipo e o escopo sem perder visibilidade do resumo e das exportacoes principais.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="finance-dashboard-mini-stat">
+          <span>Relatorio</span>
+          <strong><%= reports.reportMeta.label %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Adimplencia</span>
+          <strong><%= reports.executiveSummary.paidPercentageLabel %></strong>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir previa</a>
+        <a href="<%= activeExportOption.href %>" target="_blank" rel="noopener" class="finance-cta">Gerar PDF</a>
+      </div>
+    </aside>
+  </section>
+
+  <section class="finance-module-metric-strip">
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Arrecadado</span>
+      <strong><%= reports.executiveSummary.totalIncomeLabel %></strong>
+      <span class="finance-subtle">Entradas do periodo selecionado.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Despesas</span>
+      <strong><%= reports.executiveSummary.totalExpensesLabel %></strong>
+      <span class="finance-subtle">Saidas registradas no caixa.</span>
+    </article>
+    <article class="finance-module-mini-card finance-module-mini-card--accent">
+      <span class="finance-kicker">Saldo final</span>
+      <strong><%= reports.executiveSummary.netResultLabel %></strong>
+      <span class="finance-subtle">Resultado consolidado do recorte.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Pendencias</span>
+      <strong><%= reports.executiveSummary.totalPendingLabel %></strong>
+      <span class="finance-subtle"><%= reports.executiveSummary.pendingCount %> participante(s) em aberto.</span>
+    </article>
+  </section>
+
+  <div class="finance-panel p-5 md:p-6 space-y-5">
+    <form method="GET" action="/admin/finance" class="finance-card p-4 space-y-4">
+      <%- stateFields({ tab: "reports" }, { omit: ["reportType", "reportScope", "reportStart", "reportEnd"] }) %>
+      <div class="finance-filter-bar finance-filter-bar--report-advanced">
+        <label class="finance-label">Tipo de relatorio
+          <select name="reportType" class="finance-select">
+            <% reportTypeOptions.forEach((option) => { %>
+              <option value="<%= option.value %>" <%= filters.reportType === option.value ? "selected" : "" %>><%= option.label %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label class="finance-label">Escopo
+          <select name="reportScope" class="finance-select">
+            <% reportScopeOptions.forEach((option) => { %>
+              <option value="<%= option.value %>" <%= filters.reportScope === option.value ? "selected" : "" %>><%= option.label %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label class="finance-label">Inicio personalizado
+          <input type="date" name="reportStart" value="<%= filters.reportStart || '' %>" class="finance-input" />
+        </label>
+        <label class="finance-label">Fim personalizado
+          <input type="date" name="reportEnd" value="<%= filters.reportEnd || '' %>" class="finance-input" />
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <button type="submit" class="finance-cta">Atualizar relatorio</button>
+          <a href="<%= buildFinanceQuery({ tab: 'reports', reportType: 'FULL', reportScope: 'MONTHLY', reportStart: '', reportEnd: '' }) %>#finance-reports" class="finance-soft-button">Resetar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <section class="finance-report-executive">
+    <div class="finance-panel p-5 md:p-6 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div class="finance-kicker">Resumo executivo</div>
+          <h3 class="font-title text-2xl text-horriver-light mt-2">Panorama do periodo</h3>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir previa</a>
+          <a href="<%= activeExportOption.href %>" target="_blank" rel="noopener" class="finance-cta">Gerar PDF atual</a>
+        </div>
+      </div>
+
+      <div class="finance-overview-kpis">
+        <div class="finance-kpi-card">
+          <span class="finance-kpi-card__label">Arrecadado</span>
+          <strong class="finance-kpi-card__value finance-balance--ok"><%= reports.executiveSummary.totalIncomeLabel %></strong>
+          <p class="finance-kpi-card__text">Entradas do periodo, incluindo mensalidades, convidados e outros creditos.</p>
+        </div>
+        <div class="finance-kpi-card">
+          <span class="finance-kpi-card__label">Despesas</span>
+          <strong class="finance-kpi-card__value text-[#fecaca]"><%= reports.executiveSummary.totalExpensesLabel %></strong>
+          <p class="finance-kpi-card__text">Saidas registradas no caixa dentro do recorte escolhido.</p>
+        </div>
+        <div class="finance-kpi-card finance-kpi-card--accent">
+          <span class="finance-kpi-card__label">Saldo final</span>
+          <strong class="finance-kpi-card__value <%= reports.executiveSummary.netResult >= 0 ? 'text-horriver-orange' : 'text-[#fecaca]' %>"><%= reports.executiveSummary.netResultLabel %></strong>
+          <p class="finance-kpi-card__text">Resultado financeiro do periodo considerando entradas e saidas.</p>
+        </div>
+        <div class="finance-kpi-card">
+          <span class="finance-kpi-card__label">Pendente</span>
+          <strong class="finance-kpi-card__value text-horriver-orange"><%= reports.executiveSummary.totalPendingLabel %></strong>
+          <p class="finance-kpi-card__text">Saldo em aberto das mensalidades dentro do periodo.</p>
+        </div>
+        <div class="finance-kpi-card">
+          <span class="finance-kpi-card__label">Adimplencia</span>
+          <strong class="finance-kpi-card__value"><%= reports.executiveSummary.paidPercentageLabel %></strong>
+          <p class="finance-kpi-card__text"><%= reports.executiveSummary.paidCount %> pago(s) e <%= reports.executiveSummary.pendingCount %> pendente(s).</p>
+        </div>
+        <div class="finance-kpi-card">
+          <span class="finance-kpi-card__label">Convidados</span>
+          <strong class="finance-kpi-card__value"><%= reports.executiveSummary.guestCount %></strong>
+          <p class="finance-kpi-card__text"><%= reports.executiveSummary.guestIncomeLabel %> de entradas avulsas no recorte.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-[1.08fr,0.92fr] gap-4">
+        <div class="finance-card p-4 space-y-4">
+          <div>
+            <div class="finance-kicker">Texto executivo</div>
+            <h4 class="font-semibold text-horriver-light mt-2">Resumo pronto para compartilhamento</h4>
+          </div>
+          <div class="finance-narrative-grid">
+            <div class="finance-bulk-preview">
+              <div class="flex items-center justify-between gap-2">
+                <strong class="text-sm text-horriver-light">Texto curto</strong>
+                <button type="button" class="finance-soft-button text-xs" data-copy-target="#finance-report-short">Copiar</button>
+              </div>
+              <textarea id="finance-report-short" class="finance-bulk-preview__textarea" readonly><%= reports.narratives.short %></textarea>
+            </div>
+            <div class="finance-bulk-preview">
+              <div class="flex items-center justify-between gap-2">
+                <strong class="text-sm text-horriver-light">Texto detalhado</strong>
+                <button type="button" class="finance-soft-button text-xs" data-copy-target="#finance-report-detailed">Copiar</button>
+              </div>
+              <textarea id="finance-report-detailed" class="finance-bulk-preview__textarea" readonly><%= reports.narratives.detailed %></textarea>
+            </div>
+            <div class="finance-bulk-preview">
+              <div class="flex items-center justify-between gap-2">
+                <strong class="text-sm text-horriver-light">Versao WhatsApp</strong>
+                <button type="button" class="finance-soft-button text-xs" data-copy-target="#finance-report-whatsapp">Copiar</button>
+              </div>
+              <textarea id="finance-report-whatsapp" class="finance-bulk-preview__textarea" readonly><%= reports.narratives.whatsapp %></textarea>
+            </div>
+            <div class="finance-bulk-preview">
+              <div class="flex items-center justify-between gap-2">
+                <strong class="text-sm text-horriver-light">Legenda/copiar simples</strong>
+                <button type="button" class="finance-soft-button text-xs" data-copy-target="#finance-report-caption">Copiar</button>
+              </div>
+              <textarea id="finance-report-caption" class="finance-bulk-preview__textarea" readonly><%= reports.narratives.caption %></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="finance-card p-4 space-y-4">
+          <div>
+            <div class="finance-kicker">Insights automaticos</div>
+            <h4 class="font-semibold text-horriver-light mt-2">Leituras do sistema</h4>
+          </div>
+          <div class="finance-insight-list">
+            <% reports.insights.forEach((insight) => { %>
+              <div class="finance-insight-item">
+                <div class="finance-priority-alert__title"><%= insight.title %></div>
+                <div class="finance-priority-alert__text"><%= insight.text %></div>
+              </div>
+            <% }) %>
+          </div>
+          <div class="finance-inline-stats">
+            <div class="finance-inline-stat">
+              <span class="finance-inline-stat__label">Principal gasto</span>
+              <span class="finance-inline-stat__value"><%= reports.executiveSummary.mainExpenseCategory ? reports.executiveSummary.mainExpenseCategory.label : '-' %></span>
+            </div>
+            <% if (reports.comparison) { %>
+              <div class="finance-inline-stat">
+                <span class="finance-inline-stat__label">Comparacao com <%= reports.comparison.periodLabel %></span>
+                <span class="finance-inline-stat__value <%= reports.comparison.deltaNet >= 0 ? 'finance-balance--ok' : 'text-[#fecaca]' %>">
+                  <%= reports.comparison.deltaNet >= 0 ? '+' : '-' %><%= reports.comparison.deltaNetLabel %>
+                </span>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 xl:grid-cols-[1fr,1fr] gap-4">
+    <div class="finance-panel p-5 md:p-6 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div class="finance-kicker">Exportacoes</div>
+          <h3 class="font-title text-2xl text-horriver-light mt-2">Tipos de relatorio</h3>
+        </div>
+      </div>
+      <div class="finance-export-grid">
+        <% reports.exportOptions.forEach((option) => { %>
+          <article class="finance-export-card <%= option.key === reports.reportMeta.key ? 'finance-export-card--active' : '' %>">
+            <div class="space-y-2">
+              <span class="finance-chip <%= option.key === reports.reportMeta.key ? 'finance-chip--accent' : '' %>"><%= option.label %></span>
+              <div class="font-semibold text-horriver-light"><%= option.title %></div>
+              <div class="finance-subtle"><%= option.description %></div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a href="<%= option.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button text-xs">Previa</a>
+              <a href="<%= option.href %>" target="_blank" rel="noopener" class="finance-cta text-xs">PDF</a>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="finance-panel p-5 md:p-6 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div class="finance-kicker">Historico</div>
+          <h3 class="font-title text-2xl text-horriver-light mt-2">Ultimos relatorios gerados</h3>
+        </div>
+      </div>
+
+      <% if (reports.history.length) { %>
+        <div class="finance-list">
+          <% reports.history.forEach((item) => { %>
+            <div class="finance-list-item">
+              <div class="finance-list-item__main">
+                <div class="finance-list-item__title"><%= item.typeLabel %></div>
+                <div class="finance-list-item__text"><%= item.description %></div>
+              </div>
+              <div class="finance-list-item__aside">
+                <span class="finance-chip"><%= item.periodLabel %></span>
+                <span class="finance-subtle"><%= item.createdAtLabel %></span>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <%- include("./_finance_empty_state", {
+          emptyStateMessage: "Nenhum relatorio financeiro foi gerado ainda. Assim que voce exportar o primeiro PDF, o historico aparece aqui.",
+        }) %>
+      <% } %>
+    </div>
+  </section>
+
+  <section class="finance-panel p-5 md:p-6 space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="finance-kicker">Previa do relatorio</div>
+        <h3 class="font-title text-2xl text-horriver-light mt-2">Antes de exportar</h3>
+        <p class="finance-subtle">Esta area antecipa os blocos principais que vao para o PDF do tipo selecionado.</p>
+      </div>
+      <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir pagina de impressao</a>
+    </div>
+
+    <div class="finance-preview-grid">
+      <% if (reports.reportMeta.sections.monthly) { %>
+        <div class="finance-card p-4 space-y-3">
+          <div class="finance-kicker">Mensalidades</div>
+          <% if (reports.preview.monthlyRows.length) { %>
+            <div class="finance-preview-table">
+              <table class="finance-table finance-table--compact">
+                <thead>
+                  <tr>
+                    <th>Participante</th>
+                    <th>Status</th>
+                    <th class="finance-table__numeric--header">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% reports.preview.monthlyRows.forEach((row) => { %>
+                    <tr>
+                      <td>
+                        <div class="finance-table__stack">
+                          <span class="finance-table__title"><%= row.playerName %></span>
+                          <span class="finance-table__subtitle"><%= row.playerSubtitle %></span>
+                        </div>
+                      </td>
+                      <td><span class="finance-chip"><%= row.statusLabel %></span></td>
+                      <td class="finance-table__numeric"><%= row.balanceLabel %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <%- include("./_finance_empty_state", {
+              emptyStateMessage: "Nenhum registro de mensalidade para exibir nesta previa.",
+            }) %>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (reports.reportMeta.sections.guests) { %>
+        <div class="finance-card p-4 space-y-3">
+          <div class="finance-kicker">Convidados</div>
+          <% if (reports.preview.guestRows.length) { %>
+            <div class="finance-preview-table">
+              <table class="finance-table finance-table--compact">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Data</th>
+                    <th class="finance-table__numeric--header">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% reports.preview.guestRows.forEach((row) => { %>
+                    <tr>
+                      <td><%= row.guestName %></td>
+                      <td><%= row.dateLabel %></td>
+                      <td class="finance-table__numeric"><%= row.amountLabel %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <%- include("./_finance_empty_state", {
+              emptyStateMessage: "Nenhum convidado para este recorte.",
+            }) %>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (reports.reportMeta.sections.cash) { %>
+        <div class="finance-card p-4 space-y-3">
+          <div class="finance-kicker">Extrato</div>
+          <% if (reports.preview.cashRows.length) { %>
+            <div class="finance-preview-table">
+              <table class="finance-table finance-table--compact">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Descricao</th>
+                    <th class="finance-table__numeric--header">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% reports.preview.cashRows.forEach((row) => { %>
+                    <tr>
+                      <td><%= row.dateLabel %></td>
+                      <td>
+                        <div class="finance-table__stack">
+                          <span class="finance-table__title"><%= row.description %></span>
+                          <span class="finance-table__subtitle"><%= row.categoryLabel %> - <%= row.originLabel %></span>
+                        </div>
+                      </td>
+                      <td class="finance-table__numeric"><%= row.amountLabel %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <%- include("./_finance_empty_state", {
+              emptyStateMessage: "Nao houve movimentacoes de caixa neste recorte.",
+            }) %>
+          <% } %>
+        </div>
+      <% } %>
+
+      <div class="finance-card p-4 space-y-3">
+        <div class="finance-kicker">Distribuicao de gastos</div>
+        <% if (reports.distribution.length) { %>
+          <div class="finance-list">
+            <% reports.distribution.slice(0, 6).forEach((item) => { %>
+              <div class="finance-inline-stat">
+                <span class="finance-inline-stat__label"><%= item.label %></span>
+                <span class="finance-inline-stat__value"><%= item.amountLabel %> · <%= item.percentageLabel %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <%- include("./_finance_empty_state", {
+            emptyStateMessage: "Sem despesas no periodo para compor a distribuicao.",
+          }) %>
+        <% } %>
+      </div>
+    </div>
+  </section>
+</section>

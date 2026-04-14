@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= report.title %> | Horriver Plate</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 10mm;
+    }
+
+    :root {
+      color-scheme: light;
+      --ink: #12141a;
+      --muted: #667085;
+      --line: #e5e7eb;
+      --soft: #f6f7fb;
+      --panel: #ffffff;
+      --accent: <%= report.accent %>;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Inter, Arial, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .sheet {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: end;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: rgba(255, 122, 26, 0.12);
+      border: 1px solid rgba(255, 122, 26, 0.32);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 0.96;
+      letter-spacing: -0.03em;
+    }
+
+    .sub {
+      margin-top: 8px;
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      text-align: right;
+    }
+
+    .meta-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 12px 14px;
+    }
+
+    .summary-card__label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .summary-card__value {
+      margin-top: 8px;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .summary-card__sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    thead th {
+      padding: 12px 14px;
+      background: var(--soft);
+      color: #495265;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    tbody tr {
+      page-break-inside: avoid;
+    }
+
+    tbody td {
+      padding: 12px 14px;
+      font-size: 12px;
+      border-bottom: 1px solid #eef1f5;
+      vertical-align: middle;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: rgba(246, 247, 251, 0.66);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .align-right {
+      text-align: right;
+    }
+
+    .rank {
+      width: 42px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .player {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .position {
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 10px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <section class="hero">
+      <div>
+        <div class="brand">
+          <span class="brand-mark"></span>
+          Horriver Plate
+        </div>
+        <h1><%= report.title %></h1>
+        <p class="sub"><%= report.description %></p>
+      </div>
+      <div class="meta">
+        <span class="meta-label">Gerado em</span>
+        <span class="meta-value"><%= generatedAt %></span>
+      </div>
+    </section>
+
+    <section class="summary">
+      <article class="summary-card">
+        <div class="summary-card__label">Recorte</div>
+        <div class="summary-card__value"><%= rows.length %></div>
+        <div class="summary-card__sub">linhas no relatório</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Métrica principal</div>
+        <div class="summary-card__value"><%= report.metricLabel %></div>
+        <div class="summary-card__sub">ordenado do maior para o menor</div>
+      </article>
+      <article class="summary-card">
+        <div class="summary-card__label">Quantidade</div>
+        <div class="summary-card__value"><%= report.limitLabel || "Completo" %></div>
+        <div class="summary-card__sub">recorte aplicado na geração</div>
+      </article>
+    </section>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <% report.columns.forEach((column) => { %>
+              <th class="<%= column.align === 'right' ? 'align-right' : '' %>"><%= column.label %></th>
+            <% }) %>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach((row) => { %>
+            <tr>
+              <% report.columns.forEach((column) => { %>
+                <% const classes = []; %>
+                <% if (column.align === 'right') classes.push('align-right'); %>
+                <% if (column.key === 'rank') classes.push('rank'); %>
+                <% if (column.key === 'player') classes.push('player'); %>
+                <% if (column.key === 'position') classes.push('position'); %>
+                <td class="<%= classes.join(' ') %>"><%= row[column.key] %></td>
+              <% }) %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="footer">
+      <span>horriverplate</span>
+      <span>Relatório oficial do admin</span>
+    </footer>
+  </main>
+</body>
+</html>

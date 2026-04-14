@@ -406,6 +406,35 @@
         });
       };
 
+      const buildRoundedCanvas = (sourceCanvas, radius) => {
+        const output = document.createElement("canvas");
+        output.width = sourceCanvas.width;
+        output.height = sourceCanvas.height;
+        const ctx = output.getContext("2d");
+        if (!ctx) return sourceCanvas;
+
+        const width = output.width;
+        const height = output.height;
+        const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.beginPath();
+        ctx.moveTo(r, 0);
+        ctx.lineTo(width - r, 0);
+        ctx.quadraticCurveTo(width, 0, width, r);
+        ctx.lineTo(width, height - r);
+        ctx.quadraticCurveTo(width, height, width - r, height);
+        ctx.lineTo(r, height);
+        ctx.quadraticCurveTo(0, height, 0, height - r);
+        ctx.lineTo(0, r);
+        ctx.quadraticCurveTo(0, 0, r, 0);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(sourceCanvas, 0, 0);
+
+        return output;
+      };
+
       defaultTiers.forEach((tier) => {
         const row = createTierRow(tier);
         tierContainer.appendChild(row);
@@ -459,17 +488,18 @@
 
           const exportHeight = Math.ceil(board.scrollHeight || board.getBoundingClientRect().height || 0);
           const canvas = await html2canvas(board, {
-            backgroundColor: "#0f1115",
+            backgroundColor: null,
             scale: 2,
             height: exportHeight,
             windowHeight: exportHeight,
           });
+          const roundedCanvas = buildRoundedCanvas(canvas, 44);
 
           board.classList.remove("is-exporting");
           document.body.classList.remove("is-exporting");
           const link = document.createElement("a");
           link.download = "tierlist-horriver.png";
-          link.href = canvas.toDataURL("image/png");
+          link.href = roundedCanvas.toDataURL("image/png");
           link.click();
         } catch (err) {
           console.error(err);

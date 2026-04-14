@@ -1,0 +1,291 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    settings: settingsSection,
+    summaries: summary,
+    overview,
+    helpers,
+    actions,
+  } = currentFinanceView;
+  const settings = settingsSection.values;
+  const allPlayers = settingsSection.players.all;
+  const chargeBehaviorOptions = settingsSection.chargeBehaviorOptions;
+  const participantTypeOptions = settingsSection.participantTypeOptions;
+  const recentMatches = settingsSection.recentMatches;
+  const recentFinanceEvents = settingsSection.recentEvents;
+  const { decimalToNumber, formatCurrencyBR, formatDateTimeBR } = helpers;
+  const { stateFields, financeStatusClass } = actions;
+%>
+
+<section class="finance-tab-panel" id="finance-settings">
+  <section class="finance-module-top">
+    <article class="finance-panel p-5 md:p-6 finance-module-top__lead">
+      <%- include("./_finance_section_intro", {
+        sectionChipLabel: "Configuracoes",
+        sectionChipTone: "accent",
+        sectionBadges: [
+          { label: `${allPlayers.length} jogadores` },
+          { label: `${summary.participantTypeCounts.MONTHLY || 0} mensalista(s)` },
+          { label: `${summary.participantTypeCounts.PER_MATCH || 0} avulso(s) mensal(is)` },
+          { label: `${summary.participantTypeCounts.SPECIAL || 0} especial(is)` },
+          { label: `${summary.participantTypeCounts.EXEMPT || 0} isento(s)` },
+        ],
+        sectionTitle: "Regras flexiveis do financeiro",
+        sectionDescription: "Esta aba agora fica menos pesada visualmente: contexto e sinais do modulo no topo, depois blocos menores para regras gerais, participantes e rastreabilidade.",
+      }) %>
+    </article>
+
+    <aside class="finance-module-aside-card">
+      <div class="space-y-3">
+        <div class="finance-kicker">Pulso das regras</div>
+        <div class="text-2xl font-semibold text-horriver-light">Configuracao do modulo</div>
+        <p class="finance-subtle">
+          Valor padrao, limite de peladas, abatimentos e comportamento da cobranca seguem centralizados aqui.
+        </p>
+      </div>
+
+      <div class="finance-inline-stats">
+        <div class="finance-inline-stat">
+          <span class="finance-inline-stat__label">Cobranca</span>
+          <span class="finance-inline-stat__value"><%= chargeBehaviorOptions.find((option) => option.value === settings.chargeBehavior)?.label || settings.chargeBehavior %></span>
+        </div>
+        <div class="finance-inline-stat">
+          <span class="finance-inline-stat__label">Competencia automatica</span>
+          <span class="finance-inline-stat__value"><%= settings.autoGenerateCompetence ? 'Ligada' : 'Sugestao manual' %></span>
+        </div>
+        <div class="finance-inline-stat">
+          <span class="finance-inline-stat__label">Avulso mensal</span>
+          <span class="finance-inline-stat__value"><%= formatCurrencyBR(settings.latePerMatchAmount) %></span>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="finance-module-metric-strip">
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Mensalistas</span>
+      <strong><%= summary.participantTypeCounts.MONTHLY || 0 %></strong>
+      <span class="finance-subtle">Jogadores no fluxo mensal padrao.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Avulso mensal</span>
+      <strong><%= summary.participantTypeCounts.PER_MATCH || 0 %></strong>
+      <span class="finance-subtle">Cobram R$ 25,00 por presenca no mes.</span>
+    </article>
+    <article class="finance-module-mini-card finance-module-mini-card--accent">
+      <span class="finance-kicker">Isentos</span>
+      <strong><%= summary.participantTypeCounts.EXEMPT || 0 %></strong>
+      <span class="finance-subtle">Jogadores sem cobranca na competencia.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Especiais</span>
+      <strong><%= summary.participantTypeCounts.SPECIAL || 0 %></strong>
+      <span class="finance-subtle">Planos diferenciados e ajustes avancados.</span>
+    </article>
+  </section>
+
+  <div class="finance-panel p-5 md:p-6 space-y-5">
+    <div class="finance-rule-insights">
+      <% overview.rulesInsights.forEach((insight) => { %>
+        <div class="finance-chip"><%= insight %></div>
+      <% }) %>
+    </div>
+  </div>
+
+  <section class="grid grid-cols-1 xl:grid-cols-[0.92fr,1.08fr] gap-4">
+    <div class="finance-panel finance-panel--muted p-5 md:p-6 space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="finance-kicker">Base do modulo</div>
+          <h3 class="font-title text-2xl text-horriver-light">Configuracoes gerais</h3>
+          <p class="finance-subtle">Esses parametros alimentam geracao, cobranca e os novos planos flexiveis.</p>
+        </div>
+        <span class="finance-chip">Pix + regras</span>
+      </div>
+
+      <form method="POST" action="/admin/finance/settings" class="finance-settings-grid">
+        <%- stateFields({ tab: 'settings' }) %>
+        <label class="finance-label">Valor padrao da mensalidade
+          <input type="text" name="defaultMonthlyAmount" value="<%= decimalToNumber(settings.defaultMonthlyAmount).toFixed(2).replace('.', ',') %>" class="finance-input" />
+        </label>
+        <label class="finance-label">Dia do vencimento
+          <input type="number" name="dueDay" min="1" max="31" value="<%= settings.dueDay %>" class="finance-input" />
+        </label>
+        <label class="finance-label">Valor da pelada avulsa no mes
+          <input type="text" name="latePerMatchAmount" value="<%= decimalToNumber(settings.latePerMatchAmount).toFixed(2).replace('.', ',') %>" class="finance-input" />
+        </label>
+        <label class="finance-label">Limite padrao de peladas
+          <input type="number" name="defaultIncludedMatches" min="0" value="<%= settings.defaultIncludedMatches || 0 %>" class="finance-input" />
+        </label>
+        <label class="finance-label">Extra por jogo acima do limite
+          <input type="text" name="defaultExtraMatchAmount" value="<%= decimalToNumber(settings.defaultExtraMatchAmount).toFixed(2).replace('.', ',') %>" class="finance-input" />
+        </label>
+        <label class="finance-label">Abatimento automatico padrao
+          <input type="text" name="defaultAutoDiscountAmount" value="<%= decimalToNumber(settings.defaultAutoDiscountAmount).toFixed(2).replace('.', ',') %>" class="finance-input" />
+        </label>
+        <label class="finance-label">Comportamento da cobranca
+          <select name="chargeBehavior" class="finance-select">
+            <% chargeBehaviorOptions.forEach((option) => { %>
+              <option value="<%= option.value %>" <%= settings.chargeBehavior === option.value ? 'selected' : '' %>><%= option.label %></option>
+            <% }) %>
+          </select>
+          <span class="finance-subtle"><%= chargeBehaviorOptions.find((option) => option.value === settings.chargeBehavior)?.description || '' %></span>
+        </label>
+        <label class="finance-label finance-settings-grid__full">
+          <span class="inline-flex items-center gap-2 text-sm mt-1">
+            <input type="checkbox" name="autoGenerateCompetence" <%= settings.autoGenerateCompetence ? 'checked' : '' %> />
+            <span>Preparar competencia automaticamente quando o recorte for aberto</span>
+          </span>
+        </label>
+        <label class="finance-label finance-settings-grid__full">Chave Pix
+          <input type="text" name="pixKey" value="<%= settings.pixKey || '' %>" class="finance-input" placeholder="exemplo@pix.com.br" />
+        </label>
+        <label class="finance-label finance-settings-grid__full">Nome do recebedor
+          <input type="text" name="pixReceiverName" value="<%= settings.pixReceiverName || '' %>" class="finance-input" placeholder="Quem recebe o pagamento" />
+        </label>
+        <label class="finance-label finance-settings-grid__full">Mensagem padrao de cobranca no WhatsApp
+          <textarea name="defaultWhatsappMessage" class="finance-textarea" placeholder="Use {name}, {amount}, {monthYear}, {pixKey}, {receiver}, {receiverLine}"><%= settings.defaultWhatsappMessage || '' %></textarea>
+          <span class="finance-subtle">Tokens disponiveis: <code>{name}</code>, <code>{amount}</code>, <code>{monthYear}</code>, <code>{pixKey}</code>, <code>{receiver}</code> e <code>{receiverLine}</code>.</span>
+        </label>
+        <div class="finance-settings-grid__full flex justify-end">
+          <button type="submit" class="finance-soft-button">Salvar configuracoes</button>
+        </div>
+      </form>
+
+      <div class="finance-card p-4 space-y-4 border border-red-500/20 bg-red-500/6">
+        <div>
+          <div class="finance-kicker text-red-200">Reset da competencia</div>
+          <h4 class="font-semibold text-horriver-light mt-2">Apagar dados do mes selecionado</h4>
+          <p class="finance-subtle">
+            Esse botao limpa os registros financeiros da competencia aberta no topo da pagina:
+            mensalidades, convidados com referencia no mes e lancamentos manuais do caixa dentro desse periodo.
+          </p>
+        </div>
+
+        <form method="POST" action="/admin/finance/competence/reset" class="space-y-3">
+          <%- stateFields({ tab: 'settings' }) %>
+          <div class="finance-inline-stats">
+            <div class="finance-inline-stat">
+              <span class="finance-inline-stat__label">Competencia alvo</span>
+              <span class="finance-inline-stat__value"><%= currentFinanceView.page.monthReferenceLabel %></span>
+            </div>
+          </div>
+          <button
+            type="submit"
+            class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
+            data-confirm="Resetar os dados financeiros de <%= currentFinanceView.page.monthReferenceLabel %>? Isso apaga mensalidades, convidados referenciados no mes e lancamentos manuais do caixa desse periodo."
+          >
+            Resetar dados da competencia
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="finance-side-stack">
+      <div id="finance-members" class="finance-panel finance-panel--muted p-5 md:p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="finance-kicker">Elegibilidade</div>
+            <h3 class="font-title text-2xl text-horriver-light">Participantes do financeiro</h3>
+            <p class="finance-subtle">
+              Cada card controla tipo do participante, valor customizado, extras por pelada,
+              abatimento automatico e o quanto ele joga no recorte atual.
+            </p>
+          </div>
+          <span class="finance-chip"><%= allPlayers.length %> jogadores</span>
+        </div>
+
+        <div class="finance-member-list">
+          <% allPlayers.forEach((player) => { %>
+            <form method="POST" action="/admin/finance/players/<%= player.id %>" class="finance-member-card" data-async-player-form data-player-name="<%= player.name %>" data-default-amount="<%= decimalToNumber(settings.defaultMonthlyAmount).toFixed(2).replace('.', ',') %>">
+              <%- stateFields({ tab: 'settings' }) %>
+              <div class="finance-member-card__head">
+                <div class="min-w-0">
+                  <div class="font-semibold text-horriver-light"><%= player.name %></div>
+                  <div class="finance-subtle"><%= player.position %><% if (player.nickname) { %> - <%= player.nickname %><% } %><% if (player.whatsapp) { %> - <%= player.whatsapp %><% } else { %> - Sem WhatsApp<% } %></div>
+                </div>
+                <div class="finance-member-card__badges">
+                  <span class="finance-status <%= financeStatusClass(player.participantTypeMeta) %>" data-member-type-badge><%= player.participantTypeMeta.label %></span>
+                  <span class="finance-chip"><%= player.currentMonthMatches %> jogo(s) no mes</span>
+                  <span class="finance-chip" data-member-amount-badge><%= player.financeParticipantType === 'PER_MATCH' ? `${formatCurrencyBR(player.financeRuleSummary.amountLabel)} / pelada` : formatCurrencyBR(player.financeRuleSummary.amountLabel) %></span>
+                </div>
+              </div>
+
+              <div class="finance-member-card__grid">
+                <label class="finance-label finance-member-card__notes">Plano padrao do jogador
+                  <select name="financeParticipantType" class="finance-select">
+                    <% participantTypeOptions.forEach((option) => { %>
+                      <option value="<%= option.value %>" <%= player.financeParticipantType === option.value ? 'selected' : '' %>><%= option.label %></option>
+                    <% }) %>
+                  </select>
+                  <span class="finance-subtle">
+                    Esse e o plano padrao. Na aba de mensalidades voce pode trocar a competencia atual entre mensal e avulso mensal sem alterar os meses seguintes.
+                  </span>
+                </label>
+                <label class="finance-label">Valor customizado
+                  <input type="text" name="financeAmountOverride" value="<%= player.financeAmountOverride != null ? decimalToNumber(player.financeAmountOverride).toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="Usa o padrao se vazio" />
+                </label>
+                <label class="finance-label">Limite de peladas
+                  <input type="number" name="financeMatchLimit" min="0" value="<%= player.financeMatchLimit != null ? player.financeMatchLimit : '' %>" class="finance-input" placeholder="Sem limite se vazio" />
+                </label>
+                <label class="finance-label">Extra por jogo
+                  <input type="text" name="financeExtraMatchAmount" value="<%= player.financeExtraMatchAmount != null ? decimalToNumber(player.financeExtraMatchAmount).toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="Usa o padrao se vazio" />
+                </label>
+                <label class="finance-label">Abatimento automatico
+                  <input type="text" name="financeAutoDiscountAmount" value="<%= decimalToNumber(player.financeAutoDiscountAmount).toFixed(2).replace('.', ',') %>" class="finance-input" placeholder="0,00" />
+                </label>
+                <label class="finance-label finance-member-card__notes">Observacao da regra
+                  <input type="text" name="financeNotes" value="<%= player.financeNotes || '' %>" class="finance-input" placeholder="Ex.: plano especial, combinado de temporada, cortesia." />
+                </label>
+              </div>
+
+              <div class="finance-member-card__foot">
+                <div class="finance-subtle">
+                  <% if (player.financeParticipantType === 'MONTHLY') { %>
+                    Esse jogador entra na mensalidade padrao do mes.
+                  <% } else if (player.financeParticipantType === 'PER_MATCH') { %>
+                    Esse jogador fica como avulso mensal e acumula <%= formatCurrencyBR(settings.latePerMatchAmount) %> por pelada com presenca.
+                  <% } else if (player.financeRuleSummary.hasOverride) { %>
+                    Valor customizado ativo para este jogador.
+                  <% } else { %>
+                    Sem valor customizado: o sistema usa a regra padrao da configuracao.
+                  <% } %>
+                </div>
+                <button type="submit" class="finance-soft-button">Salvar regra</button>
+              </div>
+            </form>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="finance-panel p-5 space-y-4">
+        <div>
+          <div class="finance-kicker">Rastreabilidade</div>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Eventos recentes do financeiro</h3>
+          <p class="finance-subtle">Base inicial de auditoria para pagamentos, exclusoes, geracoes e ajustes de regra.</p>
+        </div>
+
+        <% if (recentFinanceEvents?.length) { %>
+          <div class="finance-list">
+            <% recentFinanceEvents.forEach((item) => { %>
+              <div class="finance-list-item">
+                <div class="finance-list-item__main">
+                  <div class="finance-list-item__title"><%= item.action %></div>
+                  <div class="finance-list-item__text"><%= item.entity %><% if (item.entityId) { %> #<%= item.entityId %><% } %><% if (item.adminEmail) { %> - <%= item.adminEmail %><% } %></div>
+                </div>
+                <div class="finance-list-item__aside">
+                  <span class="finance-chip"><%= formatDateTimeBR(item.createdAt) %></span>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <%- include("./_finance_empty_state", {
+            emptyStateMessage: "Assim que o modulo registrar geracoes, pagamentos, exclusoes e ajustes, os eventos mais recentes aparecem aqui.",
+          }) %>
+        <% } %>
+      </div>
+    </div>
+  </section>
+</section>

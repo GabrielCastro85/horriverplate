@@ -1,0 +1,16 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const financeTabs = currentFinanceView.navigation.tabs;
+%>
+
+<nav class="finance-tabbar" aria-label="Navegacao do modulo financeiro">
+  <% financeTabs.forEach((tab) => { %>
+    <a href="<%= tab.href %>" class="finance-tab <%= tab.active ? 'finance-tab--active' : '' %>">
+      <span class="finance-tab__top">
+        <span class="finance-tab__label"><%= tab.label %></span>
+      </span>
+      <span class="finance-tab__description"><%= tab.description %></span>
+    </a>
+  <% }) %>
+</nav>

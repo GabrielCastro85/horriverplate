@@ -1,0 +1,180 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    guests,
+    filters,
+    navigation,
+    settings,
+    ui,
+    helpers,
+    actions,
+  } = currentFinanceView;
+  const guestPayments = guests.payments;
+  const selectedGuest = guests.selectedGuest;
+  const recentMatches = settings.recentMatches;
+  const { monthOptions, yearOptions } = navigation;
+  const { currentDateInputValue } = ui;
+  const {
+    decimalToNumber,
+    formatCurrencyBR,
+    formatMonthYearLabel,
+    formatDateBR,
+    formatDateInput,
+  } = helpers;
+  const { stateFields, buildFinanceQuery } = actions;
+%>
+
+<section class="finance-tab-panel" id="finance-guests">
+  <section class="finance-module-top">
+    <article class="finance-panel p-5 md:p-6 finance-module-top__lead">
+      <%- include("./_finance_section_intro", {
+        sectionChipLabel: "Convidados",
+        sectionChipTone: "accent",
+        sectionBadges: [
+          { label: `${guestPayments.length} registro(s)` },
+          { label: `${formatCurrencyBR(guestPayments.reduce((sum, guest) => sum + decimalToNumber(guest.amount), 0))} no periodo` },
+        ],
+        sectionTitle: "Entradas avulsas do periodo",
+        sectionDescription: "A aba de convidados agora entra no mesmo fluxo do resto do financeiro: contexto no topo, resumo curto e cadastro lado a lado com a lista.",
+      }) %>
+    </article>
+
+    <aside class="finance-module-aside-card">
+      <div class="space-y-3">
+        <div class="finance-kicker">Integracao</div>
+        <div class="text-2xl font-semibold text-horriver-light">Convidado ja cai no caixa</div>
+        <p class="finance-subtle">
+          Todo convidado salvo aqui continua criando uma entrada automatica no caixa com referencia cruzada para auditoria.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="finance-dashboard-mini-stat">
+          <span>Registros</span>
+          <strong><%= guestPayments.length %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Total</span>
+          <strong><%= formatCurrencyBR(guestPayments.reduce((sum, guest) => sum + decimalToNumber(guest.amount), 0)) %></strong>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="finance-module-metric-strip">
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Entradas avulsas</span>
+      <strong><%= formatCurrencyBR(guestPayments.reduce((sum, guest) => sum + decimalToNumber(guest.amount), 0)) %></strong>
+      <span class="finance-subtle">Total recebido com convidados no recorte.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Convidados</span>
+      <strong><%= guestPayments.length %></strong>
+      <span class="finance-subtle">Registros avulsos encontrados neste periodo.</span>
+    </article>
+    <article class="finance-module-mini-card finance-module-mini-card--accent">
+      <span class="finance-kicker">Competencia</span>
+      <strong><%= guestPayments.filter((guest) => guest.month && guest.year).length %></strong>
+      <span class="finance-subtle">Entradas com referencia mensal definida.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Sem vinculo</span>
+      <strong><%= guestPayments.filter((guest) => !guest.match).length %></strong>
+      <span class="finance-subtle">Convidados sem pelada relacionada.</span>
+    </article>
+  </section>
+
+  <section class="grid grid-cols-1 xl:grid-cols-[1.1fr,0.9fr] gap-4">
+    <div class="finance-panel p-5 md:p-6 space-y-4">
+      <div class="finance-panel-section-head">
+        <div class="finance-panel-section-head__copy">
+          <div class="finance-kicker">Lista de convidados</div>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Registros do periodo</h3>
+        </div>
+        <div class="finance-panel-section-head__actions">
+          <span class="finance-chip"><%= guestPayments.length %> item(ns)</span>
+        </div>
+      </div>
+
+      <% if (guestPayments.length) { %>
+        <div class="finance-scroll">
+          <table class="finance-table">
+            <thead>
+              <tr>
+                <th>Convidado</th>
+                <th>Data</th>
+                <th>Valor</th>
+                <th>Referencia</th>
+                <th>Pelada</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% guestPayments.forEach((guest) => { %>
+                <tr>
+                  <td><div class="font-medium text-horriver-light"><%= guest.guestName %></div><% if (guest.note) { %><div class="finance-row-muted"><%= guest.note %></div><% } %></td>
+                  <td><%= formatDateBR(guest.date) %></td>
+                  <td class="finance-balance--ok font-semibold"><%= formatCurrencyBR(guest.amount) %></td>
+                  <td class="finance-row-muted"><%= guest.month && guest.year ? formatMonthYearLabel(guest.month, guest.year) : 'Avulso' %></td>
+                  <td class="finance-row-muted"><%= guest.match ? `${formatDateBR(guest.match.playedAt)}${guest.match.description ? ` · ${guest.match.description}` : ''}` : '-' %></td>
+                  <td><a href="<%= buildFinanceQuery({ tab: 'guests', editGuestId: guest.id }) %>#finance-guests" class="finance-soft-button text-xs">Editar</a></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <%- include("./_finance_empty_state", {
+          emptyStateMessage: "Nenhum convidado foi registrado neste periodo. Quando houver avulsos pagos, eles aparecerao aqui com a referencia que entrou no caixa.",
+        }) %>
+      <% } %>
+    </div>
+
+    <div class="finance-panel p-5 space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="finance-kicker">Entrada avulsa</div>
+          <h3 class="font-title text-xl text-horriver-light"><%= selectedGuest ? 'Editar convidado' : 'Novo convidado pago' %></h3>
+          <p class="finance-subtle">Cadastre convidados esporadicos e ja deixe a entrada conciliada com o caixa.</p>
+        </div>
+        <% if (selectedGuest) { %><a href="<%= buildFinanceQuery({ tab: 'guests' }) %>#finance-guests" class="finance-chip">Novo</a><% } %>
+      </div>
+
+      <form method="POST" action="<%= selectedGuest ? `/admin/finance/guest-payments/${selectedGuest.id}/update` : '/admin/finance/guest-payments' %>" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <%- stateFields(selectedGuest ? { tab: 'guests', editGuestId: selectedGuest.id } : { tab: 'guests' }) %>
+        <label class="finance-label md:col-span-2">Nome do convidado<input type="text" name="guestName" value="<%= selectedGuest?.guestName || '' %>" class="finance-input" placeholder="Ex.: Joao da resenha"></label>
+        <label class="finance-label">Data<input type="date" name="date" value="<%= selectedGuest ? formatDateInput(selectedGuest.date) : currentDateInputValue %>" class="finance-input"></label>
+        <label class="finance-label">Valor pago<input type="text" name="amount" value="<%= selectedGuest ? decimalToNumber(selectedGuest.amount).toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="0,00"></label>
+        <label class="finance-label">Mes de referencia
+          <select name="referenceMonth" class="finance-select">
+            <option value="">Sem referencia mensal</option>
+            <% monthOptions.forEach((option) => { %><option value="<%= option.value %>" <%= Number(selectedGuest?.month || filters.month) === Number(option.value) ? 'selected' : '' %>><%= option.label %></option><% }) %>
+          </select>
+        </label>
+        <label class="finance-label">Ano de referencia
+          <select name="referenceYear" class="finance-select">
+            <option value="">Sem referencia anual</option>
+            <% yearOptions.forEach((year) => { %><option value="<%= year %>" <%= Number(selectedGuest?.year || filters.year) === Number(year) ? 'selected' : '' %>><%= year %></option><% }) %>
+          </select>
+        </label>
+        <label class="finance-label md:col-span-2">Pelada relacionada (opcional)
+          <select name="matchId" class="finance-select">
+            <option value="">Sem pelada vinculada</option>
+            <% recentMatches.forEach((match) => { %><option value="<%= match.id %>" <%= Number(selectedGuest?.matchId || 0) === Number(match.id) ? 'selected' : '' %>><%= formatDateBR(match.playedAt) %><%= match.description ? ` · ${match.description}` : '' %></option><% }) %>
+          </select>
+        </label>
+        <label class="finance-label md:col-span-2">Observacao<textarea name="note" class="finance-textarea" placeholder="Ex.: convidado liberado pela turma, acerto da semana, referencia de quem pagou."><%= selectedGuest?.note || '' %></textarea></label>
+        <div class="md:col-span-2 flex items-center justify-between gap-3">
+          <% if (selectedGuest) { %>
+            <button type="submit" form="delete-guest-<%= selectedGuest.id %>" class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white">Excluir convidado</button>
+          <% } else { %>
+            <span class="finance-subtle">Ao salvar, uma entrada de convidado sera lancada no caixa automaticamente.</span>
+          <% } %>
+          <button type="submit" class="finance-cta"><%= selectedGuest ? 'Salvar convidado' : 'Registrar convidado' %></button>
+        </div>
+      </form>
+      <% if (selectedGuest) { %><form id="delete-guest-<%= selectedGuest.id %>" method="POST" action="/admin/finance/guest-payments/<%= selectedGuest.id %>/delete" class="hidden"><%- stateFields({ tab: 'guests' }) %></form><% } %>
+    </div>
+  </section>
+</section>

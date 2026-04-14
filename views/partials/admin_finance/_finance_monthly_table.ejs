@@ -1,0 +1,321 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    monthly,
+    summaries: summary,
+    ui,
+    filters,
+    automation,
+    helpers,
+    actions,
+    settings: settingsSection,
+  } = currentFinanceView;
+  const monthFees = monthly.fees;
+  const selectedFee = monthly.selectedFee;
+  const monthlyStatusOptions = monthly.statusOptions;
+  const { monthReferenceLabel, currentDateInputValue } = ui;
+  const dueDay = settingsSection?.values?.dueDay || 10;
+  const {
+    decimalToNumber,
+    formatCurrencyBR,
+    formatDateBRShortYear,
+    getPaymentMethodLabel,
+  } = helpers;
+  const { stateFields, buildFinanceQuery, escapeAttr, financeStatusClass } = actions;
+%>
+
+<div class="space-y-4" id="finance-fees" data-charge-bulk-root>
+  <section class="finance-module-top">
+    <article class="finance-panel p-5 md:p-6 finance-module-top__lead">
+      <%- include("./_finance_section_intro", {
+        sectionChipLabel: "Mensalidades",
+        sectionChipTone: "accent",
+        sectionStatusBadgeMeta: automation.competenceState,
+        sectionBadges: [
+          { label: "Controle do mes" },
+          { label: monthReferenceLabel },
+          { label: `${monthFees.length} registro(s)` },
+        ],
+        sectionTitle: "Controle da competencia",
+        sectionDescription: "A leitura agora comeca pelo contexto do mes e pelos indicadores principais, antes da tabela operacional e do painel lateral de edicao.",
+      }) %>
+    </article>
+
+    <aside class="finance-module-aside-card finance-month-meta">
+      <div class="space-y-3">
+        <div class="finance-kicker">Rotina do mes</div>
+        <div class="text-2xl font-semibold text-horriver-light">Fechamento da competencia</div>
+        <p class="finance-subtle">
+          Garanta a competencia e use a lista abaixo como central unica para cobrar, quitar e revisar regras.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="finance-dashboard-mini-stat">
+          <span>Mensalistas</span>
+          <strong><%= summary.activeFinancePlayers %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Em aberto</span>
+          <strong><%= summary.delinquentCount %></strong>
+        </div>
+      </div>
+
+      <form method="POST" action="/admin/finance/monthly/ensure" class="space-y-2">
+        <%- stateFields({ tab: "monthly" }) %>
+        <button type="submit" class="finance-cta w-full"><%= automation.preparation.prepared ? "Garantir competencia do mes" : "Gerar mensalidades do mes" %></button>
+        <p class="finance-subtle">Fluxo idempotente: o sistema cria apenas o que estiver faltando e nunca duplica mensalidades.</p>
+      </form>
+    </aside>
+  </section>
+
+  <section class="finance-module-metric-strip">
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Previsto</span>
+      <strong><%= formatCurrencyBR(summary.totalPredicted) %></strong>
+      <span class="finance-subtle">Base total esperada na competencia.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Recebido</span>
+      <strong><%= formatCurrencyBR(summary.totalReceivedFromFees) %></strong>
+      <span class="finance-subtle">Valor pago nas mensalidades do mes.</span>
+    </article>
+    <article class="finance-module-mini-card finance-module-mini-card--accent">
+      <span class="finance-kicker">Saldo pendente</span>
+      <strong><%= formatCurrencyBR(summary.totalPending) %></strong>
+      <span class="finance-subtle"><%= summary.overdueCount %> atraso(s) no recorte.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Adimplencia</span>
+      <strong><%= Math.round(summary.receivedPercentage || 0) %>%</strong>
+      <span class="finance-subtle"><%= summary.paidCount %> pago(s) e <%= summary.partialCount %> parcial(is).</span>
+    </article>
+  </section>
+
+  <% if (!automation.preparation.prepared) { %>
+    <div class="finance-priority-alert finance-priority-alert--warning">
+      <div class="finance-priority-alert__title">Competencia ainda nao preparada por completo.</div>
+      <div class="finance-priority-alert__text">
+        Faltam <strong><%= automation.preparation.missingCount %></strong> mensalidade(s) para os jogadores elegiveis deste recorte.
+        Se quiser, o sistema completa agora com a mesma regra padrao do modulo.
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <form method="POST" action="/admin/finance/monthly/ensure">
+          <%- stateFields({ tab: "monthly" }) %>
+          <button type="submit" class="finance-cta">Gerar mensalidades</button>
+        </form>
+      </div>
+    </div>
+  <% } %>
+
+  <form method="GET" action="/admin/finance" class="finance-card p-4 space-y-4">
+    <%- stateFields({ tab: "monthly" }, { omit: ["status", "search"] }) %>
+    <div class="finance-filter-bar finance-filter-bar--monthly">
+      <label class="finance-label">Status automatico
+        <select name="status" class="finance-select">
+          <% monthlyStatusOptions.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= filters.status === option.value ? "selected" : "" %>><%= option.label %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label class="finance-label">Busca por participante
+        <input type="search" name="search" value="<%= filters.search %>" placeholder="Nome ou apelido" class="finance-input" data-finance-search />
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <button type="submit" class="finance-soft-button">Aplicar filtros</button>
+        <a href="<%= buildFinanceQuery({ tab: "monthly", status: "ALL", search: "" }) %>" class="finance-soft-button">Limpar</a>
+      </div>
+    </div>
+  </form>
+
+  <% if (monthFees.length) { %>
+    <div class="finance-selection-bar">
+      <div class="space-y-2">
+        <label class="finance-inline-checkbox">
+          <input type="checkbox" data-charge-check-all />
+          <span>Selecionar linhas visiveis</span>
+        </label>
+        <div class="finance-subtle">
+          <strong data-charge-selection-count>0 selecionada(s)</strong>
+          <span data-charge-selection-note>Use a selecao em massa para atualizar o status das mensalidades sem navegar linha por linha.</span>
+        </div>
+      </div>
+      <div class="finance-selection-bar__actions">
+        <form method="POST" action="/admin/finance/monthly-fees/bulk-status" data-charge-bulk-form>
+          <%- stateFields({ tab: 'monthly' }) %>
+          <input type="hidden" name="bulkAction" value="PAID" />
+          <input type="hidden" name="paidAt" value="<%= currentDateInputValue %>" />
+          <input type="hidden" name="paymentMethod" value="PIX" />
+          <input type="hidden" name="note" value="Quitacao em lote pela aba de mensalidades" />
+          <div data-bulk-selected-ids></div>
+          <button type="submit" class="finance-cta" data-charge-mark-paid disabled>Marcar selecionados como pagos</button>
+        </form>
+        <form method="POST" action="/admin/finance/monthly-fees/bulk-status" data-charge-bulk-form>
+          <%- stateFields({ tab: 'monthly' }) %>
+          <input type="hidden" name="bulkAction" value="PENDING" />
+          <div data-bulk-selected-ids></div>
+          <button
+            type="submit"
+            class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
+            data-charge-mark-pending
+            data-confirm="Voltar as mensalidades selecionadas para pendente e remover os lancamentos automaticos de pagamento do caixa?"
+            disabled
+          >
+            Marcar selecionados como pendentes
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <section class="finance-panel p-5 md:p-6 space-y-4">
+      <div class="finance-panel-section-head">
+        <div class="finance-panel-section-head__copy">
+          <div class="finance-kicker">Lista operacional</div>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Mensalistas da competencia</h3>
+        </div>
+        <div class="finance-panel-section-head__actions">
+          <span class="finance-chip"><%= monthFees.length %> registro(s)</span>
+          <span class="finance-chip"><%= summary.pendingWithWhatsappCount %> com WhatsApp</span>
+        </div>
+      </div>
+
+      <div class="finance-scroll finance-scroll--desktop-fit">
+        <table class="finance-table finance-table--fixed finance-table--compact finance-table--fees finance-table--monthly w-full">
+        <colgroup>
+          <col style="width:40px">
+          <col>
+          <col style="width:108px">
+          <col style="width:156px">
+          <col style="width:168px">
+          <col style="width:124px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Participante</th>
+            <th>Status</th>
+            <th>Regra</th>
+            <th>Financeiro</th>
+            <th class="finance-table__numeric--header">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% monthFees.forEach((fee) => { %>
+            <tr
+              class="finance-fee-row <%= selectedFee?.id === fee.id ? "finance-fee-row--selected" : "" %>"
+              onclick="window.location='<%= buildFinanceQuery({ tab: "monthly", editFeeId: fee.id }) %>#finance-fees'"
+              data-charge-item
+              data-fee-id="<%= fee.id %>"
+              data-player-name="<%- escapeAttr(fee.player.name) %>"
+              data-balance-label="<%- escapeAttr(formatCurrencyBR(fee.balance)) %>"
+              data-balance-value="<%= fee.balance %>"
+              data-amount-paid="<%= decimalToNumber(fee.amountPaid) %>"
+              data-monthly-status="<%= fee.status %>"
+              data-whatsapp-url="<%- escapeAttr(fee.whatsappUrl || '') %>"
+              data-message="<%- escapeAttr(fee.whatsappMessage || '') %>"
+            >
+              <td class="finance-table__select">
+                <input type="checkbox" data-charge-select onclick="event.stopPropagation()" aria-label="Selecionar <%= fee.player.name %>" />
+              </td>
+              <td class="finance-table__cell finance-table__cell--participant">
+                <div class="finance-table__stack">
+                  <span class="finance-table__title"><%= fee.player.name %></span>
+                  <span class="finance-table__subtitle"><%= fee.player.position %><% if (fee.player.nickname) { %> - <%= fee.player.nickname %><% } %></span>
+                  <div class="finance-row-tags">
+                    <span class="finance-chip"><%= fee.billingModeMeta.label %></span>
+                    <span class="finance-chip"><%= fee.participantTypeMeta.label %></span>
+                    <% if (fee.matchesPlayed) { %><span class="finance-chip"><%= fee.matchesPlayed %> jogo(s)</span><% } %>
+                    <% if (fee.isLatePerMatch) { %><span class="finance-chip"><%= fee.lateMatchesPlayed || 0 %> pelada(s) cobradas</span><% } %>
+                    <% if (fee.paidAt) { %><span class="finance-chip">Pgto <%= formatDateBRShortYear(fee.paidAt) %></span><% } %>
+                    <% if (fee.paymentMethod) { %><span class="finance-chip"><%= getPaymentMethodLabel(fee.paymentMethod) %></span><% } %>
+                  </div>
+                </div>
+              </td>
+              <td class="finance-table__status">
+                <span class="finance-status <%= financeStatusClass(fee.collectionStatusMeta) %>" data-fee-status><%= fee.collectionStatusMeta.label %></span>
+              </td>
+              <td class="finance-table__cell">
+                <div class="finance-table__stack">
+                  <span class="finance-table__title">
+                    <%= fee.isLatePerMatch ? 'Avulso por atraso no mes' : (fee.ruleSnapshot[1] || fee.ruleSnapshot[0] || 'Regra padrao') %>
+                  </span>
+                  <span class="finance-table__subtitle">
+                    <% if (fee.billingMode === 'PER_MATCH') { %>
+                      <strong><%= fee.matchesPlayed || 0 %></strong> presenca(s) no mes,
+                      <strong><%= formatCurrencyBR(fee.latePerMatchAmount || 25) %></strong> por pelada.
+                      <% if (decimalToNumber(fee.autoDiscountAmount) > 0) { %> - Auto <strong><%= formatCurrencyBR(fee.autoDiscountAmount) %></strong><% } %>
+                      <% if (decimalToNumber(fee.manualDiscountAmount) > 0) { %> - Manual <strong><%= formatCurrencyBR(fee.manualDiscountAmount) %></strong><% } %>
+                    <% } else if (fee.isLatePerMatch) { %>
+                      <strong><%= fee.lateMatchesPlayed || 0 %></strong> presenca(s) apos o dia <strong><%= dueDay %></strong>,
+                      <strong><%= formatCurrencyBR(fee.latePerMatchAmount || 25) %></strong> por pelada.
+                      <% if (decimalToNumber(fee.autoDiscountAmount) > 0) { %> - Auto <strong><%= formatCurrencyBR(fee.autoDiscountAmount) %></strong><% } %>
+                      <% if (decimalToNumber(fee.manualDiscountAmount) > 0) { %> - Manual <strong><%= formatCurrencyBR(fee.manualDiscountAmount) %></strong><% } %>
+                    <% } else { %>
+                      Base <strong><%= formatCurrencyBR(fee.baseAmount || fee.amountDue) %></strong>
+                      <% if (decimalToNumber(fee.extraAmount) > 0) { %> + Extra <strong><%= formatCurrencyBR(fee.extraAmount) %></strong><% } %>
+                      <% if (decimalToNumber(fee.autoDiscountAmount) > 0) { %> - Auto <strong><%= formatCurrencyBR(fee.autoDiscountAmount) %></strong><% } %>
+                      <% if (decimalToNumber(fee.manualDiscountAmount) > 0) { %> - Manual <strong><%= formatCurrencyBR(fee.manualDiscountAmount) %></strong><% } %>
+                    <% } %>
+                  </span>
+                </div>
+              </td>
+              <td class="finance-table__cell">
+                <div class="finance-money-stack">
+                  <div class="finance-money-stack__item">
+                    <span>Devido</span>
+                    <strong data-fee-due><%= formatCurrencyBR(fee.amountDue) %></strong>
+                  </div>
+                  <div class="finance-money-stack__item">
+                    <span>Pago</span>
+                    <strong data-fee-paid><%= formatCurrencyBR(fee.amountPaid) %></strong>
+                  </div>
+                  <div class="finance-money-stack__item finance-money-stack__item--balance">
+                    <span>Saldo</span>
+                    <strong class="<%= fee.balance > 0 ? 'finance-balance--pending' : 'finance-balance--ok' %>" data-fee-balance><%= formatCurrencyBR(fee.balance) %></strong>
+                  </div>
+                  <div class="finance-money-stack__item">
+                    <span>Venc.</span>
+                    <strong><%= formatDateBRShortYear(fee.dueDate) || '-' %></strong>
+                  </div>
+                </div>
+              </td>
+              <td class="finance-table__action">
+                <div class="finance-inline-actions finance-inline-actions--compact">
+                  <a href="<%= buildFinanceQuery({ tab: "monthly", editFeeId: fee.id }) %>#finance-fees" onclick="event.stopPropagation()" class="finance-soft-button text-xs">Editar</a>
+                  <% if (fee.balance > 0) { %>
+                    <button
+                      type="button"
+                      class="finance-soft-button text-xs"
+                      onclick="event.stopPropagation()"
+                      data-quick-pay-button
+                      data-endpoint="/admin/finance/monthly-fees/<%= fee.id %>/pay"
+                      data-amount="<%= fee.balance.toFixed(2).replace('.', ',') %>"
+                      data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
+                      data-paid-at="<%= currentDateInputValue %>"
+                      data-note="Quitacao rapida pela tabela de mensalidades"
+                      data-success-message="<%= fee.balance === fee.amountDue ? 'Mensalidade quitada.' : 'Saldo restante quitado.' %>"
+                      data-hide-on-paid
+                    >
+                      Quitar
+                    </button>
+                  <% } %>
+                  <% if (fee.whatsappUrl) { %>
+                    <a href="<%= fee.whatsappUrl %>" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="finance-cta text-xs">Cobrar</a>
+                  <% } else { %>
+                    <span class="finance-chip">Sem WA</span>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+        </table>
+      </div>
+    </section>
+  <% } else { %>
+    <%- include("./_finance_empty_state", {
+      emptyStateMessage: "Nenhuma mensalidade bateu com esse filtro. Ajuste o status, a busca ou garanta a competencia deste mes.",
+    }) %>
+  <% } %>
+</div>

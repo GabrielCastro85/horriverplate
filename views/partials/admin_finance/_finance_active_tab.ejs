@@ -1,0 +1,16 @@
+<%
+  const currentFinanceView =
+    (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const activeTabPartialMap = {
+    overview: "./_finance_overview",
+    monthly: "./_finance_monthly_tab",
+    charge: "./_finance_charge_tab",
+    cash: "./_finance_cash_tab",
+    guests: "./_finance_guests_tab",
+    reports: "./_finance_reports_tab",
+    settings: "./_finance_settings_tab",
+  };
+  const activeTabPartial = activeTabPartialMap[currentFinanceView?.page?.activeTab] || activeTabPartialMap.overview;
+%>
+
+<%- include(activeTabPartial, { financeView: currentFinanceView }) %>

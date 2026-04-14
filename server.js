@@ -14,6 +14,7 @@ const { scheduleBackup } = require("./utils/backup");
 
 const indexRouter = require("./routes/index");
 const adminRouter = require("./routes/admin");
+const adminFinanceRouter = require("./routes/admin_finance");
 const loginRouter = require("./routes/login");
 const rankingsRouter = require("./routes/rankings");
 const elencoRouter = require("./routes/elenco");
@@ -30,16 +31,32 @@ try {
 }
 
 const PUBLIC_DIR = path.join(__dirname, "public");
+const UPLOADS_DIR = path.join(PUBLIC_DIR, "uploads");
 const CSS_BUNDLE_PATH = path.join(PUBLIC_DIR, "css", "output.css");
+const FINANCE_CSS_BUNDLE_PATH = path.join(PUBLIC_DIR, "css", "admin-finance.css");
+
+function getFileAssetVersion(targetPath, fallbackSeed = Date.now()) {
+  try {
+    return String(fs.statSync(targetPath).mtimeMs);
+  } catch (err) {
+    return String(fallbackSeed);
+  }
+}
+
 const ASSET_VERSION =
-  process.env.ASSET_VERSION ||
-  (() => {
-    try {
-      return String(fs.statSync(CSS_BUNDLE_PATH).mtimeMs);
-    } catch (err) {
-      return String(Date.now());
-    }
-  })();
+  process.env.ASSET_VERSION || getFileAssetVersion(CSS_BUNDLE_PATH);
+const FINANCE_ASSET_VERSION = getFileAssetVersion(FINANCE_CSS_BUNDLE_PATH, ASSET_VERSION);
+
+function ensureDirectoryExists(targetPath) {
+  try {
+    fs.mkdirSync(targetPath, { recursive: true });
+  } catch (err) {
+    console.error(`?? Nao foi possivel garantir a pasta ${targetPath}:`, err);
+    throw err;
+  }
+}
+
+ensureDirectoryExists(UPLOADS_DIR);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,6 +72,7 @@ app.set("view engine", "ejs");
 app.use(expressLayouts);
 app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
 app.locals.assetVersion = ASSET_VERSION;
+app.locals.financeAssetVersion = FINANCE_ASSET_VERSION;
 app.locals.thumbUrl = (url, width) => {
   if (!url || !width) return url;
   if (!url.startsWith("/uploads/") && !url.startsWith("/img/")) return url;
@@ -298,6 +316,7 @@ app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
 app.use("/premiacao", awardsRouter); // ? NOVO: página de premiação
 app.use("/jogador", playerRouter);
+app.use("/admin", adminFinanceRouter);
 app.use("/admin", adminRouter);
 app.use("/votar", voteRouter);
 app.use("/vote", voteRouter);
