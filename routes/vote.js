@@ -3,6 +3,7 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../utils/db");
+const { detectSuspiciousVotePattern } = require("../helpers/weeklyVoteValidation.helper");
 
 async function loadContext(tokenValue) {
   if (!tokenValue) return { error: "Token inválido." };
@@ -97,6 +98,7 @@ router.get("/:token", async (req, res) => {
       title: "Votação",
       error: ctx.error,
       success: false,
+      voteSabotageAlert: null,
       players: [],
       voter: null,
       match: null,
@@ -108,6 +110,7 @@ router.get("/:token", async (req, res) => {
     title: "Votação",
     error: null,
     success: false,
+    voteSabotageAlert: null,
     players: ctx.players,
     voter: ctx.voter,
     match: ctx.match,
@@ -124,6 +127,7 @@ router.post("/:token", async (req, res) => {
       title: "Votação",
       error: ctx.error,
       success: false,
+      voteSabotageAlert: null,
       players: [],
       voter: null,
       match: null,
@@ -156,6 +160,7 @@ router.post("/:token", async (req, res) => {
         title: "Votacao",
         error: "Preencha todas as notas de 1 a 5 para continuar.",
         success: false,
+        voteSabotageAlert: null,
         players: ctx.players,
         voter: ctx.voter,
         match: ctx.match,
@@ -163,10 +168,15 @@ router.post("/:token", async (req, res) => {
       });
     }
 
+    const validation = detectSuspiciousVotePattern(ratings);
+
     await prisma.$transaction(async (tx) => {
       await tx.voteBallot.create({
         data: {
           voteTokenId: ctx.token.id,
+          isInvalid: validation.isInvalid,
+          invalidCode: validation.invalidCode,
+          invalidReason: validation.invalidReason,
           ratings: {
             create: ratings,
           },
@@ -183,6 +193,13 @@ router.post("/:token", async (req, res) => {
       title: "Votação",
       error: null,
       success: true,
+      voteSabotageAlert: validation.isInvalid
+        ? {
+            show: true,
+            imageSrc: "/img/image-42.svg",
+            title: "TO DE OLHO NO VACILO, CRAQUE",
+          }
+        : null,
       players: ctx.players,
       voter: ctx.voter,
       match: ctx.match,
@@ -194,6 +211,7 @@ router.post("/:token", async (req, res) => {
       title: "Votação",
       error: "Erro ao registrar o voto. Tente novamente.",
       success: false,
+      voteSabotageAlert: null,
       players: ctx.players,
       voter: ctx.voter,
       match: ctx.match,

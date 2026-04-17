@@ -31,13 +31,25 @@ function buildSmartPaymentInsights(monthlyFee) {
     };
   }
 
-  const candidates = [
-    balance,
-    roundCurrency(balance / 2),
-    roundCurrency(Math.max(balance * 0.4, 15)),
-  ]
-    .filter((value) => value > 0 && value < balance)
-    .concat(balance);
+  const isPerMatchFlow =
+    monthlyFee.billingMode === "PER_MATCH" || monthlyFee.billingMode === "LATE_PER_MATCH";
+  const unitAmount = roundCurrency(decimalToNumber(monthlyFee.latePerMatchAmount || 25));
+
+  const candidates = isPerMatchFlow
+    ? Array.from(
+        new Set(
+          [Math.min(balance, unitAmount), balance]
+            .filter((value) => value > 0)
+            .map((value) => value.toFixed(2))
+        )
+      ).map((value) => Number(value))
+    : [
+        balance,
+        roundCurrency(balance / 2),
+        roundCurrency(Math.max(balance * 0.4, 15)),
+      ]
+        .filter((value) => value > 0 && value < balance)
+        .concat(balance);
 
   const quickAmounts = Array.from(new Set(candidates.map((value) => value.toFixed(2))))
     .map((value) => Number(value))
@@ -51,7 +63,9 @@ function buildSmartPaymentInsights(monthlyFee) {
     amountDue,
     recommendedAmount: quickAmounts[0] || balance,
     remainingLabel:
-      paid > 0 && balance > 0
+      isPerMatchFlow && balance > 0
+        ? "Use os atalhos para registrar uma presenca por vez ou quitar o saldo acumulado do avulso."
+        : paid > 0 && balance > 0
         ? "Pagamento parcial registrado; o sistema sugere atalhos para fechar o saldo."
         : "Use os atalhos para registrar um parcial de forma mais rapida ou quitar o saldo total.",
   };

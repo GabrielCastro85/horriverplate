@@ -34,6 +34,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const UPLOADS_DIR = path.join(PUBLIC_DIR, "uploads");
 const CSS_BUNDLE_PATH = path.join(PUBLIC_DIR, "css", "output.css");
 const FINANCE_CSS_BUNDLE_PATH = path.join(PUBLIC_DIR, "css", "admin-finance.css");
+const FINANCE_JS_BUNDLE_PATH = path.join(PUBLIC_DIR, "js", "admin-finance.js");
 
 function getFileAssetVersion(targetPath, fallbackSeed = Date.now()) {
   try {
@@ -46,6 +47,7 @@ function getFileAssetVersion(targetPath, fallbackSeed = Date.now()) {
 const ASSET_VERSION =
   process.env.ASSET_VERSION || getFileAssetVersion(CSS_BUNDLE_PATH);
 const FINANCE_ASSET_VERSION = getFileAssetVersion(FINANCE_CSS_BUNDLE_PATH, ASSET_VERSION);
+const FINANCE_JS_ASSET_VERSION = getFileAssetVersion(FINANCE_JS_BUNDLE_PATH, FINANCE_ASSET_VERSION);
 
 function ensureDirectoryExists(targetPath) {
   try {
@@ -73,6 +75,7 @@ app.use(expressLayouts);
 app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
 app.locals.assetVersion = ASSET_VERSION;
 app.locals.financeAssetVersion = FINANCE_ASSET_VERSION;
+app.locals.financeJsAssetVersion = FINANCE_JS_ASSET_VERSION;
 app.locals.thumbUrl = (url, width) => {
   if (!url || !width) return url;
   if (!url.startsWith("/uploads/") && !url.startsWith("/img/")) return url;
@@ -154,6 +157,12 @@ app.use(
   express.static(PUBLIC_DIR, {
     maxAge: "7d",
     setHeaders: (res, filePath) => {
+      if (!IS_PROD) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      }
+
       if (/\.svg$/i.test(filePath)) {
         res.setHeader("Content-Security-Policy", "sandbox");
         res.setHeader("X-Content-Type-Options", "nosniff");
@@ -347,9 +356,19 @@ app.use((err, req, res, next) => {
 // ==============================
 // ?? Start
 // ==============================
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`?? Servidor rodando na porta ${PORT}`);
   console.log(`?? http://localhost:${PORT}`);
+});
+
+server.on("error", (err) => {
+  if (err && err.code === "EADDRINUSE") {
+    console.error(`?? A porta ${PORT} já está em uso.`);
+    console.error("Feche a outra instância do projeto ou finalize o processo que está usando essa porta antes de subir o servidor.");
+    process.exit(1);
+  }
+
+  throw err;
 });
 
 // ==============================

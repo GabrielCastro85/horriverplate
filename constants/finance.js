@@ -65,6 +65,16 @@ const MONTHLY_FEE_STATUS_META = {
 
 const DEFAULT_LATE_PER_MATCH_AMOUNT = 25;
 
+const SPECIAL_FINANCE_COMPETENCE_RULES = {
+  APRIL_2026_TRANSITION: {
+    key: "APRIL_2026_TRANSITION",
+    label: "Transicao abril/2026",
+    month: 4,
+    year: 2026,
+    firstMatchAmount: 15,
+  },
+};
+
 const MONTHLY_FEE_BILLING_MODE_META = {
   MONTHLY: { key: "MONTHLY", label: "Mensal do mes", tone: "ok" },
   PER_MATCH: { key: "PER_MATCH", label: "Avulso mensal", tone: "info" },
@@ -113,6 +123,7 @@ const FINANCE_TRANSACTION_CATEGORY_LABELS = Object.fromEntries(
 
 const COLLECTION_STATUS_META = {
   CURRENT: { key: "CURRENT", label: "Em dia", tone: "pending" },
+  NO_CHARGE: { key: "NO_CHARGE", label: "Aguardando presenca", tone: "pending" },
   DUE_TODAY: { key: "DUE_TODAY", label: "Vence hoje", tone: "warning" },
   OVERDUE: { key: "OVERDUE", label: "Atrasado", tone: "danger" },
   PAID: { key: "PAID", label: "Pago", tone: "ok" },
@@ -120,13 +131,14 @@ const COLLECTION_STATUS_META = {
   EXEMPT: { key: "EXEMPT", label: "Isento", tone: "pending" },
 };
 
-const COLLECTION_STATUS_SORT_ORDER = ["OVERDUE", "DUE_TODAY", "CURRENT", "PARTIAL", "PAID", "EXEMPT"];
+const COLLECTION_STATUS_SORT_ORDER = ["OVERDUE", "DUE_TODAY", "CURRENT", "NO_CHARGE", "PARTIAL", "PAID", "EXEMPT"];
 
 const MONTHLY_COLLECTION_FILTER_OPTIONS = [
   { value: "ALL", label: "Todos" },
   { value: "OVERDUE", label: "Atrasados" },
   { value: "DUE_TODAY", label: "Vence hoje" },
   { value: "CURRENT", label: "Em dia" },
+  { value: "NO_CHARGE", label: "Aguardando presenca" },
   { value: "PAID", label: "Pagos" },
   { value: "PARTIAL", label: "Parciais" },
   { value: "EXEMPT", label: "Isentos" },
@@ -136,15 +148,19 @@ const CHARGE_FILTER_OPTIONS = [
   { value: "ALL", label: "Todos os pendentes" },
   { value: "OVERDUE", label: "Vencidos" },
   { value: "DUE_TODAY", label: "Vence hoje" },
-  { value: "WITH_WHATSAPP", label: "Com WhatsApp" },
-  { value: "WITHOUT_WHATSAPP", label: "Sem WhatsApp" },
   { value: "PARTIAL", label: "Parciais" },
-  { value: "HIGHEST_AMOUNT", label: "Maior valor" },
+  { value: "MONTHLY", label: "Mensalistas" },
+  { value: "PER_MATCH", label: "Avulsos" },
+  { value: "LATE_PER_MATCH", label: "Avulso por atraso" },
+  { value: "WITH_WHATSAPP", label: "WhatsApp" },
+  { value: "PAID", label: "Pagos" },
 ];
 
 const MONTHLY_COLLECTION_FILTER_ALIASES = {
   PENDING: "CURRENT",
   EM_DIA: "CURRENT",
+  SEM_COBRANCA: "NO_CHARGE",
+  AGUARDANDO_PRESENCA: "NO_CHARGE",
   VENCE_HOJE: "DUE_TODAY",
   ATRASADO: "OVERDUE",
   ATRASADOS: "OVERDUE",
@@ -158,10 +174,14 @@ const MONTHLY_COLLECTION_FILTER_ALIASES = {
 
 const CHARGE_FILTER_ALIASES = {
   VENCIDOS: "OVERDUE",
+  WHATSAPP: "WITH_WHATSAPP",
   COM_WHATSAPP: "WITH_WHATSAPP",
-  SEM_WHATSAPP: "WITHOUT_WHATSAPP",
-  MAIOR_VALOR: "HIGHEST_AMOUNT",
   PARCIAIS: "PARTIAL",
+  PAGOS: "PAID",
+  MENSALISTAS: "MONTHLY",
+  AVULSOS: "PER_MATCH",
+  AVULSO_POR_ATRASO: "LATE_PER_MATCH",
+  AVULSO_ATRASO: "LATE_PER_MATCH",
 };
 
 const COMPETENCE_STATE_META = {
@@ -315,12 +335,25 @@ const REPORT_TYPE_OPTIONS = Object.values(REPORT_TYPE_META).map((item) => ({
   label: item.label,
 }));
 
+function getSpecialFinanceCompetenceRule(month, year) {
+  const normalizedMonth = Number(month || 0);
+  const normalizedYear = Number(year || 0);
+
+  return (
+    Object.values(SPECIAL_FINANCE_COMPETENCE_RULES).find(
+      (rule) => rule.month === normalizedMonth && rule.year === normalizedYear
+    ) || null
+  );
+}
+
 module.exports = {
   MONTH_NAMES_PT,
   MONTH_OPTIONS,
   FINANCE_TABS,
   MONTHLY_FEE_STATUS_META,
   DEFAULT_LATE_PER_MATCH_AMOUNT,
+  SPECIAL_FINANCE_COMPETENCE_RULES,
+  getSpecialFinanceCompetenceRule,
   MONTHLY_FEE_BILLING_MODE_META,
   PAYMENT_METHOD_OPTIONS,
   FINANCE_TRANSACTION_TYPE_OPTIONS,

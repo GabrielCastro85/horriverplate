@@ -27,6 +27,7 @@ const {
   buildCompetencePreparation,
   buildCompetenceState,
 } = require("../helpers/financeStatus.helper");
+const { getSpecialFinanceCompetenceRule } = require("../constants/finance");
 const { buildFinanceAlerts } = require("../helpers/financeAlerts.helper");
 const { buildFinanceReportSummary } = require("../helpers/financeSummary.helper");
 const { buildBulkChargeSummary } = require("../helpers/financeMessage.helper");
@@ -38,8 +39,7 @@ const {
   getParticipantTypeMeta,
   getBillingModeMeta,
   isPlayerEligibleForMonthlyFee,
-  fetchMonthlyMatchUsage,
-  fetchMonthlyLateMatchUsage,
+  fetchMonthlyMatchChargeUsage,
   calculateMonthlyFeeBreakdown,
   buildMonthlyFeeRecordFromRule,
   buildMonthlyFeeRuleUpdate,
@@ -52,11 +52,31 @@ function buildRuleSnapshot(monthlyFee) {
     monthlyFee.billingMode,
     participantType === "EXEMPT" ? "EXEMPT" : participantType === "PER_MATCH" ? "PER_MATCH" : "MONTHLY"
   );
+  const specialCompetenceRule = getSpecialFinanceCompetenceRule(monthlyFee.month, monthlyFee.year);
 
   if (billingMode === "PER_MATCH") {
     const matchesPlayed = Number(monthlyFee.matchesPlayed || 0);
+    const unitAmount = roundCurrency(monthlyFee.latePerMatchAmount || 25);
+    const baseAmount = roundCurrency(
+      decimalToNumber(monthlyFee.baseAmount != null ? monthlyFee.baseAmount : monthlyFee.amountDue)
+    );
+    const firstMatchAmount = roundCurrency(baseAmount - Math.max(matchesPlayed - 1, 0) * unitAmount);
+
     items.push("Avulso mensal");
-    items.push(`${matchesPlayed} pelada(s) x ${formatCurrencyBR(monthlyFee.latePerMatchAmount || 25)}`);
+    if (
+      specialCompetenceRule &&
+      matchesPlayed > 0 &&
+      firstMatchAmount > 0 &&
+      firstMatchAmount < unitAmount
+    ) {
+      items.push(
+        matchesPlayed > 1
+          ? `1a pelada ${formatCurrencyBR(firstMatchAmount)} + ${matchesPlayed - 1} x ${formatCurrencyBR(unitAmount)}`
+          : `1a pelada ${formatCurrencyBR(firstMatchAmount)}`
+      );
+    } else {
+      items.push(`${matchesPlayed} pelada(s) x ${formatCurrencyBR(monthlyFee.latePerMatchAmount || 25)}`);
+    }
     if (decimalToNumber(monthlyFee.manualDiscountAmount) > 0) items.push("Abat. manual");
     if (decimalToNumber(monthlyFee.autoDiscountAmount) > 0) items.push("Abat. auto");
     return items;
@@ -64,8 +84,28 @@ function buildRuleSnapshot(monthlyFee) {
 
   if (billingMode === "LATE_PER_MATCH") {
     const lateMatchesPlayed = Number(monthlyFee.lateMatchesPlayed || 0);
+    const totalMatchesPlayed = Number(monthlyFee.matchesPlayed || lateMatchesPlayed || 0);
+    const unitAmount = roundCurrency(monthlyFee.latePerMatchAmount || 25);
+    const baseAmount = roundCurrency(
+      decimalToNumber(monthlyFee.baseAmount != null ? monthlyFee.baseAmount : monthlyFee.amountDue)
+    );
+    const firstMatchAmount = roundCurrency(baseAmount - Math.max(totalMatchesPlayed - 1, 0) * unitAmount);
+
     items.push("Avulso por atraso");
-    items.push(`${lateMatchesPlayed} pelada(s) x ${formatCurrencyBR(monthlyFee.latePerMatchAmount || 25)}`);
+    if (
+      specialCompetenceRule &&
+      totalMatchesPlayed > 0 &&
+      firstMatchAmount > 0 &&
+      firstMatchAmount < unitAmount
+    ) {
+      items.push(
+        totalMatchesPlayed > 1
+          ? `1a pelada ${formatCurrencyBR(firstMatchAmount)} + ${totalMatchesPlayed - 1} x ${formatCurrencyBR(unitAmount)}`
+          : `1a pelada ${formatCurrencyBR(firstMatchAmount)}`
+      );
+    } else {
+      items.push(`${lateMatchesPlayed} pelada(s) x ${formatCurrencyBR(monthlyFee.latePerMatchAmount || 25)}`);
+    }
     if (Number(monthlyFee.matchesPlayed || 0) > 0) items.push(`${monthlyFee.matchesPlayed} no mes`);
     if (decimalToNumber(monthlyFee.manualDiscountAmount) > 0) items.push("Abat. manual");
     if (decimalToNumber(monthlyFee.autoDiscountAmount) > 0) items.push("Abat. auto");
@@ -104,6 +144,28 @@ function decorateMonthlyFee(monthlyFee, settings, now = new Date()) {
     monthlyFee.billingMode,
     participantType === "EXEMPT" ? "EXEMPT" : participantType === "PER_MATCH" ? "PER_MATCH" : "MONTHLY"
   );
+  const specialCompetenceRule = getSpecialFinanceCompetenceRule(monthlyFee.month, monthlyFee.year);
+  const unitAmount = roundCurrency(monthlyFee.latePerMatchAmount || 25);
+  const baseAmount = roundCurrency(
+    decimalToNumber(monthlyFee.baseAmount != null ? monthlyFee.baseAmount : monthlyFee.amountDue)
+  );
+  const defaultMonthlyAmount = roundCurrency(
+    monthlyFee.player?.financeAmountOverride != null
+      ? decimalToNumber(monthlyFee.player.financeAmountOverride)
+      : decimalToNumber(settings?.defaultMonthlyAmount)
+  );
+  const firstMatchAmount = roundCurrency(
+    baseAmount - Math.max(Number(monthlyFee.matchesPlayed || 0) - 1, 0) * unitAmount
+  );
+  const specialTransitionApplied =
+    Boolean(specialCompetenceRule) &&
+    ((billingMode === "MONTHLY" &&
+      Number(monthlyFee.matchesPlayed || 0) > 0 &&
+      baseAmount < defaultMonthlyAmount) ||
+      ((billingMode === "PER_MATCH" || billingMode === "LATE_PER_MATCH") &&
+        Number(monthlyFee.matchesPlayed || 0) > 0 &&
+        firstMatchAmount > 0 &&
+        firstMatchAmount < unitAmount));
 
   return {
     ...monthlyFee,
@@ -118,6 +180,8 @@ function decorateMonthlyFee(monthlyFee, settings, now = new Date()) {
     billingMode,
     billingModeMeta: getBillingModeMeta(billingMode),
     isLatePerMatch: billingMode === "LATE_PER_MATCH",
+    specialCompetenceRule,
+    specialTransitionApplied,
     extraMatches:
       monthlyFee.matchLimitApplied && Number(monthlyFee.matchesPlayed || 0) > Number(monthlyFee.matchLimitApplied || 0)
         ? Number(monthlyFee.matchesPlayed || 0) - Number(monthlyFee.matchLimitApplied || 0)
@@ -162,8 +226,10 @@ function buildRuleDrivenUpdate(current, settings, options = {}) {
     settings,
     month: current.month,
     year: current.year,
+    participantTypeOverride: current.participantType,
     matchesPlayed: options.matchesPlayed ?? current.matchesPlayed ?? 0,
     lateMatchesPlayed: options.lateMatchesPlayed ?? current.lateMatchesPlayed ?? 0,
+    matchChargeUsage: options.matchChargeUsage || null,
     manualDiscountAmount: current.manualDiscountAmount || 0,
     amountPaid: current.amountPaid || 0,
     currentStatus: current.status,
@@ -175,7 +241,10 @@ function buildRuleDrivenUpdate(current, settings, options = {}) {
   return buildMonthlyFeeRuleUpdate(current, breakdown);
 }
 
-async function syncMonthlyFeeWithRules(prismaOrTx, { monthlyFee, settings, referenceDate = new Date(), matchesPlayed, lateMatchesPlayed }) {
+async function syncMonthlyFeeWithRules(
+  prismaOrTx,
+  { monthlyFee, settings, referenceDate = new Date(), matchesPlayed, lateMatchesPlayed, matchChargeUsage = null }
+) {
   const current =
     monthlyFee.player
       ? monthlyFee
@@ -186,10 +255,22 @@ async function syncMonthlyFeeWithRules(prismaOrTx, { monthlyFee, settings, refer
 
   if (!current) return null;
 
+  const resolvedChargeUsage =
+    matchChargeUsage ||
+    (await fetchMonthlyMatchChargeUsage({
+      prisma: prismaOrTx,
+      playerIds: [current.playerId],
+      month: current.month,
+      year: current.year,
+      dueDay: settings?.dueDay || 10,
+    })).get(current.playerId) ||
+    null;
+
   const updateData = buildRuleDrivenUpdate(current, settings, {
     referenceDate,
-    matchesPlayed,
-    lateMatchesPlayed,
+    matchesPlayed: resolvedChargeUsage?.matchesPlayed ?? matchesPlayed,
+    lateMatchesPlayed: resolvedChargeUsage?.lateMatchesPlayed ?? lateMatchesPlayed,
+    matchChargeUsage: resolvedChargeUsage,
   });
 
   if (!hasRuleDrivenFeeChanged(current, updateData)) {
@@ -223,25 +304,24 @@ async function syncMonthlyCompetenceRules({
   }
 
   const playerIds = fees.map((fee) => fee.playerId);
-  const [usageMap, lateUsageMap] = await Promise.all([
-    fetchMonthlyMatchUsage({ prisma, playerIds, month, year }),
-    fetchMonthlyLateMatchUsage({
-      prisma,
-      playerIds,
-      month,
-      year,
-      dueDay: settings?.dueDay || 10,
-    }),
-  ]);
+  const chargeUsageMap = await fetchMonthlyMatchChargeUsage({
+    prisma,
+    playerIds,
+    month,
+    year,
+    dueDay: settings?.dueDay || 10,
+  });
 
   let updatedCount = 0;
   const syncedFees = [];
 
   for (const fee of fees) {
+    const chargeUsage = chargeUsageMap.get(fee.playerId) || null;
     const nextData = buildRuleDrivenUpdate(fee, settings, {
       referenceDate,
-      matchesPlayed: usageMap.get(fee.playerId) || 0,
-      lateMatchesPlayed: lateUsageMap.get(fee.playerId) || 0,
+      matchesPlayed: chargeUsage?.matchesPlayed || 0,
+      lateMatchesPlayed: chargeUsage?.lateMatchesPlayed || 0,
+      matchChargeUsage: chargeUsage,
     });
     const changed = hasRuleDrivenFeeChanged(fee, nextData);
     const synced = changed
@@ -274,9 +354,8 @@ async function syncMonthlyFeeForPlayerCompetence({
     return null;
   }
 
-  const [usageMap, lateUsageMap, current] = await Promise.all([
-    fetchMonthlyMatchUsage({ prisma, playerIds: [player.id], month, year }),
-    fetchMonthlyLateMatchUsage({
+  const [chargeUsageMap, current] = await Promise.all([
+    fetchMonthlyMatchChargeUsage({
       prisma,
       playerIds: [player.id],
       month,
@@ -295,8 +374,9 @@ async function syncMonthlyFeeForPlayerCompetence({
     }),
   ]);
 
-  const matchesPlayed = usageMap.get(player.id) || 0;
-  const lateMatchesPlayed = lateUsageMap.get(player.id) || 0;
+  const chargeUsage = chargeUsageMap.get(player.id) || null;
+  const matchesPlayed = chargeUsage?.matchesPlayed || 0;
+  const lateMatchesPlayed = chargeUsage?.lateMatchesPlayed || 0;
 
   if (!current) {
     return prisma.monthlyFee.create({
@@ -307,6 +387,7 @@ async function syncMonthlyFeeForPlayerCompetence({
         year,
         matchesPlayed,
         lateMatchesPlayed,
+        matchChargeUsage: chargeUsage,
         referenceDate,
       }),
       include: { player: true },
@@ -319,6 +400,7 @@ async function syncMonthlyFeeForPlayerCompetence({
     referenceDate,
     matchesPlayed,
     lateMatchesPlayed,
+    matchChargeUsage: chargeUsage,
   });
 }
 
@@ -328,10 +410,12 @@ async function ensureMonthlyCompetence({
   year,
   settings,
   eligiblePlayers,
+  competencePlanMap = null,
+  useManualCompetencePlans = false,
   dryRun = false,
   referenceDate = new Date(),
 }) {
-  const eligible =
+  const eligibleBase =
     eligiblePlayers ||
     (await prisma.player.findMany({
       where: {
@@ -347,9 +431,26 @@ async function ensureMonthlyCompetence({
         financeMatchLimit: true,
         financeExtraMatchAmount: true,
         financeAutoDiscountAmount: true,
-      },
+        },
       orderBy: { name: "asc" },
     })).filter(isPlayerEligibleForMonthlyFee);
+
+  const eligible = eligibleBase.map((player) => {
+    if (!useManualCompetencePlans) return player;
+
+    const selectedPlan = normalizeParticipantType(
+      competencePlanMap?.get(player.id) || "PER_MATCH",
+      "PER_MATCH"
+    );
+    const resolvedPlan = ["MONTHLY", "PER_MATCH", "EXEMPT"].includes(selectedPlan)
+      ? selectedPlan
+      : "PER_MATCH";
+
+    return {
+      ...player,
+      financeParticipantType: resolvedPlan,
+    };
+  });
 
   const existingFees = await prisma.monthlyFee.findMany({
     where: {
@@ -378,21 +479,13 @@ async function ensureMonthlyCompetence({
     };
   }
 
-  const [usageMap, lateUsageMap] = await Promise.all([
-    fetchMonthlyMatchUsage({
-      prisma,
-      playerIds: preparation.missingPlayers.map((player) => player.id),
-      month,
-      year,
-    }),
-    fetchMonthlyLateMatchUsage({
-      prisma,
-      playerIds: preparation.missingPlayers.map((player) => player.id),
-      month,
-      year,
-      dueDay: settings?.dueDay || 10,
-    }),
-  ]);
+  const chargeUsageMap = await fetchMonthlyMatchChargeUsage({
+    prisma,
+    playerIds: preparation.missingPlayers.map((player) => player.id),
+    month,
+    year,
+    dueDay: settings?.dueDay || 10,
+  });
 
   const rows = preparation.missingPlayers.map((player) =>
     buildMonthlyFeeRecordFromRule({
@@ -400,8 +493,10 @@ async function ensureMonthlyCompetence({
       settings,
       month,
       year,
-      matchesPlayed: usageMap.get(player.id) || 0,
-      lateMatchesPlayed: lateUsageMap.get(player.id) || 0,
+      participantTypeOverride: player.financeParticipantType,
+      matchesPlayed: chargeUsageMap.get(player.id)?.matchesPlayed || 0,
+      lateMatchesPlayed: chargeUsageMap.get(player.id)?.lateMatchesPlayed || 0,
+      matchChargeUsage: chargeUsageMap.get(player.id) || null,
       referenceDate,
     })
   );

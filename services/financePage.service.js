@@ -61,7 +61,7 @@ const {
   CHARGE_BEHAVIOR_OPTIONS,
   getParticipantTypeMeta,
   isPlayerEligibleForMonthlyFee,
-  fetchMonthlyMatchUsage,
+  fetchMonthlyMatchChargeUsage,
   buildMonthlyFeeRecordFromRule,
   buildPlayerFinanceRuleSummary,
 } = require("../services/financeRules.service");
@@ -105,6 +105,7 @@ function normalizeFinanceFilters(input = {}) {
   const reportEnd = getTrimmedString(input.reportEnd, "");
   const notice = getTrimmedString(input.notice, "");
   const error = getTrimmedString(input.error, "");
+  const openDialog = getTrimmedString(input.openDialog, "");
 
   return {
     month,
@@ -123,6 +124,7 @@ function normalizeFinanceFilters(input = {}) {
     editGuestId: parseOptionalId(input.editGuestId, null),
     notice,
     error,
+    openDialog,
   };
 }
 
@@ -142,6 +144,7 @@ function buildFinanceRedirectQuery(source = {}) {
   if (filters.reportEnd) params.set("reportEnd", filters.reportEnd);
   if (filters.notice) params.set("notice", filters.notice);
   if (filters.error) params.set("error", filters.error);
+  if (filters.openDialog) params.set("openDialog", filters.openDialog);
   if (filters.editFeeId) params.set("editFeeId", String(filters.editFeeId));
   if (filters.editTransactionId) params.set("editTransactionId", String(filters.editTransactionId));
   if (filters.editGuestId) params.set("editGuestId", String(filters.editGuestId));
@@ -430,6 +433,19 @@ function buildCashOriginLabel(transaction) {
   return `Lancamento manual - ${transaction.description}`;
 }
 
+function shouldDisplayMonthlyFeeInMonthlyTab(monthlyFee) {
+  if (!monthlyFee) return false;
+
+  const amountDue = roundCurrency(decimalToNumber(monthlyFee.amountDue));
+  const amountPaid = roundCurrency(decimalToNumber(monthlyFee.amountPaid));
+  const balance =
+    typeof monthlyFee.balance === "number"
+      ? roundCurrency(monthlyFee.balance)
+      : computeMonthlyFeeBalance(monthlyFee);
+
+  return amountDue > 0 || amountPaid > 0 || balance > 0;
+}
+
 async function buildFinancePageViewModel(filters) {
   const settings = await ensureFinanceSettings();
   const today = getSaoPauloTodayDate();
@@ -539,16 +555,17 @@ async function buildFinancePageViewModel(filters) {
       }),
     ]);
 
-  const matchUsageMap = await fetchMonthlyMatchUsage({
+  const matchChargeUsageMap = await fetchMonthlyMatchChargeUsage({
     prisma,
     playerIds: basePlayers.map((player) => player.id),
     month: filters.month,
     year: filters.year,
+    dueDay: settings?.dueDay || 10,
   });
 
   const allPlayers = basePlayers.map((player) => ({
     ...player,
-    currentMonthMatches: matchUsageMap.get(player.id) || 0,
+    currentMonthMatches: matchChargeUsageMap.get(player.id)?.matchesPlayed || 0,
     financeRuleSummary: buildPlayerFinanceRuleSummary(player, settings),
     participantTypeMeta: getParticipantTypeMeta(player.financeParticipantType),
   }));
@@ -565,7 +582,9 @@ async function buildFinancePageViewModel(filters) {
         settings,
         month: filters.month,
         year: filters.year,
-        matchesPlayed: matchUsageMap.get(player.id) || 0,
+        matchesPlayed: matchChargeUsageMap.get(player.id)?.matchesPlayed || 0,
+        lateMatchesPlayed: matchChargeUsageMap.get(player.id)?.lateMatchesPlayed || 0,
+        matchChargeUsage: matchChargeUsageMap.get(player.id) || null,
       });
       return sum + decimalToNumber(projected.amountDue);
     }, 0)
@@ -600,16 +619,23 @@ async function buildFinancePageViewModel(filters) {
         analytics: buildMonthlyFeeAnalytics(fee),
       }))
   );
+  const visibleMonthFeesBase = monthFeesDecorated.filter(shouldDisplayMonthlyFeeInMonthlyTab);
+  const hiddenMonthFees = monthFeesDecorated.filter((fee) => !shouldDisplayMonthlyFeeInMonthlyTab(fee));
+  const hiddenNoChargeFees = hiddenMonthFees.filter((fee) => fee.collectionStatus === "NO_CHARGE");
+  const monthlyStatusOptions = MONTHLY_COLLECTION_FILTER_OPTIONS.filter(
+    (option) => option.value !== "NO_CHARGE" && option.value !== "EXEMPT"
+  );
+  const monthlyActiveStatus = ["NO_CHARGE", "EXEMPT"].includes(filters.status) ? "ALL" : filters.status;
   const allPendingFees = sortChargeFees(
     monthFeesDecorated.filter((fee) => fee.status !== "EXEMPT" && fee.balance > 0),
     "ALL",
     today
   );
-  const monthFees = monthFeesDecorated.filter(
-    (fee) => matchesMonthlyCollectionFilter(fee, filters.status) && feeMatchesSearch(fee)
+  const monthFees = visibleMonthFeesBase.filter(
+    (fee) => matchesMonthlyCollectionFilter(fee, monthlyActiveStatus) && feeMatchesSearch(fee)
   );
-  const pendingFees = sortChargeFees(
-    monthFeesDecorated.filter((fee) => fee.status !== "EXEMPT" && fee.balance > 0 && feeMatchesSearch(fee)),
+  const chargeFees = sortChargeFees(
+    monthFeesDecorated.filter((fee) => fee.status !== "EXEMPT" && feeMatchesSearch(fee)),
     filters.chargeFilter,
     today
   );
@@ -624,6 +650,7 @@ async function buildFinancePageViewModel(filters) {
   const payersCount = monthFeesRaw.filter((fee) => decimalToNumber(fee.amountPaid) > 0).length;
   const paidCount = monthFeesDecorated.filter((fee) => fee.collectionStatus === "PAID").length;
   const partialCount = monthFeesDecorated.filter((fee) => fee.collectionStatus === "PARTIAL").length;
+  const noChargeCount = monthFeesDecorated.filter((fee) => fee.collectionStatus === "NO_CHARGE").length;
   const exemptCount = monthFeesRaw.filter((fee) => fee.status === "EXEMPT").length;
   const overdueFees = allPendingFees.filter((fee) => fee.chargePriorityBucket === 0);
   const dueTodayFees = allPendingFees.filter((fee) => fee.chargePriorityBucket === 1);
@@ -853,6 +880,7 @@ async function buildFinancePageViewModel(filters) {
     delinquentCount,
     paidCount,
     partialCount,
+    noChargeCount,
     exemptCount,
     overdueCount: overdueFees.length,
     dueTodayCount: dueTodayFees.length,
@@ -904,10 +932,13 @@ async function buildFinancePageViewModel(filters) {
       allFees: monthFeesRaw,
       selectedFee,
       feeHistory,
-      statusOptions: MONTHLY_COLLECTION_FILTER_OPTIONS,
+      statusOptions: monthlyStatusOptions,
+      activeStatus: monthlyActiveStatus,
+      hiddenCount: hiddenMonthFees.length,
+      hiddenNoChargeCount: hiddenNoChargeFees.length,
     },
     charge: {
-      pendingFees,
+      pendingFees: chargeFees,
       allPendingFees,
       filterOptions: CHARGE_FILTER_OPTIONS,
     },

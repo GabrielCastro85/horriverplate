@@ -112,8 +112,9 @@
         <label class="finance-label">Dia do vencimento
           <input type="number" name="dueDay" min="1" max="31" value="<%= settings.dueDay %>" class="finance-input" />
         </label>
-        <label class="finance-label">Valor da pelada avulsa no mes
+        <label class="finance-label">Valor do avulso por presenca
           <input type="text" name="latePerMatchAmount" value="<%= decimalToNumber(settings.latePerMatchAmount).toFixed(2).replace('.', ',') %>" class="finance-input" />
+          <span class="finance-subtle">Esse valor so entra na cobranca quando o jogador avulso tiver presenca marcada no mes.</span>
         </label>
         <label class="finance-label">Limite padrao de peladas
           <input type="number" name="defaultIncludedMatches" min="0" value="<%= settings.defaultIncludedMatches || 0 %>" class="finance-input" />
@@ -245,7 +246,7 @@
                   <% if (player.financeParticipantType === 'MONTHLY') { %>
                     Esse jogador entra na mensalidade padrao do mes.
                   <% } else if (player.financeParticipantType === 'PER_MATCH') { %>
-                    Esse jogador fica como avulso mensal e acumula <%= formatCurrencyBR(settings.latePerMatchAmount) %> por pelada com presenca.
+                    Esse jogador fica como avulso mensal e acumula <%= formatCurrencyBR(settings.latePerMatchAmount) %> por presenca. Se nao houver presenca no mes, nao gera valor.
                   <% } else if (player.financeRuleSummary.hasOverride) { %>
                     Valor customizado ativo para este jogador.
                   <% } else { %>

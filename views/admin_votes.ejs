@@ -6,6 +6,12 @@
     session.expiresAt &&
     new Date(session.expiresAt).getTime() <= Date.now()
   );
+  const integritySummary = voteIntegritySummary || {
+    totalBallots: ballots ? ballots.length : 0,
+    validBallots: ballots ? ballots.length : 0,
+    invalidBallots: 0,
+    invalidByCode: {},
+  };
 %>
 
 <section class="space-y-6 animate-fadeIn">
@@ -50,6 +56,12 @@
     </div>
   <% } %>
 
+  <% if (voteValidated) { %>
+    <div class="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+      Voto validado manualmente com sucesso. Ele voltou para a apuracao final.
+    </div>
+  <% } %>
+
   <% if (voteDeleteError === "notFound") { %>
     <div class="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
       Nao foi possivel localizar esse voto para exclusao.
@@ -60,6 +72,65 @@
     </div>
   <% } %>
 
+  <% if (voteValidateError === "notFound") { %>
+    <div class="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+      Nao foi possivel localizar esse voto para validacao manual.
+    </div>
+  <% } else if (voteValidateError === "alreadyValid") { %>
+    <div class="rounded-2xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+      Esse voto ja esta valido na apuracao e nao precisava de liberacao manual.
+    </div>
+  <% } else if (voteValidateError === "server") { %>
+    <div class="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+      Ocorreu um erro ao validar o voto manualmente. Tente novamente.
+    </div>
+  <% } %>
+
+  <% if (session && ballots.length) { %>
+    <div class="grid gap-3 sm:grid-cols-3">
+      <div class="rounded-2xl border border-horriver-border bg-black/30 px-4 py-3">
+        <p class="text-[11px] uppercase tracking-[0.18em] text-horriver-gray/80">Total de votos</p>
+        <p class="mt-2 text-2xl font-semibold text-horriver-light"><%= integritySummary.totalBallots %></p>
+        <p class="mt-1 text-xs text-horriver-gray">Ballots registrados nesta sessao.</p>
+      </div>
+      <div class="rounded-2xl border border-emerald-500/25 bg-emerald-500/8 px-4 py-3">
+        <p class="text-[11px] uppercase tracking-[0.18em] text-emerald-200/80">Votos validos</p>
+        <p class="mt-2 text-2xl font-semibold text-emerald-100"><%= integritySummary.validBallots %></p>
+        <p class="mt-1 text-xs text-emerald-100/70">Considerados normalmente na apuracao.</p>
+      </div>
+      <div class="rounded-2xl border border-red-500/30 bg-red-500/8 px-4 py-3">
+        <p class="text-[11px] uppercase tracking-[0.18em] text-red-200/80">Votos anulados</p>
+        <p class="mt-2 text-2xl font-semibold text-red-100"><%= integritySummary.invalidBallots %></p>
+        <p class="mt-1 text-xs text-red-100/70">Tirados da apuracao por padrao suspeito.</p>
+      </div>
+    </div>
+
+    <% if (integritySummary.invalidBallots > 0) { %>
+      <div class="rounded-2xl border border-red-500/30 bg-gradient-to-r from-red-500/12 to-red-500/5 px-4 py-4 space-y-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-red-100">Protecao anti-voto-sabotado ativa</p>
+            <p class="mt-1 text-xs text-red-100/75">
+              Os votos anulados continuam salvos para auditoria, mas nao entram no calculo final do Craque da Semana.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-[11px]">
+            <% if (integritySummary.invalidByCode.EXCESSO_NOTA_MINIMA) { %>
+              <span class="status-chip status-danger">
+                <%= integritySummary.invalidByCode.EXCESSO_NOTA_MINIMA %> por excesso de nota 1
+              </span>
+            <% } %>
+            <% if (integritySummary.invalidByCode.REPETICAO_EXCESSIVA) { %>
+              <span class="status-chip status-danger">
+                <%= integritySummary.invalidByCode.REPETICAO_EXCESSIVA %> por repeticao de nota 1
+              </span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  <% } %>
+
   <% if (!session || !ballots.length) { %>
     <p class="text-sm text-horriver-gray">
       Nenhum voto registrado para esta pelada.
@@ -67,7 +138,17 @@
   <% } else { %>
     <div class="space-y-4">
       <% ballots.forEach((b, idx) => { %>
-        <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
+        <%
+          const validation = b.voteValidation || {};
+          const isInvalid = !!validation.isInvalid;
+          const wasValidatedManually = !!validation.wasValidatedManually;
+          const cardClass = isInvalid
+            ? "bg-red-950/10 border-red-500/35"
+            : wasValidatedManually
+              ? "bg-emerald-950/10 border-emerald-500/30"
+              : "bg-black/40 border-horriver-border";
+        %>
+        <div class="<%= cardClass %> border rounded-2xl p-4 space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 text-[12px]">
             <div class="space-y-1">
               <p class="text-horriver-light font-semibold">
@@ -83,6 +164,17 @@
               </p>
             </div>
             <div class="flex flex-col gap-2 sm:items-end">
+              <span class="status-chip <%= isInvalid ? 'status-danger' : 'status-ok' %>">
+                <%= validation.badgeLabel || 'Voto valido' %>
+              </span>
+              <% if (wasValidatedManually) { %>
+                <span class="text-[11px] text-emerald-200/80">
+                  liberado manualmente
+                  <% if (validation.validatedManuallyAt) { %>
+                    em <%= fmtDateTimeBR(validation.validatedManuallyAt) %>
+                  <% } %>
+                </span>
+              <% } %>
               <div class="text-[11px] text-horriver-gray flex flex-col gap-1 sm:text-right sm:items-end">
                 <span class="status-chip <%= b.token.usedAt ? 'status-ok' : 'status-pending' %>">
                   <%= b.token.usedAt ? "Token usado" : "Token pendente" %>
@@ -93,6 +185,21 @@
                   <span>ainda nao utilizado</span>
                 <% } %>
               </div>
+
+              <% if (isInvalid) { %>
+                <form
+                  action="/admin/matches/<%= match.id %>/votes/<%= b.id %>/validate"
+                  method="POST"
+                  onsubmit="return confirm('Validar manualmente o voto de <%= (b.token.player?.name || 'este jogador').replace(/'/g, '\\\\\'') %> e recolocar esse voto na apuracao final?');"
+                >
+                  <button
+                    type="submit"
+                    class="w-full sm:w-auto px-3 py-2 rounded-full border border-emerald-500/60 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500 hover:text-white transition"
+                  >
+                    Validar voto
+                  </button>
+                </form>
+              <% } %>
 
               <form
                 action="/admin/matches/<%= match.id %>/votes/<%= b.id %>/delete"
@@ -109,23 +216,100 @@
             </div>
           </div>
 
-          <div class="border border-horriver-border/60 rounded-xl p-3 bg-black/30 text-[12px]">
-            <p class="text-horriver-orange font-semibold mb-2">Notas (1-5)</p>
+          <% if (isInvalid) { %>
+            <div class="rounded-2xl border border-red-500/30 bg-gradient-to-r from-red-500/10 to-transparent px-4 py-4 space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full border border-red-400/35 bg-red-500/15 text-lg font-black text-red-100">
+                  !
+                </div>
+                <div class="space-y-1">
+                  <p class="text-sm font-semibold text-red-100"><%= validation.adminTitle || "Padrao suspeito detectado" %></p>
+                  <p class="text-xs text-red-100/80">Motivo: <%= validation.invalidReason || "Voto anulado por padrao suspeito" %></p>
+                  <p class="text-xs text-red-100/65"><%= validation.playfulLine || "Comissao da resenha acionada." %></p>
+                </div>
+              </div>
+
+              <div class="grid gap-2 sm:grid-cols-3 text-[11px]">
+                <div class="rounded-xl border border-red-500/20 bg-black/20 px-3 py-2">
+                  <span class="block uppercase tracking-[0.18em] text-red-100/55">Maior repeticao</span>
+                  <strong class="mt-1 block text-sm text-red-100"><%= validation.maxRepeatedPercentage %>%</strong>
+                  <span class="mt-1 block text-red-100/65">Nota <%= validation.maxRepeatedRating ?? '-' %></span>
+                </div>
+                <div class="rounded-xl border border-red-500/20 bg-black/20 px-3 py-2">
+                  <span class="block uppercase tracking-[0.18em] text-red-100/55">Nota 1</span>
+                  <strong class="mt-1 block text-sm text-red-100"><%= validation.lowRatingPercentage %>%</strong>
+                  <span class="mt-1 block text-red-100/65">Nota 1 em <%= validation.lowRatingCount %> de <%= validation.totalRatings %></span>
+                </div>
+                <div class="rounded-xl border border-red-500/20 bg-black/20 px-3 py-2">
+                  <span class="block uppercase tracking-[0.18em] text-red-100/55">Status</span>
+                  <strong class="mt-1 block text-sm text-red-100"><%= validation.statusText || "Desconsiderado na apuracao" %></strong>
+                  <span class="mt-1 block text-red-100/65">Mantido no admin apenas para auditoria.</span>
+                </div>
+              </div>
+            </div>
+          <% } else if (wasValidatedManually) { %>
+            <div class="rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/10 to-transparent px-4 py-4 space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/35 bg-emerald-500/15 text-lg font-black text-emerald-100">
+                  OK
+                </div>
+                <div class="space-y-1">
+                  <p class="text-sm font-semibold text-emerald-100"><%= validation.adminTitle || "Voto liberado pelo admin" %></p>
+                  <% if (validation.detectedInvalidReason) { %>
+                    <p class="text-xs text-emerald-100/80">Alerta automatico original: <%= validation.detectedInvalidReason %></p>
+                  <% } %>
+                  <p class="text-xs text-emerald-100/65"><%= validation.playfulLine || "Esse voto voltou para a apuracao por decisao manual." %></p>
+                </div>
+              </div>
+
+              <div class="grid gap-2 sm:grid-cols-3 text-[11px]">
+                <div class="rounded-xl border border-emerald-500/20 bg-black/20 px-3 py-2">
+                  <span class="block uppercase tracking-[0.18em] text-emerald-100/55">Maior repeticao</span>
+                  <strong class="mt-1 block text-sm text-emerald-100"><%= validation.maxRepeatedPercentage %>%</strong>
+                  <span class="mt-1 block text-emerald-100/65">Nota <%= validation.maxRepeatedRating ?? '-' %></span>
+                </div>
+                <div class="rounded-xl border border-emerald-500/20 bg-black/20 px-3 py-2">
+                  <span class="block uppercase tracking-[0.18em] text-emerald-100/55">Nota 1</span>
+                  <strong class="mt-1 block text-sm text-emerald-100"><%= validation.lowRatingPercentage %>%</strong>
+                  <span class="mt-1 block text-emerald-100/65">Nota 1 em <%= validation.lowRatingCount %> de <%= validation.totalRatings %></span>
+                </div>
+                <div class="rounded-xl border border-emerald-500/20 bg-black/20 px-3 py-2">
+                  <span class="block uppercase tracking-[0.18em] text-emerald-100/55">Status</span>
+                  <strong class="mt-1 block text-sm text-emerald-100">Considerado na apuracao</strong>
+                  <span class="mt-1 block text-emerald-100/65">Liberado manualmente pelo admin.</span>
+                </div>
+              </div>
+            </div>
+          <% } %>
+
+          <div class="border <%= isInvalid ? 'border-red-500/20 bg-black/20' : wasValidatedManually ? 'border-emerald-500/20 bg-black/20' : 'border-horriver-border/60 bg-black/30' %> rounded-xl p-3 text-[12px]">
+            <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p class="font-semibold <%= isInvalid ? 'text-red-100' : wasValidatedManually ? 'text-emerald-100' : 'text-horriver-orange' %>">
+                <%= isInvalid ? "Notas do voto anulado (auditoria)" : wasValidatedManually ? "Notas do voto validado manualmente" : "Notas (1-5)" %>
+              </p>
+              <span class="text-[11px] text-horriver-gray">
+                <%= b.ratings && b.ratings.length ? `${b.ratings.length} nota(s) registradas` : "Sem notas registradas" %>
+              </span>
+            </div>
             <% if (!b.ratings || !b.ratings.length) { %>
               <p class="text-horriver-gray">Sem notas registradas.</p>
             <% } else { %>
-              <ul class="space-y-1">
+              <ul class="space-y-2">
                 <% b.ratings
                   .sort((a, b) => (a.player?.name || "").localeCompare(b.player?.name || ""))
                   .forEach((r) => { %>
-                  <li class="flex items-center justify-between">
-                    <span class="text-horriver-light">
-                      <%= r.player?.name || "Jogador" %>
+                  <li class="grid grid-cols-[minmax(0,1fr),auto] items-center gap-3 rounded-xl border border-white/5 bg-black/15 px-3 py-2">
+                    <div class="min-w-0">
+                      <span class="block truncate text-horriver-light font-medium">
+                        <%= r.player?.name || "Jogador" %>
+                      </span>
                       <% if (r.player?.nickname) { %>
-                        <span class="text-horriver-gray">("<%= r.player.nickname %>")</span>
+                        <span class="block truncate text-horriver-gray text-[11px]">"<%= r.player.nickname %>"</span>
                       <% } %>
+                    </div>
+                    <span class="<%= r.rating === 1 ? 'border-red-500/30 bg-red-500/10 text-red-100' : 'border-horriver-orange/30 bg-horriver-orange/10 text-horriver-orange' %> min-w-[44px] rounded-full border px-3 py-1 text-center font-semibold">
+                      <%= r.rating %>
                     </span>
-                    <span class="text-horriver-orange font-semibold"><%= r.rating %></span>
                   </li>
                 <% }) %>
               </ul>

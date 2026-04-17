@@ -25,6 +25,11 @@
     return currencyFormatter.format(Number.isFinite(parsed) ? parsed : 0);
   }
 
+  function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta?.getAttribute("content") || "";
+  }
+
   async function copyToClipboard(text) {
     const value = String(text || "").trim();
     if (!value) return false;
@@ -87,17 +92,11 @@
   }
 
   function buildRequestParams(payload) {
-    const params = new URLSearchParams(window.location.search);
-
-    const appendPair = (key, value) => {
-      if (value == null || value === "") return;
-      params.delete(key);
-      params.append(key, String(value));
-    };
+    const params = new URLSearchParams();
 
     if (payload instanceof FormData) {
       payload.forEach((value, key) => {
-        if (params.has(key)) params.delete(key);
+        if (value == null || value === "") return;
         params.append(key, String(value));
       });
       return params;
@@ -105,37 +104,96 @@
 
     Object.entries(payload || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        params.delete(key);
         value.forEach((item) => {
           if (item != null && item !== "") params.append(key, String(item));
         });
         return;
       }
 
-      appendPair(key, value);
+      if (value == null || value === "") return;
+      params.append(key, String(value));
     });
 
     return params;
   }
 
   async function postJson(url, payload) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-      body: buildRequestParams(payload).toString(),
+    const csrfToken = getCsrfToken();
+    const requestPayload =
+      payload instanceof FormData
+        ? (() => {
+            const formData = new FormData();
+            payload.forEach((value, key) => {
+              formData.append(key, value);
+            });
+            if (!formData.has("format")) formData.append("format", "json");
+            if (csrfToken && !formData.has("_csrf")) formData.append("_csrf", csrfToken);
+            return formData;
+          })()
+        : {
+            ...(payload || {}),
+            format: "json",
+            ...(csrfToken ? { _csrf: csrfToken } : {}),
+          };
+
+    const headers = {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "X-Requested-With": "XMLHttpRequest",
+    };
+
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    let response;
+
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
+        headers,
+        body: buildRequestParams(requestPayload).toString(),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        throw new Error("A requisicao demorou demais e foi cancelada. Tente novamente.");
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+
+    console.debug("[finance] POST", url, {
+      status: response.status,
+      ok: response.ok,
+      payload: requestPayload instanceof FormData ? Array.from(requestPayload.entries()) : requestPayload,
     });
 
+    const responseText = await response.text();
     let data = {};
     try {
-      data = await response.json();
+      data = responseText ? JSON.parse(responseText) : {};
     } catch (error) {
-      data = { ok: false, message: "Resposta invalida do servidor." };
+      const fallbackMessage = response.status === 403
+        ? "A requisicao foi bloqueada pelo servidor (403)."
+        : `Resposta invalida do servidor (${response.status}).`;
+      data = {
+        ok: false,
+        message: fallbackMessage,
+        rawResponse: responseText,
+      };
     }
 
     if (!response.ok || data.ok === false) {
+      console.error("[finance] Falha no POST", url, {
+        status: response.status,
+        ok: response.ok,
+        response: data,
+      });
       throw new Error(data.message || "Nao foi possivel concluir a acao.");
     }
 
@@ -175,6 +233,10 @@
 
     selectors.forEach((selector) => {
       document.querySelectorAll(selector).forEach((root) => {
+        root.setAttribute("data-balance-value", String(Number(updatedFee.balance || 0)));
+        root.setAttribute("data-amount-paid", String(Number(updatedFee.amountPaid || 0)));
+        root.setAttribute("data-monthly-status", updatedFee.status || "");
+
         applyStatusAppearance(root.querySelector("[data-fee-status]"), updatedFee.statusTone, updatedFee.statusLabel);
 
         const paidNode = root.querySelector("[data-fee-paid]");
@@ -185,12 +247,27 @@
 
         updateBalanceAppearance(root.querySelector("[data-fee-balance]"), updatedFee.balance);
 
-        if (Number(updatedFee.balance || 0) <= 0) {
-          root.querySelectorAll("[data-hide-on-paid]").forEach((button) => {
+        const isSettled = Number(updatedFee.balance || 0) <= 0;
+        root.querySelectorAll("[data-hide-on-paid]").forEach((button) => {
+          button.style.display = isSettled ? "none" : "";
+        });
+        root.classList.toggle("finance-charge-item--settled", isSettled);
+
+        root.querySelectorAll("[data-quick-pay-button]").forEach((button) => {
+          const unitAmount = Number(
+            String(button.getAttribute("data-unit-amount") || "").replace(/\./g, "").replace(",", ".")
+          );
+          const nextAmount = Number.isFinite(unitAmount) && unitAmount > 0
+            ? Math.min(Number(updatedFee.balance || 0), unitAmount)
+            : Number(updatedFee.balance || 0);
+
+          if (nextAmount > 0) {
+            button.setAttribute("data-amount", nextAmount.toFixed(2).replace(".", ","));
+            button.style.display = "";
+          } else if (button.hasAttribute("data-hide-on-paid")) {
             button.style.display = "none";
-          });
-          root.classList.add("finance-charge-item--settled");
-        }
+          }
+        });
 
         const checkbox = root.querySelector("[data-charge-select]");
         if (checkbox && checkbox.checked) {
@@ -365,6 +442,11 @@
       const itemNodes = Array.from(root.querySelectorAll("[data-charge-item]"));
       if (!itemNodes.length) return;
 
+      const getSelectedItems = () =>
+        itemNodes
+          .map(getItemData)
+          .filter((item) => item.checkbox?.checked && item.feeId);
+
       const getItemData = (itemNode) => ({
         node: itemNode,
         checkbox: itemNode.querySelector("[data-charge-select]"),
@@ -420,7 +502,7 @@
 
       const syncSelection = () => {
         const allItems = itemNodes.map(getItemData);
-        const selectedItems = allItems.filter((item) => item.checkbox?.checked);
+        const selectedItems = getSelectedItems();
         const previewItems = selectedItems.length ? selectedItems : allItems;
         const payableItems = selectedItems.filter((item) => item.balanceValue > 0);
         const revertibleItems = selectedItems.filter(
@@ -559,12 +641,88 @@
         button.addEventListener("click", handler);
       });
 
+      root.querySelectorAll("[data-charge-bulk-form]").forEach((form) => {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const submitter =
+            event.submitter instanceof HTMLButtonElement
+              ? event.submitter
+              : form.querySelector("button[type='submit']");
+
+          if (!submitter || submitter.disabled) {
+            return;
+          }
+
+          const selectedItems = getSelectedItems();
+          if (!selectedItems.length) {
+            console.warn("[finance][bulk-status] submit sem selecao");
+            showToast("Selecione pelo menos uma mensalidade para a acao em lote.", "error");
+            syncSelection();
+            return;
+          }
+
+          const originalText = submitter.textContent;
+          submitter.disabled = true;
+          submitter.classList.add("finance-is-loading");
+          submitter.textContent = "Salvando...";
+
+          const payload = new FormData(form);
+          payload.delete("feeIds");
+          selectedItems.forEach((item) => {
+            payload.append("feeIds", item.feeId);
+          });
+
+          console.debug("[finance][bulk-status] selecionados", selectedItems.map((item) => ({
+            feeId: item.feeId,
+            name: item.name,
+            balanceValue: item.balanceValue,
+            amountPaid: item.amountPaid,
+            monthlyStatus: item.monthlyStatus,
+          })));
+          console.debug("[finance][bulk-status] payload", Array.from(payload.entries()));
+
+          try {
+            const response = await postJson(form.action, payload);
+            console.debug("[finance][bulk-status] resposta", response);
+            showToast(response.message || "Acao em lote concluida.", "success");
+
+            if (response.redirectUrl) {
+              window.location.assign(response.redirectUrl);
+              return;
+            }
+
+            window.location.reload();
+          } catch (error) {
+            console.error("[finance][bulk-status] erro", error);
+            showToast(error.message || "Nao foi possivel concluir a acao em lote.", "error");
+          } finally {
+            submitter.classList.remove("finance-is-loading");
+            submitter.textContent = originalText;
+            syncSelection();
+          }
+        });
+      });
+
       syncSelection();
     });
   }
 
   function initKeyboardShortcuts() {
     document.addEventListener("keydown", (event) => {
+      const openDialog = document.querySelector(".finance-dialog:not([hidden])");
+      if (event.key === "Escape" && openDialog) {
+        event.preventDefault();
+        const closeButton = openDialog.querySelector("[data-dialog-close]");
+        if (closeButton instanceof HTMLElement) {
+          closeButton.click();
+        } else {
+          openDialog.hidden = true;
+          document.body.classList.remove("finance-dialog-open");
+        }
+        return;
+      }
+
       const target = event.target;
       const isTypingTarget =
         target instanceof HTMLElement &&
@@ -593,6 +751,149 @@
     });
   }
 
+  function initFinanceDialogs() {
+    const dialogTransitionMs = 240;
+
+    const clearDialogTimer = (dialog) => {
+      if (!dialog || !dialog.__hideTimer) return;
+      window.clearTimeout(dialog.__hideTimer);
+      dialog.__hideTimer = null;
+    };
+
+    const closeDialog = (dialog) => {
+      if (!dialog) return;
+      clearDialogTimer(dialog);
+      dialog.classList.remove("is-visible");
+      dialog.__hideTimer = window.setTimeout(() => {
+        dialog.hidden = true;
+        dialog.__hideTimer = null;
+        if (!document.querySelector('.finance-dialog.is-visible:not([hidden])')) {
+          document.body.classList.remove("finance-dialog-open");
+        }
+      }, dialogTransitionMs);
+    };
+
+    const openDialog = (dialog) => {
+      if (!dialog) return;
+      clearDialogTimer(dialog);
+      dialog.hidden = false;
+      document.body.classList.add("finance-dialog-open");
+      window.requestAnimationFrame(() => {
+        dialog.classList.add("is-visible");
+      });
+
+      const autofocusField = dialog.querySelector("[data-competence-search], [autofocus]");
+      if (autofocusField instanceof HTMLElement) {
+        window.setTimeout(() => autofocusField.focus(), 120);
+      }
+    };
+
+    document.querySelectorAll("[data-dialog-open]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        const target = button.getAttribute("data-dialog-open");
+        const dialog = document.querySelector(`[data-finance-dialog="${target}"]`);
+        if (!dialog) return;
+        event.preventDefault();
+        openDialog(dialog);
+      });
+    });
+
+    document.querySelectorAll("[data-finance-dialog]").forEach((dialog) => {
+      dialog.querySelectorAll("[data-dialog-close]").forEach((button) => {
+        button.addEventListener("click", () => closeDialog(dialog));
+      });
+    });
+
+    const requestedDialog = new URLSearchParams(window.location.search).get("openDialog");
+    if (requestedDialog) {
+      const dialog = document.querySelector(`[data-finance-dialog="${requestedDialog}"]`);
+      if (dialog) {
+        openDialog(dialog);
+
+        if (window.history?.replaceState) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("openDialog");
+          window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+        }
+      }
+    }
+  }
+
+  function initCompetencePlanForms() {
+    document.querySelectorAll("[data-competence-plan-form]").forEach((form) => {
+      const dialog = form.closest("[data-finance-dialog]");
+      const searchInput = form.querySelector("[data-competence-search]");
+      const playerRows = Array.from(form.querySelectorAll("[data-competence-player]"));
+      const countNodes = {
+        MONTHLY: form.querySelector('[data-competence-count="MONTHLY"]'),
+        PER_MATCH: form.querySelector('[data-competence-count="PER_MATCH"]'),
+        EXEMPT: form.querySelector('[data-competence-count="EXEMPT"]'),
+      };
+
+      const getCurrentPlan = (row) => {
+        const selected = row.querySelector("[data-competence-plan-input]:checked");
+        return selected?.value || "PER_MATCH";
+      };
+
+      const syncCounts = () => {
+        const counts = {
+          MONTHLY: 0,
+          PER_MATCH: 0,
+          EXEMPT: 0,
+        };
+
+        playerRows.forEach((row) => {
+          const plan = getCurrentPlan(row);
+          counts[plan] = (counts[plan] || 0) + 1;
+        });
+
+        Object.entries(countNodes).forEach(([plan, node]) => {
+          if (node) node.textContent = String(counts[plan] || 0);
+        });
+      };
+
+      const syncSearch = () => {
+        const term = String(searchInput?.value || "").trim().toLowerCase();
+        playerRows.forEach((row) => {
+          const haystack = row.getAttribute("data-player-search") || "";
+          row.hidden = term ? !haystack.includes(term) : false;
+        });
+      };
+
+      playerRows.forEach((row) => {
+        row.querySelectorAll("[data-competence-plan-input]").forEach((input) => {
+          input.addEventListener("change", syncCounts);
+        });
+      });
+
+      form.querySelectorAll("[data-set-competence-plan]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const plan = button.getAttribute("data-set-competence-plan") || "PER_MATCH";
+
+          playerRows.forEach((row) => {
+            const target = row.querySelector(`[data-competence-plan-input][value="${plan}"]`);
+            if (target && !target.disabled) target.checked = true;
+          });
+
+          syncCounts();
+        });
+      });
+
+      if (searchInput) {
+        searchInput.addEventListener("input", syncSearch);
+      }
+
+      form.addEventListener("submit", () => {
+        if (dialog) {
+          dialog.classList.remove("is-visible");
+        }
+      });
+
+      syncCounts();
+      syncSearch();
+    });
+  }
+
   function initAdminFinance() {
     initCategoryForms();
     initCopyButtons();
@@ -601,6 +902,8 @@
     initQuickPayButtons();
     initConfirmActions();
     initChargeBulkRoots();
+    initFinanceDialogs();
+    initCompetencePlanForms();
     initKeyboardShortcuts();
   }
 

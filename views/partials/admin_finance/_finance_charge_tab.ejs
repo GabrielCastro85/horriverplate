@@ -36,7 +36,7 @@
             sectionChipTone: "accent",
             sectionStatusBadgeMeta: automation.competenceState,
             sectionBadges: [
-              { label: `${pendingFees.length} na fila` },
+              { label: `${pendingFees.length} no recorte` },
               { label: `${summary.overdueCount} atrasado(s)` },
               { label: `${summary.dueTodayCount} vence hoje` },
               { label: `${summary.pendingWithWhatsappCount} com WhatsApp` },
@@ -59,7 +59,7 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div class="finance-dashboard-mini-stat">
-              <span>Na fila</span>
+              <span>No recorte</span>
               <strong><%= pendingFees.length %></strong>
             </div>
             <div class="finance-dashboard-mini-stat">
@@ -101,10 +101,10 @@
           <div class="finance-priority-alert__text">
             Faltam <strong><%= automation.preparation.missingCount %></strong> mensalidade(s) para a fila de cobranca ficar completa.
           </div>
-          <form method="POST" action="/admin/finance/monthly/ensure">
-            <%- stateFields({ tab: 'charge' }) %>
-            <button type="submit" class="finance-soft-button">Gerar mensalidades agora</button>
-          </form>
+          <a
+            href="<%= buildFinanceQuery({ tab: 'monthly', openDialog: 'competence-plans' }) %>#finance-fees"
+            class="finance-soft-button"
+          >Gerar mensalidades agora</a>
         </div>
       <% } %>
 
@@ -170,12 +170,21 @@
 
           <div class="finance-charge-list">
             <% pendingFees.forEach((fee) => { %>
+              <%
+                const perMatchQuickAmount =
+                  fee.billingMode === 'PER_MATCH' || fee.isLatePerMatch
+                    ? Math.min(fee.balance, fee.latePerMatchAmount || settings.latePerMatchAmount || 25)
+                    : 0;
+              %>
               <article
                 class="finance-card finance-charge-item p-4 space-y-3"
                 data-charge-item
                 data-fee-id="<%= fee.id %>"
                 data-player-name="<%- escapeAttr(fee.player.name) %>"
                 data-balance-label="<%- escapeAttr(formatCurrencyBR(fee.balance)) %>"
+                data-balance-value="<%= Number(fee.balance || 0) %>"
+                data-amount-paid="<%= Number(fee.amountPaid || 0) %>"
+                data-monthly-status="<%= fee.status %>"
                 data-whatsapp-url="<%- escapeAttr(fee.whatsappUrl || '') %>"
                 data-message="<%- escapeAttr(fee.whatsappMessage || '') %>"
               >
@@ -203,6 +212,7 @@
                     <% } %>
                     <% if (fee.billingMode === 'PER_MATCH') { %>
                       <span class="finance-chip"><%= formatCurrencyBR(fee.latePerMatchAmount || settings.latePerMatchAmount || 25) %> / pelada</span>
+                      <span class="finance-chip">Cobra so quando houver presenca</span>
                     <% } %>
                     <% if (fee.chargePriorityBucket === 0) { %>
                       <span class="finance-chip finance-chip--accent">Prioridade alta</span>
@@ -210,6 +220,7 @@
                       <span class="finance-chip finance-chip--accent">Acao hoje</span>
                     <% } %>
                     <% if (fee.isLatePerMatch) { %>
+                      <span class="finance-chip">Virou avulso apos vencimento</span>
                       <span class="finance-chip"><%= fee.lateMatchesPlayed || 0 %> pelada(s) x <%= formatCurrencyBR(fee.latePerMatchAmount || 25) %></span>
                     <% } %>
                     <% if (fee.paymentMethod) { %><span class="finance-chip"><%= getPaymentMethodLabel(fee.paymentMethod) %></span><% } %>
@@ -224,20 +235,40 @@
                     <% } else { %>
                       <span class="finance-chip">Sem WA</span>
                     <% } %>
-                    <button
-                      type="button"
-                      class="finance-soft-button text-xs"
-                      data-quick-pay-button
-                      data-endpoint="/admin/finance/monthly-fees/<%= fee.id %>/pay"
-                      data-amount="<%= fee.balance.toFixed(2).replace('.', ',') %>"
-                      data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
-                      data-paid-at="<%= currentDateInputValue %>"
-                      data-note="Quitacao rapida pela aba de cobranca"
-                      data-success-message="Mensalidade quitada pela fila de cobranca."
-                      data-hide-on-paid
-                    >
-                      Marcar como pago
-                    </button>
+                    <% if (perMatchQuickAmount > 0) { %>
+                      <button
+                        type="button"
+                        class="finance-soft-button text-xs"
+                        data-quick-pay-button
+                        data-endpoint="/admin/finance/monthly-fees/<%= fee.id %>/pay"
+                        data-amount="<%= perMatchQuickAmount.toFixed(2).replace('.', ',') %>"
+                        data-unit-amount="<%= Number(fee.latePerMatchAmount || settings.latePerMatchAmount || 25).toFixed(2).replace('.', ',') %>"
+                        data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
+                        data-paid-at="<%= currentDateInputValue %>"
+                        data-note="Recebimento rapido de uma pelada pela aba de cobranca"
+                        data-success-message="<%= perMatchQuickAmount < fee.balance ? 'Pagamento de 1 pelada registrado.' : 'Pagamento do avulso registrado.' %>"
+                        data-hide-on-paid
+                      >
+                        Receber 1 pelada
+                      </button>
+                    <% } else { %>
+                      <% if (fee.balance > 0) { %>
+                        <button
+                          type="button"
+                          class="finance-soft-button text-xs"
+                          data-quick-pay-button
+                          data-endpoint="/admin/finance/monthly-fees/<%= fee.id %>/pay"
+                          data-amount="<%= fee.balance.toFixed(2).replace('.', ',') %>"
+                          data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
+                          data-paid-at="<%= currentDateInputValue %>"
+                          data-note="Quitacao rapida pela aba de cobranca"
+                          data-success-message="Mensalidade quitada pela fila de cobranca."
+                          data-hide-on-paid
+                        >
+                          Marcar como pago
+                        </button>
+                      <% } %>
+                    <% } %>
                   </div>
                 </div>
               </article>

@@ -7,4 +7,7 @@
     latePerMatchAmount: <%- JSON.stringify(Number(currentFinanceView.settings.values.latePerMatchAmount || 25)) %>,
   });
 </script>
-<script src="/js/admin-finance.js?v=<%= assetVersion %>" defer></script>
+<script
+  src="/js/admin-finance.js?v=<%= typeof isProd !== 'undefined' && !isProd ? Date.now() : (typeof financeJsAssetVersion !== 'undefined' ? financeJsAssetVersion : (typeof financeAssetVersion !== 'undefined' ? financeAssetVersion : assetVersion)) %>"
+  defer
+></script>

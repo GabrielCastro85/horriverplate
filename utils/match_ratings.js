@@ -1,4 +1,5 @@
 const prisma = require("./db");
+const { isWeeklyVoteBallotValid } = require("../helpers/weeklyVoteValidation.helper");
 
 function normalizePosition(pos) {
   const p = (pos || "").toLowerCase();
@@ -18,7 +19,7 @@ function starsFromRank(rankIndex, totalPlayers) {
 }
 
 async function computeMatchRatingsAndAwards(matchId) {
-  const [ballots, playerStats] = await Promise.all([
+  const [ballotsRaw, playerStats] = await Promise.all([
     prisma.voteBallot.findMany({
       where: {
         token: {
@@ -43,6 +44,7 @@ async function computeMatchRatingsAndAwards(matchId) {
       include: { player: true },
     }),
   ]);
+  const ballots = ballotsRaw.filter((ballot) => isWeeklyVoteBallotValid(ballot));
 
   if (!playerStats.length) {
     return { error: "noStats" };

@@ -36,8 +36,7 @@ const {
   normalizeBillingMode,
   normalizeChargeBehavior,
   isPlayerEligibleForMonthlyFee,
-  fetchMonthlyMatchUsage,
-  fetchMonthlyLateMatchUsage,
+  fetchMonthlyMatchChargeUsage,
   calculateMonthlyFeeBreakdown,
 } = require("../services/financeRules.service");
 const { recordFinanceEvent } = require("../services/financeEventLog.service");
@@ -116,6 +115,41 @@ async function loadSyncedMonthlyFee(id, settings, referenceDate = getSaoPauloTod
   });
 }
 
+function normalizeCompetenceManualPlan(value) {
+  const normalized = normalizeParticipantType(value, "PER_MATCH");
+  return ["MONTHLY", "PER_MATCH", "EXEMPT"].includes(normalized) ? normalized : "PER_MATCH";
+}
+
+function parseCompetencePlayerPlans(body = {}) {
+  return Object.entries(body || {}).reduce((map, [key, value]) => {
+    const match = key.match(/^competencePlan_(\d+)$/);
+    if (!match) return map;
+
+    const playerId = parseIdParam(match[1], null);
+    if (!playerId) return map;
+
+    map.set(playerId, normalizeCompetenceManualPlan(value));
+    return map;
+  }, new Map());
+}
+
+function summarizeCompetencePlayerPlans(players = [], planMap = new Map()) {
+  return players.reduce(
+    (summary, player) => {
+      const plan = normalizeCompetenceManualPlan(planMap.get(player.id) || "PER_MATCH");
+      if (plan === "MONTHLY") summary.monthlyCount += 1;
+      else if (plan === "EXEMPT") summary.exemptCount += 1;
+      else summary.perMatchCount += 1;
+      return summary;
+    },
+    {
+      monthlyCount: 0,
+      perMatchCount: 0,
+      exemptCount: 0,
+    }
+  );
+}
+
 async function handleEnsureMonthlyCompetence(req, res) {
   try {
     const filters = normalizeFinanceFilters(req.body);
@@ -140,6 +174,8 @@ async function handleEnsureMonthlyCompetence(req, res) {
         orderBy: { name: "asc" },
       })
     ).filter(isPlayerEligibleForMonthlyFee);
+    const useManualCompetencePlans = parseCheckbox(req.body.useManualCompetencePlans);
+    const competencePlanMap = useManualCompetencePlans ? parseCompetencePlayerPlans(req.body) : new Map();
 
     if (!eligiblePlayers.length) {
       return redirectToFinance(res, { ...filters, error: "sem-jogadores-ativos" }, redirectHash);
@@ -151,9 +187,12 @@ async function handleEnsureMonthlyCompetence(req, res) {
       year: filters.year,
       settings,
       eligiblePlayers,
+      competencePlanMap,
+      useManualCompetencePlans,
       dryRun: false,
       referenceDate: getSaoPauloTodayDate(),
     });
+    const planSummary = summarizeCompetencePlayerPlans(eligiblePlayers, competencePlanMap);
 
     await createFinanceAudit(req, "finance.monthly_competence.ensure", "Competencia mensal garantida", {
       month: filters.month,
@@ -161,6 +200,10 @@ async function handleEnsureMonthlyCompetence(req, res) {
       eligibleCount: result.eligibleCount,
       missingCount: result.missingCount,
       createdCount: result.createdCount,
+      useManualCompetencePlans,
+      monthlyCount: planSummary.monthlyCount,
+      perMatchCount: planSummary.perMatchCount,
+      exemptCount: planSummary.exemptCount,
       sourceTab: filters.tab,
     });
 
@@ -441,13 +484,22 @@ async function updateMonthlyFee(req, res) {
     const isExempt = parseCheckbox(req.body.isExempt);
     const syncAmountWithRules = parseCheckbox(req.body.syncAmountWithRules);
     const billingModeInput = normalizeBillingMode(req.body.billingMode, current.billingMode);
+    const chargeUsageMap = await fetchMonthlyMatchChargeUsage({
+      prisma,
+      playerIds: [current.playerId],
+      month: current.month,
+      year: current.year,
+      dueDay: settings?.dueDay || 10,
+    });
+    const chargeUsage = chargeUsageMap.get(current.playerId) || null;
     const recalculated = calculateMonthlyFeeBreakdown({
       player: current.player,
       settings,
       month: current.month,
       year: current.year,
-      matchesPlayed: current.matchesPlayed || 0,
-      lateMatchesPlayed: current.lateMatchesPlayed || 0,
+      matchesPlayed: chargeUsage?.matchesPlayed ?? current.matchesPlayed ?? 0,
+      lateMatchesPlayed: chargeUsage?.lateMatchesPlayed ?? current.lateMatchesPlayed ?? 0,
+      matchChargeUsage: chargeUsage,
       manualDiscountAmount,
       amountPaid: current.amountPaid,
       currentStatus: current.status,
@@ -462,7 +514,7 @@ async function updateMonthlyFee(req, res) {
       amountDue: resolvedAmountDue,
       amountPaid: current.amountPaid,
       isExempt: participantType === "EXEMPT",
-      billingMode: current.billingMode || nextBillingMode,
+      billingMode,
     });
     const paidAt =
       status === "PAID" || status === "PARTIAL"
@@ -549,32 +601,26 @@ async function recalculateMonthlyFee(req, res) {
         statusCode: 404,
       });
     }
-    const [usageMap, lateUsageMap] = await Promise.all([
-      fetchMonthlyMatchUsage({
-        prisma,
-        playerIds: [current.playerId],
-        month: current.month,
-        year: current.year,
-      }),
-      fetchMonthlyLateMatchUsage({
-        prisma,
-        playerIds: [current.playerId],
-        month: current.month,
-        year: current.year,
-        dueDay: settings?.dueDay || 10,
-      }),
-    ]);
+    const chargeUsageMap = await fetchMonthlyMatchChargeUsage({
+      prisma,
+      playerIds: [current.playerId],
+      month: current.month,
+      year: current.year,
+      dueDay: settings?.dueDay || 10,
+    });
     const manualDiscountAmount = parseMoneyInput(
       req.body.manualDiscountAmount,
       current.manualDiscountAmount || 0
     );
+    const chargeUsage = chargeUsageMap.get(current.playerId) || null;
     const breakdown = calculateMonthlyFeeBreakdown({
       player: current.player,
       settings,
       month: current.month,
       year: current.year,
-      matchesPlayed: usageMap.get(current.playerId) || 0,
-      lateMatchesPlayed: lateUsageMap.get(current.playerId) || 0,
+      matchesPlayed: chargeUsage?.matchesPlayed || 0,
+      lateMatchesPlayed: chargeUsage?.lateMatchesPlayed || 0,
+      matchChargeUsage: chargeUsage,
       manualDiscountAmount,
       amountPaid: current.amountPaid,
       currentStatus: current.status,
@@ -867,6 +913,15 @@ async function handleBulkMonthlyStatus(req, res) {
     const selectedIds = parseIdList(req.body.feeIds);
     const bulkAction = normalizeUppercaseValue(req.body.bulkAction, "PAID");
 
+    console.debug("[finance][bulk-monthly-status] request", {
+      month: filters.month,
+      year: filters.year,
+      bulkAction,
+      selectedIds,
+      selectedCount: selectedIds.length,
+      wantsJson: wantsJson(req),
+    });
+
     if (!selectedIds.length) {
       return sendFinanceResponse(req, res, {
         ok: false,
@@ -982,6 +1037,7 @@ async function handleBulkMonthlyStatus(req, res) {
         payload: {
           message: `${resetIds.length} mensalidade(s) voltaram para pendente.`,
           count: resetIds.length,
+          processedFeeIds: resetIds,
         },
       });
     }
@@ -1030,6 +1086,7 @@ async function handleBulkMonthlyStatus(req, res) {
         message: `${payableFees.length} mensalidade(s) marcadas como pagas.`,
         count: payableFees.length,
         totalAmount: roundCurrency(totalAmount),
+        processedFeeIds: payableFees.map((fee) => fee.id),
       },
     });
   } catch (err) {

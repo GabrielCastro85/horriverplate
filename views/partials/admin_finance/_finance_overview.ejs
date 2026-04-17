@@ -390,10 +390,10 @@
             <a href="<%= buildFinanceQuery({ tab: 'cash' }) %>#finance-cash" class="finance-soft-button">Registrar no caixa</a>
             <a href="<%= buildFinanceQuery({ tab: 'guests' }) %>#finance-guests" class="finance-soft-button">Lancar convidado</a>
             <% if (!automation.preparation.prepared) { %>
-              <form method="POST" action="/admin/finance/monthly/ensure">
-                <%- stateFields({ tab: 'overview' }) %>
-                <button type="submit" class="finance-soft-button w-full">Gerar mensalidades faltantes</button>
-              </form>
+              <a
+                href="<%= buildFinanceQuery({ tab: 'monthly', openDialog: 'competence-plans' }) %>#finance-fees"
+                class="finance-soft-button w-full"
+              >Gerar mensalidades faltantes</a>
             <% } %>
           </div>
         </article>
@@ -463,10 +463,10 @@
                   <div class="finance-priority-alert__text"><%= alert.description %></div>
                 </div>
                 <% if (alert.actionType === "ensure_competence") { %>
-                  <form method="POST" action="/admin/finance/monthly/ensure">
-                    <%- stateFields({ tab: 'overview' }) %>
-                    <button type="submit" class="finance-soft-button w-full"><%= alert.actionLabel %></button>
-                  </form>
+                  <a
+                    href="<%= buildFinanceQuery({ tab: 'monthly', openDialog: 'competence-plans' }) %>#finance-fees"
+                    class="finance-soft-button w-full"
+                  ><%= alert.actionLabel %></a>
                 <% } else if (alert.href) { %>
                   <a href="<%= alert.href %>" class="finance-soft-button w-full"><%= alert.actionLabel %></a>
                 <% } %>

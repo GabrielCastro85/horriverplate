@@ -71,7 +71,7 @@ function resolveCollectionStatus(monthlyFee, now = new Date()) {
     return "PARTIAL";
   }
   if ((monthlyFee.billingMode === "LATE_PER_MATCH" || monthlyFee.billingMode === "PER_MATCH") && paid <= 0 && balance <= 0) {
-    return "CURRENT";
+    return "NO_CHARGE";
   }
   if (balance <= 0) return "PAID";
   if (paid > 0 && balance > 0) return "PARTIAL";
@@ -104,23 +104,31 @@ function matchesMonthlyCollectionFilter(monthlyFee, filter) {
 
 function matchesChargeFilter(monthlyFee, filter) {
   const normalized = normalizeChargeFilter(filter);
-  if (monthlyFee.status === "EXEMPT" || roundCurrency(monthlyFee.balance) <= 0) return false;
+  if (monthlyFee.status === "EXEMPT") return false;
+
+  const balance = roundCurrency(monthlyFee.balance);
+  const isPending = balance > 0;
 
   switch (normalized) {
+    case "PAID":
+      return monthlyFee.collectionStatus === "PAID";
     case "OVERDUE":
-      return monthlyFee.chargePriorityBucket === 0;
+      return isPending && monthlyFee.chargePriorityBucket === 0;
     case "DUE_TODAY":
-      return monthlyFee.chargePriorityBucket === 1;
+      return isPending && monthlyFee.chargePriorityBucket === 1;
+    case "MONTHLY":
+      return isPending && monthlyFee.billingMode === "MONTHLY";
+    case "PER_MATCH":
+      return isPending && monthlyFee.billingMode === "PER_MATCH";
+    case "LATE_PER_MATCH":
+      return isPending && monthlyFee.billingMode === "LATE_PER_MATCH";
     case "WITH_WHATSAPP":
-      return Boolean(monthlyFee.player?.whatsapp);
-    case "WITHOUT_WHATSAPP":
-      return !monthlyFee.player?.whatsapp;
+      return isPending && Boolean(monthlyFee.player?.whatsapp);
     case "PARTIAL":
       return monthlyFee.collectionStatus === "PARTIAL";
-    case "HIGHEST_AMOUNT":
     case "ALL":
     default:
-      return true;
+      return isPending;
   }
 }
 
@@ -144,8 +152,8 @@ function sortChargeFees(monthlyFees, filter, now = new Date()) {
   return [...monthlyFees]
     .filter((fee) => matchesChargeFilter(fee, normalized))
     .sort((a, b) => {
-      if (normalized === "HIGHEST_AMOUNT") {
-        if (b.balance !== a.balance) return b.balance - a.balance;
+      if (normalized === "PAID") {
+        if (b.amountPaid !== a.amountPaid) return b.amountPaid - a.amountPaid;
         return compareFeesByName(a, b);
       }
 

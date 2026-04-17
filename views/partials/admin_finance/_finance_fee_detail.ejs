@@ -39,29 +39,51 @@
       ? detailEmptyCopy
       : "Clique em uma mensalidade da tabela para alimentar este painel com valor devido, saldo, historico e acoes do participante.";
   const selectedFeePaidAmount = selectedFee ? decimalToNumber(selectedFee.amountPaid) : 0;
+  const selectedFeeBaseAmount = selectedFee ? decimalToNumber(selectedFee.baseAmount || selectedFee.amountDue) : 0;
+  const selectedFeeUnitAmount = selectedFee ? decimalToNumber(selectedFee.latePerMatchAmount || 25) : 0;
+  const selectedFeeSpecialFirstMatchAmount = selectedFee
+    ? selectedFeeBaseAmount - (Math.max((selectedFee.matchesPlayed || 0) - 1, 0) * selectedFeeUnitAmount)
+    : 0;
+  const selectedFeeHasAprilTransition =
+    Boolean(selectedFee?.specialTransitionApplied) &&
+    (selectedFee?.billingMode === "PER_MATCH" || selectedFee?.isLatePerMatch) &&
+    selectedFeeSpecialFirstMatchAmount > 0 &&
+    selectedFeeSpecialFirstMatchAmount < selectedFeeUnitAmount;
   const feeModeAlert =
     selectedFee?.isLatePerMatch
       ? {
           tone: "warning",
           title: "Virou avulso por atraso neste mes",
-          text: `Como o pagamento nao fechou ate o dia ${dueDay}, cada presenca apos essa data soma ${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} ao acumulado.`,
+          text: selectedFeeHasAprilTransition
+            ? `Em abril/2026, a 1a pelada entrou por ${formatCurrencyBR(selectedFeeSpecialFirstMatchAmount)} e as demais seguem ${formatCurrencyBR(selectedFeeUnitAmount)} por presenca.`
+            : `Como o pagamento nao fechou ate o dia ${dueDay}, cada presenca apos essa data soma ${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} ao acumulado.`,
         }
       : selectedFee?.billingMode === "PER_MATCH"
         ? {
             tone: "info",
             title: "Competencia atual no modo avulso mensal",
-            text: `Neste mes, o jogador paga ${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} por presenca, com acumulado recalculado pelas peladas marcadas.`,
+            text: selectedFeeHasAprilTransition
+              ? `Abril/2026 ficou em transicao: a 1a pelada vale ${formatCurrencyBR(selectedFeeSpecialFirstMatchAmount)} e as demais seguem ${formatCurrencyBR(selectedFeeUnitAmount)} por presenca.`
+              : `Neste mes, o jogador paga ${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} por presenca, com acumulado recalculado pelas peladas marcadas.`,
           }
         : null;
   const feeQuickSummary = selectedFee
     ? [
         selectedFee.billingModeMeta?.label,
         selectedFee.billingMode === "PER_MATCH" || selectedFee.isLatePerMatch
-          ? `${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} / pelada`
+          ? selectedFeeHasAprilTransition
+            ? `1a ${formatCurrencyBR(selectedFeeSpecialFirstMatchAmount)} • demais ${formatCurrencyBR(selectedFeeUnitAmount)}`
+            : `${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} / pelada`
           : null,
         selectedFee.matchesPlayed ? `${selectedFee.matchesPlayed} pelada(s)` : null,
       ].filter(Boolean)
     : [];
+  const perMatchQuickAmount =
+    selectedFee && (selectedFee.billingMode === "PER_MATCH" || selectedFee.isLatePerMatch)
+      ? selectedFeeHasAprilTransition && selectedFeePaidAmount <= 0
+        ? Math.min(selectedFeeBalance, selectedFeeSpecialFirstMatchAmount)
+        : Math.min(selectedFeeBalance, selectedFee.latePerMatchAmount || 25)
+      : 0;
 %>
 
 <div class="finance-panel p-5 space-y-4" id="<%= feeDetailSectionId %>-detail">
@@ -232,6 +254,23 @@
             <input type="text" name="note" class="finance-input" placeholder="Ex.: pagamento parcial, Pix, acerto manual.">
           </label>
           <div class="finance-fee-form-grid__full finance-inline-actions">
+            <% if (perMatchQuickAmount > 0) { %>
+              <button
+                type="button"
+                class="finance-soft-button"
+                data-quick-pay-button
+                data-endpoint="/admin/finance/monthly-fees/<%= selectedFee.id %>/pay"
+                data-amount="<%= perMatchQuickAmount.toFixed(2).replace('.', ',') %>"
+                data-unit-amount="<%= (selectedFee.latePerMatchAmount || 25).toFixed(2).replace('.', ',') %>"
+                data-payment-method="<%= selectedFee.paymentMethod || 'PIX' %>"
+                data-paid-at="<%= currentDateInputValue %>"
+                data-note="Recebimento rapido de uma pelada pelo painel lateral"
+                data-success-message="<%= perMatchQuickAmount < selectedFeeBalance ? 'Pagamento de 1 pelada registrado.' : 'Pagamento do avulso registrado.' %>"
+                data-hide-on-paid
+              >
+                Receber 1 pelada
+              </button>
+            <% } %>
             <% if (selectedFeeBalance > 0) { %>
               <button
                 type="button"

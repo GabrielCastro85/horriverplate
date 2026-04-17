@@ -18,6 +18,10 @@ const { deleteCache } = require("../utils/page_cache");
 const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
 const { rebuildAchievementsForAllPlayers } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
+const {
+  decorateWeeklyVoteBallot,
+  isWeeklyVoteBallotValid,
+} = require("../helpers/weeklyVoteValidation.helper");
 const { ensureFinanceSettings } = require("../services/financePage.service");
 const { syncMonthlyFeeForPlayerCompetence } = require("../services/financeAutomation.service");
 
@@ -2804,7 +2808,7 @@ router.get("/matches/:id/votes", requireAdmin, async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    const ballots = await prisma.voteBallot.findMany({
+    const ballotsRaw = await prisma.voteBallot.findMany({
       where: { token: { session: { matchId: id } } },
       include: {
         token: { include: { player: true } },
@@ -2812,18 +2816,78 @@ router.get("/matches/:id/votes", requireAdmin, async (req, res) => {
       },
       orderBy: { createdAt: "asc" },
     });
+    const ballots = ballotsRaw.map((ballot) => decorateWeeklyVoteBallot(ballot));
+    const invalidByCode = ballots.reduce((acc, ballot) => {
+      const code = ballot.voteValidation?.invalidCode;
+      if (!code) return acc;
+      acc[code] = (acc[code] || 0) + 1;
+      return acc;
+    }, {});
 
     return res.render("admin_votes", {
       title: "Votos da pelada",
       match,
       session,
       ballots,
+      voteIntegritySummary: {
+        totalBallots: ballots.length,
+        invalidBallots: ballots.filter((ballot) => ballot.voteValidation?.isInvalid).length,
+        validBallots: ballots.filter((ballot) => !ballot.voteValidation?.isInvalid).length,
+        invalidByCode,
+      },
       voteDeleted: req.query.voteDeleted === "1",
+      voteValidated: req.query.voteValidated === "1",
       voteDeleteError: req.query.voteDeleteError || null,
+      voteValidateError: req.query.voteValidateError || null,
     });
   } catch (err) {
     console.error("Erro ao listar votos da pelada:", err);
     return res.redirect("/admin");
+  }
+});
+
+router.post("/matches/:id/votes/:ballotId/validate", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    const ballotId = Number(req.params.ballotId);
+    if (Number.isNaN(matchId) || Number.isNaN(ballotId)) {
+      return res.redirect("/admin");
+    }
+
+    const ballot = await prisma.voteBallot.findUnique({
+      where: { id: ballotId },
+      include: {
+        token: {
+          include: {
+            session: true,
+          },
+        },
+        ratings: true,
+      },
+    });
+
+    if (!ballot || !ballot.token || ballot.token.session?.matchId !== matchId) {
+      return res.redirect(`/admin/matches/${matchId}/votes?voteValidateError=notFound`);
+    }
+
+    const decoratedBallot = decorateWeeklyVoteBallot(ballot);
+    if (!decoratedBallot.voteValidation?.isInvalid) {
+      return res.redirect(`/admin/matches/${matchId}/votes?voteValidateError=alreadyValid`);
+    }
+
+    await prisma.voteBallot.update({
+      where: { id: ballotId },
+      data: {
+        isInvalid: false,
+        validatedManually: true,
+        validatedManuallyAt: new Date(),
+      },
+    });
+
+    return res.redirect(`/admin/matches/${matchId}/votes?voteValidated=1`);
+  } catch (err) {
+    console.error("Erro ao validar voto manualmente:", err);
+    return res.redirect(`/admin/matches/${req.params.id}/votes?voteValidateError=server`);
   }
 });
 
@@ -3627,13 +3691,14 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
       return res.redirect(`/admin/matches/${matchId}?error=noSession`);
     }
 
-    const ballots = await prisma.voteBallot.findMany({
+    const ballotsRaw = await prisma.voteBallot.findMany({
       where: { token: { voteSessionId: session.id } },
       include: {
         ratings: true,
         token: true,
       },
     });
+    const ballots = ballotsRaw.filter((ballot) => isWeeklyVoteBallotValid(ballot));
 
     if (!ballots.length) {
       return res.redirect(`/admin/matches/${matchId}?error=noVotes`);

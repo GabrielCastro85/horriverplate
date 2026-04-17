@@ -227,11 +227,19 @@ model VoteBallot {
   id                  Int           @id @default(autoincrement())
   voteTokenId         Int           @unique
   bestOverallPlayerId Int?
+  isInvalid           Boolean       @default(false)
+  invalidReason       String?
+  invalidCode         String?
+  validatedManually   Boolean       @default(false)
+  validatedManuallyAt DateTime?
   createdAt           DateTime      @default(now())
   bestOverallPlayer   Player?       @relation("BestOverallPlayer", fields: [bestOverallPlayerId], references: [id])
   token               VoteToken     @relation(fields: [voteTokenId], references: [id])
   rankings            VoteRanking[]
   ratings             VoteRating[]
+
+  @@index([isInvalid])
+  @@index([validatedManually])
 }
 
 model VoteRating {

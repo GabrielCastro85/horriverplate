@@ -12,6 +12,7 @@ const {
   CHARGE_BEHAVIOR_OPTIONS,
   DEFAULT_LATE_PER_MATCH_AMOUNT,
   MONTHLY_FEE_BILLING_MODE_META,
+  getSpecialFinanceCompetenceRule,
 } = require("../constants/finance");
 
 function normalizeParticipantType(value, fallback = "MONTHLY") {
@@ -47,53 +48,113 @@ function isPlayerEligibleForMonthlyFee(player) {
 }
 
 async function fetchMonthlyMatchUsage({ prisma, playerIds, month, year }) {
-  if (!playerIds?.length) return new Map();
-  const { start, end } = getMonthDateRange(year, month);
-  const stats = await prisma.playerStat.findMany({
-    where: {
-      playerId: { in: playerIds },
-      present: true,
-      match: {
-        playedAt: {
-          gte: start,
-          lt: end,
-        },
-      },
-    },
-    select: {
-      playerId: true,
-    },
+  const usageMap = await fetchMonthlyMatchChargeUsage({
+    prisma,
+    playerIds,
+    month,
+    year,
   });
 
-  return stats.reduce((map, stat) => {
-    map.set(stat.playerId, (map.get(stat.playerId) || 0) + 1);
+  return Array.from(usageMap.entries()).reduce((map, [playerId, usage]) => {
+    map.set(playerId, usage.matchesPlayed || 0);
     return map;
   }, new Map());
 }
 
-async function fetchMonthlyLateMatchUsage({ prisma, playerIds, month, year, dueDay }) {
+async function fetchMonthlyMatchChargeUsage({
+  prisma,
+  playerIds,
+  month,
+  year,
+  dueDay = 10,
+}) {
   if (!playerIds?.length) return new Map();
-  const { start, end } = getLateChargeDateRange(year, month, dueDay);
-  if (start >= end) return new Map();
+  const { start, end } = getMonthDateRange(year, month);
+  const monthlyMatches = await prisma.match.findMany({
+    where: {
+      playedAt: {
+        gte: start,
+        lt: end,
+      },
+    },
+    select: {
+      id: true,
+      playedAt: true,
+    },
+    orderBy: [{ playedAt: "asc" }, { id: "asc" }],
+  });
+
+  if (!monthlyMatches.length) return new Map();
+
+  const firstMatchId = monthlyMatches[0]?.id || null;
+  const matchIds = monthlyMatches.map((match) => match.id);
+  const { start: lateStart, end: lateEnd } = getLateChargeDateRange(year, month, dueDay);
+  const hasLateWindow = lateStart < lateEnd;
 
   const stats = await prisma.playerStat.findMany({
     where: {
       playerId: { in: playerIds },
       present: true,
-      match: {
-        playedAt: {
-          gte: start,
-          lt: end,
-        },
-      },
+      matchId: { in: matchIds },
     },
     select: {
       playerId: true,
+      matchId: true,
+      match: {
+        select: {
+          playedAt: true,
+        },
+      },
     },
   });
 
-  return stats.reduce((map, stat) => {
-    map.set(stat.playerId, (map.get(stat.playerId) || 0) + 1);
+  const usageMap = stats.reduce((map, stat) => {
+    const current = map.get(stat.playerId) || {
+      matchesPlayed: 0,
+      lateMatchesPlayed: 0,
+      firstMatchPlayed: false,
+      matchesAfterFirst: 0,
+    };
+
+    current.matchesPlayed += 1;
+    if (firstMatchId && stat.matchId === firstMatchId) {
+      current.firstMatchPlayed = true;
+    }
+
+    if (
+      hasLateWindow &&
+      stat.match?.playedAt &&
+      stat.match.playedAt >= lateStart &&
+      stat.match.playedAt < lateEnd
+    ) {
+      current.lateMatchesPlayed += 1;
+    }
+
+    map.set(stat.playerId, current);
+    return map;
+  }, new Map());
+
+  for (const usage of usageMap.values()) {
+    usage.matchesAfterFirst = Math.max(
+      Number(usage.matchesPlayed || 0) - (usage.firstMatchPlayed ? 1 : 0),
+      0
+    );
+  }
+
+  return usageMap;
+}
+
+async function fetchMonthlyLateMatchUsage({ prisma, playerIds, month, year, dueDay }) {
+  const usageMap = await fetchMonthlyMatchChargeUsage({
+    prisma,
+    playerIds,
+    month,
+    year,
+    dueDay,
+  });
+
+  return Array.from(usageMap.entries()).reduce((map, [playerId, usage]) => {
+    map.set(playerId, usage.lateMatchesPlayed || 0);
     return map;
   }, new Map());
 }
@@ -120,6 +181,8 @@ function isPastDueDate(referenceDate, dueDate) {
 }
 
 function resolveMonthlyFeeBillingMode({
+  month,
+  year,
   participantType,
   currentBillingMode,
   currentStatus,
@@ -133,6 +196,15 @@ function resolveMonthlyFeeBillingMode({
   const explicitBillingMode = normalizeBillingMode(currentBillingMode, null);
   if (explicitBillingMode === "EXEMPT") return "EXEMPT";
   if (explicitBillingMode === "PER_MATCH") return "PER_MATCH";
+
+  const specialCompetenceRule = getSpecialFinanceCompetenceRule(month, year);
+  if (
+    specialCompetenceRule &&
+    (normalizedParticipantType === "MONTHLY" || normalizedParticipantType === "SPECIAL")
+  ) {
+    return "MONTHLY";
+  }
+
   if (explicitBillingMode === "LATE_PER_MATCH") return "LATE_PER_MATCH";
 
   if (isPastDueDate(referenceDate, dueDate) && currentStatus !== "PAID") {
@@ -178,8 +250,10 @@ function calculateMonthlyFeeBreakdown({
   settings,
   month,
   year,
+  participantTypeOverride = null,
   matchesPlayed = 0,
   lateMatchesPlayed = 0,
+  matchChargeUsage = null,
   manualDiscountAmount = 0,
   amountPaid = 0,
   currentStatus = null,
@@ -187,7 +261,9 @@ function calculateMonthlyFeeBreakdown({
   referenceDate = new Date(),
   latePerMatchAmount = null,
 }) {
-  const participantType = normalizeParticipantType(player?.financeParticipantType);
+  const participantType = normalizeParticipantType(
+    participantTypeOverride || player?.financeParticipantType
+  );
   const monthlyBaseAmount = roundCurrency(
     player?.financeAmountOverride != null
       ? decimalToNumber(player.financeAmountOverride)
@@ -212,24 +288,41 @@ function calculateMonthlyFeeBreakdown({
       : decimalToNumber(settings?.defaultAutoDiscountAmount)
   );
   const manualDiscount = roundCurrency(manualDiscountAmount);
-  const normalizedMatchesPlayed = Number(matchesPlayed || 0);
-  const normalizedLateMatchesPlayed = Number(lateMatchesPlayed || 0);
+  const normalizedMatchesPlayed = Number(
+    matchChargeUsage?.matchesPlayed ?? matchesPlayed ?? 0
+  );
+  const normalizedLateMatchesPlayed = Number(
+    matchChargeUsage?.lateMatchesPlayed ?? lateMatchesPlayed ?? 0
+  );
+  const firstMatchPlayed = Boolean(matchChargeUsage?.firstMatchPlayed);
+  const matchesAfterFirst = Number(
+    matchChargeUsage?.matchesAfterFirst ??
+      Math.max(normalizedMatchesPlayed - (firstMatchPlayed ? 1 : 0), 0)
+  );
   const extraMatches = matchLimitApplied ? Math.max(normalizedMatchesPlayed - matchLimitApplied, 0) : 0;
   const monthlyExtraAmount = roundCurrency(extraMatches * extraMatchAmount);
   const customAmountApplied = player?.financeAmountOverride != null;
   const dueDate = buildMonthlyDueDate(year, month, settings?.dueDay || 10);
-  const monthlyPlanAmount = roundCurrency(
-    Math.max(monthlyBaseAmount + monthlyExtraAmount - autoDiscountAmount - manualDiscount, 0)
-  );
+  const specialCompetenceRule = getSpecialFinanceCompetenceRule(month, year);
   const effectiveCurrentStatus =
-    currentStatus || computeMonthlyFeeStatus({ amountDue: monthlyPlanAmount, amountPaid, isExempt: false });
+    currentStatus || computeMonthlyFeeStatus({ amountDue: monthlyBaseAmount, amountPaid, isExempt: false });
   const billingMode = resolveMonthlyFeeBillingMode({
+    month,
+    year,
     participantType,
     currentBillingMode,
     currentStatus: effectiveCurrentStatus,
     dueDate,
     referenceDate,
   });
+  const monthlyBaseWithTransition = roundCurrency(
+    specialCompetenceRule && billingMode === "MONTHLY" && firstMatchPlayed
+      ? Math.max(monthlyBaseAmount - specialCompetenceRule.firstMatchAmount, 0)
+      : monthlyBaseAmount
+  );
+  const monthlyPlanAmount = roundCurrency(
+    Math.max(monthlyBaseWithTransition + monthlyExtraAmount - autoDiscountAmount - manualDiscount, 0)
+  );
 
   if (participantType === "EXEMPT" || billingMode === "EXEMPT") {
     return {
@@ -254,7 +347,12 @@ function calculateMonthlyFeeBreakdown({
   }
 
   if (billingMode === "PER_MATCH") {
-    const perMatchAccumulatedAmount = roundCurrency(normalizedMatchesPlayed * appliedLatePerMatchAmount);
+    const perMatchAccumulatedAmount = roundCurrency(
+      specialCompetenceRule
+        ? (firstMatchPlayed ? specialCompetenceRule.firstMatchAmount : 0) +
+            matchesAfterFirst * appliedLatePerMatchAmount
+        : normalizedMatchesPlayed * appliedLatePerMatchAmount
+    );
     const amountDue = roundCurrency(Math.max(perMatchAccumulatedAmount - autoDiscountAmount - manualDiscount, 0));
     const status = computeMonthlyFeeStatus({
       amountDue,
@@ -280,22 +378,34 @@ function calculateMonthlyFeeBreakdown({
       customAmountApplied: false,
       extraMatches: 0,
       latePerMatchAmount: appliedLatePerMatchAmount,
-      ruleLabel: buildRuleLabel({
-        participantType,
-        billingMode,
-        customAmountApplied: false,
-        extraMatches: 0,
-        autoDiscountAmount,
-        manualDiscount,
-        matchesPlayed: normalizedMatchesPlayed,
-        lateMatchesPlayed: normalizedLateMatchesPlayed,
-        latePerMatchAmount: appliedLatePerMatchAmount,
-      }),
+      ruleLabel:
+        specialCompetenceRule && firstMatchPlayed
+          ? matchesAfterFirst > 0
+            ? `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)} + ${matchesAfterFirst} x ${roundCurrency(
+                appliedLatePerMatchAmount
+              )}`
+            : `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)}`
+          : buildRuleLabel({
+              participantType,
+              billingMode,
+              customAmountApplied: false,
+              extraMatches: 0,
+              autoDiscountAmount,
+              manualDiscount,
+              matchesPlayed: normalizedMatchesPlayed,
+              lateMatchesPlayed: normalizedLateMatchesPlayed,
+              latePerMatchAmount: appliedLatePerMatchAmount,
+            }),
     };
   }
 
   if (billingMode === "LATE_PER_MATCH") {
-    const lateAccumulatedAmount = roundCurrency(normalizedLateMatchesPlayed * appliedLatePerMatchAmount);
+    const lateAccumulatedAmount = roundCurrency(
+      specialCompetenceRule
+        ? (firstMatchPlayed ? specialCompetenceRule.firstMatchAmount : 0) +
+            matchesAfterFirst * appliedLatePerMatchAmount
+        : normalizedLateMatchesPlayed * appliedLatePerMatchAmount
+    );
     const amountDue = roundCurrency(Math.max(lateAccumulatedAmount - autoDiscountAmount - manualDiscount, 0));
     const status = computeMonthlyFeeStatus({
       amountDue,
@@ -321,17 +431,24 @@ function calculateMonthlyFeeBreakdown({
       customAmountApplied,
       extraMatches: 0,
       latePerMatchAmount: appliedLatePerMatchAmount,
-      ruleLabel: buildRuleLabel({
-        participantType,
-        billingMode,
-        customAmountApplied,
-        extraMatches: 0,
-        autoDiscountAmount,
-        manualDiscount,
-        matchesPlayed: normalizedMatchesPlayed,
-        lateMatchesPlayed: normalizedLateMatchesPlayed,
-        latePerMatchAmount: appliedLatePerMatchAmount,
-      }),
+      ruleLabel:
+        specialCompetenceRule && firstMatchPlayed
+          ? matchesAfterFirst > 0
+            ? `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)} + ${matchesAfterFirst} x ${roundCurrency(
+                appliedLatePerMatchAmount
+              )}`
+            : `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)}`
+          : buildRuleLabel({
+              participantType,
+              billingMode,
+              customAmountApplied,
+              extraMatches: 0,
+              autoDiscountAmount,
+              manualDiscount,
+              matchesPlayed: normalizedMatchesPlayed,
+              lateMatchesPlayed: normalizedLateMatchesPlayed,
+              latePerMatchAmount: appliedLatePerMatchAmount,
+            }),
     };
   }
 
@@ -345,7 +462,7 @@ function calculateMonthlyFeeBreakdown({
   return {
     participantType,
     billingMode,
-    baseAmount: monthlyBaseAmount,
+    baseAmount: monthlyBaseWithTransition,
     autoDiscountAmount,
     manualDiscountAmount: manualDiscount,
     extraAmount: monthlyExtraAmount,
@@ -359,17 +476,20 @@ function calculateMonthlyFeeBreakdown({
     customAmountApplied,
     extraMatches,
     latePerMatchAmount: appliedLatePerMatchAmount,
-    ruleLabel: buildRuleLabel({
-      participantType,
-      billingMode,
-      customAmountApplied,
-      extraMatches,
-      autoDiscountAmount,
-      manualDiscount,
-      matchesPlayed: normalizedMatchesPlayed,
-      lateMatchesPlayed: normalizedLateMatchesPlayed,
-      latePerMatchAmount: appliedLatePerMatchAmount,
-    }),
+    ruleLabel:
+      specialCompetenceRule && firstMatchPlayed
+        ? "Complemento do mensal apos a 1a pelada"
+        : buildRuleLabel({
+            participantType,
+            billingMode,
+            customAmountApplied,
+            extraMatches,
+            autoDiscountAmount,
+            manualDiscount,
+            matchesPlayed: normalizedMatchesPlayed,
+            lateMatchesPlayed: normalizedLateMatchesPlayed,
+            latePerMatchAmount: appliedLatePerMatchAmount,
+          }),
   };
 }
 
@@ -378,8 +498,10 @@ function buildMonthlyFeeRecordFromRule({
   settings,
   month,
   year,
+  participantTypeOverride = null,
   matchesPlayed = 0,
   lateMatchesPlayed = 0,
+  matchChargeUsage = null,
   referenceDate = new Date(),
 }) {
   const breakdown = calculateMonthlyFeeBreakdown({
@@ -387,8 +509,10 @@ function buildMonthlyFeeRecordFromRule({
     settings,
     month,
     year,
+    participantTypeOverride,
     matchesPlayed,
     lateMatchesPlayed,
+    matchChargeUsage,
     manualDiscountAmount: 0,
     amountPaid: 0,
     referenceDate,
@@ -467,6 +591,7 @@ module.exports = {
   getBillingModeMeta,
   isPlayerEligibleForMonthlyFee,
   fetchMonthlyMatchUsage,
+  fetchMonthlyMatchChargeUsage,
   fetchMonthlyLateMatchUsage,
   resolveMonthlyFeeBillingMode,
   calculateMonthlyFeeBreakdown,

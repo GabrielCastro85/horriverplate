@@ -1,18 +1,352 @@
 <%
   const currentFinanceView =
     (typeof financeView !== "undefined" && financeView) || locals.financeView;
+  const {
+    monthly,
+    summaries: summary,
+    ui,
+    automation,
+    helpers,
+    actions,
+    settings: settingsView,
+  } = currentFinanceView;
+  const monthFees = monthly.fees;
+  const monthFeesRaw = monthly.allFees || [];
+  const selectedFee = monthly.selectedFee;
+  const { monthReferenceLabel } = ui;
+  const { formatCurrencyBR } = helpers;
+  const { stateFields, buildFinanceQuery } = actions;
+  const competenceResetActive = Boolean(automation?.competenceReset?.active);
+  const competenceDialogInitiallyOpen = currentFinanceView?.filters?.openDialog === "competence-plans";
+  const eligiblePlayers = settingsView?.players?.eligible || [];
+  const monthlyAmountLabel = formatCurrencyBR(settingsView?.values?.defaultMonthlyAmount || 0);
+  const perMatchAmountLabel = formatCurrencyBR(settingsView?.values?.latePerMatchAmount || 25);
+  const existingFeeByPlayerId = new Map(monthFeesRaw.map((fee) => [Number(fee.playerId), fee]));
+  const competenceSelectionPlayers = eligiblePlayers.map((player) => {
+    const existingFee = existingFeeByPlayerId.get(Number(player.id)) || null;
+    const isLocked = Boolean(existingFee);
+    const selectedPlan = existingFee
+      ? existingFee.participantType === "EXEMPT"
+        ? "EXEMPT"
+        : existingFee.participantType === "PER_MATCH"
+          ? "PER_MATCH"
+          : "MONTHLY"
+      : player.financeParticipantType === "EXEMPT"
+        ? "EXEMPT"
+        : "PER_MATCH";
+
+    return {
+      ...player,
+      existingFee,
+      isLocked,
+      selectedPlan,
+      monthlyAmountLabel:
+        player.financeAmountOverride != null
+          ? formatCurrencyBR(player.financeAmountOverride)
+          : monthlyAmountLabel,
+      defaultRuleLabel: player.financeRuleSummary?.participantTypeMeta?.label || "Regra do cadastro",
+    };
+  });
 %>
 
-<section class="finance-tab-panel">
-  <section class="finance-section-grid--monthly">
+<section class="finance-tab-panel finance-monthly-layout">
+  <section class="finance-panel finance-monthly-hero">
+    <div class="finance-monthly-hero__copy">
+      <%- include("./_finance_section_intro", {
+        sectionChipLabel: "Mensalidades",
+        sectionChipTone: "accent",
+        sectionStatusBadgeMeta: automation.competenceState,
+        sectionBadges: [
+          { label: monthReferenceLabel, accent: true },
+          { label: `${monthFees.length} registro(s)` },
+          { label: `${summary.activeFinancePlayers} elegiveis` },
+          competenceResetActive ? { label: "Competencia resetada", accent: true } : null,
+        ],
+        sectionTitle: "Controle do mes em uma leitura so",
+        sectionDescription: competenceResetActive
+          ? "A competencia foi zerada e agora esta pronta para um novo ciclo. Garanta o mes quando quiser recriar a base de cobranca."
+          : "Use esta tela para acompanhar o fechamento da competencia, filtrar a lista operacional e editar cada mensalidade sem sair do fluxo do mes.",
+      }) %>
+
+      <div class="finance-monthly-hero__progress">
+        <div class="finance-monthly-hero__progress-head">
+          <span>Recebimento da competencia</span>
+          <strong><%= Math.round(summary.receivedPercentage || 0) %>%</strong>
+        </div>
+        <div class="finance-progress"><span style="width:<%= Math.min(summary.receivedPercentage || 0, 100) %>%"></span></div>
+        <div class="finance-monthly-hero__progress-meta">
+          <span><%= formatCurrencyBR(summary.totalReceivedFromFees) %> recebidos</span>
+          <span><%= formatCurrencyBR(summary.totalPending) %> em aberto</span>
+        </div>
+      </div>
+
+      <div class="finance-monthly-hero__stats">
+        <div class="finance-dashboard-mini-stat">
+          <span>Pagos</span>
+          <strong><%= summary.paidCount %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Parciais</span>
+          <strong><%= summary.partialCount %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Ocultos sem valor</span>
+          <strong><%= monthly.hiddenCount || 0 %></strong>
+        </div>
+      </div>
+    </div>
+
+    <aside class="finance-module-aside-card finance-monthly-hero__action">
+      <div class="space-y-3">
+        <div class="finance-kicker">Fechamento do mes</div>
+        <div class="text-2xl font-semibold text-horriver-light">Competencia <%= automation.competenceState?.label || "ativa" %></div>
+        <p class="finance-subtle">
+          Garanta a competencia quando precisar preparar ou revisar a base do mes. O processo continua idempotente e nunca duplica mensalidades.
+        </p>
+      </div>
+
+      <div class="finance-monthly-hero__action-grid">
+        <div class="finance-dashboard-mini-stat">
+          <span>Elegiveis</span>
+          <strong><%= summary.activeFinancePlayers %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Em aberto</span>
+          <strong><%= summary.delinquentCount %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Previsto</span>
+          <strong><%= formatCurrencyBR(summary.totalPredicted) %></strong>
+        </div>
+        <div class="finance-dashboard-mini-stat">
+          <span>Recebido</span>
+          <strong><%= formatCurrencyBR(summary.totalReceivedFromFees) %></strong>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <a
+          href="<%= buildFinanceQuery({ tab: 'monthly', openDialog: 'competence-plans' }) %>#finance-fees"
+          class="finance-cta w-full text-center"
+          data-dialog-open="competence-plans"
+        ><%= automation.preparation.prepared ? "Garantir competencia do mes" : "Gerar mensalidades do mes" %></a>
+        <p class="finance-subtle">
+          <% if (competenceResetActive) { %>
+            Como o mes foi resetado, este botao recria a base de cobranca usando as regras atuais dos jogadores.
+          <% } else { %>
+            A janela deixa voce definir quem entra como mensalista, quem fica no avulso do mes e quem sai isento antes de gerar o que falta.
+          <% } %>
+        </p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="finance-module-metric-strip">
+    <article class="finance-module-mini-card finance-module-mini-card--accent">
+      <span class="finance-kicker">Previsto</span>
+      <strong><%= formatCurrencyBR(summary.totalPredicted) %></strong>
+      <span class="finance-subtle">Base total esperada na competencia.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Recebido</span>
+      <strong><%= formatCurrencyBR(summary.totalReceivedFromFees) %></strong>
+      <span class="finance-subtle">Valor pago nas mensalidades do mes.</span>
+    </article>
+    <article class="finance-module-mini-card finance-module-mini-card--warning">
+      <span class="finance-kicker">Saldo pendente</span>
+      <strong><%= formatCurrencyBR(summary.totalPending) %></strong>
+      <span class="finance-subtle"><%= summary.overdueCount %> atraso(s) no recorte.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Adimplencia</span>
+      <strong><%= Math.round(summary.receivedPercentage || 0) %>%</strong>
+      <span class="finance-subtle"><%= summary.paidCount %> pago(s) e <%= summary.partialCount %> parcial(is).</span>
+    </article>
+  </section>
+
+  <% if (!automation.preparation.prepared) { %>
+    <div class="finance-priority-alert finance-priority-alert--warning">
+      <div class="finance-priority-alert__title">Competencia ainda nao preparada por completo.</div>
+      <div class="finance-priority-alert__text">
+        Faltam <strong><%= automation.preparation.missingCount %></strong> mensalidade(s) para os jogadores elegiveis deste recorte.
+        Se quiser, abra a selecao do mes e defina quem entra como mensalista, avulso ou isento antes de gerar o que falta.
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a
+          href="<%= buildFinanceQuery({ tab: 'monthly', openDialog: 'competence-plans' }) %>#finance-fees"
+          class="finance-cta text-center"
+          data-dialog-open="competence-plans"
+        >Gerar mensalidades</a>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="finance-monthly-workspace">
     <%- include("./_finance_monthly_table", { financeView: currentFinanceView }) %>
     <%- include("./_finance_fee_detail", {
       financeView: currentFinanceView,
       detailSectionId: "finance-fees",
-      detailKicker: "Edicao da mensalidade",
-      detailTitleEmpty: "Selecione uma linha do mes",
-      detailSelectedCopy: "Ajuste o registro selecionado, lance pagamento total ou parcial e acompanhe o historico recente do participante.",
-      detailEmptyCopy: "Clique em uma mensalidade da tabela para alimentar este painel com valor devido, saldo, historico e acoes do participante."
+      detailKicker: selectedFee ? "Edicao da mensalidade" : "Painel do participante",
+      detailTitleEmpty: "Selecione uma linha da lista",
+      detailSelectedCopy: "Revise o valor do mes, registre pagamento parcial ou total e acompanhe o historico recente do participante sem sair desta aba.",
+      detailEmptyCopy: "A lista acima concentra o mes inteiro. Clique em um jogador para abrir aqui a cobranca, o pagamento e as acoes de manutencao daquela mensalidade."
     }) %>
-  </section>
+  </div>
+
+  <div class="finance-dialog" data-finance-dialog="competence-plans" <%= competenceDialogInitiallyOpen ? "" : "hidden" %>>
+    <div class="finance-dialog__backdrop" data-dialog-close></div>
+    <div class="finance-dialog__panel finance-dialog__panel--wide" role="dialog" aria-modal="true" aria-labelledby="finance-competence-dialog-title">
+      <div class="finance-dialog__head">
+        <div class="space-y-2">
+          <span class="finance-chip finance-chip--accent">Geracao guiada da competencia</span>
+          <h3 id="finance-competence-dialog-title" class="text-2xl font-semibold text-horriver-light">
+            Escolha o plano de cada jogador em <%= monthReferenceLabel %>
+          </h3>
+          <p class="finance-subtle">
+            Todo jogador desta lista entra no mes. O padrao da janela e <strong>Avulso do mes</strong>: marque como
+            <strong>Mensalista</strong> quem fechou o plano mensal e use <strong>Isento</strong> apenas para quem nao vai pagar.
+          </p>
+        </div>
+        <button type="button" class="finance-dialog__close" data-dialog-close aria-label="Fechar selecao da competencia">&times;</button>
+      </div>
+
+      <form method="POST" action="/admin/finance/monthly/ensure" class="finance-competence-dialog" data-competence-plan-form>
+        <%- stateFields({ tab: "monthly" }) %>
+        <input type="hidden" name="useManualCompetencePlans" value="1">
+
+        <div class="finance-competence-dialog__toolbar">
+          <label class="finance-label finance-competence-dialog__search">
+            <span>Buscar jogador</span>
+            <input
+              type="search"
+              class="finance-input"
+              placeholder="Nome, apelido ou posicao"
+              data-competence-search
+            >
+          </label>
+
+          <div class="finance-competence-dialog__summary">
+            <div class="finance-dashboard-mini-stat finance-dashboard-mini-stat--compact">
+              <span>Mensalistas</span>
+              <strong data-competence-count="MONTHLY">0</strong>
+            </div>
+            <div class="finance-dashboard-mini-stat finance-dashboard-mini-stat--compact">
+              <span>Avulsos do mes</span>
+              <strong data-competence-count="PER_MATCH">0</strong>
+            </div>
+            <div class="finance-dashboard-mini-stat finance-dashboard-mini-stat--compact">
+              <span>Isentos</span>
+              <strong data-competence-count="EXEMPT">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="finance-competence-dialog__actions">
+          <button type="button" class="finance-soft-button" data-set-competence-plan="MONTHLY">Marcar todos mensalistas</button>
+          <button type="button" class="finance-soft-button" data-set-competence-plan="PER_MATCH">Deixar todos avulsos</button>
+          <span class="finance-subtle">
+            Jogadores ja gerados neste mes ficam travados aqui para nao baguncar a competencia atual.
+          </span>
+        </div>
+
+        <div class="finance-competence-list" data-competence-list>
+          <% competenceSelectionPlayers.forEach((player) => { %>
+            <%
+              const rowSearch = `${player.name || ""} ${player.nickname || ""} ${player.position || ""}`.toLowerCase();
+              const lockedMeta = player.existingFee
+                ? player.selectedPlan === "EXEMPT"
+                  ? "Ja entrou como isento nesta competencia."
+                  : player.selectedPlan === "PER_MATCH"
+                    ? "Ja entrou como avulso neste mes."
+                    : "Ja entrou como mensalista nesta competencia."
+                : "";
+            %>
+            <article
+              class="finance-competence-player"
+              data-competence-player
+              data-player-search="<%= rowSearch %>"
+            >
+              <div class="finance-competence-player__main">
+                <div class="finance-competence-player__identity">
+                  <div>
+                    <div class="finance-competence-player__name"><%= player.name %></div>
+                    <div class="finance-competence-player__meta">
+                      <% if (player.nickname) { %>
+                        <span>"<%= player.nickname %>"</span>
+                      <% } %>
+                      <span><%= player.position %></span>
+                      <span>Padrao: <%= player.defaultRuleLabel %></span>
+                    </div>
+                  </div>
+
+                  <% if (player.isLocked) { %>
+                    <span class="finance-chip">Ja gerado</span>
+                  <% } else { %>
+                    <span class="finance-chip finance-chip--accent">Editavel</span>
+                  <% } %>
+                </div>
+
+                <p class="finance-subtle">
+                  <% if (player.isLocked) { %>
+                    <%= lockedMeta %>
+                  <% } else { %>
+                    Se nao mexer nesta linha, o jogador entra automaticamente como avulso do mes.
+                  <% } %>
+                </p>
+              </div>
+
+              <fieldset class="finance-competence-plan-group" <%= player.isLocked ? "disabled" : "" %>>
+                <label class="finance-competence-plan-pill">
+                  <input
+                    type="radio"
+                    name="competencePlan_<%= player.id %>"
+                    value="MONTHLY"
+                    data-competence-plan-input
+                    <%= player.selectedPlan === "MONTHLY" ? "checked" : "" %>
+                  >
+                  <span>
+                    <strong>Mensalista</strong>
+                    <small><%= player.monthlyAmountLabel %> no mes</small>
+                  </span>
+                </label>
+
+                <label class="finance-competence-plan-pill">
+                  <input
+                    type="radio"
+                    name="competencePlan_<%= player.id %>"
+                    value="PER_MATCH"
+                    data-competence-plan-input
+                    <%= player.selectedPlan === "PER_MATCH" ? "checked" : "" %>
+                  >
+                  <span>
+                    <strong>Avulso do mes</strong>
+                    <small><%= perMatchAmountLabel %> por pelada</small>
+                  </span>
+                </label>
+
+                <label class="finance-competence-plan-pill">
+                  <input
+                    type="radio"
+                    name="competencePlan_<%= player.id %>"
+                    value="EXEMPT"
+                    data-competence-plan-input
+                    <%= player.selectedPlan === "EXEMPT" ? "checked" : "" %>
+                  >
+                  <span>
+                    <strong>Isento</strong>
+                    <small>Sem cobranca no mes</small>
+                  </span>
+                </label>
+              </fieldset>
+            </article>
+          <% }) %>
+        </div>
+
+        <div class="finance-dialog__footer">
+          <button type="button" class="finance-soft-button" data-dialog-close>Cancelar</button>
+          <button type="submit" class="finance-cta">Gerar competencia com esta selecao</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </section>
