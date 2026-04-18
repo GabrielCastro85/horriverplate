@@ -2484,6 +2484,68 @@
             return themeByKey[key] || themeByKey.Vermelho;
           };
 
+          const buildBalancedTitleLines = (value = "") => {
+            const clean = String(value || "").replace(/\s+/g, " ").trim();
+            if (!clean) return ["Time sem nome"];
+            const words = clean.split(" ");
+            if (words.length === 1) return [clean];
+
+            let best = null;
+            for (let i = 1; i < words.length; i += 1) {
+              const lines = [words.slice(0, i).join(" "), words.slice(i).join(" ")];
+              const lengths = lines.map((line) => line.length);
+              const longest = Math.max(...lengths);
+              const diff = Math.abs(lengths[0] - lengths[1]);
+              const score = diff * 2 + longest;
+              if (!best || score < best.score) {
+                best = { lines, longest, score };
+              }
+            }
+
+            return best?.lines || [clean];
+          };
+
+          const teamTitleLayouts = (() => {
+            const layouts = teamsForShare.map((team) => ({
+              lines: buildBalancedTitleLines(team?.name),
+            }));
+            const longestLineLength = layouts.reduce(
+              (max, layout) => Math.max(max, ...layout.lines.map((line) => line.length)),
+              0
+            );
+
+            let fontSize = 54;
+            let lineHeight = 0.92;
+            let minHeight = 104;
+
+            if (longestLineLength >= 14) {
+              fontSize = 52;
+              minHeight = 108;
+            }
+            if (longestLineLength >= 17) {
+              fontSize = 48;
+              lineHeight = 0.94;
+              minHeight = 114;
+            }
+            if (longestLineLength >= 21) {
+              fontSize = 44;
+              lineHeight = 0.96;
+              minHeight = 120;
+            }
+            if (longestLineLength >= 26) {
+              fontSize = 40;
+              lineHeight = 0.98;
+              minHeight = 126;
+            }
+
+            return layouts.map((layout) => ({
+              ...layout,
+              fontSize,
+              lineHeight,
+              minHeight,
+            }));
+          })();
+
           if (!teamsForShare.length) {
             shareStatus.textContent = "Sorteie os times antes de gerar imagem.";
             return;
@@ -2508,8 +2570,10 @@
             <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:34px;margin-bottom:26px;">
               <div style="display:flex;flex-direction:column;gap:6px;position:relative;z-index:1;">
                 <span style="font-size:13px;color:rgba(255,179,106,0.90);font-weight:800;text-transform:uppercase;letter-spacing:0.24em;opacity:0.96;">Horriver Plate</span>
-                <span style="margin-top:8px;font-family:'Bebas Neue', 'Oswald', sans-serif;font-size:74px;font-weight:400;letter-spacing:0.82px;line-height:0.92;color:#f8fafc;">Times Sorteados</span>
-                <span style="margin-top:2px;height:4px;width:260px;border-radius:999px;background:linear-gradient(90deg, rgba(255,122,26,0.98) 0%, rgba(255,122,26,0.45) 34%, rgba(255,122,26,0.10) 100%);"></span>
+                <div style="position:relative;display:block;margin-top:10px;padding-bottom:30px;">
+                  <span style="display:block;font-family:'Bebas Neue', 'Oswald', sans-serif;font-size:74px;font-weight:400;letter-spacing:0.82px;line-height:0.98;color:#f8fafc;">Times Sorteados</span>
+                  <span style="position:absolute;left:0;bottom:0;display:block;height:4px;width:260px;border-radius:999px;background:linear-gradient(90deg, rgba(255,122,26,0.98) 0%, rgba(255,122,26,0.45) 34%, rgba(255,122,26,0.10) 100%);"></span>
+                </div>
               </div>
               <div style="position:relative;z-index:1;min-width:318px;border:1px solid rgba(255,122,26,0.34);border-radius:28px;background:linear-gradient(180deg, rgba(19,17,24,0.96) 0%, rgba(12,12,16,0.98) 100%);padding:28px 24px 22px;display:flex;align-items:flex-end;justify-content:space-between;gap:22px;">
                 <div style="display:flex;flex-direction:column;gap:16px;min-width:0;">
@@ -2532,6 +2596,12 @@
                 .map((t, idx) => {
                   const theme = teamVisualTheme(t);
                   const sortedPlayers = sortedPlayersForShare(t.players || []);
+                  const titleLayout = teamTitleLayouts[idx] || {
+                    lines: [String(t.name || `Time ${idx + 1}`)],
+                    fontSize: 54,
+                    lineHeight: 0.92,
+                    minHeight: 104,
+                  };
                   return `
                     <div style="position:relative;min-width:0;border:1px solid ${theme.border};border-radius:30px;overflow:hidden;background:${theme.panelBg};box-shadow:0 22px 42px rgba(0,0,0,0.16);">
                       <div style="height:10px;background:${theme.stripBg};"></div>
@@ -2543,29 +2613,38 @@
                           </div>
                           <span style="font-size:14px;font-weight:800;line-height:1;color:${theme.countText};white-space:nowrap;">${sortedPlayers.length} jogadores</span>
                         </div>
-                        <div style="font-family:'Bebas Neue', 'Oswald', sans-serif;font-size:54px;font-weight:400;line-height:0.92;letter-spacing:0.55px;color:${theme.titleText};">${escapeHtml(t.name)}</div>
+                        <div style="display:flex;align-items:center;min-height:${titleLayout.minHeight}px;padding-right:8px;">
+                          <div style="display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;width:100%;font-family:'Bebas Neue', 'Oswald', sans-serif;font-size:${titleLayout.fontSize}px;font-weight:400;line-height:${titleLayout.lineHeight};letter-spacing:0.55px;color:${theme.titleText};text-transform:uppercase;">
+                            ${titleLayout.lines
+                              .map(
+                                (line) =>
+                                  `<span style="display:block;white-space:nowrap;">${escapeHtml(line)}</span>`
+                              )
+                              .join("")}
+                          </div>
+                        </div>
                         <span style="margin-top:-4px;height:1px;width:100%;background:linear-gradient(90deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%);"></span>
                         <div style="display:flex;flex-direction:column;gap:12px;">
                           ${sortedPlayers
                             .map((p, playerIdx) => {
-                              const normalizedPos = positionGroupKey(p.pos);
+                              const positionLabel = positionBadge(p.pos).label;
                               const displayName = String(p.nome || "").replace(/\s*\(Convidado\)\s*$/i, "");
                               const parts = splitDisplayName(displayName);
                               return `
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 16px;border-radius:18px;background:${theme.rowBg};border:1px solid ${theme.rowBorder};box-shadow:none;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:70px;padding:16px 16px;border-radius:18px;background:${theme.rowBg};border:1px solid ${theme.rowBorder};box-shadow:none;">
                                   <div style="display:flex;align-items:center;min-width:0;flex:1 1 auto;">
-                                    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0;min-width:0;">
+                                    <div style="display:flex;align-items:center;flex-wrap:wrap;column-gap:6px;row-gap:4px;min-width:0;">
                                       <span style="display:inline;min-width:0;max-width:100%;font-size:19px;font-weight:800;line-height:1.22;letter-spacing:-0.01em;color:#f8fafc;white-space:normal;overflow:visible;word-break:break-word;">${escapeHtml(parts.primary)}</span>
                                     ${parts.nickname
-                                      ? `<span style="display:inline-block;margin-left:6px;font-size:15px;font-weight:620;line-height:1.22;letter-spacing:-0.01em;color:rgba(248,250,252,0.92);">(${escapeHtml(parts.nickname)})</span>`
+                                      ? `<span style="display:inline-block;font-size:15px;font-weight:620;line-height:1.22;letter-spacing:-0.01em;color:rgba(248,250,252,0.92);">(${escapeHtml(parts.nickname)})</span>`
                                       : ""}
                                       ${p.isGuest
-                                        ? `<span style="display:inline-block;margin-left:8px;font-size:12px;font-weight:800;line-height:1.1;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>`
+                                        ? `<span style="display:inline-block;font-size:12px;font-weight:800;line-height:1.1;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>`
                                         : ""}
                                     </div>
                                   </div>
-                                  <span style="display:inline-block;flex:0 0 auto;min-width:38px;font-size:13px;font-weight:700;line-height:1;letter-spacing:0.10em;color:rgba(226,232,240,0.58);text-transform:uppercase;text-align:right;">
-                                    ${escapeHtml(normalizedPos)}
+                                  <span style="display:inline-block;flex:0 0 auto;min-width:38px;font-size:13px;font-weight:700;line-height:1;letter-spacing:0.10em;color:rgba(226,232,240,0.62);text-transform:uppercase;text-align:right;">
+                                    ${escapeHtml(positionLabel)}
                                   </span>
                                 </div>
                               `;
@@ -2587,7 +2666,7 @@
               <div style="height:10px;background:linear-gradient(90deg, #d4a06d 0%, rgba(199,139,91,0.72) 42%, rgba(199,139,91,0.16) 100%);"></div>
               <div style="padding:18px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;">
-                  <div style="font-family:'Bebas Neue', 'Oswald', sans-serif;font-size:28px;line-height:0.95;color:#f8fafc;letter-spacing:0.62px;">Goleiros</div>
+                  <div style="font-family:'Bebas Neue', 'Oswald', sans-serif;font-size:28px;line-height:0.95;color:#f8fafc;letter-spacing:1.4px;">Goleiros</div>
                   <div style="font-size:14px;font-weight:700;line-height:1;color:rgba(255,236,213,0.82);">${goalkeepersForShare.length} jogador(es)</div>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:10px;">
@@ -2595,14 +2674,15 @@
                   .map((gk) => {
                     const parts = splitDisplayName(gk.nome);
                     return `
-                      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 16px;border-radius:18px;background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.09);box-shadow:none;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:16px 16px;border-radius:18px;background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.09);box-shadow:none;">
                         <div style="display:flex;align-items:center;min-width:0;flex:1 1 auto;">
-                          <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-                            <span style="font-size:18px;font-weight:800;line-height:1.2;color:#f8fafc;">${escapeHtml(parts.primary)}${parts.nickname ? ` (${escapeHtml(parts.nickname)})` : ""}${gk.isGuest ? ` <span style="font-size:12px;font-weight:800;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>` : ""}</span>
-                            <span style="font-size:12px;font-weight:600;line-height:1;color:rgba(203,213,225,0.68);text-transform:uppercase;letter-spacing:0.08em;">Goleiro</span>
+                          <div style="display:flex;align-items:center;flex-wrap:wrap;column-gap:6px;row-gap:4px;min-width:0;">
+                            <span style="font-size:18px;font-weight:800;line-height:1.2;color:#f8fafc;">${escapeHtml(parts.primary)}</span>
+                            ${parts.nickname ? `<span style="font-size:14px;font-weight:620;line-height:1.2;color:rgba(248,250,252,0.9);">(${escapeHtml(parts.nickname)})</span>` : ""}
+                            ${gk.isGuest ? `<span style="font-size:12px;font-weight:800;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>` : ""}
                           </div>
                         </div>
-                        <span style="font-size:13px;font-weight:700;line-height:1;letter-spacing:0.10em;color:rgba(226,232,240,0.58);text-transform:uppercase;">GOL</span>
+                        <span style="display:inline-block;flex:0 0 auto;min-width:38px;font-size:13px;font-weight:700;line-height:1;letter-spacing:0.10em;color:rgba(226,232,240,0.62);text-transform:uppercase;text-align:right;">GOL</span>
                       </div>
                     `;
                   })

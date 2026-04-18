@@ -1,6 +1,7 @@
 const express = require("express");
 const prisma = require("../utils/db");
-const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
+const { computeOverallFromEntries } = require("../utils/overall");
+const { getDynamicOverallSnapshot } = require("../utils/live_overall");
 const { evaluateAchievementsForPlayer, getPlayerAchievements } = require("../utils/achievements");
 
 const router = express.Router();
@@ -24,59 +25,7 @@ router.get("/:id", async (req, res) => {
     if (!player) return res.status(404).send("Jogador não encontrado");
 
     // Pega o overall calculado no mesmo período padrão do ranking (ano atual)
-    const currentYear = new Date().getFullYear();
-    const from = new Date(currentYear, 0, 1);
-    const to = new Date(currentYear + 1, 0, 1);
-
-    const playersForOverall = await prisma.player.findMany({
-      include: {
-        stats: {
-          where: {
-            match: {
-              playedAt: {
-                gte: from,
-                lt: to,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const overallEntries = playersForOverall.map((p) => {
-      let goals = 0;
-      let assists = 0;
-      let matches = 0;
-      let ratingSum = 0;
-      let ratingCount = 0;
-
-      for (const s of p.stats) {
-        if (!s.present) continue;
-
-        goals += s.goals || 0;
-        assists += s.assists || 0;
-        matches++;
-        if (s.rating != null) {
-          ratingSum += s.rating;
-          ratingCount++;
-        }
-      }
-
-      const rating = ratingCount > 0 ? ratingSum / ratingCount : 0;
-
-      return {
-        player: p,
-        goals,
-        assists,
-        matches,
-        rating,
-      };
-    });
-
-    const { computed: rankingOverallComputed } = computeOverallFromEntries(overallEntries);
-    const rankingOverallMap = new Map(
-      rankingOverallComputed.map((o) => [o.player.id, resolveOverallScore(o.player, o.overall)])
-    );
+    const { scoreMap: rankingOverallMap } = await getDynamicOverallSnapshot();
 
     const totals = {
       goals: player.totalGoals || 0,
@@ -92,10 +41,6 @@ router.get("/:id", async (req, res) => {
         rating: s.rating,
       }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
-    const avgRating =
-      ratingsSeries.length > 0
-        ? ratingsSeries.reduce((sum, r) => sum + (r.rating || 0), 0) / ratingsSeries.length
-        : 0;
 
     const goalsByMonthMap = {};
     player.stats.forEach((s) => {
@@ -173,22 +118,10 @@ router.get("/:id", async (req, res) => {
 
     let latestOverall =
       rankingOverallMap.get(player.id) ??
-      resolveOverallScore(player, null) ??
       (overallSeries.length ? overallSeries[overallSeries.length - 1].overall : null);
 
     if (latestOverall == null) {
-      const { computed } = computeOverallFromEntries([
-        {
-          player,
-          goals: totals.goals,
-          assists: totals.assists,
-          matches: totals.matches,
-          rating: avgRating,
-        },
-      ]);
-      latestOverall = computed && computed.length
-        ? resolveOverallScore(player, computed[0].overall)
-        : resolveOverallScore(player, null);
+      latestOverall = Math.round(player.baseOverall || 60);
     }
 
     if (!overallSeries.length && latestOverall != null) {

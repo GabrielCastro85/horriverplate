@@ -15,7 +15,8 @@ const {
 } = require("../utils/upload");
 const { deleteCache } = require("../utils/page_cache");
 
-const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
+const { getDynamicOverallSnapshot } = require("../utils/live_overall");
+const { recalculateOverallForAllPlayers } = require("../utils/ranking");
 const { rebuildAchievementsForAllPlayers } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 const {
@@ -3061,6 +3062,7 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
     }
 
     await recomputeTotalsForPlayers(Array.from(touchedPlayerIds));
+    await recalculateOverallForAllPlayers();
 
     const financeSettings = await ensureFinanceSettings();
     const matchDate = new Date(match.playedAt);
@@ -3500,21 +3502,10 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
     });
 
     // Overall de cada jogador (mesma m–trica do ranking)
-    const { computed: playersOverall } = computeOverallFromEntries(
-      players.map((p) => ({
-        player: p,
-        goals: p.totalGoals || 0,
-        assists: p.totalAssists || 0,
-        matches: p.totalMatches || 0,
-        rating: p.totalRating || 0,
-      }))
-    );
-    const overallById = new Map(
-      playersOverall.map((o) => [o.player.id, resolveOverallScore(o.player, o.overall)])
-    );
+    const { scoreMap: overallById } = await getDynamicOverallSnapshot();
     const playersWithOverall = players.map((p) => ({
       ...p,
-      overall: overallById.get(p.id) ?? resolveOverallScore(p, null),
+      overall: overallById.get(p.id) ?? 60,
     }));
     
     const voteSession = match.voteSessions.length > 0 ? match.voteSessions[0] : null;
@@ -3751,6 +3742,8 @@ router.post("/matches/:id/apply-votes", requireAdmin, async (req, res) => {
     }
 
     await prisma.$transaction(updates);
+    await recomputeTotalsForPlayers(stats.map((stat) => stat.playerId));
+    await recalculateOverallForAllPlayers();
     return res.redirect(`/admin/matches/${matchId}?applyVotes=true`);
   } catch (err) {
     console.error("Erro ao aplicar votos em notas:", err);
@@ -3814,7 +3807,6 @@ router.all("/recalculate-totals", requireAdmin, handleRecalculateTotals);
 // ===============================================
 router.post("/recalculate-overall", requireAdmin, async (req, res) => {
   try {
-    const { recalculateOverallForAllPlayers } = require("../utils/ranking");
     const { count } = await recalculateOverallForAllPlayers();
     
     // Adicionando um pequeno delay para o usuário perceber a a––o
@@ -3971,20 +3963,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
 
     // 3. Overall dos presentes
     const playerIds = Array.from(new Set(stats.map((s) => s.playerId)));
-    const allPlayers = await prisma.player.findMany();
-
-    const { computed } = computeOverallFromEntries(
-      allPlayers.map((p) => ({
-        player: p,
-        goals: p.totalGoals || 0,
-        assists: p.totalAssists || 0,
-        matches: p.totalMatches || 0,
-        rating: p.totalRating || 0,
-      }))
-    );
-    const overallMap = new Map(
-      computed.map((c) => [c.player.id, resolveOverallScore(c.player, c.overall)])
-    );
+    const { scoreMap: overallMap } = await getDynamicOverallSnapshot();
 
     // 3.1 últimas 10 peladas de cada jogador presente (para balancear for–a recente)
     const recentStatsRaw = await prisma.playerStat.findMany({

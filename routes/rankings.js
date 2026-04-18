@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
-const { computeOverallFromEntries, resolveOverallScore } = require("../utils/overall");
+const { computeOverallFromEntries } = require("../utils/overall");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 const cache = new Map();
@@ -402,12 +402,11 @@ router.get("/", async (req, res) => {
       });
 
     // ======= OVERALL 0-100 (pesos por posição) =======
-    const { computed: overallComputed } = computeOverallFromEntries(entries);
+    const { computed: overallComputed } = computeOverallFromEntries(recentAggregates);
     const overallRanking = overallComputed
       .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
       .map((e) => {
-        const score = resolveOverallScore(e.player, e.overall);
-        return { ...e, overallScore: score };
+        return { ...e, overallScore: Math.round(e.overall || 60) };
       })
       .sort((a, b) => {
         if (b.overallScore !== a.overallScore) return b.overallScore - a.overallScore;
