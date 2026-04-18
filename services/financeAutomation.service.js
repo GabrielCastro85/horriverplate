@@ -154,18 +154,39 @@ function decorateMonthlyFee(monthlyFee, settings, now = new Date()) {
       ? decimalToNumber(monthlyFee.player.financeAmountOverride)
       : decimalToNumber(settings?.defaultMonthlyAmount)
   );
+  const specialMonthlyTransitionApplied =
+    Boolean(specialCompetenceRule) &&
+    billingMode === "MONTHLY" &&
+    Number(monthlyFee.matchesPlayed || 0) > 0 &&
+    baseAmount < defaultMonthlyAmount;
   const firstMatchAmount = roundCurrency(
     baseAmount - Math.max(Number(monthlyFee.matchesPlayed || 0) - 1, 0) * unitAmount
   );
+  const specialMonthlyFirstMatchAmount = specialMonthlyTransitionApplied
+    ? roundCurrency(specialCompetenceRule.firstMatchAmount)
+    : 0;
+  const specialMonthlyComplementAmount = specialMonthlyTransitionApplied ? baseAmount : 0;
+  const specialMonthlyTotalAmount = specialMonthlyTransitionApplied
+    ? roundCurrency(specialMonthlyFirstMatchAmount + specialMonthlyComplementAmount)
+    : 0;
   const specialTransitionApplied =
-    Boolean(specialCompetenceRule) &&
-    ((billingMode === "MONTHLY" &&
+    specialMonthlyTransitionApplied ||
+    (Boolean(specialCompetenceRule) &&
+      (billingMode === "PER_MATCH" || billingMode === "LATE_PER_MATCH") &&
       Number(monthlyFee.matchesPlayed || 0) > 0 &&
-      baseAmount < defaultMonthlyAmount) ||
-      ((billingMode === "PER_MATCH" || billingMode === "LATE_PER_MATCH") &&
-        Number(monthlyFee.matchesPlayed || 0) > 0 &&
-        firstMatchAmount > 0 &&
-        firstMatchAmount < unitAmount));
+      firstMatchAmount > 0 &&
+      firstMatchAmount < unitAmount);
+
+  const ruleSnapshot = buildRuleSnapshot(monthlyFee);
+  if (specialMonthlyTransitionApplied) {
+    ruleSnapshot.splice(
+      Math.min(1, ruleSnapshot.length),
+      0,
+      `1a pelada ${formatCurrencyBR(specialMonthlyFirstMatchAmount)} + complemento ${formatCurrencyBR(
+        specialMonthlyComplementAmount
+      )}`
+    );
+  }
 
   return {
     ...monthlyFee,
@@ -182,11 +203,15 @@ function decorateMonthlyFee(monthlyFee, settings, now = new Date()) {
     isLatePerMatch: billingMode === "LATE_PER_MATCH",
     specialCompetenceRule,
     specialTransitionApplied,
+    specialMonthlyTransitionApplied,
+    specialFirstMatchAmount: specialMonthlyTransitionApplied ? specialMonthlyFirstMatchAmount : 0,
+    specialMonthlyComplementAmount,
+    specialMonthlyTotalAmount,
     extraMatches:
       monthlyFee.matchLimitApplied && Number(monthlyFee.matchesPlayed || 0) > Number(monthlyFee.matchLimitApplied || 0)
         ? Number(monthlyFee.matchesPlayed || 0) - Number(monthlyFee.matchLimitApplied || 0)
         : 0,
-    ruleSnapshot: buildRuleSnapshot(monthlyFee),
+    ruleSnapshot,
   };
 }
 

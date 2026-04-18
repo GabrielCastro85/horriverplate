@@ -385,6 +385,14 @@
         if (input) input.value = button.getAttribute("data-fill-payment") || "";
       });
     });
+
+    document.querySelectorAll("[data-fill-payment-date]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const panel = button.closest(".finance-fee-detail");
+        const input = panel?.querySelector("[data-payment-date-input]");
+        if (input) input.value = button.getAttribute("data-fill-payment-date") || "";
+      });
+    });
   }
 
   function initQuickPayButtons() {
@@ -642,65 +650,36 @@
       });
 
       root.querySelectorAll("[data-charge-bulk-form]").forEach((form) => {
-        form.addEventListener("submit", async (event) => {
-          event.preventDefault();
-
+        form.addEventListener("submit", (event) => {
           const submitter =
             event.submitter instanceof HTMLButtonElement
               ? event.submitter
               : form.querySelector("button[type='submit']");
 
           if (!submitter || submitter.disabled) {
+            event.preventDefault();
+            syncSelection();
             return;
           }
 
           const selectedItems = getSelectedItems();
           if (!selectedItems.length) {
-            console.warn("[finance][bulk-status] submit sem selecao");
+            event.preventDefault();
             showToast("Selecione pelo menos uma mensalidade para a acao em lote.", "error");
             syncSelection();
             return;
           }
 
-          const originalText = submitter.textContent;
+          const hiddenIdsWrap = form.querySelector("[data-bulk-selected-ids]");
+          if (hiddenIdsWrap) {
+            hiddenIdsWrap.innerHTML = selectedItems
+              .map((item) => `<input type="hidden" name="feeIds" value="${item.feeId}">`)
+              .join("");
+          }
+
           submitter.disabled = true;
           submitter.classList.add("finance-is-loading");
           submitter.textContent = "Salvando...";
-
-          const payload = new FormData(form);
-          payload.delete("feeIds");
-          selectedItems.forEach((item) => {
-            payload.append("feeIds", item.feeId);
-          });
-
-          console.debug("[finance][bulk-status] selecionados", selectedItems.map((item) => ({
-            feeId: item.feeId,
-            name: item.name,
-            balanceValue: item.balanceValue,
-            amountPaid: item.amountPaid,
-            monthlyStatus: item.monthlyStatus,
-          })));
-          console.debug("[finance][bulk-status] payload", Array.from(payload.entries()));
-
-          try {
-            const response = await postJson(form.action, payload);
-            console.debug("[finance][bulk-status] resposta", response);
-            showToast(response.message || "Acao em lote concluida.", "success");
-
-            if (response.redirectUrl) {
-              window.location.assign(response.redirectUrl);
-              return;
-            }
-
-            window.location.reload();
-          } catch (error) {
-            console.error("[finance][bulk-status] erro", error);
-            showToast(error.message || "Nao foi possivel concluir a acao em lote.", "error");
-          } finally {
-            submitter.classList.remove("finance-is-loading");
-            submitter.textContent = originalText;
-            syncSelection();
-          }
         });
       });
 

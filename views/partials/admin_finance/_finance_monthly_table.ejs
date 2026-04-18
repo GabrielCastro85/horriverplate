@@ -89,7 +89,7 @@
           <form method="POST" action="/admin/finance/monthly-fees/bulk-status" data-charge-bulk-form>
             <%- stateFields({ tab: "monthly" }) %>
             <input type="hidden" name="bulkAction" value="PAID" />
-            <input type="hidden" name="paidAt" value="<%= currentDateInputValue %>" />
+            <input type="hidden" name="paidAt" value="" />
             <input type="hidden" name="paymentMethod" value="PIX" />
             <input type="hidden" name="note" value="Quitacao em lote pela aba de mensalidades" />
             <div data-bulk-selected-ids></div>
@@ -220,7 +220,11 @@
                         Virou avulso depois do vencimento, mas ainda nao houve presenca apos o dia <strong><%= dueDay %></strong>.
                       <% } %>
                     <% } else { %>
-                      <% if (fee.specialTransitionApplied) { %>
+                      <% if (fee.specialMonthlyTransitionApplied) { %>
+                        <strong>1a pelada</strong> por <strong><%= formatCurrencyBR(fee.specialFirstMatchAmount) %></strong>
+                        + <strong>complemento do mensal</strong> de <strong><%= formatCurrencyBR(fee.specialMonthlyComplementAmount) %></strong>
+                        = <strong><%= formatCurrencyBR(fee.specialMonthlyTotalAmount || fee.amountDue) %></strong>.
+                      <% } else if (fee.specialTransitionApplied) { %>
                         Complemento especial de abril em <strong><%= formatCurrencyBR(fee.baseAmount || fee.amountDue) %></strong>
                       <% } else { %>
                         Base <strong><%= formatCurrencyBR(fee.baseAmount || fee.amountDue) %></strong>
@@ -265,7 +269,7 @@
                         data-amount="<%= perMatchQuickAmount.toFixed(2).replace('.', ',') %>"
                         data-unit-amount="<%= (fee.latePerMatchAmount || 25).toFixed(2).replace('.', ',') %>"
                         data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
-                        data-paid-at="<%= currentDateInputValue %>"
+                        data-paid-at="<%= fee.suggestedPaidAtInput || currentDateInputValue %>"
                         data-note="Recebimento rapido de uma pelada pela tabela de mensalidades"
                         data-success-message="<%= perMatchQuickAmount < fee.balance ? 'Pagamento de 1 pelada registrado.' : 'Pagamento do avulso registrado.' %>"
                         data-hide-on-paid

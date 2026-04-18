@@ -114,9 +114,15 @@ async function fetchMonthlyMatchChargeUsage({
       lateMatchesPlayed: 0,
       firstMatchPlayed: false,
       matchesAfterFirst: 0,
+      matchDates: [],
+      lateMatchDates: [],
+      firstMatchDate: null,
     };
 
     current.matchesPlayed += 1;
+    if (stat.match?.playedAt) {
+      current.matchDates.push(stat.match.playedAt);
+    }
     if (firstMatchId && stat.matchId === firstMatchId) {
       current.firstMatchPlayed = true;
     }
@@ -128,6 +134,7 @@ async function fetchMonthlyMatchChargeUsage({
       stat.match.playedAt < lateEnd
     ) {
       current.lateMatchesPlayed += 1;
+      current.lateMatchDates.push(stat.match.playedAt);
     }
 
     map.set(stat.playerId, current);
@@ -135,6 +142,9 @@ async function fetchMonthlyMatchChargeUsage({
   }, new Map());
 
   for (const usage of usageMap.values()) {
+    usage.matchDates = usage.matchDates.sort((a, b) => new Date(a) - new Date(b));
+    usage.lateMatchDates = usage.lateMatchDates.sort((a, b) => new Date(a) - new Date(b));
+    usage.firstMatchDate = usage.matchDates[0] || null;
     usage.matchesAfterFirst = Math.max(
       Number(usage.matchesPlayed || 0) - (usage.firstMatchPlayed ? 1 : 0),
       0
@@ -321,7 +331,7 @@ function calculateMonthlyFeeBreakdown({
       : monthlyBaseAmount
   );
   const monthlyPlanAmount = roundCurrency(
-    Math.max(monthlyBaseWithTransition + monthlyExtraAmount - autoDiscountAmount - manualDiscount, 0)
+    Math.max(monthlyBaseAmount + monthlyExtraAmount - autoDiscountAmount - manualDiscount, 0)
   );
 
   if (participantType === "EXEMPT" || billingMode === "EXEMPT") {
@@ -478,7 +488,9 @@ function calculateMonthlyFeeBreakdown({
     latePerMatchAmount: appliedLatePerMatchAmount,
     ruleLabel:
       specialCompetenceRule && firstMatchPlayed
-        ? "Complemento do mensal apos a 1a pelada"
+        ? `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)} + complemento ${roundCurrency(
+            monthlyBaseWithTransition
+          )}`
         : buildRuleLabel({
             participantType,
             billingMode,

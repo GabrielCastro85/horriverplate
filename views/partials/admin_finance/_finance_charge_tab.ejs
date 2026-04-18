@@ -147,7 +147,7 @@
             <button type="button" class="finance-soft-button" data-charge-open-all>Cobrar todos com WhatsApp</button>
             <form method="POST" action="/admin/finance/charge/bulk" data-charge-bulk-form>
               <%- stateFields({ tab: 'charge' }) %>
-              <input type="hidden" name="paidAt" value="<%= currentDateInputValue %>" />
+              <input type="hidden" name="paidAt" value="" />
               <input type="hidden" name="paymentMethod" value="PIX" />
               <input type="hidden" name="note" value="Quitacao em lote pela aba de cobranca" />
               <div data-bulk-selected-ids></div>
@@ -244,7 +244,7 @@
                         data-amount="<%= perMatchQuickAmount.toFixed(2).replace('.', ',') %>"
                         data-unit-amount="<%= Number(fee.latePerMatchAmount || settings.latePerMatchAmount || 25).toFixed(2).replace('.', ',') %>"
                         data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
-                        data-paid-at="<%= currentDateInputValue %>"
+                        data-paid-at="<%= fee.suggestedPaidAtInput || currentDateInputValue %>"
                         data-note="Recebimento rapido de uma pelada pela aba de cobranca"
                         data-success-message="<%= perMatchQuickAmount < fee.balance ? 'Pagamento de 1 pelada registrado.' : 'Pagamento do avulso registrado.' %>"
                         data-hide-on-paid

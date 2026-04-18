@@ -115,6 +115,127 @@ async function loadSyncedMonthlyFee(id, settings, referenceDate = getSaoPauloTod
   });
 }
 
+function toSortedDateList(values = []) {
+  return values
+    .map((value) => (value instanceof Date ? value : new Date(value)))
+    .filter((value) => !Number.isNaN(value.getTime()))
+    .sort((a, b) => a - b);
+}
+
+function buildMonthlyFeePaymentInstallments(fee) {
+  if (!fee) return [];
+
+  const matchDates = toSortedDateList(fee.matchChargeUsage?.matchDates || []);
+  const lateMatchDates = toSortedDateList(fee.matchChargeUsage?.lateMatchDates || []);
+  const unitAmount = roundCurrency(decimalToNumber(fee.latePerMatchAmount || 25));
+  const specialFirstMatchAmount = roundCurrency(decimalToNumber(fee.specialFirstMatchAmount || 0));
+  const specialComplementAmount = roundCurrency(decimalToNumber(fee.specialMonthlyComplementAmount || 0));
+  const hasSpecialFirstMatch =
+    Boolean(fee.specialTransitionApplied) && specialFirstMatchAmount > 0 && specialFirstMatchAmount < unitAmount;
+  const installments = [];
+
+  const pushInstallment = (amount, date) => {
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    const normalizedAmount = roundCurrency(amount);
+    if (!normalizedAmount || Number.isNaN(parsedDate.getTime())) return;
+    installments.push({
+      amount: normalizedAmount,
+      date: parsedDate,
+    });
+  };
+
+  if (fee.specialMonthlyTransitionApplied) {
+    pushInstallment(specialFirstMatchAmount, matchDates[0]);
+    pushInstallment(specialComplementAmount, matchDates[1] || fee.dueDate || matchDates[0]);
+    return installments;
+  }
+
+  if (fee.billingMode === "PER_MATCH") {
+    if (hasSpecialFirstMatch && matchDates.length) {
+      pushInstallment(specialFirstMatchAmount, matchDates[0]);
+      matchDates.slice(1).forEach((date) => pushInstallment(unitAmount, date));
+      return installments;
+    }
+
+    matchDates.forEach((date) => pushInstallment(unitAmount, date));
+    return installments;
+  }
+
+  if (fee.billingMode === "LATE_PER_MATCH") {
+    if (hasSpecialFirstMatch && matchDates[0]) {
+      pushInstallment(specialFirstMatchAmount, matchDates[0]);
+      lateMatchDates.forEach((date) => pushInstallment(unitAmount, date));
+      return installments;
+    }
+
+    lateMatchDates.forEach((date) => pushInstallment(unitAmount, date));
+  }
+
+  return installments;
+}
+
+function resolveAutomaticMonthlyFeePaidAt(fee, fallbackDate = new Date()) {
+  const installments = buildMonthlyFeePaymentInstallments(fee);
+  if (!installments.length) return fallbackDate;
+
+  let remainingPaid = roundCurrency(decimalToNumber(fee.amountPaid));
+
+  for (const installment of installments) {
+    if (remainingPaid >= installment.amount) {
+      remainingPaid = roundCurrency(remainingPaid - installment.amount);
+      continue;
+    }
+
+    return installment.date;
+  }
+
+  return fallbackDate;
+}
+
+async function decorateFeeForAutomaticPaidAt(fee, settings, referenceDate = getSaoPauloTodayDate()) {
+  if (!fee) return null;
+
+  const chargeUsageMap = await fetchMonthlyMatchChargeUsage({
+    prisma,
+    playerIds: [fee.playerId],
+    month: fee.month,
+    year: fee.year,
+    dueDay: settings?.dueDay || 10,
+  });
+
+  return decorateMonthlyFee(
+    {
+      ...fee,
+      matchChargeUsage: chargeUsageMap.get(fee.playerId) || null,
+    },
+    settings,
+    referenceDate
+  );
+}
+
+async function decorateFeesForAutomaticPaidAt(fees, settings, referenceDate = getSaoPauloTodayDate()) {
+  if (!fees?.length) return [];
+
+  const chargeUsageMap = await fetchMonthlyMatchChargeUsage({
+    prisma,
+    playerIds: [...new Set(fees.map((fee) => fee.playerId))],
+    month: fees[0].month,
+    year: fees[0].year,
+    dueDay: settings?.dueDay || 10,
+  });
+
+  return fees.map((fee) =>
+    decorateMonthlyFee(
+      {
+        ...fee,
+        matchChargeUsage: chargeUsageMap.get(fee.playerId) || null,
+      },
+      settings,
+      referenceDate
+    )
+  );
+}
+
 function normalizeCompetenceManualPlan(value) {
   const normalized = normalizeParticipantType(value, "PER_MATCH");
   return ["MONTHLY", "PER_MATCH", "EXEMPT"].includes(normalized) ? normalized : "PER_MATCH";
@@ -736,8 +857,12 @@ async function payMonthlyFee(req, res) {
     }
 
     const paymentMethod = getTrimmedString(req.body.paymentMethod, "PIX") || "PIX";
-    const paidAt = parseDateInput(req.body.paidAt, new Date());
+    const requestedPaidAt = parseDateInput(req.body.paidAt, null);
     const paymentNote = getOptionalTrimmedString(req.body.note) || current.note;
+    const feeForPaidAt = requestedPaidAt
+      ? current
+      : await decorateFeeForAutomaticPaidAt(current, settings, getSaoPauloTodayDate());
+    const paidAt = requestedPaidAt || resolveAutomaticMonthlyFeePaidAt(feeForPaidAt, getSaoPauloTodayDate());
     const paymentResult = await prisma.$transaction((tx) =>
       recordMonthlyFeePayment(tx, {
         monthlyFeeId: id,
@@ -859,15 +984,20 @@ async function handleBulkCharge(req, res) {
       });
     }
 
-    const paidAt = parseDateInput(req.body.paidAt, new Date());
+    const requestedPaidAt = parseDateInput(req.body.paidAt, null);
     const paymentMethod = getTrimmedString(req.body.paymentMethod, "PIX") || "PIX";
     const note = getOptionalTrimmedString(req.body.note) || "Quitacao em lote pela aba de cobranca";
+    const payableFeesForPayment = requestedPaidAt
+      ? payableFees
+      : await decorateFeesForAutomaticPaidAt(payableFees, settings, getSaoPauloTodayDate());
 
     let totalAmount = 0;
     await prisma.$transaction(async (tx) => {
-      for (const fee of payableFees) {
+      for (const fee of payableFeesForPayment) {
+        const paidAt = requestedPaidAt || resolveAutomaticMonthlyFeePaidAt(fee, getSaoPauloTodayDate());
         const paymentResult = await recordMonthlyFeePayment(tx, {
           monthlyFeeId: fee.id,
+          monthlyFee: fee,
           paymentAmount: computeMonthlyFeeBalance(fee),
           paymentMethod,
           paidAt,
@@ -1053,15 +1183,20 @@ async function handleBulkMonthlyStatus(req, res) {
       });
     }
 
-    const paidAt = parseDateInput(req.body.paidAt, new Date());
+    const requestedPaidAt = parseDateInput(req.body.paidAt, null);
     const paymentMethod = getTrimmedString(req.body.paymentMethod, "PIX") || "PIX";
     const note = getOptionalTrimmedString(req.body.note) || "Quitacao em lote pela aba de mensalidades";
+    const payableFeesForPayment = requestedPaidAt
+      ? payableFees
+      : await decorateFeesForAutomaticPaidAt(payableFees, settings, getSaoPauloTodayDate());
 
     let totalAmount = 0;
     await prisma.$transaction(async (tx) => {
-      for (const fee of payableFees) {
+      for (const fee of payableFeesForPayment) {
+        const paidAt = requestedPaidAt || resolveAutomaticMonthlyFeePaidAt(fee, getSaoPauloTodayDate());
         const paymentResult = await recordMonthlyFeePayment(tx, {
           monthlyFeeId: fee.id,
+          monthlyFee: fee,
           paymentAmount: computeMonthlyFeeBalance(fee),
           paymentMethod,
           paidAt,

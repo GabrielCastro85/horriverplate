@@ -58,6 +58,15 @@ function buildMonthlyFeeAnalytics(fee) {
         value: `${Number(fee?.lateMatchesPlayed || 0)} x ${formatCurrencyBR(fee?.latePerMatchAmount || 25)}`,
       });
     }
+  } else if (fee?.specialMonthlyTransitionApplied) {
+    breakdownItems.push({
+      label: "1a pelada",
+      value: formatCurrencyBR(fee.specialFirstMatchAmount || 0),
+    });
+    breakdownItems.push({
+      label: "Complemento mensal",
+      value: formatCurrencyBR(fee.specialMonthlyComplementAmount || 0),
+    });
   } else if (fee?.baseAmount != null) {
     breakdownItems.push({ label: "Base", value: formatCurrencyBR(fee.baseAmount) });
   }

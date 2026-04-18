@@ -446,6 +446,122 @@ function shouldDisplayMonthlyFeeInMonthlyTab(monthlyFee) {
   return amountDue > 0 || amountPaid > 0 || balance > 0;
 }
 
+function toSortedDateList(values = []) {
+  return values
+    .map((value) => (value instanceof Date ? value : new Date(value)))
+    .filter((value) => !Number.isNaN(value.getTime()))
+    .sort((a, b) => a - b);
+}
+
+function buildFeePaymentInstallments(fee) {
+  if (!fee) return [];
+
+  const matchDates = toSortedDateList(fee.matchChargeUsage?.matchDates || []);
+  const lateMatchDates = toSortedDateList(fee.matchChargeUsage?.lateMatchDates || []);
+  const unitAmount = roundCurrency(decimalToNumber(fee.latePerMatchAmount || 25));
+  const specialFirstMatchAmount = roundCurrency(decimalToNumber(fee.specialFirstMatchAmount || 0));
+  const specialComplementAmount = roundCurrency(decimalToNumber(fee.specialMonthlyComplementAmount || 0));
+  const hasSpecialFirstMatch =
+    Boolean(fee.specialTransitionApplied) && specialFirstMatchAmount > 0 && specialFirstMatchAmount < unitAmount;
+  const installments = [];
+
+  const pushInstallment = (amount, date, label) => {
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    const normalizedAmount = roundCurrency(amount);
+    if (!normalizedAmount || Number.isNaN(parsedDate.getTime())) return;
+    installments.push({
+      amount: normalizedAmount,
+      date: parsedDate,
+      label,
+    });
+  };
+
+  if (fee.specialMonthlyTransitionApplied) {
+    pushInstallment(specialFirstMatchAmount, matchDates[0], "1a pelada");
+    pushInstallment(
+      specialComplementAmount,
+      matchDates[1] || fee.dueDate || matchDates[0],
+      matchDates[1] ? "Complemento apos a 2a pelada" : "Complemento mensal"
+    );
+    return installments;
+  }
+
+  if (fee.billingMode === "PER_MATCH") {
+    if (hasSpecialFirstMatch && matchDates.length) {
+      pushInstallment(specialFirstMatchAmount, matchDates[0], "1a pelada");
+      matchDates.slice(1).forEach((date, index) => {
+        pushInstallment(unitAmount, date, `Pelada ${index + 2}`);
+      });
+      return installments;
+    }
+
+    matchDates.forEach((date, index) => {
+      pushInstallment(unitAmount, date, `Pelada ${index + 1}`);
+    });
+    return installments;
+  }
+
+  if (fee.billingMode === "LATE_PER_MATCH") {
+    if (hasSpecialFirstMatch && matchDates[0]) {
+      pushInstallment(specialFirstMatchAmount, matchDates[0], "1a pelada");
+      lateMatchDates.forEach((date, index) => {
+        pushInstallment(unitAmount, date, `Pelada por atraso ${index + 1}`);
+      });
+      return installments;
+    }
+
+    lateMatchDates.forEach((date, index) => {
+      pushInstallment(unitAmount, date, `Pelada por atraso ${index + 1}`);
+    });
+  }
+
+  return installments;
+}
+
+function buildFeePaymentTiming(fee, fallbackDate = new Date()) {
+  const installments = buildFeePaymentInstallments(fee);
+  const fallbackInput = formatDateInput(fallbackDate);
+
+  if (!installments.length) {
+    return {
+      paymentDateOptions: [],
+      suggestedPaidAtInput: fallbackInput,
+    };
+  }
+
+  let remainingPaid = roundCurrency(decimalToNumber(fee.amountPaid));
+  let nextInstallment = installments[0];
+
+  for (const installment of installments) {
+    if (remainingPaid >= installment.amount) {
+      remainingPaid = roundCurrency(remainingPaid - installment.amount);
+      nextInstallment = null;
+      continue;
+    }
+
+    nextInstallment = installment;
+    break;
+  }
+
+  const paymentDateOptions = installments.map((installment) => ({
+    value: formatDateInput(installment.date),
+    label: `${formatDateBRShortYear(installment.date)} - ${installment.label}`,
+    amountLabel: formatCurrencyBR(installment.amount),
+  }));
+
+  return {
+    paymentDateOptions,
+    suggestedPaidAtInput: nextInstallment ? formatDateInput(nextInstallment.date) : fallbackInput,
+  };
+}
+
+function enrichDecoratedFeeWithPaymentTiming(fee, fallbackDate = new Date()) {
+  return {
+    ...fee,
+    ...buildFeePaymentTiming(fee, fallbackDate),
+  };
+}
+
 async function buildFinancePageViewModel(filters) {
   const settings = await ensureFinanceSettings();
   const today = getSaoPauloTodayDate();
@@ -613,7 +729,17 @@ async function buildFinancePageViewModel(filters) {
 
   const monthFeesDecorated = sortMonthlyFees(
     monthFeesRaw
-      .map((fee) => decorateMonthlyFee(fee, settings, today))
+      .map((fee) =>
+        decorateMonthlyFee(
+          {
+            ...fee,
+            matchChargeUsage: matchChargeUsageMap.get(fee.playerId) || null,
+          },
+          settings,
+          today
+        )
+      )
+      .map((fee) => enrichDecoratedFeeWithPaymentTiming(fee, today))
       .map((fee) => ({
         ...fee,
         analytics: buildMonthlyFeeAnalytics(fee),
@@ -730,22 +856,8 @@ async function buildFinancePageViewModel(filters) {
   }));
   const bulkChargeSummary = buildBulkChargeSummary(allPendingFees);
 
-  const selectedFeeRaw = filters.editFeeId
-    ? await prisma.monthlyFee.findUnique({
-        where: { id: filters.editFeeId },
-        include: {
-          player: true,
-          transactions: {
-            orderBy: [{ date: "desc" }, { id: "desc" }],
-          },
-        },
-      })
-    : null;
-  const selectedFee = selectedFeeRaw
-    ? {
-        ...decorateMonthlyFee(selectedFeeRaw, settings, today),
-        analytics: buildMonthlyFeeAnalytics(decorateMonthlyFee(selectedFeeRaw, settings, today)),
-      }
+  const selectedFee = filters.editFeeId
+    ? monthFeesDecorated.find((fee) => fee.id === filters.editFeeId) || null
     : null;
 
   const selectedTransaction = filters.editTransactionId

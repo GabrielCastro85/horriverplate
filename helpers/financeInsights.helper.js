@@ -34,6 +34,19 @@ function buildSmartPaymentInsights(monthlyFee) {
   const isPerMatchFlow =
     monthlyFee.billingMode === "PER_MATCH" || monthlyFee.billingMode === "LATE_PER_MATCH";
   const unitAmount = roundCurrency(decimalToNumber(monthlyFee.latePerMatchAmount || 25));
+  const isSpecialMonthlyTransition =
+    Boolean(monthlyFee.specialMonthlyTransitionApplied) &&
+    roundCurrency(decimalToNumber(monthlyFee.specialFirstMatchAmount)) > 0 &&
+    roundCurrency(decimalToNumber(monthlyFee.specialMonthlyComplementAmount)) > 0;
+
+  const specialFirstMatchRemaining = isSpecialMonthlyTransition
+    ? roundCurrency(
+        Math.max(roundCurrency(decimalToNumber(monthlyFee.specialFirstMatchAmount)) - paid, 0)
+      )
+    : 0;
+  const specialComplementRemaining = isSpecialMonthlyTransition
+    ? roundCurrency(Math.max(balance - specialFirstMatchRemaining, 0))
+    : 0;
 
   const candidates = isPerMatchFlow
     ? Array.from(
@@ -43,6 +56,8 @@ function buildSmartPaymentInsights(monthlyFee) {
             .map((value) => value.toFixed(2))
         )
       ).map((value) => Number(value))
+    : isSpecialMonthlyTransition
+      ? [specialFirstMatchRemaining, specialComplementRemaining, balance].filter((value) => value > 0)
     : [
         balance,
         roundCurrency(balance / 2),
@@ -65,6 +80,8 @@ function buildSmartPaymentInsights(monthlyFee) {
     remainingLabel:
       isPerMatchFlow && balance > 0
         ? "Use os atalhos para registrar uma presenca por vez ou quitar o saldo acumulado do avulso."
+        : isSpecialMonthlyTransition && balance > 0
+        ? "Abril/2026 ficou dividido em 1a pelada e complemento do mensal; use os atalhos para registrar cada parte."
         : paid > 0 && balance > 0
         ? "Pagamento parcial registrado; o sistema sugere atalhos para fechar o saldo."
         : "Use os atalhos para registrar um parcial de forma mais rapida ou quitar o saldo total.",

@@ -41,6 +41,16 @@
   const selectedFeePaidAmount = selectedFee ? decimalToNumber(selectedFee.amountPaid) : 0;
   const selectedFeeBaseAmount = selectedFee ? decimalToNumber(selectedFee.baseAmount || selectedFee.amountDue) : 0;
   const selectedFeeUnitAmount = selectedFee ? decimalToNumber(selectedFee.latePerMatchAmount || 25) : 0;
+  const selectedFeeSpecialMonthlyTransition = Boolean(selectedFee?.specialMonthlyTransitionApplied);
+  const selectedFeeSpecialMonthlyFirstMatchAmount = selectedFee
+    ? decimalToNumber(selectedFee.specialFirstMatchAmount || 0)
+    : 0;
+  const selectedFeeSpecialMonthlyComplementAmount = selectedFee
+    ? decimalToNumber(selectedFee.specialMonthlyComplementAmount || 0)
+    : 0;
+  const selectedFeeSpecialMonthlyTotalAmount = selectedFee
+    ? decimalToNumber(selectedFee.specialMonthlyTotalAmount || selectedFee.amountDue || 0)
+    : 0;
   const selectedFeeSpecialFirstMatchAmount = selectedFee
     ? selectedFeeBaseAmount - (Math.max((selectedFee.matchesPlayed || 0) - 1, 0) * selectedFeeUnitAmount)
     : 0;
@@ -58,6 +68,16 @@
             ? `Em abril/2026, a 1a pelada entrou por ${formatCurrencyBR(selectedFeeSpecialFirstMatchAmount)} e as demais seguem ${formatCurrencyBR(selectedFeeUnitAmount)} por presenca.`
             : `Como o pagamento nao fechou ate o dia ${dueDay}, cada presenca apos essa data soma ${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} ao acumulado.`,
         }
+      : selectedFee?.billingMode === "MONTHLY" && selectedFeeSpecialMonthlyTransition
+        ? {
+            tone: "info",
+            title: "Mensal de abril dividido em duas partes",
+            text: `O total desta competencia ficou em ${formatCurrencyBR(
+              selectedFeeSpecialMonthlyTotalAmount
+            )}: ${formatCurrencyBR(selectedFeeSpecialMonthlyFirstMatchAmount)} da 1a pelada + ${formatCurrencyBR(
+              selectedFeeSpecialMonthlyComplementAmount
+            )} de complemento do mensal.`,
+          }
       : selectedFee?.billingMode === "PER_MATCH"
         ? {
             tone: "info",
@@ -78,6 +98,23 @@
         selectedFee.matchesPlayed ? `${selectedFee.matchesPlayed} pelada(s)` : null,
       ].filter(Boolean)
     : [];
+  const normalizedFeeQuickSummary = selectedFee
+    ? [
+        selectedFee.billingModeMeta?.label,
+        selectedFeeSpecialMonthlyTransition
+          ? `1a ${formatCurrencyBR(selectedFeeSpecialMonthlyFirstMatchAmount)} + compl. ${formatCurrencyBR(
+              selectedFeeSpecialMonthlyComplementAmount
+            )}`
+          : selectedFee.billingMode === "PER_MATCH" || selectedFee.isLatePerMatch
+            ? selectedFeeHasAprilTransition
+              ? `1a ${formatCurrencyBR(selectedFeeSpecialFirstMatchAmount)} + demais ${formatCurrencyBR(selectedFeeUnitAmount)}`
+              : `${formatCurrencyBR(selectedFee.latePerMatchAmount || 25)} / pelada`
+            : null,
+        selectedFee.matchesPlayed ? `${selectedFee.matchesPlayed} pelada(s)` : null,
+      ].filter(Boolean)
+    : feeQuickSummary;
+  const selectedFeePaymentDateOptions = selectedFee?.paymentDateOptions || [];
+  const selectedFeeSuggestedPaidAtInput = selectedFee?.suggestedPaidAtInput || currentDateInputValue;
   const perMatchQuickAmount =
     selectedFee && (selectedFee.billingMode === "PER_MATCH" || selectedFee.isLatePerMatch)
       ? selectedFeeHasAprilTransition && selectedFeePaidAmount <= 0
@@ -104,7 +141,7 @@
         </div>
         <div class="finance-fee-head__aside">
           <span class="finance-status <%= financeStatusClass(selectedFeeMeta) %>" data-fee-status><%= selectedFeeMeta.label %></span>
-          <% feeQuickSummary.forEach((item) => { %>
+          <% normalizedFeeQuickSummary.forEach((item) => { %>
             <span class="finance-chip"><%= item %></span>
           <% }) %>
           <a href="<%= buildFinanceQuery({ tab: filters.tab }) %>#<%= feeDetailSectionId %>" class="finance-chip">Limpar selecao</a>
@@ -236,6 +273,17 @@
             <% }) %>
           </div>
         <% } %>
+        <% if (selectedFeePaymentDateOptions.length) { %>
+          <div class="finance-quick-amounts">
+            <% selectedFeePaymentDateOptions.forEach((option) => { %>
+              <button
+                type="button"
+                class="finance-chip"
+                data-fill-payment-date="<%= option.value %>"
+              ><%= option.label %> - <%= option.amountLabel %></button>
+            <% }) %>
+          </div>
+        <% } %>
 
         <form method="POST" action="/admin/finance/monthly-fees/<%= selectedFee.id %>/pay" class="finance-fee-form-grid">
           <%- stateFields({ editFeeId: selectedFee.id }) %>
@@ -243,7 +291,7 @@
             <input type="text" name="paymentAmount" value="<%= selectedFeeBalance > 0 ? selectedFeeBalance.toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="0,00" data-payment-input>
           </label>
           <label class="finance-label">Data do pagamento
-            <input type="date" name="paidAt" value="<%= currentDateInputValue %>" class="finance-input">
+            <input type="date" name="paidAt" value="<%= selectedFeeSuggestedPaidAtInput %>" class="finance-input" data-payment-date-input>
           </label>
           <label class="finance-label">Forma de pagamento
             <select name="paymentMethod" class="finance-select">
@@ -263,7 +311,7 @@
                 data-amount="<%= perMatchQuickAmount.toFixed(2).replace('.', ',') %>"
                 data-unit-amount="<%= (selectedFee.latePerMatchAmount || 25).toFixed(2).replace('.', ',') %>"
                 data-payment-method="<%= selectedFee.paymentMethod || 'PIX' %>"
-                data-paid-at="<%= currentDateInputValue %>"
+                data-paid-at="<%= selectedFeeSuggestedPaidAtInput %>"
                 data-note="Recebimento rapido de uma pelada pelo painel lateral"
                 data-success-message="<%= perMatchQuickAmount < selectedFeeBalance ? 'Pagamento de 1 pelada registrado.' : 'Pagamento do avulso registrado.' %>"
                 data-hide-on-paid
