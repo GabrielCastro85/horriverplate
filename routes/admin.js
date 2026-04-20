@@ -2133,7 +2133,7 @@ router.post("/matches", requireAdmin, async (req, res) => {
       return res.redirect("/admin");
     }
 
-    await prisma.match.create({
+    const createdMatch = await prisma.match.create({
       data: {
         playedAt: playedDateValue,
         description: description || null,
@@ -2142,7 +2142,7 @@ router.post("/matches", requireAdmin, async (req, res) => {
       },
     });
 
-    res.redirect("/admin");
+    res.redirect(`/admin/matches/${createdMatch.id}?openDialog=presence`);
   } catch (err) {
     console.error("Erro ao criar pelada:", err);
     res.redirect("/admin");
@@ -2958,6 +2958,101 @@ router.get("/matches", requireAdmin, (req, res) => {
 });
 
 // ==============================
+// Salvar presencas da pelada
+// ==============================
+router.post("/matches/:id/presence", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+
+    const [players, existingStats, match] = await Promise.all([
+      prisma.player.findMany(),
+      prisma.playerStat.findMany({
+        where: { matchId },
+      }),
+      prisma.match.findUnique({
+        where: { id: matchId },
+        select: { id: true, playedAt: true },
+      }),
+    ]);
+
+    if (!match) {
+      return res.redirect("/admin");
+    }
+
+    const statsByPlayerId = new Map(existingStats.map((stat) => [stat.playerId, stat]));
+
+    for (const player of players) {
+      const isPresent = !!req.body[`present_${player.id}`];
+      const existingStat = statsByPlayerId.get(player.id);
+
+      if (isPresent) {
+        if (existingStat) {
+          if (!existingStat.present) {
+            await prisma.playerStat.update({
+              where: { id: existingStat.id },
+              data: { present: true },
+            });
+          }
+        } else {
+          await prisma.playerStat.create({
+            data: {
+              playerId: player.id,
+              matchId,
+              present: true,
+              goals: 0,
+              assists: 0,
+              rating: null,
+              appearedInPhoto: false,
+            },
+          });
+        }
+        continue;
+      }
+
+      if (existingStat) {
+        await prisma.playerStat.delete({
+          where: { id: existingStat.id },
+        });
+      }
+    }
+
+    const touchedPlayerIds = players.map((player) => player.id);
+    await recomputeTotalsForPlayers(touchedPlayerIds);
+    await recalculateOverallForAllPlayers();
+
+    const financeSettings = await ensureFinanceSettings();
+    const matchDate = new Date(match.playedAt);
+    const matchMonth = matchDate.getUTCMonth() + 1;
+    const matchYear = matchDate.getUTCFullYear();
+    const touchedPlayers = players.filter(
+      (player) =>
+        player.financeActive &&
+        player.isMonthlyMember &&
+        String(player.financeParticipantType || "MONTHLY").toUpperCase() !== "GUEST"
+    );
+
+    for (const player of touchedPlayers) {
+      await syncMonthlyFeeForPlayerCompetence({
+        prisma,
+        player,
+        settings: financeSettings,
+        month: matchMonth,
+        year: matchYear,
+        referenceDate: new Date(),
+      });
+    }
+
+    res.redirect(`/admin/matches/${matchId}#stats`);
+  } catch (err) {
+    console.error("Erro ao salvar presencas da pelada:", err);
+    res.redirect(`/admin/matches/${req.params.id}`);
+  }
+});
+
+// ==============================
 // ?? Salvar estatísticas em massa da pelada
 // ==============================
 router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
@@ -3472,6 +3567,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) return res.redirect("/admin");
+    const openDialog = String(req.query.openDialog || "").trim().toLowerCase();
 
     const match = await prisma.match.findUnique({
       where: { id },
@@ -3583,6 +3679,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       tournamentStandings,
       voteSession, // Passando a sessão de votação para a view
       voteBaseUrl,
+      openDialog,
       req,
       lineupResult: lastLineupDraw ? lastLineupDraw.result : null,
     });

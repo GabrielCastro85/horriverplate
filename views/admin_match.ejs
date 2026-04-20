@@ -23,6 +23,10 @@
       ? voteSession.tokens.filter((t) => t.usedAt).length
       : 0;
   const voteTokensPending = Math.max(voteTokensTotal - voteTokensUsed, 0);
+  const presentPlayerIdSet = new Set(
+    stats.filter((stat) => stat.present).map((stat) => stat.playerId)
+  );
+  const initialOpenDialog = typeof openDialog === "string" ? openDialog : "";
 %>
 
 <style>
@@ -79,6 +83,241 @@
   .admin-table tbody tr:last-child {
     border-bottom: 0;
   }
+  .match-dialog[hidden] {
+    display: none;
+  }
+  .match-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+  }
+  .match-dialog__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.78);
+    backdrop-filter: blur(6px);
+  }
+  .match-dialog__panel {
+    position: relative;
+    z-index: 1;
+    width: min(960px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    margin: 16px auto;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg, rgba(16, 16, 20, 0.98), rgba(8, 8, 12, 0.98));
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .match-dialog__panel > form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .match-dialog.is-visible .match-dialog__panel {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .match-dialog__head,
+  .match-dialog__footer {
+    padding: 20px 22px;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .match-dialog__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .match-dialog__body {
+    padding: 20px 22px;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .match-dialog__close {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: #f8fafc;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .match-dialog__close:hover {
+    border-color: rgba(255, 122, 26, 0.45);
+    color: #ff7a1a;
+  }
+  .match-dialog__toolbar {
+    display: grid;
+    gap: 14px;
+  }
+  .match-dialog__search {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: rgba(180, 182, 195, 0.92);
+    font-size: 13px;
+  }
+  .match-dialog__search input {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.35);
+    color: #f8fafc;
+    padding: 12px 14px;
+  }
+  .match-dialog__summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .match-dialog__mini-card {
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 14px 16px;
+  }
+  .match-dialog__mini-card span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(180, 182, 195, 0.72);
+  }
+  .match-dialog__mini-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 24px;
+    color: #f8fafc;
+  }
+  .match-dialog__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .match-dialog__soft-button {
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+  }
+  .match-dialog__soft-button:hover {
+    border-color: rgba(255, 122, 26, 0.45);
+    color: #ff7a1a;
+  }
+  .match-dialog__list {
+    display: grid;
+    flex: 1 1 auto;
+    gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .match-dialog__player {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 14px 16px;
+  }
+  .match-dialog__player-main {
+    min-width: 0;
+  }
+  .match-dialog__player-name {
+    color: #f8fafc;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .match-dialog__player-meta {
+    margin-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: rgba(180, 182, 195, 0.82);
+  }
+  .match-dialog__player-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .match-dialog__player-toggle input {
+    width: 18px;
+    height: 18px;
+    accent-color: #ff7a1a;
+  }
+  .match-dialog__footer {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(16, 16, 20, 0.98), rgba(8, 8, 12, 1));
+  }
+  .match-dialog__primary {
+    border-radius: 18px;
+    background: #ff7a1a;
+    color: #050509;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 18px;
+  }
+  .match-dialog-open {
+    overflow: hidden;
+  }
+  @media (min-width: 720px) {
+    .match-dialog__toolbar {
+      grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+      align-items: end;
+    }
+  }
+  @media (max-width: 640px) {
+    .match-dialog__panel {
+      width: min(100vw - 16px, 100%);
+      margin: 8px auto;
+      max-height: calc(100vh - 16px);
+    }
+    .match-dialog__head,
+    .match-dialog__body,
+    .match-dialog__footer {
+      padding: 16px;
+    }
+    .match-dialog__footer {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+    .match-dialog__summary {
+      grid-template-columns: 1fr;
+    }
+    .match-dialog__player {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
 </style>
 
 <%- include('partials/admin_match_dashboard', {
@@ -99,64 +338,233 @@
   voteTokensPending
 }) %>
 
+<div
+  class="match-dialog <%= initialOpenDialog === 'presence' ? 'is-visible' : '' %>"
+  data-match-dialog="presence"
+  <%= initialOpenDialog === 'presence' ? '' : 'hidden' %>
+>
+  <div class="match-dialog__backdrop" data-match-dialog-close></div>
+  <div
+    class="match-dialog__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="presence-dialog-title"
+  >
+    <div class="match-dialog__head">
+      <div class="space-y-2">
+        <span class="admin-kicker">Selecao da rodada</span>
+        <h2 id="presence-dialog-title" class="text-2xl font-semibold text-horriver-light">
+          Escolha quem vai estar presente em <%= matchDateLabel %>
+        </h2>
+        <p class="text-sm text-horriver-gray max-w-2xl">
+          Depois de confirmar, a tela principal mostra so os nomes escolhidos com os mesmos campos
+          de gols, assistencias, nota e foto que voce ja usa hoje.
+        </p>
+      </div>
+      <button type="button" class="match-dialog__close" data-match-dialog-close aria-label="Fechar selecao de presentes">&times;</button>
+    </div>
+
+    <form method="POST" action="/admin/matches/<%= match.id %>/presence" data-presence-form>
+      <div class="match-dialog__body">
+        <div class="match-dialog__toolbar">
+          <label class="match-dialog__search">
+            <span>Buscar jogador</span>
+            <input
+              type="search"
+              placeholder="Nome, apelido ou posicao"
+              data-presence-search
+            />
+          </label>
+
+          <div class="match-dialog__summary">
+            <div class="match-dialog__mini-card">
+              <span>Selecionados</span>
+              <strong data-presence-count><%= presentPlayersCount %></strong>
+            </div>
+            <div class="match-dialog__mini-card">
+              <span>Total disponivel</span>
+              <strong><%= players.length %></strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="match-dialog__actions">
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="match-dialog__soft-button" data-presence-select="all">
+              Selecionar todos
+            </button>
+            <button type="button" class="match-dialog__soft-button" data-presence-select="none">
+              Limpar todos
+            </button>
+          </div>
+          <span class="text-xs text-horriver-gray">
+            A confirmacao salva a rodada e atualiza a lista principal.
+          </span>
+        </div>
+
+        <div class="match-dialog__list" data-presence-list>
+          <% players.forEach((player) => { %>
+            <%
+              const playerStat = stats.find((stat) => stat.playerId === player.id);
+              const rowSearch = `${player.name || ""} ${player.nickname || ""} ${player.position || ""}`.toLowerCase();
+            %>
+            <article
+              class="match-dialog__player"
+              data-presence-player
+              data-player-search="<%= rowSearch %>"
+            >
+              <div class="match-dialog__player-main">
+                <div class="match-dialog__player-name"><%= player.name %></div>
+                <div class="match-dialog__player-meta">
+                  <% if (player.nickname) { %>
+                    <span>"<%= player.nickname %>"</span>
+                  <% } %>
+                  <span><%= player.position %></span>
+                  <span>OVR <%= player.overall != null ? player.overall : "-" %></span>
+                </div>
+              </div>
+
+              <label class="match-dialog__player-toggle">
+                <input
+                  type="checkbox"
+                  name="present_<%= player.id %>"
+                  data-presence-input
+                  data-player-name="<%= player.name %>"
+                  data-player-nickname="<%= player.nickname || "" %>"
+                  data-player-position="<%= player.position || "" %>"
+                  data-player-strength="<%= player.overall != null ? player.overall : "" %>"
+                  data-player-overall="<%= player.overall != null ? player.overall : "" %>"
+                  <%= presentPlayerIdSet.has(player.id) || (playerStat && playerStat.present) ? "checked" : "" %>
+                />
+                <span>Presente</span>
+              </label>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="match-dialog__footer">
+        <button type="button" class="match-dialog__soft-button" data-match-dialog-close>Cancelar</button>
+        <button type="submit" class="match-dialog__primary">
+          Confirmar presentes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   (() => {
-    const filterToggle = document.getElementById("filterPresentOnly");
-    const countEl = document.getElementById("presentCount");
-    if (!filterToggle || !countEl) return;
-    const filterStorageKey = "admin_match_<%= match.id %>_filter_present_only";
+    const dialog = document.querySelector('[data-match-dialog="presence"]');
+    if (!dialog) return;
 
-    const rows = Array.from(document.querySelectorAll("#statsForm tbody tr"));
-    const cards = Array.from(document.querySelectorAll("#statsForm [data-player-card]"));
-    const entries = [
-      ...rows.map((row) => ({
-        row,
-        checkbox: row.querySelector('input[name^="present_"]'),
-      })),
-      ...cards.map((card) => ({
-        row: card,
-        checkbox: card.querySelector('input[name^="present_"]'),
-      })),
-    ].filter((item) => item.checkbox);
+    const transitionMs = 200;
+    const searchInput = dialog.querySelector("[data-presence-search]");
+    const playerRows = Array.from(dialog.querySelectorAll("[data-presence-player]"));
+    const countNode = dialog.querySelector("[data-presence-count]");
+    let closeTimer = null;
 
-    const restoreFilterState = () => {
-      try {
-        const stored = window.localStorage.getItem(filterStorageKey);
-        if (stored === "1") filterToggle.checked = true;
-        if (stored === "0") filterToggle.checked = false;
-      } catch (_) {
-        // Sem acesso ao localStorage (modo privado/restricao): segue sem persistir.
-      }
+    const syncCount = () => {
+      const count = playerRows.reduce((sum, row) => {
+        const input = row.querySelector("[data-presence-input]");
+        return sum + (input?.checked ? 1 : 0);
+      }, 0);
+      if (countNode) countNode.textContent = String(count);
     };
 
-    const persistFilterState = () => {
-      try {
-        window.localStorage.setItem(filterStorageKey, filterToggle.checked ? "1" : "0");
-      } catch (_) {
-        // Ignora erro de persistencia para nao quebrar a pagina.
-      }
-    };
-
-    const update = () => {
-      let count = 0;
-      entries.forEach(({ row, checkbox }) => {
-        if (checkbox.disabled) return;
-        const isPresent = checkbox.checked;
-        if (isPresent) count += 1;
-        row.classList.toggle("hidden", filterToggle.checked && !isPresent);
+    const syncSearch = () => {
+      const term = String(searchInput?.value || "").trim().toLowerCase();
+      playerRows.forEach((row) => {
+        const haystack = row.getAttribute("data-player-search") || "";
+        row.hidden = term ? !haystack.includes(term) : false;
       });
-      countEl.textContent = `${count} presentes selecionados`;
     };
 
-    entries.forEach(({ checkbox }) => {
-      checkbox.addEventListener("change", update);
+    const openDialog = () => {
+      if (closeTimer) {
+        window.clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      dialog.hidden = false;
+      document.body.classList.add("match-dialog-open");
+      window.requestAnimationFrame(() => {
+        dialog.classList.add("is-visible");
+      });
+      window.setTimeout(() => searchInput?.focus(), 120);
+    };
+
+    const closeDialog = () => {
+      if (closeTimer) {
+        window.clearTimeout(closeTimer);
+      }
+      dialog.classList.remove("is-visible");
+      closeTimer = window.setTimeout(() => {
+        dialog.hidden = true;
+        document.body.classList.remove("match-dialog-open");
+        closeTimer = null;
+      }, transitionMs);
+    };
+
+    document.querySelectorAll('[data-match-dialog-open="presence"]').forEach((button) => {
+      button.addEventListener("click", openDialog);
     });
-    restoreFilterState();
-    filterToggle.addEventListener("change", () => {
-      persistFilterState();
-      update();
+
+    dialog.querySelectorAll("[data-match-dialog-close]").forEach((button) => {
+      button.addEventListener("click", closeDialog);
     });
-    update();
+
+    dialog.querySelectorAll("[data-presence-input]").forEach((input) => {
+      input.addEventListener("change", syncCount);
+    });
+
+    dialog.querySelectorAll("[data-presence-select]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.getAttribute("data-presence-select");
+        playerRows.forEach((row) => {
+          const input = row.querySelector("[data-presence-input]");
+          if (!input) return;
+          input.checked = mode === "all";
+        });
+        syncCount();
+      });
+    });
+
+    if (searchInput) {
+      searchInput.addEventListener("input", syncSearch);
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !dialog.hidden) {
+        event.preventDefault();
+        closeDialog();
+      }
+    });
+
+    syncSearch();
+    syncCount();
+
+    if (!dialog.hidden) {
+      document.body.classList.add("match-dialog-open");
+    }
+
+    if (!dialog.hidden && window.history?.replaceState) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("openDialog");
+      window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+    }
+  })();
+</script>
+
+<script>
+  (() => {
+    const statsSection = document.getElementById("stats");
+    const sorterSection = document.getElementById("sorteador");
+    const voteSection = document.getElementById("votacao");
+    if (!statsSection || !sorterSection || !voteSection) return;
+
+    if (statsSection.nextElementSibling === voteSection) {
+      sorterSection.after(voteSection);
+    }
   })();
 </script>
 
@@ -1135,7 +1543,7 @@
                     <tr class="border-t border-horriver-border/40">
                       <td class="px-3 py-2 text-horriver-light">
                         <span class="text-horriver-orange text-[10px] uppercase mr-2">
-                          <%= stage === "THIRD" ? "3Âº" : stage %>
+                          <%= stage === "THIRD" ? "3º" : stage %>
                         </span>
                         <%- homeName %> x <%- awayName %>
                         <% if (isSemi && game.decidedBy === "ADVANTAGE") { %>
@@ -1458,6 +1866,7 @@
         .map((cb) => ({
           id: cb.name.replace("present_", ""),
           name: cb.dataset.playerName || "Jogador",
+          nickname: cb.dataset.playerNickname || "",
           position: cb.dataset.playerPosition || "",
           strength: Number(cb.dataset.playerStrength || cb.dataset.playerOverall || 0),
         }));
@@ -1474,6 +1883,71 @@
       return p.includes("goleiro") || p.includes("gol");
     }
 
+    function escapePlayerHtml(value = "") {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function normalizeComparablePlayerValue(value = "") {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+    }
+
+    function getPlayerIdentity(player = {}) {
+      const name = String(player.name || player.nome || "").trim();
+      const nickname = String(player.nickname || "").trim();
+      const guest = player.guest === true || player.isGuest === true;
+      const hasDistinctNickname =
+        nickname &&
+        normalizeComparablePlayerValue(nickname) !== normalizeComparablePlayerValue(name);
+
+      return {
+        primary: hasDistinctNickname ? nickname : name || nickname || "Jogador",
+        secondary: hasDistinctNickname && name ? name : "",
+        guest,
+      };
+    }
+
+    function renderPlayerIdentity(player = {}, positionLabel = "") {
+      const identity = getPlayerIdentity(player);
+      const details = [];
+
+      if (identity.secondary) {
+        details.push(
+          `<span class="truncate text-horriver-gray">${escapePlayerHtml(identity.secondary)}</span>`
+        );
+      }
+      if (identity.guest) {
+        details.push(
+          '<span class="inline-flex items-center rounded-full border border-horriver-orange/30 bg-horriver-orange/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-horriver-orange">Convidado</span>'
+        );
+      }
+      if (positionLabel) {
+        details.push(
+          `<span class="text-horriver-orange">${escapePlayerHtml(positionLabel)}</span>`
+        );
+      }
+
+      return `
+        <div class="flex min-w-0 flex-col">
+          <span class="truncate font-medium text-horriver-light">${escapePlayerHtml(identity.primary)}</span>
+          ${
+            details.length
+              ? `<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-tight">${details.join("")}</div>`
+              : ""
+          }
+        </div>
+      `;
+    }
+
     function renderSeedList() {
       if (!seedList) return;
       const presentPlayers = getPresentPlayersDetail();
@@ -1483,7 +1957,7 @@
       });
       localStorage.setItem(seedStorageKey, JSON.stringify(Array.from(seedIds)));
       if (!presentPlayers.length) {
-        seedList.innerHTML = `<span class="text-horriver-gray">Marque presenças para escolher os cabeças de chave.</span>`;
+        seedList.innerHTML = `<span class="text-horriver-gray">Defina os presentes da rodada para escolher os cabeças de chave.</span>`;
         return;
       }
       seedList.innerHTML = presentPlayers
@@ -1716,7 +2190,6 @@
                 ${players
                   .map(
                     (p) => {
-                      const displayName = p.guest ? `${p.name} (Convidado)` : p.name;
                       const displayPos = p.guest ? abbrevPos(p.position) : (p.position || "");
                       return `
                       <li
@@ -1729,10 +2202,7 @@
                         data-player-nickname="${p.nickname || ""}"
                         data-player-guest="${p.guest ? "true" : "false"}"
                       >
-                        <div class="flex flex-col">
-                          <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
-                          <span class="text-horriver-orange text-[11px]">${displayPos}</span>
-                        </div>
+                        ${renderPlayerIdentity(p, displayPos)}
                         <span class="text-horriver-gray">${resolveDisplayOverall(p)}</span>
                       </li>
                     `;
@@ -1769,7 +2239,6 @@
       const renderBenchList = (players, listId) =>
         players
           .map((p) => {
-            const displayName = p.guest ? `${p.name} (Convidado)` : p.name;
             const displayPos = p.guest ? abbrevPos(p.position) : (p.position || "");
             return `
               <li
@@ -1783,10 +2252,7 @@
                 data-player-guest="${p.guest ? "true" : "false"}"
                 data-list-id="${listId}"
               >
-                <div class="flex flex-col">
-                  <span>${displayName}${p.nickname ? " (" + p.nickname + ")" : ""}</span>
-                  <span class="text-horriver-orange text-[11px]">${displayPos}</span>
-                </div>
+                ${renderPlayerIdentity(p, displayPos)}
                 <span class="text-horriver-gray">${resolveDisplayOverall(p)}</span>
               </li>
             `;
@@ -1952,14 +2418,11 @@
                   data-player-overall="${p.strength || 0}"
                   data-player-position="${p.position || ""}"
                   data-player-name="${p.name}"
-                  data-player-nickname=""
+                  data-player-nickname="${p.nickname || ""}"
                   data-player-guest="false"
                   data-list-id="available"
                 >
-                  <div class="flex flex-col">
-                    <span>${p.name}</span>
-                    <span class="text-horriver-orange text-[11px]">${p.position || ""}</span>
-                  </div>
+                  ${renderPlayerIdentity(p, p.position || "")}
                   <span class="text-horriver-gray">${Number(p.strength || 0).toFixed(1)}</span>
                 </li>
               `
@@ -2312,6 +2775,13 @@
             Preto: "Advance Compressores",
           };
 
+          const readPlayerFromListItem = (li) => ({
+            nome: li.dataset.playerName || "Jogador",
+            nickname: li.dataset.playerNickname || "",
+            pos: li.dataset.playerPosition || "",
+            isGuest: li.dataset.playerGuest === "true",
+          });
+
           const teamsForShare = Array.from(resultsEl.querySelectorAll("[data-team]")).map((box, idx) => {
             const rawName = box.querySelector("[data-team-name]")?.textContent?.trim() || `Time ${idx + 1}`;
             const selectEl = box.querySelector("[data-color-select]");
@@ -2320,13 +2790,7 @@
               box.getAttribute("data-team-color") ||
               box.querySelector("[data-color-indicator]")?.style?.backgroundColor ||
               "#f97316";
-            const players = Array.from(box.querySelectorAll("li")).map((li) => {
-              const spans = li.querySelectorAll("span");
-              const nome = (spans[0]?.textContent?.trim() || "").replace(/\s*\(Convidado\)\s*$/i, "");
-              const pos = li.dataset.playerPosition || spans[1]?.textContent?.trim() || "";
-              const isGuest = li.dataset.playerGuest === "true";
-              return { nome, pos, isGuest };
-            });
+            const players = Array.from(box.querySelectorAll("li")).map(readPlayerFromListItem);
             const nomeCor =
               box.getAttribute("data-team-color-name") ||
               selectEl?.selectedOptions?.[0]?.text ||
@@ -2341,13 +2805,9 @@
             return { name: displayName, color, colorName, players };
           });
 
-          const goalkeepersForShare = Array.from(goalkeeperBenchBox?.querySelectorAll("li") || []).map((li) => {
-            const spans = li.querySelectorAll("span");
-            const nome = (spans[0]?.textContent?.trim() || "").replace(/\s*\(Convidado\)\s*$/i, "");
-            const pos = li.dataset.playerPosition || spans[1]?.textContent?.trim() || "";
-            const isGuest = li.dataset.playerGuest === "true";
-            return { nome, pos, isGuest };
-          });
+          const goalkeepersForShare = Array.from(goalkeeperBenchBox?.querySelectorAll("li") || []).map(
+            readPlayerFromListItem
+          );
 
           const getLuminance = (hex) => {
             if (!hex || !hex.startsWith("#") || hex.length < 7) return 0.5;
@@ -2412,18 +2872,10 @@
             [...players].sort((a, b) => {
               const rankDiff = positionRank(a.pos) - positionRank(b.pos);
               if (rankDiff !== 0) return rankDiff;
-              return String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR");
+              const aLabel = getPlayerIdentity({ name: a.nome, nickname: a.nickname }).primary;
+              const bLabel = getPlayerIdentity({ name: b.nome, nickname: b.nickname }).primary;
+              return String(aLabel || a.nome || "").localeCompare(String(bLabel || b.nome || ""), "pt-BR");
             });
-
-          const splitDisplayName = (value = "") => {
-            const clean = String(value || "").trim();
-            const match = clean.match(/^(.*?)\s*\(([^()]+)\)\s*$/);
-            if (!match) return { primary: clean, nickname: "" };
-            return {
-              primary: match[1]?.trim() || clean,
-              nickname: match[2]?.trim() || "",
-            };
-          };
 
           const teamVisualTheme = (team) => {
             const key =
@@ -2435,10 +2887,10 @@
               Vermelho: {
                 border: "rgba(255,107,87,0.58)",
                 panelBg:
-                  "linear-gradient(180deg, rgba(110, 16, 34, 0.98) 0%, rgba(64, 12, 24, 0.97) 20%, rgba(20, 12, 16, 0.99) 100%)",
+                  "linear-gradient(180deg, rgba(110, 16, 34, 0.82) 0%, rgba(64, 12, 24, 0.76) 20%, rgba(20, 12, 16, 0.84) 100%)",
                 stripBg: "linear-gradient(90deg, #fb7185 0%, #ef4444 54%, #f97316 100%)",
-                rowBg: "rgba(255,255,255,0.048)",
-                rowBorder: "rgba(255,255,255,0.10)",
+                rowBg: "rgba(255,255,255,0.03)",
+                rowBorder: "rgba(255,255,255,0.08)",
                 titleText: "#f8fafc",
                 labelText: "rgba(255,255,255,0.56)",
                 countText: "rgba(255,255,255,0.92)",
@@ -2447,10 +2899,10 @@
               Azul: {
                 border: "rgba(94,168,255,0.54)",
                 panelBg:
-                  "linear-gradient(180deg, rgba(26, 72, 148, 0.98) 0%, rgba(17, 55, 120, 0.97) 18%, rgba(12, 28, 58, 0.99) 100%)",
+                  "linear-gradient(180deg, rgba(26, 72, 148, 0.82) 0%, rgba(17, 55, 120, 0.76) 18%, rgba(12, 28, 58, 0.84) 100%)",
                 stripBg: "linear-gradient(90deg, #7dd3fc 0%, #3b82f6 52%, #1d4ed8 100%)",
-                rowBg: "rgba(255,255,255,0.048)",
-                rowBorder: "rgba(255,255,255,0.10)",
+                rowBg: "rgba(255,255,255,0.03)",
+                rowBorder: "rgba(255,255,255,0.08)",
                 titleText: "#f8fafc",
                 labelText: "rgba(255,255,255,0.56)",
                 countText: "rgba(255,255,255,0.92)",
@@ -2459,10 +2911,10 @@
               Amarelo: {
                 border: "rgba(255,228,90,0.54)",
                 panelBg:
-                  "linear-gradient(180deg, rgba(149, 109, 18, 0.98) 0%, rgba(92, 63, 13, 0.97) 18%, rgba(23, 17, 10, 0.99) 100%)",
+                  "linear-gradient(180deg, rgba(149, 109, 18, 0.82) 0%, rgba(92, 63, 13, 0.76) 18%, rgba(23, 17, 10, 0.84) 100%)",
                 stripBg: "linear-gradient(90deg, #fff36b 0%, #fde047 28%, #facc15 60%, #f59e0b 100%)",
-                rowBg: "rgba(255,255,255,0.05)",
-                rowBorder: "rgba(255,255,255,0.10)",
+                rowBg: "rgba(255,255,255,0.032)",
+                rowBorder: "rgba(255,255,255,0.08)",
                 titleText: "#f8fafc",
                 labelText: "rgba(255,255,255,0.56)",
                 countText: "rgba(255,255,255,0.92)",
@@ -2471,10 +2923,10 @@
               Preto: {
                 border: "rgba(203,213,225,0.34)",
                 panelBg:
-                  "linear-gradient(180deg, rgba(52, 52, 57, 0.98) 0%, rgba(37, 39, 46, 0.97) 18%, rgba(18, 19, 24, 0.99) 100%)",
+                  "linear-gradient(180deg, rgba(52, 52, 57, 0.82) 0%, rgba(37, 39, 46, 0.76) 18%, rgba(18, 19, 24, 0.84) 100%)",
                 stripBg: "linear-gradient(90deg, #f3f4f6 0%, #cbd5e1 42%, #64748b 100%)",
-                rowBg: "rgba(255,255,255,0.05)",
-                rowBorder: "rgba(255,255,255,0.10)",
+                rowBg: "rgba(255,255,255,0.032)",
+                rowBorder: "rgba(255,255,255,0.08)",
                 titleText: "#f8fafc",
                 labelText: "rgba(255,255,255,0.58)",
                 countText: "rgba(255,255,255,0.92)",
@@ -2565,6 +3017,19 @@
           card.style.fontFamily = "\"Manrope\", system-ui, -apple-system, sans-serif";
           card.style.boxShadow = "0 24px 56px rgba(0,0,0,0.28)";
           card.style.overflow = "hidden";
+          card.style.isolation = "isolate";
+
+          const watermarkHtml = `
+            <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;">
+              <div style="position:absolute;inset:0;background:radial-gradient(circle at center, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.018) 20%, rgba(5,5,9,0) 60%);"></div>
+              <img
+                src="/img/logo-512x512.svg"
+                alt=""
+                aria-hidden="true"
+                style="position:absolute;top:56%;left:50%;width:860px;height:860px;transform:translate(-50%, -50%);object-fit:contain;opacity:0.085;filter:grayscale(1) brightness(1.52) saturate(0.12);"
+              />
+            </div>
+          `;
 
           const headerHtml = `
             <div style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:34px;margin-bottom:26px;">
@@ -2626,21 +3091,26 @@
                         <span style="margin-top:-4px;height:1px;width:100%;background:linear-gradient(90deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%);"></span>
                         <div style="display:flex;flex-direction:column;gap:12px;">
                           ${sortedPlayers
-                            .map((p, playerIdx) => {
+                            .map((p) => {
                               const positionLabel = positionBadge(p.pos).label;
-                              const displayName = String(p.nome || "").replace(/\s*\(Convidado\)\s*$/i, "");
-                              const parts = splitDisplayName(displayName);
+                              const identity = getPlayerIdentity({
+                                name: p.nome,
+                                nickname: p.nickname,
+                                isGuest: p.isGuest,
+                              });
                               return `
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:70px;padding:16px 16px;border-radius:18px;background:${theme.rowBg};border:1px solid ${theme.rowBorder};box-shadow:none;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:76px;padding:16px 16px;border-radius:18px;background:${theme.rowBg};border:1px solid ${theme.rowBorder};box-shadow:none;">
                                   <div style="display:flex;align-items:center;min-width:0;flex:1 1 auto;">
-                                    <div style="display:flex;align-items:center;flex-wrap:wrap;column-gap:6px;row-gap:4px;min-width:0;">
-                                      <span style="display:inline;min-width:0;max-width:100%;font-size:19px;font-weight:800;line-height:1.22;letter-spacing:-0.01em;color:#f8fafc;white-space:normal;overflow:visible;word-break:break-word;">${escapeHtml(parts.primary)}</span>
-                                    ${parts.nickname
-                                      ? `<span style="display:inline-block;font-size:15px;font-weight:620;line-height:1.22;letter-spacing:-0.01em;color:rgba(248,250,252,0.92);">(${escapeHtml(parts.nickname)})</span>`
-                                      : ""}
-                                      ${p.isGuest
-                                        ? `<span style="display:inline-block;font-size:12px;font-weight:800;line-height:1.1;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>`
-                                        : ""}
+                                    <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                                      <span style="display:block;min-width:0;max-width:100%;font-size:19px;font-weight:800;line-height:1.16;letter-spacing:-0.01em;color:#f8fafc;white-space:normal;overflow:visible;word-break:break-word;">${escapeHtml(identity.primary)}</span>
+                                      ${
+                                        identity.secondary || identity.guest
+                                          ? `<div style="display:flex;align-items:center;flex-wrap:wrap;column-gap:8px;row-gap:4px;min-width:0;">
+                                              ${identity.secondary ? `<span style="display:inline-block;min-width:0;max-width:100%;font-size:13px;font-weight:620;line-height:1.2;color:rgba(226,232,240,0.78);white-space:normal;overflow:visible;word-break:break-word;">${escapeHtml(identity.secondary)}</span>` : ""}
+                                              ${identity.guest ? `<span style="display:inline-block;font-size:11px;font-weight:800;line-height:1.1;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>` : ""}
+                                            </div>`
+                                          : ""
+                                      }
                                     </div>
                                   </div>
                                   <span style="display:inline-block;flex:0 0 auto;min-width:38px;font-size:13px;font-weight:700;line-height:1;letter-spacing:0.10em;color:rgba(226,232,240,0.62);text-transform:uppercase;text-align:right;">
@@ -2662,7 +3132,7 @@
           const gkHtml =
             goalkeepersForShare.length > 0
               ? `
-            <div style="margin-top:22px;border:1px solid rgba(199,139,91,0.44);border-radius:28px;overflow:hidden;background:linear-gradient(180deg, rgba(61, 43, 27, 0.52) 0%, rgba(19, 17, 20, 0.96) 100%);">
+            <div style="margin-top:22px;border:1px solid rgba(199,139,91,0.44);border-radius:28px;overflow:hidden;background:linear-gradient(180deg, rgba(61, 43, 27, 0.4) 0%, rgba(19, 17, 20, 0.78) 100%);">
               <div style="height:10px;background:linear-gradient(90deg, #d4a06d 0%, rgba(199,139,91,0.72) 42%, rgba(199,139,91,0.16) 100%);"></div>
               <div style="padding:18px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;">
@@ -2672,14 +3142,24 @@
                 <div style="display:flex;flex-direction:column;gap:10px;">
                 ${goalkeepersForShare
                   .map((gk) => {
-                    const parts = splitDisplayName(gk.nome);
+                    const identity = getPlayerIdentity({
+                      name: gk.nome,
+                      nickname: gk.nickname,
+                      isGuest: gk.isGuest,
+                    });
                     return `
-                      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:16px 16px;border-radius:18px;background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.09);box-shadow:none;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:72px;padding:16px 16px;border-radius:18px;background:rgba(255,255,255,0.028);border:1px solid rgba(255,255,255,0.075);box-shadow:none;">
                         <div style="display:flex;align-items:center;min-width:0;flex:1 1 auto;">
-                          <div style="display:flex;align-items:center;flex-wrap:wrap;column-gap:6px;row-gap:4px;min-width:0;">
-                            <span style="font-size:18px;font-weight:800;line-height:1.2;color:#f8fafc;">${escapeHtml(parts.primary)}</span>
-                            ${parts.nickname ? `<span style="font-size:14px;font-weight:620;line-height:1.2;color:rgba(248,250,252,0.9);">(${escapeHtml(parts.nickname)})</span>` : ""}
-                            ${gk.isGuest ? `<span style="font-size:12px;font-weight:800;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>` : ""}
+                          <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                            <span style="font-size:18px;font-weight:800;line-height:1.16;color:#f8fafc;">${escapeHtml(identity.primary)}</span>
+                            ${
+                              identity.secondary || identity.guest
+                                ? `<div style="display:flex;align-items:center;flex-wrap:wrap;column-gap:8px;row-gap:4px;min-width:0;">
+                                    ${identity.secondary ? `<span style="font-size:13px;font-weight:620;line-height:1.2;color:rgba(226,232,240,0.78);">${escapeHtml(identity.secondary)}</span>` : ""}
+                                    ${identity.guest ? `<span style="font-size:11px;font-weight:800;letter-spacing:0.10em;color:#f1cf8a;text-transform:uppercase;">Convidado</span>` : ""}
+                                  </div>`
+                                : ""
+                            }
                           </div>
                         </div>
                         <span style="display:inline-block;flex:0 0 auto;min-width:38px;font-size:13px;font-weight:700;line-height:1;letter-spacing:0.10em;color:rgba(226,232,240,0.62);text-transform:uppercase;text-align:right;">GOL</span>
@@ -2699,7 +3179,7 @@
             </div>
           `;
 
-          card.innerHTML = headerHtml + teamsHtml + gkHtml + footerHtml;
+          card.innerHTML = `${watermarkHtml}<div style="position:relative;z-index:1;">${headerHtml + teamsHtml + gkHtml + footerHtml}</div>`;
 
           const images = Array.from(card.querySelectorAll("img"));
           document.body.appendChild(card);

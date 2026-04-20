@@ -1,6 +1,9 @@
 const prisma = require("./db");
 const { isWeeklyVoteBallotValid } = require("../helpers/weeklyVoteValidation.helper");
 
+const VOTE_RATING_WEIGHT = 0.85;
+const STATS_RATING_WEIGHT = 0.15;
+
 function normalizePosition(pos) {
   const p = (pos || "").toLowerCase();
   if (p.includes("gol")) return "GOL";
@@ -172,7 +175,9 @@ async function computeMatchRatingsAndAwards(matchId) {
   });
 
   scores.forEach((entry) => {
-    const finalRating = 0.7 * entry.voteRating + 0.3 * entry.statsRating;
+    const finalRating =
+      VOTE_RATING_WEIGHT * entry.voteRating +
+      STATS_RATING_WEIGHT * entry.statsRating;
     entry.finalRating = Number(finalRating.toFixed(2));
   });
 

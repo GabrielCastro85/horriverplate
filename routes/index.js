@@ -4,9 +4,8 @@ const router = express.Router();
 const prisma = require("../utils/db");
 const { getAchievementsStats } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
-const { getCache, setCache, deleteCache } = require("../utils/page_cache");
+const { getCache, setCache } = require("../utils/page_cache");
 const CACHE_TTL_MS = 60 * 1000;
-const SAO_PAULO_UTC_OFFSET_HOURS = 3;
 const SAO_PAULO_WEEKDAY_INDEX = {
   sun: 0,
   mon: 1,
@@ -76,70 +75,12 @@ function getSaoPauloDateParts(date = new Date()) {
   };
 }
 
-function createSaoPauloDate(year, month, day, hour = 0, minute = 0, second = 0, ms = 0) {
-  return new Date(Date.UTC(year, month - 1, day, hour + SAO_PAULO_UTC_OFFSET_HOURS, minute, second, ms));
-}
-
-function getAutomaticTuesdayTarget(baseDate) {
-  const current = getSaoPauloDateParts(baseDate);
-  const todayStart = createSaoPauloDate(current.year, current.month, current.day);
-
-  let daysUntilTuesday = (2 - current.weekday + 7) % 7;
-  if (daysUntilTuesday === 0 && current.hour >= 20) {
-    daysUntilTuesday = 7;
-  }
-
-  const candidateTuesdayStart = new Date(todayStart);
-  candidateTuesdayStart.setUTCDate(candidateTuesdayStart.getUTCDate() + daysUntilTuesday);
-
-  const releaseStart = new Date(candidateTuesdayStart);
-  releaseStart.setUTCDate(releaseStart.getUTCDate() - 5);
-
-  if (baseDate.getTime() < releaseStart.getTime()) {
-    return null;
-  }
-
-  return new Date(candidateTuesdayStart.getTime() + 20 * 60 * 60 * 1000);
-}
-
-async function ensureNextTuesdayMatch(baseDate) {
-  const target = getAutomaticTuesdayTarget(baseDate);
-  if (!target) return { match: null, created: false };
-
-  const dayStart = new Date(target);
-  dayStart.setUTCHours(SAO_PAULO_UTC_OFFSET_HOURS, 0, 0, 0);
-
-  const dayEnd = new Date(dayStart);
-  dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
-  dayEnd.setUTCMilliseconds(dayEnd.getUTCMilliseconds() - 1);
-
-  const existing = await prisma.match.findFirst({
-    where: { playedAt: { gte: dayStart, lte: dayEnd } },
-  });
-
-  if (existing) return { match: existing, created: false };
-
-  const created = await prisma.match.create({
-    data: {
-      playedAt: target,
-      description: "Pelada da terca",
-    },
-  });
-
-  return { match: created, created: true };
-}
-
 // ==============================
 // HOME /
 // ==============================
 router.get("/", async (req, res) => {
   try {
     const now = new Date();
-    const scheduleResult = await ensureNextTuesdayMatch(now);
-    if (scheduleResult.created) {
-      deleteCache("home");
-    }
-
     const cached = getCache("home", CACHE_TTL_MS);
     if (cached) {
       return res.render("index", cached);
@@ -403,19 +344,6 @@ router.get("/", async (req, res) => {
       orderBy: { name: "asc" },
     });
 
-    // =====================================================
-    // ULTIMAS / PROXIMAS PELADAS
-    // =====================================================
-    const lastMatch = await prisma.match.findFirst({
-      where: { playedAt: { lte: now } },
-      orderBy: { playedAt: "desc" },
-    });
-
-    const nextMatch = await prisma.match.findFirst({
-      where: { playedAt: { gt: now } },
-      orderBy: { playedAt: "asc" },
-    });
-
     const recentMatches = await prisma.match.findMany({
       orderBy: { playedAt: "desc" },
       take: 10,
@@ -444,8 +372,6 @@ router.get("/", async (req, res) => {
       photoKings,
 
       players,
-      lastMatch,
-      nextMatch,
       recentMatches,
     };
 

@@ -947,61 +947,6 @@
   </section>
 
   
-  <section class="space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="font-title text-2xl text-horriver-light">
-        Agenda da pelada
-      </h2>
-      <a href="/peladas" class="text-xs text-horriver-orange hover:underline">
-        Ver calendario completo
-      </a>
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
-      <div class="card-unified p-4 space-y-2">
-        <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray">
-          Ultima pelada
-        </p>
-        <% if (lastMatch) { %>
-          <p class="text-horriver-light font-semibold">
-            <%= fmtDate(lastMatch.playedAt) %>
-          </p>
-          <p class="text-xs text-horriver-gray">
-            <%= lastMatch.description || "Sem descricao" %>
-          </p>
-          <a href="/matches/<%= lastMatch.id %>" class="text-horriver-orange text-xs">
-            Ver estatisticas
-          </a>
-        <% } else { %>
-          <p class="text-xs text-horriver-gray">
-            Ainda nao ha peladas registradas.
-          </p>
-        <% } %>
-      </div>
-
-      <div class="card-unified p-4 space-y-2">
-        <p class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray">
-          Proxima pelada
-        </p>
-        <% if (nextMatch) { %>
-          <p class="text-horriver-light font-semibold">
-            <%= fmtDate(nextMatch.playedAt) %>
-          </p>
-          <p class="text-xs text-horriver-gray">
-            <%= nextMatch.description || "Sem descricao" %>
-          </p>
-          <a href="/matches/<%= nextMatch.id %>" class="text-horriver-orange text-xs">
-            Ver estatisticas previstas
-          </a>
-        <% } else { %>
-          <p class="text-xs text-horriver-gray">
-            Data a definir.
-          </p>
-        <% } %>
-      </div>
-    </div>
-  </section>
-
   <!-- ÚLTIMAS PELADAS -->
   <section class="space-y-4">
     <h2 class="font-title text-2xl text-horriver-light">

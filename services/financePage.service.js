@@ -402,7 +402,7 @@ async function ensureFinanceSettings() {
       chargeBehavior: "ASSISTED",
       autoGenerateCompetence: false,
       defaultWhatsappMessage:
-        "Bom dia, {name}!\nSegue o Pix para vocÃª pagar o valor de {amount} da mensalidade da pelada referente a {monthYear}:\n{pixKey}{receiverLine}",
+        "Bom dia, {name}!\nSegue o Pix para você pagar o valor de {amount} da mensalidade da pelada referente a {monthYear}:\n{pixKey}{receiverLine}",
     },
   });
 }

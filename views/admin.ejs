@@ -347,10 +347,10 @@
   <section class="admin-panel rounded-2xl p-5 md:p-6 space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
       <div>
-        <h2 class="font-title text-xl text-horriver-light">RelatÃ³rios em PDF</h2>
+        <h2 class="font-title text-xl text-horriver-light">Relatórios em PDF</h2>
         <p class="text-sm text-horriver-gray/80">Baixe rankings prontos para compartilhar, arquivar ou imprimir sem montar planilha manual.</p>
       </div>
-      <span class="text-[11px] uppercase tracking-[0.18em] text-horriver-gray/70">ExportaÃ§Ã£o rÃ¡pida</span>
+      <span class="text-[11px] uppercase tracking-[0.18em] text-horriver-gray/70">Exportação rápida</span>
     </div>
 
     <form
@@ -422,7 +422,7 @@
           </span>
           <strong class="text-base leading-tight text-horriver-light font-semibold"><%= report.title %></strong>
           <p class="text-xs leading-relaxed text-horriver-gray/78"><%= report.description %></p>
-          <span class="mt-auto text-[11px] font-medium text-horriver-orange">Baixar relatÃ³rio</span>
+          <span class="mt-auto text-[11px] font-medium text-horriver-orange">Baixar relatório</span>
         </a>
       <% }) %>
     </div>
@@ -531,7 +531,7 @@
                           <%= new Date(match.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit' }) %>
                         </p>
                         <p class="text-[12px] text-horriver-gray">
-                          <%= match.description || 'Pelada PadrÃ£o' %>
+                          <%= match.description || 'Pelada Padrão' %>
                         </p>
                       </div>
                       <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2">
@@ -647,7 +647,7 @@
             <% monthlyAwards.forEach(award => { %>
               <div class="admin-row flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg px-2 py-1">
                 <span><%= adminMonthNames[award.month - 1] || award.month %>/<%= award.year %> - <%= award.craque?.name || 'N/A' %></span>
-                <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiaÃ§Ã£o?');" class="w-full sm:w-auto">
+                <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiação?');" class="w-full sm:w-auto">
                   <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
                 </form>
               </div>
@@ -658,23 +658,23 @@
     </div>
   </section>
 
-  <!-- PremiaÃ§Ã£o da temporada / Hall da Fama -->
+  <!-- Premiação da temporada / Hall da Fama -->
   <section class="pt-4 border-t border-horriver-border/60">
     <div class="admin-panel rounded-2xl p-5 md:p-6 space-y-4">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-            PremiaÃ§Ã£o da temporada
+            Premiação da temporada
           </h2>
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Cadastre os prÃªmios de fim de ano (melhor jogador, artilheiro, por posiÃ§Ã£o, etc).
+            Cadastre os prêmios de fim de ano (melhor jogador, artilheiro, por posição, etc).
           </p>
         </div>
         <a
           href="/admin/premiacao"
           class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Gerenciar premiaÃ§Ã£o da temporada
+          Gerenciar premiação da temporada
         </a>
       </div>
 
@@ -695,7 +695,7 @@
       <% if (hasSeasonAwards && latestAwards.length) { %>
         <div class="mt-2 space-y-3">
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            CampeÃµes atuais da temporada
+            Campeões atuais da temporada
             <span class="text-horriver-orange font-semibold"><%= latestYear %></span>:
           </p>
           <div class="overflow-x-auto text-[11px] md:text-xs max-h-64">
@@ -727,7 +727,7 @@
         </div>
       <% } else { %>
         <p class="text-[11px] md:text-xs text-horriver-gray/80">
-          Nenhuma premiaÃ§Ã£o cadastrada ainda. Clique em "Gerenciar premiaÃ§Ã£o da temporada" para comeÃ§ar.
+          Nenhuma premiação cadastrada ainda. Clique em "Gerenciar premiação da temporada" para começar.
         </p>
       <% } %>
     </div>
@@ -755,7 +755,7 @@
           <label class="flex flex-col gap-1">
             Telefone (opcional)
             <input type="tel" name="whatsapp" placeholder="21999998888" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
-            <span class="text-[11px] text-horriver-gray">Somente nÃºmeros; +55 adicionado automaticamente.</span>
+            <span class="text-[11px] text-horriver-gray">Somente números; +55 adicionado automaticamente.</span>
           </label>
           <label class="flex flex-col gap-1">
             Posicao principal
@@ -809,7 +809,7 @@
                 <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3">
                   <span class="text-[11px] px-2 py-1 rounded-full bg-horriver-dark text-horriver-light uppercase" data-player-position="<%= player.position %>"><%= player.position %></span>
                   <a href="/admin/players/<%= player.id %>/edit" class="inline-flex items-center min-h-[34px] text-[12px] text-horriver-orange hover:underline">Editar</a>
-                  <form action="/admin/players/<%= player.id %>/delete" method="POST" onsubmit="return confirm('Excluir jogador e todo o histÃ³rico?');">
+                  <form action="/admin/players/<%= player.id %>/delete" method="POST" onsubmit="return confirm('Excluir jogador e todo o histórico?');">
                     <button type="submit" class="px-2 py-1 rounded-full text-red-500 hover:text-red-300 text-[12px] min-h-[34px]">Excluir</button>
                   </form>
                 </div>
@@ -825,7 +825,7 @@
 </div>
 
 <script>
-  // Define data padrÃ£o no formulÃ¡rio de nova pelada
+  // Define data padrão no formulário de nova pelada
   (function () {
     const form = document.getElementById("newMatchForm");
     const dateInput = document.getElementById("playedDate");

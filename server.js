@@ -183,13 +183,24 @@ app.use((req, res, next) => {
 });
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
+  const wantsHtml = req.accepts("html");
   if (
+    wantsHtml &&
     req.path.startsWith("/admin") ||
+    wantsHtml &&
     req.path.startsWith("/login") ||
+    wantsHtml &&
     req.path.startsWith("/vote") ||
+    wantsHtml &&
     req.path.startsWith("/votar") ||
+    wantsHtml &&
+    req.path.startsWith("/monthly-vote") ||
+    wantsHtml &&
     req.path.startsWith("/logout")
   ) {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
     return next();
   }
   res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");

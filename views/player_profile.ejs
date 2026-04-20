@@ -7,9 +7,13 @@
   const sectionHeadingClass = "flex items-end justify-between gap-3 flex-wrap";
   const sectionMetaClass = "text-xs text-horriver-gray/80";
   const surfaceSoftClass = "rounded-[1.25rem] border border-horriver-border bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
+  const isModalProfile = typeof modalMode !== "undefined" && !!modalMode;
+  const shellClass = isModalProfile
+    ? "space-y-6"
+    : "page-shell w-full max-w-5xl mx-auto px-4 sm:px-6 animate-fadeIn";
 %>
 
-<section class="page-shell w-full max-w-5xl mx-auto px-4 sm:px-6 animate-fadeIn">
+<section class="<%= shellClass %>">
   <header class="page-hero space-y-6">
     <div class="grid gap-5 lg:grid-cols-[auto,1fr,0.9fr] lg:items-start">
       <div class="relative w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange/90 shadow-card-soft shrink-0 mx-auto md:mx-0">
@@ -44,16 +48,18 @@
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 text-sm">
-          <button
-            type="button"
-            id="copyProfileLink"
-            class="px-4 py-2 rounded-full border border-horriver-border bg-black/35 text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
-          >
-            Copiar link do perfil
-          </button>
-          <span id="copyStatus" class="text-[11px] text-horriver-gray hidden">Copiado!</span>
-        </div>
+        <% if (!isModalProfile) { %>
+          <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 text-sm">
+            <button
+              type="button"
+              id="copyProfileLink"
+              class="px-4 py-2 rounded-full border border-horriver-border bg-black/35 text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+            >
+              Copiar link do perfil
+            </button>
+            <span id="copyStatus" class="text-[11px] text-horriver-gray hidden">Copiado!</span>
+          </div>
+        <% } %>
       </div>
 
       <aside class="page-section">
@@ -246,27 +252,29 @@
   </section>
 </section>
 
-<script>
-  (function () {
-    const btn = document.getElementById("copyProfileLink");
-    const status = document.getElementById("copyStatus");
-    if (!btn || !navigator.clipboard) return;
+<% if (!isModalProfile) { %>
+  <script>
+    (function () {
+      const btn = document.getElementById("copyProfileLink");
+      const status = document.getElementById("copyStatus");
+      if (!btn || !navigator.clipboard) return;
 
-    btn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        if (status) {
-          status.classList.remove("hidden");
-          status.textContent = "Copiado!";
-          setTimeout(() => status.classList.add("hidden"), 2000);
+      btn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          if (status) {
+            status.classList.remove("hidden");
+            status.textContent = "Copiado!";
+            setTimeout(() => status.classList.add("hidden"), 2000);
+          }
+        } catch (err) {
+          if (status) {
+            status.classList.remove("hidden");
+            status.textContent = "Erro ao copiar";
+            setTimeout(() => status.classList.add("hidden"), 2000);
+          }
         }
-      } catch (err) {
-        if (status) {
-          status.classList.remove("hidden");
-          status.textContent = "Erro ao copiar";
-          setTimeout(() => status.classList.add("hidden"), 2000);
-        }
-      }
-    });
-  })();
-</script>
+      });
+    })();
+  </script>
+<% } %>
