@@ -1,27 +1,72 @@
-// Utilidades para c—lculo de overall (0-100) com pesos por posi——o
+// Utilidades para calculo de overall (faixa 60-95) com ajuste por posicao.
 // Entrada esperada para cada jogador: { player, goals, assists, matches, rating }
+
+const OVERALL_MIN = 60;
+const OVERALL_MAX = 95;
+const FULL_CONFIDENCE_MATCHES = 6;
+const MIN_SAMPLE_CONFIDENCE = 0.25;
+
+const POSITION_PROFILES = {
+  GOL: {
+    key: "GOL",
+    weights: { rating: 0.75, goals: 0.05, assists: 0.2 },
+    references: { goalsPerMatch: 0.15, assistsPerMatch: 0.3 },
+  },
+  ZAG: {
+    key: "ZAG",
+    weights: { rating: 0.68, goals: 0.12, assists: 0.2 },
+    references: { goalsPerMatch: 0.35, assistsPerMatch: 0.35 },
+  },
+  MEI: {
+    key: "MEI",
+    weights: { rating: 0.5, goals: 0.22, assists: 0.28 },
+    references: { goalsPerMatch: 0.7, assistsPerMatch: 0.8 },
+  },
+  ATA: {
+    key: "ATA",
+    weights: { rating: 0.42, goals: 0.43, assists: 0.15 },
+    references: { goalsPerMatch: 1.0, assistsPerMatch: 0.45 },
+  },
+  OUTRO: {
+    key: "OUTRO",
+    weights: { rating: 0.58, goals: 0.24, assists: 0.18 },
+    references: { goalsPerMatch: 0.7, assistsPerMatch: 0.6 },
+  },
+};
 
 function clamp(val, min, max) {
   return Math.min(max, Math.max(min, val));
 }
 
-function getWeights(position) {
-  const pos = (position || "").toLowerCase();
+function normalizePosition(position) {
+  const pos = String(position || "").trim().toLowerCase();
 
-  // Pesos somam 1
-  if (pos.includes("goleiro")) {
-    return { rating: 0.55, goals: 0.05, assists: 0.1, presence: 0.3 };
-  }
-  if (pos.includes("zagueiro")) {
-    return { rating: 0.5, goals: 0.1, assists: 0.1, presence: 0.3 };
-  }
-  if (pos.includes("meia")) {
-    return { rating: 0.4, goals: 0.25, assists: 0.2, presence: 0.15 };
-  }
-  if (pos.includes("atac")) {
-    return { rating: 0.35, goals: 0.35, assists: 0.2, presence: 0.1 };
-  }
-  return { rating: 0.45, goals: 0.25, assists: 0.15, presence: 0.15 };
+  if (!pos) return "OUTRO";
+  if (pos === "gol" || pos.includes("goleir") || pos.includes("goal")) return "GOL";
+  if (pos === "zag" || pos.includes("zagueir") || pos.includes("def")) return "ZAG";
+  if (pos === "mei" || pos.includes("meia") || pos.includes("meio") || pos.includes("vol")) return "MEI";
+  if (pos === "ata" || pos.includes("atac") || pos.includes("pont") || pos.includes("fwd")) return "ATA";
+  return "OUTRO";
+}
+
+function getProfile(position) {
+  return POSITION_PROFILES[normalizePosition(position)] || POSITION_PROFILES.OUTRO;
+}
+
+function getSampleConfidence(matches) {
+  const safeMatches = Math.max(0, Number(matches) || 0);
+  if (safeMatches <= 0) return 0;
+
+  const progress =
+    FULL_CONFIDENCE_MATCHES <= 1
+      ? 1
+      : clamp((safeMatches - 1) / (FULL_CONFIDENCE_MATCHES - 1), 0, 1);
+
+  return clamp(
+    MIN_SAMPLE_CONFIDENCE + progress * (1 - MIN_SAMPLE_CONFIDENCE),
+    MIN_SAMPLE_CONFIDENCE,
+    1
+  );
 }
 
 function computeOverallFromEntries(entries) {
@@ -30,37 +75,64 @@ function computeOverallFromEntries(entries) {
   const maxGoals = safeEntries.reduce((m, e) => Math.max(m, e.goals || 0), 0);
   const maxAssists = safeEntries.reduce((m, e) => Math.max(m, e.assists || 0), 0);
   const maxMatches = safeEntries.reduce((m, e) => Math.max(m, e.matches || 0), 0);
+  const maxGoalsPerMatch = safeEntries.reduce((m, e) => {
+    const matches = Math.max(1, Number(e.matches) || 0);
+    return Math.max(m, (Number(e.goals) || 0) / matches);
+  }, 0);
+  const maxAssistsPerMatch = safeEntries.reduce((m, e) => {
+    const matches = Math.max(1, Number(e.matches) || 0);
+    return Math.max(m, (Number(e.assists) || 0) / matches);
+  }, 0);
 
-  const computed = safeEntries.map((e) => {
-    const weights = getWeights(e.player?.position);
+  const computed = safeEntries.map((entry) => {
+    const profile = getProfile(entry.player?.position);
+    const { weights, references } = profile;
 
-    const goalsNorm = maxGoals > 0 ? (e.goals || 0) / maxGoals : 0;
-    const assistsNorm = maxAssists > 0 ? (e.assists || 0) / maxAssists : 0;
-    const presenceNorm = maxMatches > 0 ? (e.matches || 0) / maxMatches : 0;
-    const ratingNorm = (e.rating || 0) / 10; // rating já em 0-10
+    const matches = Math.max(0, Number(entry.matches) || 0);
+    const goals = Math.max(0, Number(entry.goals) || 0);
+    const assists = Math.max(0, Number(entry.assists) || 0);
+    const rating = Math.max(0, Number(entry.rating) || 0);
+    const baseOverall = Number.isFinite(Number(entry.player?.baseOverall))
+      ? Number(entry.player.baseOverall)
+      : OVERALL_MIN;
 
-    const score01 =
+    const goalsPerMatch = matches > 0 ? goals / matches : 0;
+    const assistsPerMatch = matches > 0 ? assists / matches : 0;
+
+    const goalsNorm = clamp(goalsPerMatch / references.goalsPerMatch, 0, 1);
+    const assistsNorm = clamp(assistsPerMatch / references.assistsPerMatch, 0, 1);
+    const ratingNorm = clamp(rating / 10, 0, 1);
+    const presenceNorm = maxMatches > 0 ? matches / maxMatches : 0;
+    const sampleConfidence = getSampleConfidence(matches);
+
+    const performanceScore =
       ratingNorm * weights.rating +
       goalsNorm * weights.goals +
-      assistsNorm * weights.assists +
-      presenceNorm * weights.presence;
+      assistsNorm * weights.assists;
 
-    // Raw em 0-100
-    const rawOverall = Math.round(clamp(score01, 0, 1) * 100);
-    // Reescala para uma faixa mais —org—nica—: 60 (mínimo) a 95 (topo atual)
-    // Isso mant—m espa—o para crescimento conforme novos stats forem entrando.
-    const scaledOverall = Math.round(60 + (rawOverall / 100) * 35); // 60—95
-    const overall = clamp(scaledOverall, 60, 95);
+    const performanceOverall =
+      OVERALL_MIN + clamp(performanceScore, 0, 1) * (OVERALL_MAX - OVERALL_MIN);
+    const blendedOverall =
+      baseOverall * (1 - sampleConfidence) + performanceOverall * sampleConfidence;
+    const overall = clamp(Math.round(blendedOverall), OVERALL_MIN, OVERALL_MAX);
 
     return {
-      ...e,
+      ...entry,
       overall,
       _calc: {
+        profile: profile.key,
         weights,
+        references,
+        baseOverall,
+        goalsPerMatch,
+        assistsPerMatch,
         goalsNorm,
         assistsNorm,
-        presenceNorm,
         ratingNorm,
+        presenceNorm,
+        sampleConfidence,
+        performanceScore,
+        performanceOverall: Number(performanceOverall.toFixed(2)),
       },
     };
   });
@@ -70,16 +142,22 @@ function computeOverallFromEntries(entries) {
     maxGoals,
     maxAssists,
     maxMatches,
+    maxGoalsPerMatch,
+    maxAssistsPerMatch,
   };
 }
 
 function resolveOverallScore(player, computedOverall, fallback = 60) {
-  const manual = player?.overallDynamic ?? player?.baseOverall ?? null;
+  const manual = player?.overallDynamic ?? null;
   if (manual != null && Number.isFinite(Number(manual))) {
     return Math.round(Number(manual));
   }
   if (computedOverall != null && Number.isFinite(Number(computedOverall))) {
     return Math.round(Number(computedOverall));
+  }
+  const base = player?.baseOverall ?? null;
+  if (base != null && Number.isFinite(Number(base))) {
+    return Math.round(Number(base));
   }
   return fallback;
 }
