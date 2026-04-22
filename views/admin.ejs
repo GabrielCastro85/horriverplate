@@ -1,6 +1,8 @@
 ﻿<% /* Painel do Admin - reorganizado para destacar as funcoes principais */ %>
 
 <style>
+  @import url("https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css");
+
   .admin-panel {
     position: relative;
     overflow: hidden;
@@ -140,6 +142,51 @@
       linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.18)),
       rgba(0,0,0,0.2);
     transform: translateY(-1px);
+  }
+  .admin-edit-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 28px;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 122, 26, 0.3);
+    background: rgba(255, 122, 26, 0.12);
+    color: #ffcfaa;
+    font-size: 11px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .admin-edit-state::before {
+    content: "";
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: #ff7a1a;
+    box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.14);
+  }
+  .admin-preview-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0,0,0,0.18);
+    padding: 0.85rem;
+  }
+  .admin-preview-card img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 0.85rem;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  #teamPhotoCropContainer .cropper-container {
+    max-width: 100%;
+  }
+  #teamPhotoCropImage {
+    display: block;
+    max-width: 100%;
   }
 </style>
 
@@ -564,17 +611,43 @@
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Craque da semana -->
-      <div class="admin-panel rounded-2xl p-4 space-y-3">
-        <h3 class="font-semibold text-lg text-horriver-light">Craque da Semana</h3>
-        <form action="/admin/weekly-awards" method="POST" enctype="multipart/form-data" class="space-y-3" data-autosave="true" data-toast="Destaque da semana salvo.">
+      <div class="admin-panel rounded-2xl p-4 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg text-horriver-light">Craque da Semana</h3>
+            <p id="weeklyFormHint" class="text-xs text-horriver-gray">
+              Publique o craque da pelada e a foto do time vencedor da semana.
+            </p>
+          </div>
+          <span id="weeklyEditState" class="admin-edit-state hidden">Editando destaque</span>
+        </div>
+        <form
+          id="weeklyForm"
+          action="/admin/weekly-awards"
+          method="POST"
+          enctype="multipart/form-data"
+          class="space-y-3"
+          data-autosave="true"
+          data-toast="Destaque da semana salvo."
+        >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-horriver-gray">
             <label class="flex flex-col gap-1">
               Data de inicio
-              <input type="date" name="weekStart" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
+              <input
+                id="weeklyWeekStart"
+                type="date"
+                name="weekStart"
+                required
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              />
             </label>
             <label class="flex flex-col gap-1">
               Craque
-              <select name="bestPlayerId" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
+              <select
+                id="weeklyBestPlayerId"
+                name="bestPlayerId"
+                class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+              >
                 <option value="">Nenhum</option>
                 <% players.forEach(p => { %>
                   <option value="<%= p.id %>"><%= p.name %></option>
@@ -584,7 +657,11 @@
           </div>
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
             Pelada do destaque
-            <select name="winningMatchId" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
+            <select
+              id="weeklyWinningMatchId"
+              name="winningMatchId"
+              class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
+            >
               <option value="">Nenhuma</option>
               <% matches.forEach(m => { %>
                 <option value="<%= m.id %>"><%= new Date(m.playedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %> - <%= m.description || 'Pelada' %></option>
@@ -593,19 +670,98 @@
           </label>
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
             Foto (time da semana)
-            <input type="file" name="teamPhoto" class="text-sm" />
+            <input
+              id="weeklyTeamPhotoInput"
+              type="file"
+              name="teamPhoto"
+              accept="image/jpeg,image/png,image/webp"
+              class="text-sm"
+            />
+            <span class="text-[11px] text-horriver-gray">
+              Se estiver editando e nao enviar outra imagem, a foto atual sera mantida.
+            </span>
           </label>
-          <button type="submit" class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Salvar</button>
+
+          <div id="weeklyCurrentPhotoCard" class="admin-preview-card hidden space-y-2">
+            <p class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/80">
+              Foto atual do time vencedor
+            </p>
+            <img id="weeklyCurrentPhotoPreview" src="" alt="Foto atual do time vencedor" />
+          </div>
+
+          <div id="teamPhotoCropContainer" class="admin-preview-card hidden space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/80">
+                Corte da nova foto
+              </p>
+              <span class="text-[10px] text-horriver-gray/70">Proporcao 16:9</span>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-horriver-border/60 bg-black/50">
+              <img id="teamPhotoCropImage" src="" alt="Pre-visualizacao para corte" />
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+              <button
+                type="button"
+                id="applyTeamPhotoCrop"
+                class="w-full sm:w-auto px-4 py-2 rounded-full border border-horriver-orange/35 text-horriver-orange hover:bg-horriver-orange hover:text-black transition text-sm"
+              >
+                Aplicar corte
+              </button>
+              <p id="teamPhotoCropDone" class="hidden text-[11px] text-green-400">
+                Corte preparado. Ao salvar, a imagem recortada sera enviada.
+              </p>
+            </div>
+          </div>
+
+          <p id="teamPhotoCropError" class="hidden text-[11px] text-red-400"></p>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button
+              id="weeklySubmitButton"
+              type="submit"
+              class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            >
+              Salvar destaque
+            </button>
+            <button
+              id="weeklyCancelEdit"
+              type="button"
+              class="hidden w-full sm:w-auto px-4 py-2 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+            >
+              Cancelar edicao
+            </button>
+          </div>
         </form>
         <% if (weeklyAwards.length > 0) { %>
           <div class="border-t border-horriver-border/50 pt-3 space-y-2 text-xs text-horriver-gray">
             <p class="font-semibold text-horriver-light">Ultimos destaques</p>
             <% weeklyAwards.forEach(award => { %>
               <div class="admin-row flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg px-2 py-1">
-                <span><%= new Date(award.weekStart).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %> - <%= award.bestPlayer?.name || 'N/A' %></span>
-                <form action="/admin/weekly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir destaque?');" class="w-full sm:w-auto">
-                  <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
-                </form>
+                <div class="space-y-0.5">
+                  <span class="block">
+                    <%= new Date(award.weekStart).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) %> - <%= award.bestPlayer?.name || 'N/A' %>
+                  </span>
+                  <span class="block text-[11px] text-horriver-gray">
+                    <%= award.winningMatch ? (award.winningMatch.description || 'Pelada') : 'Sem pelada vinculada' %>
+                    <% if (award.teamPhotoUrl) { %> • foto enviada<% } %>
+                  </span>
+                </div>
+                <div class="w-full sm:w-auto flex items-center gap-3">
+                  <button
+                    type="button"
+                    class="text-[12px] text-horriver-orange hover:underline"
+                    data-weekly-edit
+                    data-weekstart="<%= award.weekStart.toISOString().slice(0, 10) %>"
+                    data-best-id="<%= award.bestPlayerId || '' %>"
+                    data-match-id="<%= award.winningMatchId || '' %>"
+                    data-photo-url="<%= award.teamPhotoUrl || '' %>"
+                  >
+                    Editar
+                  </button>
+                  <form action="/admin/weekly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir destaque?');" class="w-full sm:w-auto">
+                    <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
+                  </form>
+                </div>
               </div>
             <% }) %>
           </div>
@@ -613,8 +769,16 @@
       </div>
 
       <!-- Craque do mes -->
-      <div class="admin-panel rounded-2xl p-4 space-y-3">
-        <h3 class="font-semibold text-lg text-horriver-light">Craque do Mes</h3>
+      <div class="admin-panel rounded-2xl p-4 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg text-horriver-light">Craque do Mes</h3>
+            <p id="monthlyFormHint" class="text-xs text-horriver-gray">
+              Escolha o craque mensal e ajuste um premio ja publicado quando precisar.
+            </p>
+          </div>
+          <span id="monthlyEditState" class="admin-edit-state hidden">Editando premio</span>
+        </div>
         <form id="monthlyAwardForm" action="/admin/monthly-awards" method="POST" class="space-y-3" data-autosave="true" data-toast="Craque do mes salvo." autocomplete="off">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-horriver-gray">
             <label class="flex flex-col gap-1">
@@ -632,14 +796,25 @@
           </div>
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
             Craque
-            <select name="craqueId" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
+            <select id="monthlyAwardCraque" name="craqueId" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
               <option value="">Nenhum</option>
               <% players.forEach(p => { %>
                 <option value="<%= p.id %>"><%= p.name %></option>
               <% }) %>
             </select>
           </label>
-          <button type="submit" class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">Salvar</button>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button id="monthlySubmitButton" type="submit" class="w-full sm:flex-1 px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">
+              Salvar craque do mes
+            </button>
+            <button
+              id="monthlyCancelEdit"
+              type="button"
+              class="hidden w-full sm:w-auto px-4 py-2 rounded-full border border-horriver-border text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+            >
+              Cancelar edicao
+            </button>
+          </div>
         </form>
         <% if (monthlyAwards.length > 0) { %>
           <div class="border-t border-horriver-border/50 pt-3 space-y-2 text-xs text-horriver-gray">
@@ -647,9 +822,21 @@
             <% monthlyAwards.forEach(award => { %>
               <div class="admin-row flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg px-2 py-1">
                 <span><%= adminMonthNames[award.month - 1] || award.month %>/<%= award.year %> - <%= award.craque?.name || 'N/A' %></span>
-                <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiação?');" class="w-full sm:w-auto">
-                  <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
-                </form>
+                <div class="w-full sm:w-auto flex items-center gap-3">
+                  <button
+                    type="button"
+                    class="text-[12px] text-horriver-orange hover:underline"
+                    data-monthly-edit
+                    data-month="<%= award.month %>"
+                    data-year="<%= award.year %>"
+                    data-player-id="<%= award.craqueId || '' %>"
+                  >
+                    Editar
+                  </button>
+                  <form action="/admin/monthly-awards/<%= award.id %>/delete" method="POST" onsubmit="return confirm('Excluir premiação?');" class="w-full sm:w-auto">
+                    <button type="submit" class="w-full sm:w-auto px-2 py-1 rounded-full text-red-500 hover:text-red-300 min-h-[34px]">Excluir</button>
+                  </form>
+                </div>
               </div>
             <% }) %>
           </div>
@@ -841,10 +1028,88 @@
   })();
 </script>
 
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script>
   (function () {
+    const weeklyForm = document.getElementById("weeklyForm");
+    const weeklyWeekStart = document.getElementById("weeklyWeekStart");
+    const weeklyBestPlayer = document.getElementById("weeklyBestPlayerId");
+    const weeklyWinningMatch = document.getElementById("weeklyWinningMatchId");
+    const weeklyHint = document.getElementById("weeklyFormHint");
+    const weeklyEditState = document.getElementById("weeklyEditState");
+    const weeklySubmitButton = document.getElementById("weeklySubmitButton");
+    const weeklyCancelButton = document.getElementById("weeklyCancelEdit");
+    const weeklyCurrentPhotoCard = document.getElementById("weeklyCurrentPhotoCard");
+    const weeklyCurrentPhotoPreview = document.getElementById("weeklyCurrentPhotoPreview");
+
+    const teamPhotoInput = document.getElementById("weeklyTeamPhotoInput");
+    const teamPhotoCropContainer = document.getElementById("teamPhotoCropContainer");
+    const teamPhotoCropImage = document.getElementById("teamPhotoCropImage");
+    const applyTeamPhotoCrop = document.getElementById("applyTeamPhotoCrop");
+    const teamPhotoCropDone = document.getElementById("teamPhotoCropDone");
+    const teamPhotoCropError = document.getElementById("teamPhotoCropError");
+
+    const monthlyForm = document.getElementById("monthlyAwardForm");
     const monthlyMonth = document.getElementById("monthlyAwardMonth");
     const monthlyYear = document.getElementById("monthlyAwardYear");
+    const monthlyCraque = document.getElementById("monthlyAwardCraque");
+    const monthlyHint = document.getElementById("monthlyFormHint");
+    const monthlyEditState = document.getElementById("monthlyEditState");
+    const monthlySubmitButton = document.getElementById("monthlySubmitButton");
+    const monthlyCancelButton = document.getElementById("monthlyCancelEdit");
+
+    const weeklyCreateHint =
+      "Publique o craque da pelada e a foto do time vencedor da semana.";
+    const weeklyEditHint =
+      "Edite um destaque ja publicado. Se nao enviar nova foto, a imagem atual sera mantida.";
+    const monthlyCreateHint =
+      "Escolha o craque mensal e ajuste um premio ja publicado quando precisar.";
+    const monthlyEditHint =
+      "Edite um craque do mes ja lancado e salve a atualizacao no mesmo formulario.";
+
+    let cropper = null;
+    let currentObjectUrl = null;
+    let originalFileName = "time-vencedor.jpg";
+    let weeklySubmitInFlight = false;
+
+    const setCropError = (message = "") => {
+      if (!teamPhotoCropError) return;
+      teamPhotoCropError.textContent = message;
+      teamPhotoCropError.classList.toggle("hidden", !message);
+    };
+
+    const destroyCropper = () => {
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+        currentObjectUrl = null;
+      }
+    };
+
+    const resetCropInterface = ({ clearInput = false } = {}) => {
+      destroyCropper();
+      teamPhotoCropContainer?.classList.add("hidden");
+      teamPhotoCropImage?.removeAttribute("src");
+      teamPhotoCropDone?.classList.add("hidden");
+      setCropError("");
+      if (clearInput && teamPhotoInput) {
+        teamPhotoInput.value = "";
+      }
+    };
+
+    const showCurrentWeeklyPhoto = (url = "") => {
+      if (!weeklyCurrentPhotoCard || !weeklyCurrentPhotoPreview) return;
+      if (!url) {
+        weeklyCurrentPhotoCard.classList.add("hidden");
+        weeklyCurrentPhotoPreview.removeAttribute("src");
+        return;
+      }
+      weeklyCurrentPhotoPreview.src = url;
+      weeklyCurrentPhotoCard.classList.remove("hidden");
+    };
 
     const applyMonthlyDefaults = () => {
       if (monthlyMonth?.dataset.defaultMonth) {
@@ -855,8 +1120,213 @@
       }
     };
 
-    applyMonthlyDefaults();
-    window.addEventListener("pageshow", applyMonthlyDefaults);
+    const setWeeklyCreateMode = ({ resetForm = false } = {}) => {
+      if (resetForm && weeklyForm) {
+        weeklyForm.reset();
+      }
+      if (weeklyHint) weeklyHint.textContent = weeklyCreateHint;
+      weeklyEditState?.classList.add("hidden");
+      if (weeklySubmitButton) {
+        weeklySubmitButton.textContent = "Salvar destaque";
+      }
+      weeklyCancelButton?.classList.add("hidden");
+      showCurrentWeeklyPhoto("");
+      resetCropInterface({ clearInput: resetForm });
+    };
+
+    const setWeeklyEditMode = ({ weekStart, bestId, matchId, photoUrl }) => {
+      if (weeklyWeekStart) weeklyWeekStart.value = weekStart || "";
+      if (weeklyBestPlayer) weeklyBestPlayer.value = bestId || "";
+      if (weeklyWinningMatch) weeklyWinningMatch.value = matchId || "";
+      if (weeklyHint) weeklyHint.textContent = weeklyEditHint;
+      weeklyEditState?.classList.remove("hidden");
+      if (weeklySubmitButton) {
+        weeklySubmitButton.textContent = "Salvar alteracoes";
+      }
+      weeklyCancelButton?.classList.remove("hidden");
+      showCurrentWeeklyPhoto(photoUrl || "");
+      resetCropInterface({ clearInput: true });
+      weeklyForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const setMonthlyCreateMode = ({ resetForm = false } = {}) => {
+      if (resetForm && monthlyForm) {
+        monthlyForm.reset();
+      }
+      applyMonthlyDefaults();
+      if (monthlyCraque) monthlyCraque.value = "";
+      if (monthlyHint) monthlyHint.textContent = monthlyCreateHint;
+      monthlyEditState?.classList.add("hidden");
+      if (monthlySubmitButton) {
+        monthlySubmitButton.textContent = "Salvar craque do mes";
+      }
+      monthlyCancelButton?.classList.add("hidden");
+    };
+
+    const setMonthlyEditMode = ({ month, year, playerId }) => {
+      if (monthlyMonth) monthlyMonth.value = String(month || "");
+      if (monthlyYear) monthlyYear.value = String(year || "");
+      if (monthlyCraque) monthlyCraque.value = String(playerId || "");
+      if (monthlyHint) monthlyHint.textContent = monthlyEditHint;
+      monthlyEditState?.classList.remove("hidden");
+      if (monthlySubmitButton) {
+        monthlySubmitButton.textContent = "Salvar alteracoes";
+      }
+      monthlyCancelButton?.classList.remove("hidden");
+      monthlyForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const buildCroppedFileName = (name) => {
+      const cleaned = String(name || "time-vencedor")
+        .replace(/\.[^.]+$/, "")
+        .trim();
+      return `${cleaned || "time-vencedor"}-cortada.jpg`;
+    };
+
+    const applyCropToInput = () =>
+      new Promise((resolve, reject) => {
+        if (!teamPhotoInput?.files?.length || !cropper) {
+          resolve(false);
+          return;
+        }
+
+        const canvas = cropper.getCroppedCanvas({
+          width: 1280,
+          height: 720,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: "high",
+        });
+
+        if (!canvas) {
+          resolve(false);
+          return;
+        }
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Nao foi possivel gerar o corte da imagem."));
+              return;
+            }
+
+            const croppedFile = new File([blob], buildCroppedFileName(originalFileName), {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+
+            const transfer = new DataTransfer();
+            transfer.items.add(croppedFile);
+            teamPhotoInput.files = transfer.files;
+            teamPhotoCropDone?.classList.remove("hidden");
+            setCropError("");
+            resolve(true);
+          },
+          "image/jpeg",
+          0.92
+        );
+      });
+
+    teamPhotoInput?.addEventListener("change", () => {
+      const file = teamPhotoInput.files?.[0];
+      resetCropInterface();
+
+      if (!file) {
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        setCropError("Selecione um arquivo de imagem valido para recortar.");
+        return;
+      }
+
+      if (typeof window.Cropper === "undefined") {
+        setCropError(
+          "O editor de corte nao carregou agora. Voce ainda pode enviar a imagem original."
+        );
+        return;
+      }
+
+      originalFileName = file.name || "time-vencedor.jpg";
+      currentObjectUrl = URL.createObjectURL(file);
+      teamPhotoCropImage.onload = () => {
+        if (cropper) {
+          cropper.destroy();
+        }
+        cropper = new window.Cropper(teamPhotoCropImage, {
+          aspectRatio: 16 / 9,
+          viewMode: 1,
+          autoCropArea: 1,
+          dragMode: "move",
+          responsive: true,
+          background: false,
+        });
+      };
+      teamPhotoCropImage.src = currentObjectUrl;
+      teamPhotoCropContainer?.classList.remove("hidden");
+    });
+
+    applyTeamPhotoCrop?.addEventListener("click", async () => {
+      try {
+        await applyCropToInput();
+      } catch (error) {
+        setCropError(error?.message || "Nao foi possivel aplicar o corte agora.");
+      }
+    });
+
+    weeklyForm?.addEventListener("submit", async (event) => {
+      if (weeklySubmitInFlight) {
+        return;
+      }
+      if (!teamPhotoInput?.files?.length || !cropper) {
+        return;
+      }
+
+      event.preventDefault();
+      try {
+        await applyCropToInput();
+        weeklySubmitInFlight = true;
+        weeklyForm.requestSubmit(event.submitter || undefined);
+      } catch (error) {
+        setCropError(error?.message || "Nao foi possivel preparar a imagem antes de salvar.");
+      }
+    });
+
+    weeklyCancelButton?.addEventListener("click", () => {
+      weeklySubmitInFlight = false;
+      setWeeklyCreateMode({ resetForm: true });
+    });
+
+    monthlyCancelButton?.addEventListener("click", () => {
+      setMonthlyCreateMode({ resetForm: true });
+    });
+
+    document.querySelectorAll("[data-weekly-edit]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setWeeklyEditMode({
+          weekStart: button.dataset.weekstart || "",
+          bestId: button.dataset.bestId || "",
+          matchId: button.dataset.matchId || "",
+          photoUrl: button.dataset.photoUrl || "",
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-monthly-edit]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setMonthlyEditMode({
+          month: button.dataset.month || "",
+          year: button.dataset.year || "",
+          playerId: button.dataset.playerId || "",
+        });
+      });
+    });
+
+    setWeeklyCreateMode();
+    setMonthlyCreateMode();
+    window.addEventListener("pageshow", () => {
+      weeklySubmitInFlight = false;
+      applyMonthlyDefaults();
+    });
   })();
 </script>
 
