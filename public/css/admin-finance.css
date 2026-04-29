@@ -766,7 +766,7 @@
   }
   .finance-overview-kpi-grid {
     display:grid;
-    grid-template-columns:minmax(0, 1.22fr) repeat(3, minmax(0, 1fr));
+    grid-template-columns:repeat(4, minmax(0, 1fr));
     gap:1rem;
   }
   .finance-overview-kpi {
@@ -801,10 +801,12 @@
     display:block;
     max-width:100%;
     min-width:0;
-    overflow-wrap:anywhere;
-    font-size:clamp(1.9rem, 2.6vw, 2.55rem);
+    overflow:hidden;
+    text-overflow:clip;
+    white-space:nowrap;
+    font-size:clamp(1.72rem, 2.35vw, 2.38rem);
     line-height:0.95;
-    letter-spacing:-0.04em;
+    letter-spacing:0;
     color:#fffaf6;
     font-weight:700;
     font-variant-numeric:tabular-nums;
@@ -848,7 +850,7 @@
     color:#ffd7b8;
   }
   .finance-overview-kpi--featured .finance-overview-kpi__value {
-    font-size:clamp(2.2rem, 3vw, 3.05rem);
+    font-size:clamp(2rem, 2.85vw, 2.9rem);
     line-height:1;
     color:#fff7ed;
     text-shadow:0 12px 28px rgba(255,122,26,0.2);
