@@ -766,7 +766,7 @@
   }
   .finance-overview-kpi-grid {
     display:grid;
-    grid-template-columns:repeat(4, minmax(0, 1fr));
+    grid-template-columns:minmax(0, 1.22fr) repeat(3, minmax(0, 1fr));
     gap:1rem;
   }
   .finance-overview-kpi {
@@ -799,6 +799,9 @@
   }
   .finance-overview-kpi__value {
     display:block;
+    max-width:100%;
+    min-width:0;
+    overflow-wrap:anywhere;
     font-size:clamp(1.9rem, 2.6vw, 2.55rem);
     line-height:0.95;
     letter-spacing:-0.04em;
@@ -824,6 +827,47 @@
   .finance-overview-kpi--cash {
     background:linear-gradient(135deg, rgba(50,38,28,0.96), rgba(15,15,20,0.96));
     border-color:rgba(255,222,173,0.18);
+  }
+  .finance-overview-kpi--featured {
+    min-height:10.8rem;
+    border-color:rgba(255,122,26,0.56);
+    background:
+      radial-gradient(circle at top right, rgba(255,122,26,0.26), transparent 38%),
+      linear-gradient(135deg, rgba(84,42,18,0.98), rgba(17,14,16,0.98));
+    box-shadow:
+      0 22px 48px rgba(0,0,0,0.28),
+      0 0 0 1px rgba(255,122,26,0.08),
+      0 0 38px rgba(255,122,26,0.14);
+  }
+  .finance-overview-kpi--featured::before {
+    width:230px;
+    height:230px;
+    background:radial-gradient(circle, rgba(255,190,122,0.22), rgba(255,122,26,0));
+  }
+  .finance-overview-kpi--featured .finance-overview-kpi__label {
+    color:#ffd7b8;
+  }
+  .finance-overview-kpi--featured .finance-overview-kpi__value {
+    font-size:clamp(2.2rem, 3vw, 3.05rem);
+    line-height:1;
+    color:#fff7ed;
+    text-shadow:0 12px 28px rgba(255,122,26,0.2);
+  }
+  .finance-overview-kpi--featured .finance-chip {
+    border-color:rgba(255,122,26,0.42);
+    background:rgba(255,122,26,0.14);
+    color:#fff2e8;
+  }
+  .finance-dashboard-toolbar__metric--cash {
+    border-color:rgba(255,122,26,0.34);
+    background:
+      radial-gradient(circle at top right, rgba(255,122,26,0.18), transparent 42%),
+      rgba(255,122,26,0.06);
+    box-shadow:0 16px 32px rgba(0,0,0,0.2);
+  }
+  .finance-dashboard-toolbar__metric--cash strong {
+    color:#fff7ed;
+    font-size:clamp(1.35rem, 2vw, 1.85rem);
   }
   .finance-overview-kpi--risk {
     background:linear-gradient(135deg, rgba(133,79,14,0.96), rgba(58,31,8,0.96));

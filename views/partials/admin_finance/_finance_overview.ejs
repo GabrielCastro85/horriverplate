@@ -179,6 +179,17 @@
     </section>
 
     <section class="finance-overview-kpi-grid">
+      <article class="finance-overview-kpi finance-overview-kpi--cash finance-overview-kpi--featured">
+        <div class="flex items-center justify-between gap-3">
+          <span class="finance-overview-kpi__label">Caixa atual</span>
+          <span class="finance-chip"><%= summary.currentMonthNet >= 0 ? "Superavit" : "Pressao" %></span>
+        </div>
+        <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.cashBalance) %></strong>
+        <p class="finance-overview-kpi__text">
+          Resultado do periodo em <strong><%= formatCurrencyBR(summary.currentMonthNet) %></strong>.
+        </p>
+      </article>
+
       <article class="finance-overview-kpi finance-overview-kpi--revenue">
         <div class="flex items-center justify-between gap-3">
           <span class="finance-overview-kpi__label">Receita do mes</span>
@@ -198,17 +209,6 @@
         <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.totalPending) %></strong>
         <p class="finance-overview-kpi__text">
           <strong><%= summary.delinquentCount %></strong> cobranca(s) ainda pedem acompanhamento.
-        </p>
-      </article>
-
-      <article class="finance-overview-kpi finance-overview-kpi--cash">
-        <div class="flex items-center justify-between gap-3">
-          <span class="finance-overview-kpi__label">Caixa atual</span>
-          <span class="finance-chip"><%= summary.currentMonthNet >= 0 ? "Superavit" : "Pressao" %></span>
-        </div>
-        <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.cashBalance) %></strong>
-        <p class="finance-overview-kpi__text">
-          Resultado do periodo em <strong><%= formatCurrencyBR(summary.currentMonthNet) %></strong>.
         </p>
       </article>
 
