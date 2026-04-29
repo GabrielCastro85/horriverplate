@@ -1,22 +1,31 @@
 (() => {
   const btn = document.getElementById("mobileMenuBtn");
+  const triggers = Array.from(
+    document.querySelectorAll("#mobileMenuBtn, [data-mobile-menu-trigger]")
+  );
   const menu = document.getElementById("mobileMenu");
   const panel = document.getElementById("mobilePanel");
   const closeBtn = document.getElementById("mobileClose");
   const backdrop = document.getElementById("mobileBackdrop");
   let lastActiveElement = null;
 
-  if (!btn || !menu || !panel) return;
+  if (!triggers.length || !menu || !panel) return;
+
+  const setExpanded = (expanded) => {
+    triggers.forEach((trigger) => {
+      trigger.setAttribute("aria-expanded", String(expanded));
+    });
+  };
 
   function openMenu() {
     lastActiveElement = document.activeElement;
     menu.classList.remove("hidden");
     menu.setAttribute("aria-hidden", "false");
-    btn.setAttribute("aria-expanded", "true");
+    setExpanded(true);
     requestAnimationFrame(() => {
       panel.classList.remove("animate-slideUp");
       panel.classList.add("animate-slideDown");
-      btn.classList.add("hamburger-active");
+      if (btn) btn.classList.add("hamburger-active");
       panel.focus();
     });
     document.body.style.overflow = "hidden";
@@ -24,9 +33,9 @@
   function closeMenu() {
     panel.classList.remove("animate-slideDown");
     panel.classList.add("animate-slideUp");
-    btn.classList.remove("hamburger-active");
+    if (btn) btn.classList.remove("hamburger-active");
     menu.setAttribute("aria-hidden", "true");
-    btn.setAttribute("aria-expanded", "false");
+    setExpanded(false);
     setTimeout(() => {
       menu.classList.add("hidden");
     }, 180);
@@ -36,7 +45,7 @@
     }
   }
 
-  btn.addEventListener("click", openMenu);
+  triggers.forEach((trigger) => trigger.addEventListener("click", openMenu));
   if (closeBtn) closeBtn.addEventListener("click", closeMenu);
   if (backdrop) backdrop.addEventListener("click", closeMenu);
   window.addEventListener("keydown", (e) => {

@@ -567,6 +567,7 @@ router.get("/", async (req, res) => {
 
     const payload = {
       title: "Rankings",
+      activePage: "rankings",
       rankings,
       year,
       month: Number(month),

@@ -73,6 +73,55 @@
     row && row.player
       ? `${row.player.name}${row.player.nickname ? ` (${row.player.nickname})` : ""}`
       : "Sem dados";
+  const playerDisplayName = (row) =>
+    row && row.player
+      ? `${row.player.name}${row.player.nickname ? ` (${row.player.nickname})` : ""}`
+      : "-";
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  const medalMeta = [
+    { label: "1", title: "Ouro", cls: "rk-podium-card--gold" },
+    { label: "2", title: "Prata", cls: "rk-podium-card--silver" },
+    { label: "3", title: "Bronze", cls: "rk-podium-card--bronze" },
+  ];
+  const renderRankingPodium = (rows, metrics) => {
+    const top = safeArr(rows).slice(0, 3);
+    if (!top.length) return "";
+    const cards = top.map((row, idx) => {
+      const meta = medalMeta[idx] || medalMeta[2];
+      const metricHtml = safeArr(metrics).map((metric) => {
+        const raw = typeof metric.value === "function" ? metric.value(row) : row[metric.key];
+        const value = raw === null || raw === undefined || raw === "" ? "0" : raw;
+        return `
+          <span class="rk-podium-metric">
+            <span>${escapeHtml(metric.label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+          </span>
+        `;
+      }).join("");
+      return `
+        <article class="rk-podium-card ${meta.cls}">
+          <div class="rk-podium-rank">
+            <span>${meta.label}</span>
+          </div>
+          <div class="rk-podium-body">
+            <span class="rk-podium-medal">${meta.title}</span>
+            <strong>${escapeHtml(playerDisplayName(row))}</strong>
+            <span>${escapeHtml(row.player?.position || "-")}</span>
+          </div>
+          <div class="rk-podium-metrics">
+            ${metricHtml}
+          </div>
+        </article>
+      `;
+    }).join("");
+    return `<div class="rk-podium hidden md:grid">${cards}</div>`;
+  };
   const topGoal = goals[0] || null;
   const topAssist = assists[0] || null;
   const topRating = ratings[0] || null;
@@ -96,6 +145,9 @@
   .rk-scroll {
     scrollbar-width: thin;
     scrollbar-color: rgba(148, 163, 184, 0.7) transparent;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .rk-scroll::-webkit-scrollbar {
@@ -113,31 +165,539 @@
 
   /* Destaques para top 3 */
   .rk-row-gold {
-    background: linear-gradient(
-      to right,
-      rgba(250, 204, 21, 0.18),
-      rgba(15, 23, 42, 0.2)
-    );
+    background:
+      linear-gradient(90deg, rgba(250, 204, 21, 0.2), rgba(250, 204, 21, 0.06) 44%, rgba(15, 23, 42, 0.2)),
+      rgba(250, 204, 21, 0.04);
   }
   .rk-row-silver {
-    background: linear-gradient(
-      to right,
-      rgba(148, 163, 184, 0.18),
-      rgba(15, 23, 42, 0.2)
-    );
+    background:
+      linear-gradient(90deg, rgba(203, 213, 225, 0.18), rgba(203, 213, 225, 0.055) 44%, rgba(15, 23, 42, 0.2)),
+      rgba(203, 213, 225, 0.035);
   }
   .rk-row-bronze {
-    background: linear-gradient(
-      to right,
-      rgba(248, 113, 113, 0.12),
-      rgba(15, 23, 42, 0.2)
-    );
+    background:
+      linear-gradient(90deg, rgba(251, 146, 60, 0.16), rgba(251, 146, 60, 0.05) 44%, rgba(15, 23, 42, 0.2)),
+      rgba(251, 146, 60, 0.03);
   }
 
   .rk-row-gold td:first-child,
   .rk-row-silver td:first-child,
   .rk-row-bronze td:first-child {
     font-weight: 700;
+  }
+
+  .rk-row-gold td:first-child {
+    color: #facc15;
+  }
+
+  .rk-row-silver td:first-child {
+    color: #e2e8f0;
+  }
+
+  .rk-row-bronze td:first-child {
+    color: #fb923c;
+  }
+
+  .rk-scroll table {
+    min-width: 520px;
+    table-layout: fixed;
+  }
+
+  .rk-scroll th,
+  .rk-scroll td {
+    vertical-align: middle;
+  }
+
+  .rk-scroll th:nth-child(1),
+  .rk-scroll td:nth-child(1) {
+    width: 32px;
+  }
+
+  .rk-scroll th:nth-child(2),
+  .rk-scroll td:nth-child(2) {
+    width: 128px;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .rk-scroll th:not(:nth-child(2)),
+  .rk-scroll td:not(:nth-child(2)) {
+    white-space: nowrap;
+  }
+
+  .rk-scroll table:has(th:nth-child(8)) {
+    min-width: 680px;
+  }
+
+  .rk-anchor {
+    scroll-margin-top: 88px;
+  }
+
+  .rk-jump-nav {
+    position: sticky;
+    top: 72px;
+    z-index: 25;
+    display: block;
+    margin: 0.25rem 0 1rem;
+    padding: 0.7rem 0;
+    border-block: 1px solid rgba(148, 163, 184, 0.14);
+    background: rgba(5, 5, 9, 0.82);
+    backdrop-filter: blur(14px);
+  }
+
+  .rk-jump-nav__scroller {
+    display: flex;
+    gap: 0.55rem;
+    overflow-x: auto;
+    padding: 0.15rem 0.1rem 0.2rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rk-jump-nav__scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rk-jump-nav a {
+    display: inline-flex;
+    min-height: 2.15rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(255, 255, 255, 0.035);
+    padding: 0.5rem 0.8rem;
+    color: rgba(245, 245, 245, 0.86);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    white-space: nowrap;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  }
+
+  .rk-jump-nav a:hover {
+    border-color: rgba(255, 122, 26, 0.48);
+    color: #fff7f2;
+  }
+
+  .rk-jump-nav a.is-active {
+    border-color: rgba(255, 122, 26, 0.76);
+    background:
+      radial-gradient(circle at top, rgba(255, 122, 26, 0.28), transparent 70%),
+      rgba(255, 122, 26, 0.16);
+    color: #fff7f2;
+    box-shadow: 0 8px 18px rgba(255, 122, 26, 0.12);
+  }
+
+  .rk-podium {
+    grid-template-columns: 1fr 1.12fr 1fr;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .rk-podium-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 0.65rem 0.75rem;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    padding: 0.8rem 0.8rem 0.95rem;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+      rgba(0, 0, 0, 0.2);
+  }
+
+  .rk-podium-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.72;
+  }
+
+  .rk-podium-card--gold {
+    order: 2;
+    min-height: 8.6rem;
+    border-color: rgba(250, 204, 21, 0.46);
+  }
+
+  .rk-podium-card--silver {
+    order: 1;
+    margin-top: 1.35rem;
+    border-color: rgba(203, 213, 225, 0.36);
+  }
+
+  .rk-podium-card--bronze {
+    order: 3;
+    margin-top: 1.85rem;
+    border-color: rgba(251, 146, 60, 0.36);
+  }
+
+  .rk-podium-card--gold::before {
+    background: radial-gradient(circle at top left, rgba(250, 204, 21, 0.24), transparent 56%);
+  }
+
+  .rk-podium-card--silver::before {
+    background: radial-gradient(circle at top left, rgba(203, 213, 225, 0.2), transparent 56%);
+  }
+
+  .rk-podium-card--bronze::before {
+    background: radial-gradient(circle at top left, rgba(251, 146, 60, 0.2), transparent 56%);
+  }
+
+  .rk-podium-rank {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 999px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .rk-podium-card--gold .rk-podium-rank {
+    background: linear-gradient(180deg, #facc15, #b7791f);
+    color: #1a1300;
+  }
+
+  .rk-podium-card--silver .rk-podium-rank {
+    background: linear-gradient(180deg, #e2e8f0, #94a3b8);
+    color: #0f172a;
+  }
+
+  .rk-podium-card--bronze .rk-podium-rank {
+    background: linear-gradient(180deg, #fb923c, #9a3412);
+    color: #190b04;
+  }
+
+  .rk-podium-body {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+
+  .rk-podium-medal {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: rgba(178, 184, 194, 0.78);
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .rk-podium-body strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 0.82rem;
+    line-height: 1.15;
+  }
+
+  .rk-podium-body > span:last-child {
+    display: inline-flex;
+    margin-top: 0.38rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 122, 26, 0.28);
+    background: rgba(255, 122, 26, 0.08);
+    padding: 0.18rem 0.42rem;
+    color: #ff7a1a;
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .rk-podium-metrics {
+    position: relative;
+    z-index: 1;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .rk-podium-metric {
+    display: inline-flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    border-radius: 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.48rem 0.3rem;
+    text-align: center;
+  }
+
+  .rk-podium-metric span {
+    color: rgba(178, 184, 194, 0.82);
+    font-size: 0.54rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .rk-podium-metric strong {
+    color: #fff7f2;
+    font-size: 0.86rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  @media (min-width: 768px) {
+    .rk-has-podium tbody tr:nth-child(-n+3) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .rk-scroll table {
+      min-width: 500px;
+      font-size: 10px;
+    }
+
+    .rk-scroll table:has(th:nth-child(8)) {
+      min-width: 640px;
+    }
+
+    .rk-scroll th,
+    .rk-scroll td {
+      padding-left: 0.35rem !important;
+      padding-right: 0.35rem !important;
+    }
+
+    .rk-scroll th:nth-child(2),
+    .rk-scroll td:nth-child(2) {
+      width: 112px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    #scrollTopBtn {
+      display: none;
+    }
+
+    .rk-anchor {
+      scroll-margin-top: 140px;
+    }
+
+    .rk-jump-nav {
+      margin: 0.25rem -1rem 1rem;
+      padding: 0.65rem 1rem;
+    }
+
+    .rk-jump-nav a {
+      min-height: 2rem;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.68rem;
+    }
+
+    .rk-scroll {
+      overflow-x: visible;
+      overflow-y: visible;
+    }
+
+    .rk-scroll table {
+      display: block;
+      min-width: 0;
+      width: 100%;
+      font-size: 11px;
+    }
+
+    .rk-scroll thead {
+      display: none;
+    }
+
+    .rk-scroll tbody {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .rk-scroll tr {
+      display: grid;
+      grid-template-columns: 2.2rem repeat(3, minmax(0, 1fr));
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 1rem;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
+        rgba(0, 0, 0, 0.22);
+    }
+
+    .rk-scroll tr.border-t {
+      border-top-width: 1px;
+    }
+
+    .rk-scroll tr.rk-row-gold {
+      border-color: rgba(250, 204, 21, 0.44);
+      background:
+        radial-gradient(circle at top left, rgba(250, 204, 21, 0.24), transparent 46%),
+        linear-gradient(135deg, rgba(120, 83, 12, 0.68), rgba(42, 26, 16, 0.72));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 26px rgba(0, 0, 0, 0.18);
+    }
+
+    .rk-scroll tr.rk-row-silver {
+      border-color: rgba(203, 213, 225, 0.38);
+      background:
+        radial-gradient(circle at top left, rgba(203, 213, 225, 0.22), transparent 46%),
+        linear-gradient(135deg, rgba(71, 85, 105, 0.58), rgba(31, 41, 55, 0.68));
+    }
+
+    .rk-scroll tr.rk-row-bronze {
+      border-color: rgba(251, 146, 60, 0.34);
+      background:
+        radial-gradient(circle at top left, rgba(251, 146, 60, 0.2), transparent 46%),
+        linear-gradient(135deg, rgba(120, 53, 15, 0.54), rgba(51, 28, 24, 0.68));
+    }
+
+    .rk-scroll tr.rk-row-gold td:nth-child(1) {
+      background: linear-gradient(180deg, #facc15, #b7791f);
+      color: #1a1300;
+    }
+
+    .rk-scroll tr.rk-row-silver td:nth-child(1) {
+      background: linear-gradient(180deg, #e2e8f0, #94a3b8);
+      color: #0f172a;
+    }
+
+    .rk-scroll tr.rk-row-bronze td:nth-child(1) {
+      background: linear-gradient(180deg, #fb923c, #9a3412);
+      color: #190b04;
+    }
+
+    .rk-scroll td {
+      padding: 0 !important;
+      border: 0;
+    }
+
+    .rk-scroll td:nth-child(1) {
+      grid-row: 1 / span 2;
+      align-self: start;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      background: rgba(255, 122, 26, 0.12);
+      color: #fff7f2;
+      font-weight: 800;
+    }
+
+    .rk-scroll td:nth-child(2) {
+      grid-column: 2 / 4;
+      width: auto;
+      color: #f8fafc;
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .rk-scroll td:nth-child(3) {
+      grid-column: 4;
+      justify-self: end;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.4rem;
+      min-height: 1.55rem;
+      padding: 0.25rem 0.45rem !important;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 122, 26, 0.3);
+      background: rgba(255, 122, 26, 0.08);
+      font-size: 0.62rem;
+      font-weight: 800;
+    }
+
+    .rk-scroll td:nth-child(n+4) {
+      display: inline-flex;
+      min-height: 3rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      border-radius: 0.85rem;
+      background: rgba(255, 255, 255, 0.045);
+      color: #f8fafc;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .rk-scroll td:nth-child(n+4)::before {
+      color: rgba(178, 184, 194, 0.82);
+      font-size: 0.56rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .rk-scroll td:nth-child(4) {
+      grid-column: 2;
+    }
+
+    .rk-scroll td:nth-child(5) {
+      grid-column: 3;
+    }
+
+    .rk-scroll td:nth-child(6) {
+      grid-column: 4;
+    }
+
+    .rk-scroll td:nth-child(7) {
+      grid-column: 2 / 4;
+    }
+
+    .rk-scroll td:nth-child(8) {
+      grid-column: 4;
+    }
+
+    .rk-scroll table[data-rk-type="goals"] td:nth-child(4)::before { content: "Gols"; }
+    .rk-scroll table[data-rk-type="goals"] td:nth-child(5)::before { content: "Assist."; }
+    .rk-scroll table[data-rk-type="goals"] td:nth-child(6)::before { content: "G/A"; }
+
+    .rk-scroll table[data-rk-type="assists"] td:nth-child(4)::before { content: "Assist."; }
+    .rk-scroll table[data-rk-type="assists"] td:nth-child(5)::before { content: "Gols"; }
+    .rk-scroll table[data-rk-type="assists"] td:nth-child(6)::before { content: "G/A"; }
+
+    .rk-scroll table[data-rk-type="ga"] td:nth-child(4)::before { content: "Gols"; }
+    .rk-scroll table[data-rk-type="ga"] td:nth-child(5)::before { content: "Assist."; }
+    .rk-scroll table[data-rk-type="ga"] td:nth-child(6)::before { content: "Total"; }
+
+    .rk-scroll table[data-rk-type="ratings"] td:nth-child(4)::before { content: "Pres."; }
+    .rk-scroll table[data-rk-type="ratings"] td:nth-child(5)::before { content: "Media"; }
+
+    .rk-scroll table[data-rk-type="photos"] td:nth-child(4)::before { content: "Fotos"; }
+
+    .rk-scroll table[data-rk-type="matches"] td:nth-child(4)::before { content: "Pres."; }
+    .rk-scroll table[data-rk-type="matches"] td:nth-child(5)::before { content: "Gols"; }
+    .rk-scroll table[data-rk-type="matches"] td:nth-child(6)::before { content: "Assist."; }
+
+    .rk-scroll table[data-rk-type="overall"] td:nth-child(4)::before,
+    .rk-scroll table[data-rk-type="last10"] td:nth-child(4)::before { content: "Jogos"; }
+    .rk-scroll table[data-rk-type="overall"] td:nth-child(5)::before,
+    .rk-scroll table[data-rk-type="last10"] td:nth-child(5)::before { content: "Gols"; }
+    .rk-scroll table[data-rk-type="overall"] td:nth-child(6)::before,
+    .rk-scroll table[data-rk-type="last10"] td:nth-child(6)::before { content: "Assist."; }
+    .rk-scroll table[data-rk-type="overall"] td:nth-child(7)::before,
+    .rk-scroll table[data-rk-type="last10"] td:nth-child(7)::before { content: "Nota"; }
+    .rk-scroll table[data-rk-type="overall"] td:nth-child(8)::before { content: "Overall"; }
+    .rk-scroll table[data-rk-type="last10"] td:nth-child(8)::before { content: "Indice"; }
   }
 </style>
 
@@ -310,6 +870,21 @@
     </article>
   </section>
 
+  <nav class="rk-jump-nav" aria-label="Ir para ranking" data-rk-jump-nav>
+    <div class="rk-jump-nav__scroller">
+      <a href="#ranking-gols" class="is-active">Gols</a>
+      <a href="#ranking-assistencias">Assist.</a>
+      <a href="#ranking-ga">G/A</a>
+      <a href="#ranking-medias">Medias</a>
+      <a href="#ranking-fotos">Fotos</a>
+      <a href="#ranking-presencas">Presencas</a>
+      <a href="#ranking-overall">Overall</a>
+      <a href="#ranking-ultimos-10">10J</a>
+      <a href="#ranking-semana">Semana</a>
+      <a href="#ranking-mes">Mes</a>
+    </div>
+  </nav>
+
   <!-- VITORIAS POR COR -->
   <section class="space-y-6 mt-4">
     <h2 class="font-title text-2xl text-horriver-light">
@@ -368,7 +943,7 @@
     <!-- 1ª LINHA: GOLS + ASSISTS -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- ================= GOLS ================= -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-gols" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -391,8 +966,13 @@
                 Nenhum dado para este período.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(goals, [
+                { label: "Gols", value: (row) => row.goals || 0 },
+                { label: "Assist.", value: (row) => row.assists || 0 },
+                { label: "G/A", value: (row) => (row.goals || 0) + (row.assists || 0) },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="goals">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -436,7 +1016,7 @@
       </div>
 
       <!-- ================= ASSISTÊNCIAS ================= -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-assistencias" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -459,8 +1039,13 @@
                 Nenhum dado para este período.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(assists, [
+                { label: "Assist.", value: (row) => row.assists || 0 },
+                { label: "Gols", value: (row) => row.goals || 0 },
+                { label: "G/A", value: (row) => (row.goals || 0) + (row.assists || 0) },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="assists">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -507,7 +1092,7 @@
     <!-- 2ª LINHA: GA + MÉDIA DE NOTAS -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- ================= GOLS + ASSISTÊNCIAS ================= -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-ga" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -532,8 +1117,13 @@
                 Nenhum dado para este período.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(ga, [
+                { label: "Total", value: (row) => (row.goals || 0) + (row.assists || 0) },
+                { label: "Gols", value: (row) => row.goals || 0 },
+                { label: "Assist.", value: (row) => row.assists || 0 },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="ga">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -577,7 +1167,7 @@
       </div>
 
       <!-- ================= NOTAS ================= -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-medias" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -602,8 +1192,13 @@
                 Nenhum dado para este período.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(ratings, [
+                { label: "Media", value: (row) => fmtRating(row.rating) },
+                { label: "Pres.", value: (row) => row.matches || 0 },
+                { label: "G/A", value: (row) => (row.goals || 0) + (row.assists || 0) },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="ratings">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -646,7 +1241,7 @@
     <!-- 3ª LINHA: REI DAS FOTOS + REI DAS PRESENÇAS -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- ================= FOTOS ================= -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-fotos" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -671,8 +1266,13 @@
                 Nenhum dado para este período.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(photos, [
+                { label: "Fotos", value: (row) => row.photos || 0 },
+                { label: "Gols", value: (row) => row.goals || 0 },
+                { label: "Assist.", value: (row) => row.assists || 0 },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="photos">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -708,7 +1308,7 @@
       </div>
 
       <!-- ================= PRESENÇAS ================= -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-presencas" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -733,8 +1333,13 @@
                 Nenhum dado para este período.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(matches, [
+                { label: "Pres.", value: (row) => row.matches || 0 },
+                { label: "Gols", value: (row) => row.goals || 0 },
+                { label: "Assist.", value: (row) => row.assists || 0 },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="matches">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -787,7 +1392,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] md:text-xs">
       <!-- OVERALL -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-overall" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -813,8 +1418,13 @@
                 Nenhum dado para este período.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(overall, [
+                { label: "Overall", value: (row) => row.overallScore || 60 },
+                { label: "Nota", value: (row) => fmtRating(row.rating) },
+                { label: "Jogos", value: (row) => row.matches || 0 },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="overall">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -866,7 +1476,7 @@
       </div>
 
       <!-- ÚLTIMOS 10 JOGOS -->
-      <div class="card-highlight rounded-3xl p-[1px]">
+      <div id="ranking-ultimos-10" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -892,8 +1502,13 @@
                 Nenhum dado disponível para as últimas 10 peladas.
               </p>
             <% } else { %>
+              <%- renderRankingPodium(last10, [
+                { label: "Indice", value: (row) => row.last10Score ? row.last10Score.toFixed(2).replace('.', ',') : '0,00' },
+                { label: "Nota", value: (row) => fmtRating3(row.rating) },
+                { label: "Jogos", value: (row) => row.matches || 0 },
+              ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
-                <table class="table-sticky w-full text-[11px]">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="last10">
                   <thead class="bg-black/50 sticky top-0 z-10">
                     <tr>
                       <th class="text-left px-2 py-1">#</th>
@@ -954,7 +1569,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] md:text-xs">
       <!-- Craques da semana -->
-      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+      <div id="ranking-semana" class="bg-black/40 border border-horriver-border rounded-2xl p-4 rk-anchor">
         <div class="flex items-center justify-between mb-3">
           <div>
             <h3 class="font-title text-lg text-horriver-light">
@@ -1004,7 +1619,7 @@
       </div>
 
       <!-- Craques do mês -->
-      <div class="bg-black/40 border border-horriver-border rounded-2xl p-4">
+      <div id="ranking-mes" class="bg-black/40 border border-horriver-border rounded-2xl p-4 rk-anchor">
         <div class="flex items-center justify-between mb-3">
           <div>
             <h3 class="font-title text-lg text-horriver-light">
@@ -1056,5 +1671,92 @@
   </section>
 </section>
 
+<script>
+  (() => {
+    const nav = document.querySelector("[data-rk-jump-nav]");
+    if (!nav) return;
 
+    const links = Array.from(nav.querySelectorAll('a[href^="#ranking-"]'));
+    const sections = links
+      .map((link) => document.querySelector(link.getAttribute("href")))
+      .filter(Boolean);
+    const scroller = nav.querySelector(".rk-jump-nav__scroller");
+    let clickedTarget = null;
+    let clickedTargetReached = false;
 
+    const setActive = (id) => {
+      links.forEach((link) => {
+        const active = link.getAttribute("href") === `#${id}`;
+        link.classList.toggle("is-active", active);
+        if (active) {
+          link.setAttribute("aria-current", "true");
+          if (scroller) {
+            link.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+              inline: "center",
+            });
+          }
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    };
+
+    links.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        const target = document.querySelector(link.getAttribute("href"));
+        if (!target) return;
+
+        event.preventDefault();
+        clickedTarget = target.id;
+        clickedTargetReached = false;
+        setActive(target.id);
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        if (history.replaceState) {
+          history.replaceState(null, "", `#${target.id}`);
+        }
+
+      });
+    });
+
+    const getCurrentSection = () => {
+      const marker = Math.max(150, Math.round(window.innerHeight * 0.24));
+      let current = sections[0];
+
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        if (rect.top <= marker) {
+          current = section;
+        }
+      });
+
+      return current;
+    };
+
+    const updateFromScroll = () => {
+      const marker = Math.max(150, Math.round(window.innerHeight * 0.24));
+      if (clickedTarget) {
+        const clickedSection = document.getElementById(clickedTarget);
+        if (clickedSection) {
+          const rect = clickedSection.getBoundingClientRect();
+          if (rect.top <= marker && rect.bottom > marker) {
+            clickedTargetReached = true;
+            setActive(clickedTarget);
+            return;
+          }
+          if (!clickedTargetReached) return;
+        }
+        clickedTarget = null;
+        clickedTargetReached = false;
+      }
+      const current = getCurrentSection();
+      if (current) setActive(current.id);
+    };
+
+    updateFromScroll();
+    window.addEventListener("scroll", updateFromScroll, { passive: true });
+    window.addEventListener("resize", updateFromScroll);
+  })();
+</script>

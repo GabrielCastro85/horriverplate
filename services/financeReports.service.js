@@ -540,6 +540,21 @@ async function loadPeriodCollections({ prisma = prismaClient, settings, period }
     guestPaymentsRaw.reduce((sum, guest) => sum + decimalToNumber(guest.amount), 0)
   );
   const netResult = roundCurrency(totalIncome - totalExpenses);
+  const participantMix = {
+    monthlyCount: monthlyFees.filter((fee) => fee.status !== "EXEMPT" && fee.billingMode === "MONTHLY").length,
+    perMatchCount: monthlyFees.filter((fee) => ["PER_MATCH", "LATE_PER_MATCH"].includes(fee.billingMode)).length,
+    guestCount,
+    monthlyIncome: totalMonthlyPaid,
+    perMatchIncome: roundCurrency(
+      monthlyFees
+        .filter((fee) => ["PER_MATCH", "LATE_PER_MATCH"].includes(fee.billingMode))
+        .reduce((sum, fee) => sum + decimalToNumber(fee.amountPaid), 0)
+    ),
+    guestIncome,
+  };
+  participantMix.monthlyIncomeLabel = formatCurrencyBR(participantMix.monthlyIncome);
+  participantMix.perMatchIncomeLabel = formatCurrencyBR(participantMix.perMatchIncome);
+  participantMix.guestIncomeLabel = formatCurrencyBR(participantMix.guestIncome);
 
   const topContributors = groupedPlayers
     .filter((item) => item.totalPaid > 0)
@@ -599,6 +614,7 @@ async function loadPeriodCollections({ prisma = prismaClient, settings, period }
       paidPercentage,
       paidPercentageLabel: formatPercent(paidPercentage),
       mainExpenseCategory: expenseDistribution[0] || null,
+      participantMix,
     },
     rankings: {
       topContributors,

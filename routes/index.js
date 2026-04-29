@@ -398,10 +398,22 @@ router.get("/matches/:id", async (req, res) => {
           include: { player: true },
           orderBy: { player: { name: "asc" } },
         },
+        voteSessions: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
 
     if (!match) return res.status(404).render("404");
+
+    const latestVoteSession =
+      Array.isArray(match.voteSessions) && match.voteSessions.length
+        ? match.voteSessions[0]
+        : null;
+    const latestVoteSessionClosed =
+      !!latestVoteSession?.expiresAt &&
+      new Date(latestVoteSession.expiresAt).getTime() <= Date.now();
 
     const weeklyPhoto = await prisma.weeklyAward.findFirst({
       where: { winningMatchId: id, teamPhotoUrl: { not: null } },
@@ -411,7 +423,11 @@ router.get("/matches/:id", async (req, res) => {
 
 
     let publicStats = (match.stats || []).filter((stat) => stat.present);
-    try {
+    const ratingsReleased = latestVoteSession
+      ? latestVoteSessionClosed
+      : match.votingStatus === "CLOSED";
+    if (ratingsReleased) {
+      try {
       const result = await computeMatchRatingsAndAwards(id);
       if (!result.error && result.scores && typeof result.scores.forEach === 'function') {
         const finalMap = new Map();
@@ -425,8 +441,10 @@ router.get("/matches/:id", async (req, res) => {
             : stat.rating,
         }));
       }
-    } catch (calcErr) {
+      } catch (calcErr) {
       console.warn("Falha ao calcular nota final p–blica:", calcErr);
+      }
+
     }
 
     const baseUrl =
@@ -450,6 +468,7 @@ router.get("/matches/:id", async (req, res) => {
       activePage: "home",
       match,
       stats: publicStats,
+      ratingsReleased,
       tournament: null,
       tournamentStandings: [],
       tournamentTeams: [],

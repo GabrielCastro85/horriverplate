@@ -4,7 +4,7 @@
 // O layout.ejs já cuida de <html>, <body>, header, footer etc.
 // Aqui é só o conteúdo interno do <main>.
   const fmtDateTimeBR = (d) =>
-    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "UTC", hour12: false }) : "-";
+    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour12: false }) : "-";
   const hasVoteSessionTokens = !!(voteSession && voteSession.tokens && voteSession.tokens.length);
   const voteSessionClosed = !!(
     voteSession &&

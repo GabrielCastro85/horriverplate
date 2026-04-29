@@ -8,12 +8,197 @@
   };
 
   const safeStats = Array.isArray(stats) ? stats : [];
+  const showRatings = typeof ratingsReleased !== "undefined"
+    ? !!ratingsReleased
+    : match && match.votingStatus === "CLOSED";
+  const statsColspan = showRatings ? 8 : 7;
+  const totalGoals = safeStats.reduce((sum, s) => sum + (Number(s.goals) || 0), 0);
+  const totalAssists = safeStats.reduce((sum, s) => sum + (Number(s.assists) || 0), 0);
+  const totalPhotos = safeStats.reduce((sum, s) => sum + (s.appearedInPhoto ? 1 : 0), 0);
+  const playerName = (row) =>
+    row && row.player
+      ? `${row.player.name}${row.player.nickname ? ` (${row.player.nickname})` : ""}`
+      : "-";
+  const topScorer = [...safeStats].sort((a, b) =>
+    (b.goals || 0) - (a.goals || 0) ||
+    (b.assists || 0) - (a.assists || 0) ||
+    playerName(a).localeCompare(playerName(b))
+  )[0] || null;
+  const topAssistant = [...safeStats].sort((a, b) =>
+    (b.assists || 0) - (a.assists || 0) ||
+    (b.goals || 0) - (a.goals || 0) ||
+    playerName(a).localeCompare(playerName(b))
+  )[0] || null;
+  const topRated = showRatings
+    ? ([...safeStats]
+        .filter((s) => s.rating != null)
+        .sort((a, b) =>
+          Number(b.rating || 0) - Number(a.rating || 0) ||
+          (b.goals || 0) - (a.goals || 0) ||
+          (b.assists || 0) - (a.assists || 0)
+        )[0] || null)
+    : null;
+  const votingOpen = !showRatings;
 %>
 
 <section class="space-y-6 animate-fadeIn">
+  <style>
+    .match-center-hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 1.5rem;
+      background:
+        radial-gradient(circle at top left, rgba(255, 122, 26, 0.18), transparent 38%),
+        radial-gradient(circle at bottom right, rgba(139, 19, 32, 0.22), transparent 42%),
+        linear-gradient(135deg, rgba(9, 9, 13, 0.98), rgba(5, 5, 9, 0.92));
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+    }
+    .match-center-kicker {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid rgba(255, 122, 26, 0.28);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.35rem 0.7rem;
+      color: #ffb685;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .match-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    @media (min-width: 768px) {
+      .match-summary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+    .match-summary-card {
+      min-width: 0;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 1rem;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.016)),
+        rgba(0, 0, 0, 0.28);
+      padding: 0.85rem;
+    }
+    .match-summary-card span {
+      display: block;
+      color: rgba(178, 184, 194, 0.82);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .match-summary-card strong {
+      display: block;
+      margin-top: 0.35rem;
+      color: #fff7f2;
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+    .match-summary-card small {
+      display: block;
+      margin-top: 0.35rem;
+      color: rgba(245, 245, 245, 0.72);
+      font-size: 0.72rem;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+    .match-vote-note {
+      border: 1px solid rgba(255, 122, 26, 0.24);
+      border-radius: 1rem;
+      background: rgba(255, 122, 26, 0.08);
+      padding: 0.8rem 0.95rem;
+      color: rgba(245, 245, 245, 0.86);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    @media (max-width: 640px) {
+      .match-stats-table {
+        min-width: 0 !important;
+        display: block;
+      }
+      .match-stats-table thead {
+        display: none;
+      }
+      .match-stats-table tbody {
+        display: grid;
+        gap: 0.65rem;
+        padding: 0.75rem;
+      }
+      .match-stats-table tr {
+        display: grid;
+        grid-template-columns: 2rem minmax(0, 1fr) auto;
+        gap: 0.55rem;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 1rem;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.016)),
+          rgba(0, 0, 0, 0.28);
+        padding: 0.75rem;
+      }
+      .match-stats-table td {
+        position: static !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0;
+      }
+      .match-stats-table td:nth-child(1) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        background: rgba(255, 122, 26, 0.14) !important;
+        color: #fff7f2;
+        font-weight: 800;
+      }
+      .match-stats-table td:nth-child(2) {
+        min-width: 0;
+        white-space: normal;
+      }
+      .match-stats-table td:nth-child(3) {
+        justify-self: end;
+        align-self: start;
+        border: 1px solid rgba(255, 122, 26, 0.28);
+        border-radius: 999px;
+        background: rgba(255, 122, 26, 0.08) !important;
+        padding: 0.25rem 0.45rem !important;
+        line-height: 1;
+      }
+      .match-stats-table td:nth-child(n+4) {
+        display: inline-flex;
+        min-height: 2.8rem;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.18rem;
+        border-radius: 0.8rem;
+        background: rgba(255, 255, 255, 0.045) !important;
+        color: #f8fafc;
+        font-weight: 800;
+        text-align: center;
+      }
+      .match-stats-table td:nth-child(n+4)::before {
+        content: attr(data-label);
+        color: rgba(178, 184, 194, 0.82);
+        font-size: 0.56rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+    }
+  </style>
 
   <!-- Cabeçalho da pelada -->
-  <header class="space-y-2">
+  <header class="match-center-hero p-4 md:p-6 space-y-5">
     <h1 class="font-title text-3xl md:text-4xl text-horriver-light">
       Pelada em <span class="text-horriver-orange"><%= fmtDate(match.playedAt) %></span>
     </h1>
@@ -33,6 +218,52 @@
       </p>
     </div>
   </header>
+
+  <section class="match-center-hero p-4 md:p-5 space-y-4">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <span class="match-center-kicker">Resumo da pelada</span>
+        <h2 class="mt-3 font-title text-2xl text-horriver-light">Match Center</h2>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex rounded-full border border-horriver-border bg-black/35 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-horriver-gray">
+          <%= safeStats.length %> jogadores
+        </span>
+        <span class="inline-flex rounded-full border <%= votingOpen ? 'border-horriver-orange/50 bg-horriver-orange/10 text-horriver-orange' : 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300' %> px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em]">
+          <%= votingOpen ? "Votacao aberta" : "Votacao encerrada" %>
+        </span>
+      </div>
+    </div>
+
+    <% if (!showRatings) { %>
+      <div class="match-vote-note">
+        As notas ficam ocultas enquanto a votacao estiver aberta. Elas aparecem aqui automaticamente quando a votacao for encerrada.
+      </div>
+    <% } %>
+
+    <div class="match-summary-grid">
+      <article class="match-summary-card">
+        <span>Gols na pelada</span>
+        <strong><%= totalGoals %></strong>
+        <small><%= totalAssists %> assistencias registradas</small>
+      </article>
+      <article class="match-summary-card">
+        <span>Artilheiro</span>
+        <strong><%= topScorer ? (topScorer.goals || 0) : 0 %></strong>
+        <small><%= playerName(topScorer) %></small>
+      </article>
+      <article class="match-summary-card">
+        <span>Garcom</span>
+        <strong><%= topAssistant ? (topAssistant.assists || 0) : 0 %></strong>
+        <small><%= playerName(topAssistant) %></small>
+      </article>
+      <article class="match-summary-card">
+        <span><%= showRatings ? "Melhor nota" : "Fotos" %></span>
+        <strong><%= showRatings && topRated ? fmtRating(topRated.rating) : totalPhotos %></strong>
+        <small><%= showRatings && topRated ? playerName(topRated) : "jogadores em registros" %></small>
+      </article>
+    </div>
+  </section>
 
   <!-- Torneio (publico) -->
   <%
@@ -360,7 +591,9 @@
       <div class="flex items-center justify-between gap-4 mb-3">
         <div>
           <h2 class="font-title text-xl text-horriver-light">Estatísticas da pelada</h2>
-          <p class="text-[11px] text-horriver-gray">Jogadores em ordem alfabética, com gols, assistências, presença e nota.</p>
+          <p class="text-[11px] text-horriver-gray">
+            Jogadores em ordem alfabética, com gols, assistências e presença<%= showRatings ? ", nota." : "." %>
+          </p>
         </div>
 
         <p class="text-[11px] text-horriver-gray">
@@ -376,7 +609,7 @@
         <div class="overflow-x-auto md:overflow-x-visible">
 
           <!-- TABELA COM MIN WIDTH PRA MOBILE -->
-          <table class="min-w-[620px] w-full text-[11px] sm:text-xs" data-sortable="match-stats">
+          <table class="match-stats-table min-w-[620px] w-full text-[11px] sm:text-xs" data-sortable="match-stats">
             <thead class="bg-gradient-to-r from-horriver-red/70 via-horriver-red/60 to-horriver-orange/70">
               <tr>
                 <th class="px-3 py-2 text-left w-10 sticky left-0 z-20 bg-horriver-red/70">#</th>
@@ -385,7 +618,9 @@
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="present">Presente</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="goals">Gols</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="assists">Assist.</th>
-                <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="rating">Nota</th>
+                <% if (showRatings) { %>
+                  <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="rating">Nota</th>
+                <% } %>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="photo">Foto</th>
               </tr>
             </thead>
@@ -393,19 +628,19 @@
             <tbody>
               <% if (!safeStats.length) { %>
                 <tr>
-                  <td colspan="8" class="px-3 py-4 text-center text-sm text-horriver-gray">
+                  <td colspan="<%= statsColspan %>" class="px-3 py-4 text-center text-sm text-horriver-gray">
                     Nenhuma estatística lançada para esta pelada.
                   </td>
                 </tr>
               <% } else { %>
                 <% safeStats.forEach((s, idx) => { %>
-                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors" data-name="<%= (s.player.name || '').toLowerCase() %>" data-position="<%= (s.player.position || '').toLowerCase() %>" data-present="<%= s.present ? 1 : 0 %>" data-goals="<%= s.goals || 0 %>" data-assists="<%= s.assists || 0 %>" data-rating="<%= s.rating != null ? s.rating : 0 %>" data-photo="<%= s.appearedInPhoto ? 1 : 0 %>">
+                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors" data-name="<%= (s.player.name || '').toLowerCase() %>" data-position="<%= (s.player.position || '').toLowerCase() %>" data-present="<%= s.present ? 1 : 0 %>" data-goals="<%= s.goals || 0 %>" data-assists="<%= s.assists || 0 %>" <%- showRatings ? `data-rating="${s.rating != null ? s.rating : 0}"` : "" %> data-photo="<%= s.appearedInPhoto ? 1 : 0 %>">
 
                     <!-- # -->
-                    <td class="px-3 py-2 text-[11px] text-horriver-gray sticky left-0 z-10 bg-black/90"><%= idx + 1 %></td>
+                    <td class="px-3 py-2 text-[11px] text-horriver-gray sticky left-0 z-10 bg-black/90" data-label="#"><%= idx + 1 %></td>
 
                     <!-- Nome -->
-                    <td class="px-3 py-2 whitespace-nowrap sticky left-10 z-10 bg-black/90">
+                    <td class="px-3 py-2 whitespace-nowrap sticky left-10 z-10 bg-black/90" data-label="Jogador">
                       <span class="text-horriver-light text-[13px]">
                         <%= s.player.name %>
                       </span>
@@ -417,12 +652,12 @@
                     </td>
 
                     <!-- Posição -->
-                    <td class="px-3 py-2 text-[11px] text-horriver-orange uppercase whitespace-nowrap">
+                    <td class="px-3 py-2 text-[11px] text-horriver-orange uppercase whitespace-nowrap" data-label="Pos.">
                       <%= s.player.position %>
                     </td>
 
                     <!-- Presente -->
-                    <td class="px-3 py-2 text-center">
+                    <td class="px-3 py-2 text-center" data-label="Pres.">
                       <% if (s.present) { %>
                         <span class="text-emerald-400 text-sm">✓</span>
                       <% } else { %>
@@ -431,22 +666,24 @@
                     </td>
 
                     <!-- Gols -->
-                    <td class="px-3 py-2 text-center font-semibold text-horriver-light">
+                    <td class="px-3 py-2 text-center font-semibold text-horriver-light" data-label="Gols">
                       <%= s.goals || 0 %>
                     </td>
 
                     <!-- Assist -->
-                    <td class="px-3 py-2 text-center font-semibold text-horriver-light">
+                    <td class="px-3 py-2 text-center font-semibold text-horriver-light" data-label="Assist.">
                       <%= s.assists || 0 %>
                     </td>
 
-                    <!-- Nota -->
-                    <td class="px-3 py-2 text-center font-semibold text-horriver-light">
-                      <%= fmtRating(s.rating) %>
-                    </td>
+                    <% if (showRatings) { %>
+                      <!-- Nota -->
+                      <td class="px-3 py-2 text-center font-semibold text-horriver-light" data-label="Nota">
+                        <%= fmtRating(s.rating) %>
+                      </td>
+                    <% } %>
 
                     <!-- Foto -->
-                    <td class="px-3 py-2 text-center">
+                    <td class="px-3 py-2 text-center" data-label="Foto">
                       <% if (s.appearedInPhoto) { %>
                         <span class="text-horriver-orange text-base">📷</span>
                       <% } else { %>

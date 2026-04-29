@@ -326,11 +326,14 @@
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 12px 24px rgba(0,0,0,0.18);
       }
       .site-mobile-link {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-height: 50px;
         padding: 0.72rem 0.85rem;
         border-radius: 1rem;
         color: rgba(226, 232, 240, 0.88);
-        transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+        transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
         border: 1px solid transparent;
       }
       .site-mobile-link:hover {
@@ -341,6 +344,130 @@
         color: #fff7f2;
         border-color: rgba(255, 122, 26, 0.24);
         background: linear-gradient(180deg, rgba(255,122,26,0.14), rgba(255,122,26,0.04));
+      }
+      .site-mobile-link[aria-current="page"] .mobile-menu-icon {
+        color: #050509;
+        border-color: rgba(255, 122, 26, 0.8);
+        background: #ff7a1a;
+      }
+      .mobile-menu-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        background: rgba(255, 255, 255, 0.04);
+        color: #ff7a1a;
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 13px;
+        letter-spacing: 0;
+      }
+      .mobile-menu-copy {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 0.1rem;
+      }
+      .mobile-menu-copy strong {
+        font-size: 13px;
+        font-weight: 700;
+        color: inherit;
+      }
+      .mobile-menu-copy span {
+        font-size: 10px;
+        color: rgba(178, 184, 194, 0.78);
+      }
+      .mobile-menu-kicker {
+        display: block;
+        margin: 1rem 0 0.45rem;
+        padding: 0 0.35rem;
+        color: rgba(178, 184, 194, 0.72);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+      .mobile-menu-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.55rem;
+        padding: 0.35rem;
+      }
+      .mobile-menu-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 44px;
+        border-radius: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        background: rgba(255, 255, 255, 0.025);
+        color: rgba(245, 245, 245, 0.92);
+        font-size: 12px;
+        font-weight: 700;
+        transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+      }
+      .mobile-menu-action--accent {
+        border-color: rgba(255, 122, 26, 0.72);
+        color: #ff7a1a;
+      }
+      .site-bottom-nav {
+        display: none;
+      }
+      .bottom-nav-link,
+      .bottom-nav-button {
+        display: inline-flex;
+        min-width: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.22rem;
+        color: rgba(226, 232, 240, 0.68);
+        font-size: 10px;
+        line-height: 1;
+        transition: color 0.18s ease, transform 0.18s ease;
+      }
+      .bottom-nav-link svg,
+      .bottom-nav-button svg {
+        width: 22px;
+        height: 22px;
+        stroke-width: 2;
+      }
+      .bottom-nav-link[aria-current="page"],
+      .bottom-nav-button[aria-expanded="true"] {
+        color: #fff7f2;
+      }
+      .bottom-nav-link[aria-current="page"] .bottom-nav-icon,
+      .bottom-nav-button[aria-expanded="true"] .bottom-nav-icon {
+        background: rgba(255, 122, 26, 0.16);
+        border-color: rgba(255, 122, 26, 0.44);
+        color: #ff7a1a;
+      }
+      .bottom-nav-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+      }
+      .bottom-nav-brand {
+        width: 44px;
+        height: 44px;
+        margin-top: -16px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 122, 26, 0.5);
+        background: radial-gradient(circle at top, rgba(255, 122, 26, 0.26), rgba(0, 0, 0, 0.88) 62%);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.36);
+      }
+      .bottom-nav-brand img {
+        width: 32px;
+        height: 32px;
       }
       .site-footer {
         background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.28));
@@ -356,6 +483,62 @@
           min-height: 30px;
           padding: 0.34rem 0.5rem;
           letter-spacing: 0.02em;
+        }
+      }
+      @media (max-width: 767px) {
+        body {
+          padding-bottom: calc(72px + env(safe-area-inset-bottom));
+        }
+        .site-header-shell {
+          position: relative;
+          justify-content: center;
+          min-height: 72px;
+        }
+        .site-brand-link {
+          position: absolute;
+          left: 50%;
+          flex: none;
+          transform: translateX(-50%);
+        }
+        #mobileMenuBtn {
+          display: none;
+        }
+        #mobileBackdrop {
+          background: rgba(0, 0, 0, 0.78);
+        }
+        #mobilePanel {
+          width: 100%;
+          max-width: none;
+          min-height: calc(100dvh - 64px - env(safe-area-inset-bottom));
+          max-height: calc(100dvh - 64px - env(safe-area-inset-bottom));
+          margin-top: 0;
+          border-radius: 0;
+          border-right: 0;
+          border-left: 0;
+          background:
+            radial-gradient(circle at 18% 0%, rgba(255, 122, 26, 0.12), transparent 28%),
+            linear-gradient(180deg, rgba(8, 8, 14, 0.98), rgba(3, 5, 12, 0.98));
+        }
+        .site-bottom-nav {
+          position: fixed;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          z-index: 60;
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          align-items: end;
+          min-height: calc(64px + env(safe-area-inset-bottom));
+          padding: 0.45rem 0.72rem calc(0.5rem + env(safe-area-inset-bottom));
+          border-top: 1px solid rgba(148, 163, 184, 0.22);
+          background:
+            linear-gradient(180deg, rgba(10, 10, 18, 0.96), rgba(2, 6, 23, 0.98)),
+            rgba(0, 0, 0, 0.92);
+          box-shadow: 0 -18px 34px rgba(0, 0, 0, 0.42);
+          backdrop-filter: blur(16px);
+        }
+        .scroll-top {
+          display: none;
         }
       }
       .table-sticky thead th {
@@ -530,7 +713,18 @@
 
   <body class="bg-horriver-bg text-horriver-light">
     <%
-      const currentPage = typeof activePage !== "undefined" ? activePage : "";
+      const currentPage = (() => {
+        if (typeof activePage !== "undefined" && activePage) return activePage;
+        const path = typeof currentPath !== "undefined" && currentPath ? String(currentPath) : "/";
+        if (path.startsWith("/rankings")) return "rankings";
+        if (path.startsWith("/peladas")) return "peladas";
+        if (path.startsWith("/elenco") || path.startsWith("/jogador")) return "elenco";
+        if (path.startsWith("/tierlist")) return "tierlist";
+        if (path.startsWith("/hall-da-fama")) return "hall";
+        if (path.startsWith("/fotos")) return "fotos";
+        if (path.startsWith("/sobre")) return "sobre";
+        return "home";
+      })();
       const isAdmin = _isAdminLayout;
       const adminEmail =
         admin && admin.email ? String(admin.email).toLowerCase() : null;
@@ -563,7 +757,7 @@
       <header class="sticky top-0 z-40 bg-black/80 border-b border-horriver-border backdrop-blur">
         <nav class="site-header-shell max-w-6xl mx-auto flex w-full items-center gap-2 md:gap-4 px-4 py-3">
           <!-- ESQUERDA -->
-          <a href="/" class="flex items-center gap-2 min-w-0 flex-1 md:flex-none">
+          <a href="/" class="site-brand-link flex items-center gap-2 min-w-0 flex-1 md:flex-none">
             <div class="w-9 h-9 rounded-full overflow-hidden border border-horriver-red/70 bg-black/70">
               <img
                 src="/img/logo-128x128.svg"
@@ -590,7 +784,7 @@
             <li>
               <a
                 href="/"
-                <%= currentPage==='home' ? 'aria-current="page"' : '' %>
+                <%- currentPage==='home' ? 'aria-current="page"' : '' %>
                 class="site-nav-link"
               >
                 Home
@@ -599,7 +793,7 @@
             <li>
               <a
                 href="/rankings"
-                <%= currentPage==='rankings' ? 'aria-current="page"' : '' %>
+                <%- currentPage==='rankings' ? 'aria-current="page"' : '' %>
                 class="site-nav-link"
               >
                 Rankings
@@ -608,7 +802,7 @@
             <li>
               <a
                 href="/peladas"
-                <%= currentPage==='peladas' ? 'aria-current="page"' : '' %>
+                <%- currentPage==='peladas' ? 'aria-current="page"' : '' %>
                 class="site-nav-link"
               >
                 Peladas
@@ -617,7 +811,7 @@
             <li>
               <a
                 href="/elenco"
-                <%= currentPage==='elenco' ? 'aria-current="page"' : '' %>
+                <%- currentPage==='elenco' ? 'aria-current="page"' : '' %>
                 class="site-nav-link"
               >
                 Elenco
@@ -626,7 +820,7 @@
             <li>
               <a
                 href="/tierlist"
-                <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %>
+                <%- currentPage==='tierlist' ? 'aria-current="page"' : '' %>
                 class="site-nav-link"
               >
                 Tierlist
@@ -637,7 +831,7 @@
               <li>
                 <a
                   href="/hall-da-fama"
-                  <%= currentPage==='hall' ? 'aria-current="page"' : '' %>
+                  <%- currentPage==='hall' ? 'aria-current="page"' : '' %>
                   class="site-nav-link"
                 >
                   Hall da Fama
@@ -648,7 +842,7 @@
             <li>
               <a
                 href="/fotos"
-                <%= currentPage==='fotos' ? 'aria-current="page"' : '' %>
+                <%- currentPage==='fotos' ? 'aria-current="page"' : '' %>
                 class="site-nav-link"
               >
                 Fotos
@@ -658,7 +852,7 @@
             <li>
               <a
                 href="/sobre"
-                <%= currentPage==='sobre' ? 'aria-current="page"' : '' %>
+                <%- currentPage==='sobre' ? 'aria-current="page"' : '' %>
                 class="site-nav-link"
               >
                 Sobre
@@ -769,23 +963,74 @@
             >X</button>
           </div>
 
-          <nav class="p-2 text-[13px] overflow-y-auto">
-            <a href="/" <%= currentPage==='home' ? 'aria-current="page"' : '' %> class="site-mobile-link">Home</a>
-            <a href="/rankings" <%= currentPage==='rankings' ? 'aria-current="page"' : '' %> class="site-mobile-link">Rankings</a>
-            <a href="/peladas" <%= currentPage==='peladas' ? 'aria-current="page"' : '' %> class="site-mobile-link">Peladas</a>
-            <a href="/elenco" <%= currentPage==='elenco' ? 'aria-current="page"' : '' %> class="site-mobile-link">Elenco</a>
+          <nav class="p-4 text-[13px] overflow-y-auto">
+            <span class="mobile-menu-kicker !mt-0">Principal</span>
+            <a href="/" <%- currentPage==='home' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">IN</span>
+              <span class="mobile-menu-copy">
+                <strong>Inicio</strong>
+                <span>Resumo, destaques e ultimas atualizacoes</span>
+              </span>
+            </a>
+            <a href="/rankings" <%- currentPage==='rankings' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">RK</span>
+              <span class="mobile-menu-copy">
+                <strong>Rankings</strong>
+                <span>Gols, assistencias, media e desempenho</span>
+              </span>
+            </a>
+            <a href="/tierlist" <%- currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">TL</span>
+              <span class="mobile-menu-copy">
+                <strong>Tierlist</strong>
+                <span>Monte e compare os jogadores</span>
+              </span>
+            </a>
+            <a href="/peladas" <%- currentPage==='peladas' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">PJ</span>
+              <span class="mobile-menu-copy">
+                <strong>Peladas</strong>
+                <span>Historico dos jogos e placares</span>
+              </span>
+            </a>
+
+            <span class="mobile-menu-kicker">Clube</span>
+            <a href="/elenco" <%- currentPage==='elenco' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">EL</span>
+              <span class="mobile-menu-copy">
+                <strong>Elenco</strong>
+                <span>Jogadores, posicoes e perfis</span>
+              </span>
+            </a>
 
             <% if (showHallLink) { %>
-              <a href="/hall-da-fama" <%= currentPage==='hall' ? 'aria-current="page"' : '' %> class="site-mobile-link">Hall da Fama</a>
+              <a href="/hall-da-fama" <%- currentPage==='hall' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+                <span class="mobile-menu-icon">HF</span>
+                <span class="mobile-menu-copy">
+                  <strong>Hall da Fama</strong>
+                  <span>Temporadas, marcas e campeoes</span>
+                </span>
+              </a>
             <% } %>
-            <a href="/fotos" <%= currentPage==='fotos' ? 'aria-current="page"' : '' %> class="site-mobile-link">Fotos</a>
-            <a href="/tierlist" <%= currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="site-mobile-link">Tierlist</a>
+            <a href="/fotos" <%- currentPage==='fotos' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">FT</span>
+              <span class="mobile-menu-copy">
+                <strong>Fotos</strong>
+                <span>Registros das peladas e resenhas</span>
+              </span>
+            </a>
 
-            <a href="/sobre" <%= currentPage==='sobre' ? 'aria-current="page"' : '' %> class="site-mobile-link">Sobre</a>
+            <a href="/sobre" <%- currentPage==='sobre' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">HP</span>
+              <span class="mobile-menu-copy">
+                <strong>Sobre</strong>
+                <span>Historia e identidade do Horriver</span>
+              </span>
+            </a>
 
-            <div class="mt-2 flex flex-wrap items-center gap-2 px-2">
+            <div class="mobile-menu-actions mt-3">
               <% if (adminLabel) { %>
-                <span class="text-[12px] text-horriver-gray">
+                <span class="col-span-2 text-[12px] text-horriver-gray">
                   Olá, <span class="text-horriver-light font-semibold"><%= adminLabel %></span>
                 </span>
               <% } %>
@@ -794,11 +1039,7 @@
                   href="https://www.instagram.com/_hpfrc/"
                   target="_blank"
                   rel="noopener"
-                  class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
-                         rounded-lg border border-horriver-orange/80 bg-black/40
-                         text-[12px] text-horriver-orange
-                         hover:bg-horriver-orange hover:text-horriver-bg
-                         transition-colors"
+                  class="mobile-menu-action mobile-menu-action--accent"
                 >
                   <span
                     class="inline-flex items-center justify-center w-5 h-5 rounded-md
@@ -821,21 +1062,21 @@
                 </a>
                 <a
                   href="/login"
-                  class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+                  class="mobile-menu-action"
                 >
                   Login
                 </a>
               <% } else { %>
                 <a
                   href="/admin"
-                  class="flex-1 px-3 py-2 rounded-lg border border-horriver-border text-horriver-light text-center hover:border-horriver-orange hover:text-horriver-orange transition-colors"
+                  class="mobile-menu-action"
                 >
                   Painel
                 </a>
-                <form method="POST" action="/logout" class="flex-1">
+                <form method="POST" action="/logout">
                   <button
                     type="submit"
-                    class="w-full px-3 py-2 rounded-lg border border-red-500/80 text-red-400 hover:bg-red-600 hover:text-horriver-bg transition-colors"
+                    class="mobile-menu-action w-full border-red-500/70 text-red-300"
                   >
                     Sair
                   </button>
@@ -844,11 +1085,7 @@
                   href="https://www.instagram.com/_hpfrc/"
                   target="_blank"
                   rel="noopener"
-                  class="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2
-                         rounded-lg border border-horriver-orange/80 bg-black/40
-                         text-[12px] text-horriver-orange
-                         hover:bg-horriver-orange hover:text-horriver-bg
-                         transition-colors"
+                  class="mobile-menu-action mobile-menu-action--accent col-span-2"
                 >
                   <span
                     class="inline-flex items-center justify-center w-5 h-5 rounded-md
@@ -914,6 +1151,71 @@
     >
       Topo
     </button>
+
+    <nav class="site-bottom-nav md:hidden" aria-label="Navegacao principal mobile">
+      <a href="/" <%- currentPage==='home' ? 'aria-current="page"' : '' %> class="bottom-nav-link">
+        <span class="bottom-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 10.5 12 3l9 7.5"></path>
+            <path d="M5 9.5V21h14V9.5"></path>
+            <path d="M9 21v-6h6v6"></path>
+          </svg>
+        </span>
+        <span>Inicio</span>
+      </a>
+
+      <a href="/tierlist" <%- currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="bottom-nav-link">
+        <span class="bottom-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 6h16"></path>
+            <path d="M4 12h16"></path>
+            <path d="M4 18h16"></path>
+            <path d="M8 4v4"></path>
+            <path d="M14 10v4"></path>
+            <path d="M11 16v4"></path>
+          </svg>
+        </span>
+        <span>Tierlist</span>
+      </a>
+
+      <a href="/" class="bottom-nav-link" aria-label="Horriver Plate">
+        <span class="bottom-nav-icon bottom-nav-brand" aria-hidden="true">
+          <img src="/img/logo-64x64.svg" alt="" loading="eager" decoding="async" />
+        </span>
+        <span>HP</span>
+      </a>
+
+      <a href="/rankings" <%- currentPage==='rankings' ? 'aria-current="page"' : '' %> class="bottom-nav-link">
+        <span class="bottom-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M7 20V10"></path>
+            <path d="M12 20V4"></path>
+            <path d="M17 20v-7"></path>
+            <path d="M4 20h16"></path>
+          </svg>
+        </span>
+        <span>Rankings</span>
+      </a>
+
+      <button
+        id="bottomMenuBtn"
+        type="button"
+        class="bottom-nav-button"
+        aria-label="Abrir menu"
+        aria-expanded="false"
+        aria-controls="mobileMenu"
+        data-mobile-menu-trigger
+      >
+        <span class="bottom-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M4 7h16"></path>
+            <path d="M4 12h16"></path>
+            <path d="M4 17h16"></path>
+          </svg>
+        </span>
+        <span>Menu</span>
+      </button>
+    </nav>
     <script>
       (() => {
         const meta = document.querySelector('meta[name="csrf-token"]');

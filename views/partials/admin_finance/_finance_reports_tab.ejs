@@ -83,6 +83,24 @@
     </article>
   </section>
 
+  <section class="finance-module-metric-strip">
+    <article class="finance-module-mini-card finance-module-mini-card--accent">
+      <span class="finance-kicker">Mensalistas</span>
+      <strong><%= reports.executiveSummary.participantMix.monthlyCount %></strong>
+      <span class="finance-subtle"><%= reports.executiveSummary.participantMix.monthlyIncomeLabel %> recebido no recorte.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Avulsos</span>
+      <strong><%= reports.executiveSummary.participantMix.perMatchCount %></strong>
+      <span class="finance-subtle"><%= reports.executiveSummary.participantMix.perMatchIncomeLabel %> recebido por presenca.</span>
+    </article>
+    <article class="finance-module-mini-card">
+      <span class="finance-kicker">Convidados</span>
+      <strong><%= reports.executiveSummary.participantMix.guestCount %></strong>
+      <span class="finance-subtle"><%= reports.executiveSummary.participantMix.guestIncomeLabel %> em entradas avulsas.</span>
+    </article>
+  </section>
+
   <div class="finance-panel p-5 md:p-6 space-y-5">
     <form method="GET" action="/admin/finance" class="finance-card p-4 space-y-4">
       <%- stateFields({ tab: "reports" }, { omit: ["reportType", "reportScope", "reportStart", "reportEnd"] }) %>
