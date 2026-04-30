@@ -15,6 +15,7 @@
   const firstPlace = topFive[0] || null;
   const secondRow = topFive.slice(1, 3);
   const thirdRow = topFive.slice(3, 5);
+  const downloadReady = typeof canDownloadAwardsImage !== "undefined" ? canDownloadAwardsImage : true;
 
   const fmtScore = (value) => {
     const num = Number(value);
@@ -358,13 +359,46 @@
       </footer>
     </div>
 
-    <div class="flex justify-end">
-      <a
-        href="/admin/matches/<%= match.id %>/awards/export"
-        class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
-      >
-        Baixar imagem dos premios
-      </a>
+    <div id="awards-download-flow" class="mx-auto max-w-[920px]">
+      <% if (downloadReady) { %>
+        <div class="flex justify-end">
+          <a
+            href="/admin/matches/<%= match.id %>/awards/export"
+            class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
+          >
+            Baixar imagem dos premios
+          </a>
+        </div>
+      <% } else { %>
+        <div class="rounded-[28px] border border-horriver-orange/20 bg-black/24 p-5 md:p-6">
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-2">
+              <p class="text-xs uppercase tracking-[0.2em] text-horriver-gray">Antes do download</p>
+              <h2 class="text-xl font-semibold text-horriver-light">Deseja encerrar a votacao?</h2>
+              <p class="text-sm text-horriver-gray">
+                Ao confirmar, os links restantes deixam de receber votos e a imagem fica liberada para baixar.
+              </p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row md:justify-end">
+              <a
+                href="#awards-card"
+                class="px-4 py-2 rounded-full border border-horriver-border text-center text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+              >
+                Nao, voltar para a previa
+              </a>
+              <form action="/admin/matches/<%= match.id %>/close-votes" method="POST">
+                <input type="hidden" name="redirectTo" value="/admin/matches/<%= match.id %>/awards?downloadReady=1#awards-download-flow" />
+                <button
+                  type="submit"
+                  class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold shadow-card-soft hover:bg-orange-500 transition"
+                >
+                  Sim, encerrar votacao
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% } %>
     </div>
   </div>
 </section>

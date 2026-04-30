@@ -290,26 +290,51 @@ function buildCashRows(cashTransactions, startingBalance) {
 }
 
 function buildMonthlyRows(monthlyFees) {
-  return monthlyFees.map((fee) => ({
-    id: fee.id,
-    playerName: fee.player?.name || "Participante",
-    playerSubtitle: fee.player?.nickname
-      ? `${fee.player.position || "-"} - ${fee.player.nickname}`
-      : fee.player?.position || "-",
-    status: fee.collectionStatus,
-    statusLabel: fee.collectionStatusMeta.label,
-    due: decimalToNumber(fee.amountDue),
-    dueLabel: formatCurrencyBR(fee.amountDue),
-    paid: decimalToNumber(fee.amountPaid),
-    paidLabel: formatCurrencyBR(fee.amountPaid),
-    balance: fee.balance,
-    balanceLabel: formatCurrencyBR(fee.balance),
-    dueDate: fee.dueDate,
-    dueDateLabel: formatDateBRShortYear(fee.dueDate) || "-",
-    paidAt: fee.paidAt,
-    paidAtLabel: formatDateBRShortYear(fee.paidAt) || "-",
-    paymentMethodLabel: getPaymentMethodLabel(fee.paymentMethod),
-  }));
+  return monthlyFees.map((fee) => {
+    const billingMode = fee.billingMode || "MONTHLY";
+    const isPerMatch = billingMode === "PER_MATCH" || billingMode === "LATE_PER_MATCH";
+    const matchesPlayed = Number(fee.matchesPlayed || 0);
+    const lateMatchesPlayed = Number(fee.lateMatchesPlayed || 0);
+    const chargedMatches = billingMode === "LATE_PER_MATCH" ? lateMatchesPlayed : matchesPlayed;
+    const planLabel =
+      billingMode === "EXEMPT"
+        ? "Isento"
+        : billingMode === "PER_MATCH"
+        ? "Avulso"
+        : billingMode === "LATE_PER_MATCH"
+        ? "Avulso por atraso"
+        : "Plano mensal";
+    const planDetail = isPerMatch
+      ? `${chargedMatches} ${chargedMatches === 1 ? "pelada" : "peladas"} no avulso`
+      : billingMode === "EXEMPT"
+      ? "Sem cobranca no periodo"
+      : "Mensalidade fixa";
+
+    return {
+      id: fee.id,
+      playerName: fee.player?.name || "Participante",
+      playerSubtitle: fee.player?.nickname
+        ? `${fee.player.position || "-"} - ${fee.player.nickname}`
+        : fee.player?.position || "-",
+      plan: billingMode,
+      planLabel,
+      planDetail,
+      planTone: billingMode === "MONTHLY" ? "ok" : billingMode === "EXEMPT" ? "warning" : "info",
+      status: fee.collectionStatus,
+      statusLabel: fee.collectionStatusMeta.label,
+      due: decimalToNumber(fee.amountDue),
+      dueLabel: formatCurrencyBR(fee.amountDue),
+      paid: decimalToNumber(fee.amountPaid),
+      paidLabel: formatCurrencyBR(fee.amountPaid),
+      balance: fee.balance,
+      balanceLabel: formatCurrencyBR(fee.balance),
+      dueDate: fee.dueDate,
+      dueDateLabel: formatDateBRShortYear(fee.dueDate) || "-",
+      paidAt: fee.paidAt,
+      paidAtLabel: formatDateBRShortYear(fee.paidAt) || "-",
+      paymentMethodLabel: getPaymentMethodLabel(fee.paymentMethod),
+    };
+  });
 }
 
 function buildGuestRows(guestPayments) {
@@ -544,7 +569,11 @@ async function loadPeriodCollections({ prisma = prismaClient, settings, period }
     monthlyCount: monthlyFees.filter((fee) => fee.status !== "EXEMPT" && fee.billingMode === "MONTHLY").length,
     perMatchCount: monthlyFees.filter((fee) => ["PER_MATCH", "LATE_PER_MATCH"].includes(fee.billingMode)).length,
     guestCount,
-    monthlyIncome: totalMonthlyPaid,
+    monthlyIncome: roundCurrency(
+      monthlyFees
+        .filter((fee) => fee.billingMode === "MONTHLY")
+        .reduce((sum, fee) => sum + decimalToNumber(fee.amountPaid), 0)
+    ),
     perMatchIncome: roundCurrency(
       monthlyFees
         .filter((fee) => ["PER_MATCH", "LATE_PER_MATCH"].includes(fee.billingMode))

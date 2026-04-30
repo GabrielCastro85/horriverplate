@@ -181,6 +181,8 @@ router.get("/", async (req, res) => {
     const entries = players.map((p) => {
       let goals = 0;
       let assists = 0;
+      let saves = 0;
+      let savesMatches = 0;
       let matches = 0;
       let photos = 0;
       let ratingSum = 0;
@@ -191,6 +193,10 @@ router.get("/", async (req, res) => {
 
         goals += s.goals || 0;
         assists += s.assists || 0;
+        if (s.saves != null) {
+          saves += s.saves || 0;
+          savesMatches++;
+        }
         matches++;
         if (s.appearedInPhoto) photos++;
         const finalRating = getFinalRating(s);
@@ -206,6 +212,8 @@ router.get("/", async (req, res) => {
         player: p,
         goals,
         assists,
+        saves,
+        savesMatches,
         matches,
         photos,
         rating,
@@ -241,6 +249,8 @@ router.get("/", async (req, res) => {
 
         let goals = 0;
         let assists = 0;
+        let saves = 0;
+        let savesMatches = 0;
         let matches = 0;
         let ratingSum = 0;
         let ratingCount = 0;
@@ -250,6 +260,10 @@ router.get("/", async (req, res) => {
 
           goals += s.goals || 0;
           assists += s.assists || 0;
+          if (s.saves != null) {
+            saves += s.saves || 0;
+            savesMatches++;
+          }
           matches++;
           const finalRating = getFinalRating(s);
           if (finalRating != null) {
@@ -264,6 +278,8 @@ router.get("/", async (req, res) => {
           player: p,
           goals,
           assists,
+          saves,
+          savesMatches,
           matches,
           rating,
         };
@@ -378,6 +394,19 @@ router.get("/", async (req, res) => {
       .sort((a, b) => {
         if (b.assists !== a.assists) return b.assists - a.assists;
         if (b.goals !== a.goals) return b.goals - a.goals;
+        return b.matches - a.matches;
+      });
+
+    // ======= DEFESAS (goleiros, opcional por pelada) =======
+    const savesRanking = [...entries]
+      .filter((e) => e.savesMatches > 0)
+      .map((e) => ({
+        ...e,
+        savesAvg: e.savesMatches > 0 ? e.saves / e.savesMatches : 0,
+      }))
+      .sort((a, b) => {
+        if (b.saves !== a.saves) return b.saves - a.saves;
+        if (b.savesAvg !== a.savesAvg) return b.savesAvg - a.savesAvg;
         return b.matches - a.matches;
       });
 
@@ -552,6 +581,7 @@ router.get("/", async (req, res) => {
     const rankings = {
       goals: goalsRanking,
       assists: assistsRanking,
+      saves: savesRanking,
       ga: gaRanking,
       ratings: ratingsRanking,
       matches: matchesRanking,

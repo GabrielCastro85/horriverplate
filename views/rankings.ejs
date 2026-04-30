@@ -1,4 +1,4 @@
-﻿<%
+<%
   // ===============================
   // Helpers e preparação de dados
   // ===============================
@@ -17,6 +17,7 @@
 
   const goals   = safeArr(rankings && rankings.goals);
   const assists = safeArr(rankings && rankings.assists);
+  const saves   = safeArr(rankings && rankings.saves);
   const ga      = safeArr(rankings && rankings.ga);
   const ratings = safeArr(rankings && rankings.ratings);
   const matches = safeArr(rankings && rankings.matches);
@@ -94,11 +95,11 @@
     if (!top.length) return "";
     const cards = top.map((row, idx) => {
       const meta = medalMeta[idx] || medalMeta[2];
-      const metricHtml = safeArr(metrics).map((metric) => {
+      const metricHtml = safeArr(metrics).map((metric, metricIdx) => {
         const raw = typeof metric.value === "function" ? metric.value(row) : row[metric.key];
         const value = raw === null || raw === undefined || raw === "" ? "0" : raw;
         return `
-          <span class="rk-podium-metric">
+          <span class="rk-podium-metric ${metricIdx === 0 ? "rk-podium-metric--primary" : ""}">
             <span>${escapeHtml(metric.label)}</span>
             <strong>${escapeHtml(value)}</strong>
           </span>
@@ -120,7 +121,7 @@
         </article>
       `;
     }).join("");
-    return `<div class="rk-podium hidden md:grid">${cards}</div>`;
+    return `<div class="rk-podium">${cards}</div>`;
   };
   const topGoal = goals[0] || null;
   const topAssist = assists[0] || null;
@@ -293,6 +294,7 @@
   }
 
   .rk-podium {
+    display: grid;
     grid-template-columns: 1fr 1.12fr 1fr;
     align-items: stretch;
     gap: 0.75rem;
@@ -305,11 +307,11 @@
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-rows: auto auto;
-    gap: 0.65rem 0.75rem;
+    gap: 0.72rem 0.78rem;
     overflow: hidden;
     border-radius: 1rem;
     border: 1px solid rgba(148, 163, 184, 0.18);
-    padding: 0.8rem 0.8rem 0.95rem;
+    padding: 0.86rem;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
       rgba(0, 0, 0, 0.2);
@@ -402,6 +404,7 @@
     color: #f8fafc;
     font-size: 0.82rem;
     line-height: 1.15;
+    overflow-wrap: anywhere;
   }
 
   .rk-podium-body > span:last-child {
@@ -422,21 +425,38 @@
     z-index: 1;
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     gap: 0.45rem;
+    align-self: end;
   }
 
   .rk-podium-metric {
     display: inline-flex;
     min-width: 0;
+    width: 100%;
+    min-height: 3.25rem;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.15rem;
     border-radius: 0.8rem;
     background: rgba(255, 255, 255, 0.05);
-    padding: 0.48rem 0.3rem;
+    padding: 0.56rem 0.45rem;
     text-align: center;
+  }
+
+  .rk-primary-metric,
+  .rk-podium-metric--primary {
+    border: 1px solid rgba(255, 122, 26, 0.3);
+    background:
+      radial-gradient(circle at top, rgba(255, 122, 26, 0.18), transparent 74%),
+      rgba(255, 122, 26, 0.08);
+    color: #ff8a2a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .rk-primary-metric {
+    font-weight: 900;
   }
 
   .rk-podium-metric span {
@@ -450,15 +470,21 @@
 
   .rk-podium-metric strong {
     color: #fff7f2;
-    font-size: 0.86rem;
+    font-size: 1rem;
     font-weight: 900;
     line-height: 1;
   }
 
-  @media (min-width: 768px) {
-    .rk-has-podium tbody tr:nth-child(-n+3) {
-      display: none;
-    }
+  .rk-podium-metric--primary strong {
+    color: #ff9a3d;
+  }
+
+  .rk-ranking-body {
+    min-height: 0;
+  }
+
+  .rk-has-podium tbody tr:nth-child(-n+3) {
+    display: none;
   }
 
   @media (max-width: 480px) {
@@ -486,6 +512,81 @@
   @media (max-width: 640px) {
     #scrollTopBtn {
       display: none;
+    }
+
+    .rk-podium {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .rk-podium-card {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.52rem 0.58rem;
+      border-radius: 0.95rem;
+      padding: 0.72rem;
+    }
+
+    .rk-podium-card--gold {
+      order: 1;
+      min-height: 0;
+    }
+
+    .rk-podium-card--silver,
+    .rk-podium-card--bronze {
+      margin-top: 0;
+      min-height: 0;
+    }
+
+    .rk-podium-card--silver {
+      order: 2;
+    }
+
+    .rk-podium-card--bronze {
+      order: 3;
+    }
+
+    .rk-podium-rank {
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.9rem;
+    }
+
+    .rk-podium-medal {
+      margin-bottom: 0.15rem;
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+    }
+
+    .rk-podium-body strong {
+      font-size: 0.76rem;
+      line-height: 1.12;
+    }
+
+    .rk-podium-body > span:last-child {
+      margin-top: 0.3rem;
+      padding: 0.15rem 0.36rem;
+      font-size: 0.52rem;
+    }
+
+    .rk-podium-metrics {
+      gap: 0.34rem;
+    }
+
+    .rk-podium-metric {
+      min-height: 2.45rem;
+      border-radius: 0.68rem;
+      padding: 0.36rem 0.16rem;
+    }
+
+    .rk-podium-metric span {
+      font-size: 0.46rem;
+      letter-spacing: 0.04em;
+    }
+
+    .rk-podium-metric strong {
+      font-size: 0.76rem;
     }
 
     .rk-anchor {
@@ -638,6 +739,14 @@
       text-align: center;
     }
 
+    .rk-scroll td.rk-primary-metric {
+      border: 1px solid rgba(255, 122, 26, 0.3);
+      background:
+        radial-gradient(circle at top, rgba(255, 122, 26, 0.2), transparent 72%),
+        rgba(255, 122, 26, 0.1);
+      color: #ff9a3d;
+    }
+
     .rk-scroll td:nth-child(n+4)::before {
       color: rgba(178, 184, 194, 0.82);
       font-size: 0.56rem;
@@ -648,56 +757,19 @@
     }
 
     .rk-scroll td:nth-child(4) {
-      grid-column: 2;
-    }
-
-    .rk-scroll td:nth-child(5) {
-      grid-column: 3;
-    }
-
-    .rk-scroll td:nth-child(6) {
-      grid-column: 4;
-    }
-
-    .rk-scroll td:nth-child(7) {
-      grid-column: 2 / 4;
-    }
-
-    .rk-scroll td:nth-child(8) {
-      grid-column: 4;
+      grid-column: 2 / 5;
+      width: 100%;
     }
 
     .rk-scroll table[data-rk-type="goals"] td:nth-child(4)::before { content: "Gols"; }
-    .rk-scroll table[data-rk-type="goals"] td:nth-child(5)::before { content: "Assist."; }
-    .rk-scroll table[data-rk-type="goals"] td:nth-child(6)::before { content: "G/A"; }
-
     .rk-scroll table[data-rk-type="assists"] td:nth-child(4)::before { content: "Assist."; }
-    .rk-scroll table[data-rk-type="assists"] td:nth-child(5)::before { content: "Gols"; }
-    .rk-scroll table[data-rk-type="assists"] td:nth-child(6)::before { content: "G/A"; }
-
-    .rk-scroll table[data-rk-type="ga"] td:nth-child(4)::before { content: "Gols"; }
-    .rk-scroll table[data-rk-type="ga"] td:nth-child(5)::before { content: "Assist."; }
-    .rk-scroll table[data-rk-type="ga"] td:nth-child(6)::before { content: "Total"; }
-
-    .rk-scroll table[data-rk-type="ratings"] td:nth-child(4)::before { content: "Pres."; }
-    .rk-scroll table[data-rk-type="ratings"] td:nth-child(5)::before { content: "Media"; }
-
+    .rk-scroll table[data-rk-type="saves"] td:nth-child(4)::before { content: "Defesas"; }
+    .rk-scroll table[data-rk-type="ga"] td:nth-child(4)::before { content: "Total"; }
+    .rk-scroll table[data-rk-type="ratings"] td:nth-child(4)::before { content: "Media"; }
     .rk-scroll table[data-rk-type="photos"] td:nth-child(4)::before { content: "Fotos"; }
-
     .rk-scroll table[data-rk-type="matches"] td:nth-child(4)::before { content: "Pres."; }
-    .rk-scroll table[data-rk-type="matches"] td:nth-child(5)::before { content: "Gols"; }
-    .rk-scroll table[data-rk-type="matches"] td:nth-child(6)::before { content: "Assist."; }
-
-    .rk-scroll table[data-rk-type="overall"] td:nth-child(4)::before,
-    .rk-scroll table[data-rk-type="last10"] td:nth-child(4)::before { content: "Jogos"; }
-    .rk-scroll table[data-rk-type="overall"] td:nth-child(5)::before,
-    .rk-scroll table[data-rk-type="last10"] td:nth-child(5)::before { content: "Gols"; }
-    .rk-scroll table[data-rk-type="overall"] td:nth-child(6)::before,
-    .rk-scroll table[data-rk-type="last10"] td:nth-child(6)::before { content: "Assist."; }
-    .rk-scroll table[data-rk-type="overall"] td:nth-child(7)::before,
-    .rk-scroll table[data-rk-type="last10"] td:nth-child(7)::before { content: "Nota"; }
-    .rk-scroll table[data-rk-type="overall"] td:nth-child(8)::before { content: "Overall"; }
-    .rk-scroll table[data-rk-type="last10"] td:nth-child(8)::before { content: "Indice"; }
+    .rk-scroll table[data-rk-type="overall"] td:nth-child(4)::before { content: "Overall"; }
+    .rk-scroll table[data-rk-type="last10"] td:nth-child(4)::before { content: "Indice"; }
   }
 </style>
 
@@ -862,7 +934,7 @@
         Overall lider
       </span>
       <strong class="quick-stat__value">
-        <%= topOverall ? topOverall.overallScore || 60 : 60 %>
+        <%= topOverall ? topOverall.overallScore ?? 60 : 60 %>
       </strong>
       <span class="quick-stat__sub">
         <%= leaderName(topOverall) %>
@@ -874,6 +946,7 @@
     <div class="rk-jump-nav__scroller">
       <a href="#ranking-gols" class="is-active">Gols</a>
       <a href="#ranking-assistencias">Assist.</a>
+      <a href="#ranking-defesas">Defesas</a>
       <a href="#ranking-ga">G/A</a>
       <a href="#ranking-medias">Medias</a>
       <a href="#ranking-fotos">Fotos</a>
@@ -960,7 +1033,7 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!goals.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado para este período.
@@ -968,8 +1041,6 @@
             <% } else { %>
               <%- renderRankingPodium(goals, [
                 { label: "Gols", value: (row) => row.goals || 0 },
-                { label: "Assist.", value: (row) => row.assists || 0 },
-                { label: "G/A", value: (row) => (row.goals || 0) + (row.assists || 0) },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="goals">
@@ -978,9 +1049,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Gols</th>
-                      <th class="text-center px-2 py-1">Assist.</th>
-                      <th class="text-center px-2 py-1">Part. G/A</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Gols</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -996,14 +1065,8 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
                           <%= row.goals || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.assists || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= (row.goals || 0) + (row.assists || 0) %>
                         </td>
                       </tr>
                     <% }) %>
@@ -1033,7 +1096,7 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!assists.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado para este período.
@@ -1041,8 +1104,6 @@
             <% } else { %>
               <%- renderRankingPodium(assists, [
                 { label: "Assist.", value: (row) => row.assists || 0 },
-                { label: "Gols", value: (row) => row.goals || 0 },
-                { label: "G/A", value: (row) => (row.goals || 0) + (row.assists || 0) },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="assists">
@@ -1051,9 +1112,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Assist.</th>
-                      <th class="text-center px-2 py-1">Gols</th>
-                      <th class="text-center px-2 py-1">Part. G/A</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Assist.</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1069,14 +1128,8 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
                           <%= row.assists || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.goals || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= (row.goals || 0) + (row.assists || 0) %>
                         </td>
                       </tr>
                     <% }) %>
@@ -1092,6 +1145,68 @@
     <!-- 2ª LINHA: GA + MÉDIA DE NOTAS -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- ================= GOLS + ASSISTÊNCIAS ================= -->
+      <div id="ranking-defesas" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="font-title text-lg text-horriver-light">Paredes</h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                Goleiros com defesas registradas.
+              </p>
+            </div>
+            <span
+              class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
+                     bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
+            >
+              Defesas
+            </span>
+          </div>
+
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
+            <% if (!saves.length) { %>
+              <p class="text-sm text-horriver-gray">
+                Nenhuma defesa registrada para este per&iacute;odo.
+              </p>
+            <% } else { %>
+              <%- renderRankingPodium(saves, [
+                { label: "Defesas", value: (row) => row.saves || 0 },
+              ]) %>
+              <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
+                <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="saves">
+                  <thead class="bg-black/50 sticky top-0 z-10">
+                    <tr>
+                      <th class="text-left px-2 py-1">#</th>
+                      <th class="text-left px-2 py-1">Jogador</th>
+                      <th class="text-left px-2 py-1">Posi&ccedil;&atilde;o</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Defesas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% saves.forEach((row, idx) => { %>
+                      <tr class="border-t border-horriver-border/40 <%= topRowClass(idx) %>">
+                        <td class="px-2 py-1"><%= idx + 1 %></td>
+                        <td class="px-2 py-1">
+                          <%= row.player.name %>
+                          <% if (row.player.nickname) { %>
+                            (<%= row.player.nickname %>)
+                          <% } %>
+                        </td>
+                        <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                          <%= row.player.position %>
+                        </td>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.saves || 0 %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
       <div id="ranking-ga" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
@@ -1111,7 +1226,7 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!ga.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado para este período.
@@ -1119,8 +1234,6 @@
             <% } else { %>
               <%- renderRankingPodium(ga, [
                 { label: "Total", value: (row) => (row.goals || 0) + (row.assists || 0) },
-                { label: "Gols", value: (row) => row.goals || 0 },
-                { label: "Assist.", value: (row) => row.assists || 0 },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="ga">
@@ -1129,9 +1242,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Gols</th>
-                      <th class="text-center px-2 py-1">Assist.</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Total</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1147,13 +1258,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.goals || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.assists || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
                           <%= (row.goals || 0) + (row.assists || 0) %>
                         </td>
                       </tr>
@@ -1186,7 +1291,7 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!ratings.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado para este período.
@@ -1194,8 +1299,6 @@
             <% } else { %>
               <%- renderRankingPodium(ratings, [
                 { label: "Media", value: (row) => fmtRating(row.rating) },
-                { label: "Pres.", value: (row) => row.matches || 0 },
-                { label: "G/A", value: (row) => (row.goals || 0) + (row.assists || 0) },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="ratings">
@@ -1204,8 +1307,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Presenças</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Média</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Média</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1221,10 +1323,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.matches || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
                           <%= fmtRating(row.rating) %>
                         </td>
                       </tr>
@@ -1260,7 +1359,7 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!photos.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado para este período.
@@ -1268,8 +1367,6 @@
             <% } else { %>
               <%- renderRankingPodium(photos, [
                 { label: "Fotos", value: (row) => row.photos || 0 },
-                { label: "Gols", value: (row) => row.goals || 0 },
-                { label: "Assist.", value: (row) => row.assists || 0 },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="photos">
@@ -1278,7 +1375,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Fotos</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Fotos</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1294,7 +1391,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
                           <%= row.photos || 0 %>
                         </td>
                       </tr>
@@ -1327,7 +1424,7 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!matches.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado para este período.
@@ -1335,8 +1432,6 @@
             <% } else { %>
               <%- renderRankingPodium(matches, [
                 { label: "Pres.", value: (row) => row.matches || 0 },
-                { label: "Gols", value: (row) => row.goals || 0 },
-                { label: "Assist.", value: (row) => row.assists || 0 },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="matches">
@@ -1345,9 +1440,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Presenças</th>
-                      <th class="text-center px-2 py-1">Gols</th>
-                      <th class="text-center px-2 py-1">Assist.</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Presenças</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1363,14 +1456,8 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
                           <%= row.matches || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.goals || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.assists || 0 %>
                         </td>
                       </tr>
                     <% }) %>
@@ -1412,16 +1499,14 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!overall.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado para este período.
               </p>
             <% } else { %>
               <%- renderRankingPodium(overall, [
-                { label: "Overall", value: (row) => row.overallScore || 60 },
-                { label: "Nota", value: (row) => fmtRating(row.rating) },
-                { label: "Jogos", value: (row) => row.matches || 0 },
+                { label: "Overall", value: (row) => row.overallScore ?? 60 },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="overall">
@@ -1430,11 +1515,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Presenças</th>
-                      <th class="text-center px-2 py-1">Gols</th>
-                      <th class="text-center px-2 py-1">Assist.</th>
-                      <th class="text-center px-2 py-1">Nota</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Overall</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Overall</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1450,20 +1531,8 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.matches || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.goals || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.assists || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= fmtRating(row.rating) %>
-                        </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
-                          <%= row.overallScore || 60 %>
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
+                          <%= row.overallScore ?? 60 %>
                         </td>
                       </tr>
                     <% }) %>
@@ -1496,7 +1565,7 @@
             </span>
           </div>
 
-          <div class="mt-4 flex-1 overflow-hidden">
+          <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!last10.length) { %>
               <p class="text-sm text-horriver-gray">
                 Nenhum dado disponível para as últimas 10 peladas.
@@ -1504,8 +1573,6 @@
             <% } else { %>
               <%- renderRankingPodium(last10, [
                 { label: "Indice", value: (row) => row.last10Score ? row.last10Score.toFixed(2).replace('.', ',') : '0,00' },
-                { label: "Nota", value: (row) => fmtRating3(row.rating) },
-                { label: "Jogos", value: (row) => row.matches || 0 },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="last10">
@@ -1514,11 +1581,7 @@
                       <th class="text-left px-2 py-1">#</th>
                       <th class="text-left px-2 py-1">Jogador</th>
                       <th class="text-left px-2 py-1">Posição</th>
-                      <th class="text-center px-2 py-1">Jogos</th>
-                      <th class="text-center px-2 py-1">Gols</th>
-                      <th class="text-center px-2 py-1">Assist.</th>
-                      <th class="text-center px-2 py-1">Nota</th>
-                      <th class="text-center px-2 py-1 text-horriver-orange">Índice 10J</th>
+                      <th class="text-center px-2 py-1 text-horriver-orange rk-primary-metric">Índice 10J</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1534,19 +1597,7 @@
                         <td class="px-2 py-1 text-horriver-orange text-[10px]">
                           <%= row.player.position %>
                         </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.matches || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.goals || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= row.assists || 0 %>
-                        </td>
-                        <td class="px-2 py-1 text-center">
-                          <%= fmtRating3(row.rating) %>
-                        </td>
-                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange">
+                        <td class="px-2 py-1 text-center font-semibold text-horriver-orange rk-primary-metric">
                           <%= row.last10Score ? row.last10Score.toFixed(2).replace('.', ',') : '0,00' %>
                         </td>
                       </tr>
@@ -1592,7 +1643,7 @@
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
                 <th class="text-left px-2 py-1">Posição</th>
-                <th class="text-center px-2 py-1">Vezes</th>
+                <th class="text-center px-2 py-1 rk-primary-metric">Vezes</th>
               </tr>
             </thead>
             <tbody>
@@ -1608,7 +1659,7 @@
                   <td class="px-2 py-1 text-horriver-orange text-[10px]">
                     <%= row.player.position %>
                   </td>
-                  <td class="px-2 py-1 text-center font-semibold">
+                  <td class="px-2 py-1 text-center font-semibold rk-primary-metric">
                     <%= row.count || 0 %>
                   </td>
                 </tr>
@@ -1642,7 +1693,7 @@
                 <th class="text-left px-2 py-1">#</th>
                 <th class="text-left px-2 py-1">Jogador</th>
                 <th class="text-left px-2 py-1">Posição</th>
-                <th class="text-center px-2 py-1">Vezes</th>
+                <th class="text-center px-2 py-1 rk-primary-metric">Vezes</th>
               </tr>
             </thead>
             <tbody>
@@ -1658,7 +1709,7 @@
                   <td class="px-2 py-1 text-horriver-orange text-[10px]">
                     <%= row.player.position %>
                   </td>
-                  <td class="px-2 py-1 text-center font-semibold">
+                  <td class="px-2 py-1 text-center font-semibold rk-primary-metric">
                     <%= row.count || 0 %>
                   </td>
                 </tr>
@@ -1760,3 +1811,4 @@
     window.addEventListener("resize", updateFromScroll);
   })();
 </script>
+

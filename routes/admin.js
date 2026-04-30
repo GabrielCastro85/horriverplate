@@ -1245,6 +1245,7 @@ async function recomputeTotalsForPlayers(playerIds) {
 
     let goals = 0;
     let assists = 0;
+    let saves = 0;
     let matches = 0;
     let photos = 0;
     let ratingSum = 0;
@@ -1255,6 +1256,7 @@ async function recomputeTotalsForPlayers(playerIds) {
 
       goals += s.goals || 0;
       assists += s.assists || 0;
+      saves += s.saves || 0;
       matches++;
       if (s.appearedInPhoto) photos++;
       if (s.rating != null) {
@@ -1273,6 +1275,7 @@ async function recomputeTotalsForPlayers(playerIds) {
       data: {
         totalGoals: goals,
         totalAssists: assists,
+        totalSaves: saves,
         totalMatches: matches,
         totalPhotos: photos,
         totalRating: avgRating,
@@ -3055,13 +3058,21 @@ router.post("/matches/:id/presence", requireAdmin, async (req, res) => {
 // ==============================
 // ?? Salvar estatísticas em massa da pelada
 // ==============================
-router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
-  try {
-    const matchId = Number(req.params.id);
-    if (Number.isNaN(matchId)) {
-      return res.redirect("/admin");
-    }
+function getWeekStart(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = (day + 6) % 7;
+  d.setDate(d.getDate() - diff);
+  return d;
+}
 
+function isGoalkeeperPosition(position) {
+  const value = String(position || "").toLowerCase();
+  return value.includes("gol") || value.includes("goleir") || value.includes("goal");
+}
+
+async function saveMatchStatsFromBody(matchId, body) {
     const [players, existingStats, match] = await Promise.all([
       prisma.player.findMany(),
       prisma.playerStat.findMany({
@@ -3074,7 +3085,7 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
     ]);
 
     if (!match) {
-      return res.redirect("/admin");
+      return { error: "matchNotFound" };
     }
 
     const statsByPlayerId = new Map();
@@ -3088,15 +3099,22 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
       const playerId = player.id;
       touchedPlayerIds.add(playerId);
 
-      const present = !!req.body[`present_${playerId}`];
+      const present = !!body[`present_${playerId}`];
 
-      const goalsRaw = req.body[`goals_${playerId}`];
-      const assistsRaw = req.body[`assists_${playerId}`];
-      const ratingRaw = req.body[`rating_${playerId}`];
-      const photo = !!req.body[`photo_${playerId}`];
+      const goalsRaw = body[`goals_${playerId}`];
+      const assistsRaw = body[`assists_${playerId}`];
+      const savesRaw = body[`saves_${playerId}`];
+      const hasSavesField = Object.prototype.hasOwnProperty.call(body, `saves_${playerId}`);
+      const hasRatingField = Object.prototype.hasOwnProperty.call(body, `rating_${playerId}`);
+      const ratingRaw = hasRatingField ? body[`rating_${playerId}`] : "";
+      const photo = !!body[`photo_${playerId}`];
 
       let goals = goalsRaw ? parseInt(goalsRaw, 10) || 0 : 0;
       let assists = assistsRaw ? parseInt(assistsRaw, 10) || 0 : 0;
+      let saves = null;
+      if (isGoalkeeperPosition(player.position) && hasSavesField && String(savesRaw ?? "").trim() !== "") {
+        saves = Math.max(0, parseInt(savesRaw, 10) || 0);
+      }
 
       let rating = null;
       if (ratingRaw && ratingRaw.trim() !== "") {
@@ -3112,12 +3130,15 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
       if (!present) {
         goals = 0;
         assists = 0;
+        saves = null;
         rating = null;
         appearedInPhoto = false;
+      } else if (!hasRatingField) {
+        rating = statsByPlayerId.get(playerId)?.rating ?? null;
       }
 
       const hasAnyData =
-        present || goals > 0 || assists > 0 || rating !== null || appearedInPhoto;
+        present || goals > 0 || assists > 0 || saves !== null || rating !== null || appearedInPhoto;
 
       const existing = statsByPlayerId.get(playerId);
 
@@ -3137,6 +3158,7 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
             present,
             goals,
             assists,
+            saves,
             rating,
             appearedInPhoto,
           },
@@ -3149,6 +3171,7 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
             present,
             goals,
             assists,
+            saves,
             rating,
             appearedInPhoto,
           },
@@ -3182,17 +3205,32 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
       });
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, "winnerColor")) {
-      const winnerColor = (req.body.winnerColor || "").trim();
+    if (Object.prototype.hasOwnProperty.call(body, "winnerColor")) {
+      const winnerColor = (body.winnerColor || "").trim();
       await prisma.match.update({
         where: { id: matchId },
         data: { winnerColor: winnerColor || null },
       });
     }
 
+    return { match, players, touchedPlayerIds: Array.from(touchedPlayerIds) };
+}
+
+router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
+  try {
+    const matchId = Number(req.params.id);
+    if (Number.isNaN(matchId)) {
+      return res.redirect("/admin");
+    }
+
+    const result = await saveMatchStatsFromBody(matchId, req.body);
+    if (result.error) {
+      return res.redirect("/admin");
+    }
+
     res.redirect(`/admin/matches/${matchId}`);
   } catch (err) {
-    console.error("Erro ao salvar estatísticas da pelada:", err);
+    console.error("Erro ao salvar estatisticas da pelada:", err);
     res.redirect(`/admin/matches/${req.params.id}`);
   }
 });
@@ -3650,7 +3688,9 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
       if (!result.error && result.scores && typeof result.scores.forEach === 'function') {
         const finalMap = new Map();
         result.scores.forEach((score) => {
-          finalMap.set(score.player.id, score.finalRating);
+          if (score.votesCount > 0) {
+            finalMap.set(score.player.id, score.finalRating);
+          }
         });
         displayStats = displayStats.map((stat) => {
           const finalRating = finalMap.has(stat.playerId)
@@ -3752,6 +3792,48 @@ router.post("/matches/:id/close-votes", requireAdmin, async (req, res) => {
       data: { expiresAt: new Date() },
     });
 
+    const result = await computeMatchRatingsAndAwards(matchId);
+    if (
+      !result.error &&
+      result.publicVotes &&
+      result.publicVotes.length &&
+      result.awards &&
+      result.awards.craque &&
+      result.awards.craque.player
+    ) {
+      const match = await prisma.match.findUnique({
+        where: { id: matchId },
+        select: { id: true, playedAt: true },
+      });
+      if (match) {
+        const weekStart = getWeekStart(match.playedAt);
+        const existing = await prisma.weeklyAward.findFirst({ where: { weekStart } });
+        const bestPlayerId = result.awards.craque.player.id;
+        if (existing) {
+          await prisma.weeklyAward.update({
+            where: { id: existing.id },
+            data: {
+              bestPlayer: { connect: { id: bestPlayerId } },
+              winningMatch: { connect: { id: matchId } },
+            },
+          });
+        } else {
+          await prisma.weeklyAward.create({
+            data: {
+              weekStart,
+              bestPlayer: { connect: { id: bestPlayerId } },
+              winningMatch: { connect: { id: matchId } },
+            },
+          });
+        }
+        deleteCache("home");
+      }
+    }
+
+    const redirectTo = typeof req.body?.redirectTo === "string" ? req.body.redirectTo : "";
+    if (redirectTo.startsWith(`/admin/matches/${matchId}/awards`)) {
+      return res.redirect(redirectTo);
+    }
     return res.redirect(`/admin/matches/${matchId}?votesClosed=true`);
   } catch (err) {
     console.error("Erro ao encerrar votação:", err);
@@ -4434,6 +4516,15 @@ router.get("/matches/:id/awards-card", requireAdmin, async (req, res) => {
     const match = await prisma.match.findUnique({ where: { id: matchId } });
     if (!match) return res.redirect("/admin");
 
+    const voteSession = await prisma.voteSession.findFirst({
+      where: { matchId },
+      orderBy: { createdAt: "desc" },
+    });
+    const voteSessionClosed = !!(
+      !voteSession ||
+      (voteSession.expiresAt && new Date(voteSession.expiresAt).getTime() <= Date.now())
+    );
+
     const result = await computeMatchRatingsAndAwards(matchId);
     if (result.error) return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
 
@@ -4447,6 +4538,9 @@ router.get("/matches/:id/awards-card", requireAdmin, async (req, res) => {
       match,
       awards: result.awards,
       scores: scoresList,
+      voteSession,
+      voteSessionClosed,
+      canDownloadAwardsImage: voteSessionClosed,
     });
   } catch (err) {
     console.error("Erro ao exibir card de prêmios:", err);
@@ -4465,6 +4559,11 @@ router.get("/matches/:id/awards", requireAdmin, async (req, res) => {
     const match = await prisma.match.findUnique({ where: { id: matchId } });
     if (!match) return res.redirect("/admin");
 
+    const voteSession = await prisma.voteSession.findFirst({
+      where: { matchId },
+      orderBy: { createdAt: "desc" },
+    });
+    const voteSessionClosed = !voteSession || !!(voteSession.expiresAt && voteSession.expiresAt <= new Date());
     const result = await computeMatchRatingsAndAwards(matchId);
     if (result.error) return res.redirect(`/admin/matches/${matchId}?error=noVotes`);
 
@@ -4478,6 +4577,9 @@ router.get("/matches/:id/awards", requireAdmin, async (req, res) => {
       match,
       awards: result.awards,
       scores: scoresList,
+      voteSession,
+      voteSessionClosed,
+      canDownloadAwardsImage: voteSessionClosed,
     });
   } catch (err) {
     console.error("Erro ao exibir resultados/prêmios:", err);
@@ -4489,6 +4591,15 @@ router.get("/matches/:id/awards/export", requireAdmin, async (req, res) => {
   try {
     const matchId = Number(req.params.id);
     if (Number.isNaN(matchId)) return res.redirect("/admin");
+
+    const voteSession = await prisma.voteSession.findFirst({
+      where: { matchId },
+      orderBy: { createdAt: "desc" },
+    });
+    const voteSessionOpen = !!(voteSession && (!voteSession.expiresAt || voteSession.expiresAt > new Date()));
+    if (voteSessionOpen) {
+      return res.redirect(`/admin/matches/${matchId}/awards#awards-download-flow`);
+    }
 
     const match = await prisma.match.findUnique({
       where: { id: matchId },
@@ -4518,6 +4629,57 @@ router.get("/matches/:id/awards/export", requireAdmin, async (req, res) => {
     return res.status(500).send("Nao foi possivel gerar a imagem agora.");
   }
 });
+
+router.post(
+  "/matches/:id/stats/wizard",
+  requireAdmin,
+  uploadWeeklyTeamPhoto.single("teamPhoto"),
+  async (req, res) => {
+    try {
+      const matchId = Number(req.params.id);
+      if (Number.isNaN(matchId)) {
+        return res.redirect("/admin");
+      }
+
+      const result = await saveMatchStatsFromBody(matchId, req.body);
+      if (result.error || !result.match) {
+        return res.redirect("/admin");
+      }
+
+      const skipWeeklyPhoto = req.body.skipWeeklyPhoto === "1";
+      if (!skipWeeklyPhoto) {
+        const weekStart = getWeekStart(result.match.playedAt);
+        const photoUrl = req.file ? `/uploads/weekly/${req.file.filename}` : null;
+        const existing = await prisma.weeklyAward.findFirst({ where: { weekStart } });
+
+        if (existing) {
+          const updateData = {
+            winningMatch: { connect: { id: matchId } },
+          };
+          if (photoUrl) updateData.teamPhotoUrl = photoUrl;
+          await prisma.weeklyAward.update({
+            where: { id: existing.id },
+            data: updateData,
+          });
+        } else {
+          await prisma.weeklyAward.create({
+            data: {
+              weekStart,
+              teamPhotoUrl: photoUrl,
+              winningMatch: { connect: { id: matchId } },
+            },
+          });
+        }
+        deleteCache("home");
+      }
+
+      return res.redirect(`/admin/matches/${matchId}?statsWizardSaved=true#votacao`);
+    } catch (err) {
+      console.error("Erro ao salvar estatisticas pelo assistente:", err);
+      return res.redirect(`/admin/matches/${req.params.id}?error=statsWizard`);
+    }
+  }
+);
 
 // ==============================
 // ?? Rebuild de conquistas para todos os jogadores

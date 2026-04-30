@@ -11,7 +11,8 @@
   const showRatings = typeof ratingsReleased !== "undefined"
     ? !!ratingsReleased
     : match && match.votingStatus === "CLOSED";
-  const statsColspan = showRatings ? 8 : 7;
+  const hasSaves = safeStats.some((s) => s.saves != null);
+  const statsColspan = (showRatings ? 8 : 7) + (hasSaves ? 1 : 0);
   const totalGoals = safeStats.reduce((sum, s) => sum + (Number(s.goals) || 0), 0);
   const totalAssists = safeStats.reduce((sum, s) => sum + (Number(s.assists) || 0), 0);
   const totalPhotos = safeStats.reduce((sum, s) => sum + (s.appearedInPhoto ? 1 : 0), 0);
@@ -618,6 +619,9 @@
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="present">Presente</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="goals">Gols</th>
                 <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="assists">Assist.</th>
+                <% if (hasSaves) { %>
+                  <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="saves">Defesas</th>
+                <% } %>
                 <% if (showRatings) { %>
                   <th class="px-3 py-2 text-center cursor-pointer select-none" data-sort="rating">Nota</th>
                 <% } %>
@@ -634,7 +638,7 @@
                 </tr>
               <% } else { %>
                 <% safeStats.forEach((s, idx) => { %>
-                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors" data-name="<%= (s.player.name || '').toLowerCase() %>" data-position="<%= (s.player.position || '').toLowerCase() %>" data-present="<%= s.present ? 1 : 0 %>" data-goals="<%= s.goals || 0 %>" data-assists="<%= s.assists || 0 %>" <%- showRatings ? `data-rating="${s.rating != null ? s.rating : 0}"` : "" %> data-photo="<%= s.appearedInPhoto ? 1 : 0 %>">
+                  <tr class="border-t border-horriver-red/30 hover:bg-white/5 transition-colors" data-name="<%= (s.player.name || '').toLowerCase() %>" data-position="<%= (s.player.position || '').toLowerCase() %>" data-present="<%= s.present ? 1 : 0 %>" data-goals="<%= s.goals || 0 %>" data-assists="<%= s.assists || 0 %>" data-saves="<%= s.saves != null ? s.saves : -1 %>" <%- showRatings ? `data-rating="${s.rating != null ? s.rating : 0}"` : "" %> data-photo="<%= s.appearedInPhoto ? 1 : 0 %>">
 
                     <!-- # -->
                     <td class="px-3 py-2 text-[11px] text-horriver-gray sticky left-0 z-10 bg-black/90" data-label="#"><%= idx + 1 %></td>
@@ -674,6 +678,12 @@
                     <td class="px-3 py-2 text-center font-semibold text-horriver-light" data-label="Assist.">
                       <%= s.assists || 0 %>
                     </td>
+
+                    <% if (hasSaves) { %>
+                      <td class="px-3 py-2 text-center font-semibold <%= s.saves != null ? 'text-horriver-light' : 'text-horriver-gray/70' %>" data-label="Defesas">
+                        <%= s.saves != null ? s.saves : "—" %>
+                      </td>
+                    <% } %>
 
                     <% if (showRatings) { %>
                       <!-- Nota -->
@@ -731,6 +741,7 @@
         case 'present':
         case 'goals':
         case 'assists':
+        case 'saves':
         case 'rating':
         case 'photo':
           return Number(row.dataset[key] || 0);

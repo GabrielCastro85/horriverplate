@@ -5,6 +5,84 @@ const router = express.Router();
 const prisma = require("../utils/db");
 const { detectSuspiciousVotePattern } = require("../helpers/weeklyVoteValidation.helper");
 
+const TEAM_COLOR_THEMES = {
+  Amarelo: { dot: "#facc15", soft: "rgba(250, 204, 21, 0.14)", border: "rgba(250, 204, 21, 0.55)" },
+  Azul: { dot: "#38bdf8", soft: "rgba(56, 189, 248, 0.14)", border: "rgba(56, 189, 248, 0.55)" },
+  Preto: { dot: "#e5e7eb", soft: "rgba(229, 231, 235, 0.10)", border: "rgba(229, 231, 235, 0.34)" },
+  Vermelho: { dot: "#ef4444", soft: "rgba(239, 68, 68, 0.14)", border: "rgba(239, 68, 68, 0.48)" },
+  Branco: { dot: "#f8fafc", soft: "rgba(248, 250, 252, 0.11)", border: "rgba(248, 250, 252, 0.40)" },
+  Laranja: { dot: "#ff7a1a", soft: "rgba(255, 122, 26, 0.14)", border: "rgba(255, 122, 26, 0.50)" },
+};
+
+function normalizeTeamColorName(value, fallbackIndex = 0) {
+  const raw = String(value || "").toLowerCase();
+  if (raw.includes("amare")) return "Amarelo";
+  if (raw.includes("azul")) return "Azul";
+  if (raw.includes("pret")) return "Preto";
+  if (raw.includes("vermel")) return "Vermelho";
+  if (raw.includes("branc")) return "Branco";
+  if (raw.includes("laranja") || raw.includes("goleir")) return "Laranja";
+  return ["Amarelo", "Azul", "Preto", "Vermelho"][fallbackIndex % 4];
+}
+
+function positionRank(position = "") {
+  const value = String(position).toLowerCase();
+  if (value.includes("gol")) return 0;
+  if (value.includes("zag")) return 1;
+  if (value.includes("vol")) return 2;
+  if (value.includes("mei")) return 3;
+  if (value.includes("ata")) return 4;
+  return 5;
+}
+
+async function decoratePlayersWithLineup(matchId, players) {
+  const latestLineup = await prisma.lineupDraw.findFirst({
+    where: { matchId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const playerById = new Map(players.map((player) => [String(player.id), player]));
+  const ordered = [];
+  const included = new Set();
+
+  if (latestLineup?.result && Array.isArray(latestLineup.result.teams)) {
+    latestLineup.result.teams.forEach((team, teamIndex) => {
+      const colorName = normalizeTeamColorName(team?.colorName || team?.name, teamIndex);
+      const theme = TEAM_COLOR_THEMES[colorName] || TEAM_COLOR_THEMES.Laranja;
+      const teamName = team?.name || `Time ${colorName}`;
+      const teamPlayers = (Array.isArray(team?.players) ? team.players : [])
+        .map((entry) => playerById.get(String(entry?.id)))
+        .filter(Boolean)
+        .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR"));
+
+      teamPlayers.forEach((player) => {
+        included.add(String(player.id));
+        ordered.push({
+          ...player,
+          teamName,
+          teamColorName: colorName,
+          teamTheme: theme,
+          teamOrder: teamIndex,
+        });
+      });
+    });
+  }
+
+  const fallbackTheme = TEAM_COLOR_THEMES.Laranja;
+  const extras = players
+    .filter((player) => !included.has(String(player.id)))
+    .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR"))
+    .map((player) => ({
+      ...player,
+      teamName: "Goleiros",
+      teamColorName: "Laranja",
+      teamTheme: fallbackTheme,
+      teamOrder: 999,
+    }));
+
+  return ordered.length || extras.length ? [...ordered, ...extras] : players;
+}
+
 async function loadContext(tokenValue) {
   if (!tokenValue) return { error: "Token inválido." };
 
@@ -41,6 +119,7 @@ async function loadContext(tokenValue) {
       playerId: true,
       goals: true,
       assists: true,
+      saves: true,
       appearedInPhoto: true,
       player: {
         select: {
@@ -70,13 +149,15 @@ async function loadContext(tokenValue) {
       photoUrl: s.player.photoUrl || null,
       goals: s.goals || 0,
       assists: s.assists || 0,
+      saves: s.saves,
       rating: s.rating,
       appearedInPhoto: !!s.appearedInPhoto,
     };
   });
-  const players = token.player
+  const filteredPlayers = token.player
     ? playersRaw.filter((p) => p.id !== token.player.id)
     : playersRaw;
+  const players = await decoratePlayersWithLineup(token.session.matchId, filteredPlayers);
   if (!players.length) {
     return { error: "Nenhum jogador disponivel para votar." };
   }

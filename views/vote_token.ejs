@@ -56,10 +56,10 @@
       max-width: 640px;
       box-sizing: border-box;
       background:
-        radial-gradient(circle at top left, rgba(255, 122, 26, 0.11), transparent 28%),
+        radial-gradient(circle at top left, var(--vote-team-soft, rgba(255, 122, 26, 0.11)), transparent 30%),
         linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
         rgba(255,255,255,0.035);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid var(--vote-team-border, rgba(255,255,255,0.08));
       border-radius: 18px;
       padding: 16px;
       opacity: 0;
@@ -94,7 +94,7 @@
       z-index: 3;
       pointer-events: auto;
       clip-path: inset(0 round 18px);
-      border-color: rgba(255, 122, 26, 0.42);
+      border-color: var(--vote-team-border, rgba(255, 122, 26, 0.42));
       box-shadow:
         0 18px 36px rgba(0, 0, 0, 0.22),
         0 0 0 1px rgba(255, 122, 26, 0.05);
@@ -137,7 +137,29 @@
     .vote-card > .flex:first-child img {
       box-shadow:
         0 12px 24px rgba(0, 0, 0, 0.28),
-        0 0 0 4px rgba(255, 122, 26, 0.05);
+        0 0 0 4px var(--vote-team-soft, rgba(255, 122, 26, 0.05));
+    }
+    .vote-team-pill {
+      align-items: center;
+      border: 1px solid var(--vote-team-border, rgba(255, 122, 26, 0.35));
+      border-radius: 999px;
+      color: #f8fafc;
+      display: inline-flex;
+      font-size: 0.68rem;
+      font-weight: 800;
+      gap: 0.42rem;
+      letter-spacing: 0.08em;
+      padding: 0.28rem 0.62rem;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .vote-team-pill::before {
+      background: var(--vote-team-dot, #ff7a1a);
+      border-radius: 999px;
+      content: "";
+      height: 0.55rem;
+      width: 0.55rem;
+      box-shadow: 0 0 0 3px var(--vote-team-soft, rgba(255, 122, 26, 0.14));
     }
     .vote-card > .flex:first-child .font-semibold {
       color: #fff7f2;
@@ -375,15 +397,27 @@
 
       <div class="vote-carousel">
         <div class="vote-carousel__viewport" id="vote-carousel-viewport">
-        <% players.forEach((p, idx) => { %>
-          <div class="vote-card" data-vote-card data-index="<%= idx %>">
+        <% players.forEach((p, idx) => {
+             const theme = p.teamTheme || {};
+        %>
+          <div
+            class="vote-card"
+            data-vote-card
+            data-index="<%= idx %>"
+            data-team-name="<%= p.teamName || '' %>"
+            style="--vote-team-dot:<%= theme.dot || '#ff7a1a' %>; --vote-team-soft:<%= theme.soft || 'rgba(255, 122, 26, 0.14)' %>; --vote-team-border:<%= theme.border || 'rgba(255, 122, 26, 0.42)' %>;"
+          >
             <div class="flex items-center gap-4">
               <img
                 src="<%= p.photoUrl || '/img/logo-64x64.svg' %>"
                 alt="<%= p.name %>"
-                class="w-16 h-16 rounded-full object-cover border border-horriver-orange/60 bg-horriver-dark"
+                class="w-16 h-16 rounded-full object-cover bg-horriver-dark"
+                style="border:1px solid var(--vote-team-border);"
               />
               <div class="min-w-0">
+                <% if (p.teamName) { %>
+                  <span class="vote-team-pill"><%= p.teamName %></span>
+                <% } %>
                 <p class="text-horriver-light font-semibold text-lg truncate"><%= p.name %></p>
                 <% if (p.nickname) { %>
                   <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
@@ -394,7 +428,8 @@
               </div>
             </div>
 
-            <div class="mt-4 grid grid-cols-3 gap-2 text-[11px] text-horriver-gray">
+            <% const isGoalkeeperCard = String(p.position || p.positionLabel || "").toLowerCase().includes("gol"); %>
+            <div class="mt-4 grid <%= isGoalkeeperCard ? 'grid-cols-4' : 'grid-cols-3' %> gap-2 text-[11px] text-horriver-gray">
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
                 <p class="text-horriver-orange font-semibold"><%= p.goals || 0 %></p>
                 <p>Gols</p>
@@ -403,8 +438,14 @@
                 <p class="text-horriver-orange font-semibold"><%= p.assists || 0 %></p>
                 <p>Assist.</p>
               </div>
+              <% if (isGoalkeeperCard) { %>
+                <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                  <p class="text-horriver-orange font-semibold"><%= p.saves != null ? p.saves : "-" %></p>
+                  <p>Defesas</p>
+                </div>
+              <% } %>
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= p.appearedInPhoto ? "SIM" : "N&Atilde;O" %></p>
+                <p class="text-horriver-orange font-semibold"><%= p.appearedInPhoto ? "Sim" : "Nao" %></p>
                 <p>Foto</p>
               </div>
             </div>
@@ -492,7 +533,8 @@
           input.tabIndex = offset === 0 ? 0 : -1;
         });
       });
-      progress.textContent = `Jogador ${idx + 1} de ${cards.length}`;
+      const teamName = cards[idx]?.dataset?.teamName;
+      progress.textContent = teamName ? `${teamName} - Jogador ${idx + 1} de ${cards.length}` : `Jogador ${idx + 1} de ${cards.length}`;
       prevBtn.disabled = idx === 0;
       nextBtn.classList.toggle("hidden", idx === cards.length - 1);
       submitBtn.classList.toggle("hidden", idx !== cards.length - 1);

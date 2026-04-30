@@ -60,6 +60,7 @@ async function computeMatchRatingsAndAwards(matchId) {
       statId: stat.id,
       goals: stat.goals || 0,
       assists: stat.assists || 0,
+      saves: stat.saves,
       appearedInPhoto: !!stat.appearedInPhoto,
       votesCount: 0,
       voteRating: 0,
@@ -140,6 +141,11 @@ async function computeMatchRatingsAndAwards(matchId) {
   // Stats rating (0..10) normalized by position
   const maxGoals = Math.max(0, ...playerStats.map((s) => s.goals || 0));
   const maxAssists = Math.max(0, ...playerStats.map((s) => s.assists || 0));
+  const recordedSaves = playerStats
+    .filter((s) => normalizePosition(s.player?.position) === "GOL" && s.saves != null)
+    .map((s) => Math.max(0, Number(s.saves) || 0));
+  const maxSaves = Math.max(0, ...recordedSaves);
+  const savesConfidence = maxSaves > 0 ? Math.min(1, Math.log1p(maxSaves) / Math.log1p(12)) : 0;
 
   playerStats.forEach((stat) => {
     const entry = scores.get(stat.playerId);
@@ -151,9 +157,15 @@ async function computeMatchRatingsAndAwards(matchId) {
     let photoBonus = stat.appearedInPhoto ? 0.1 : 0;
 
     if (posGroup === "GOL") {
-      gW = 0.2;
-      aW = 0.3;
-      photoBonus = stat.appearedInPhoto ? 0.5 : 0;
+      if (stat.saves != null && maxSaves > 0) {
+        gW = 0.15;
+        aW = 0.15;
+        photoBonus = stat.appearedInPhoto ? 0.25 : 0;
+      } else {
+        gW = 0.2;
+        aW = 0.3;
+        photoBonus = stat.appearedInPhoto ? 0.5 : 0;
+      }
     } else if (posGroup === "ZAG") {
       gW = 0.3;
       aW = 0.4;
@@ -166,8 +178,15 @@ async function computeMatchRatingsAndAwards(matchId) {
 
     const goalsRel = maxGoals > 0 ? (stat.goals || 0) / maxGoals : 0;
     const assistsRel = maxAssists > 0 ? (stat.assists || 0) / maxAssists : 0;
+    const savesRel =
+      posGroup === "GOL" && stat.saves != null && maxSaves > 0
+        ? Math.log1p(Math.max(0, Number(stat.saves) || 0)) / Math.log1p(maxSaves)
+        : 0;
 
     let score0to1 = goalsRel * gW + assistsRel * aW + photoBonus;
+    if (posGroup === "GOL" && stat.saves != null && maxSaves > 0) {
+      score0to1 += savesRel * 0.45 * savesConfidence;
+    }
     if (score0to1 > 1) score0to1 = 1;
     const statsRating = Number((score0to1 * 10).toFixed(2));
 

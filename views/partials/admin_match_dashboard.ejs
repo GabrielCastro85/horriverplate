@@ -4,6 +4,76 @@
   );
   const playersForStats = players.filter((player) => presentPlayerIdSet.has(player.id));
   const hasSelectedPlayers = playersForStats.length > 0;
+  const statByPlayerId = new Map((stats || []).map((stat) => [stat.playerId, stat]));
+  const colorThemeByName = {
+    Amarelo: { dot: "#facc15", soft: "rgba(250,204,21,0.12)", border: "rgba(250,204,21,0.42)" },
+    Azul: { dot: "#3b82f6", soft: "rgba(59,130,246,0.13)", border: "rgba(59,130,246,0.42)" },
+    Preto: { dot: "#e5e7eb", soft: "rgba(229,231,235,0.08)", border: "rgba(229,231,235,0.28)" },
+    Vermelho: { dot: "#ef4444", soft: "rgba(239,68,68,0.13)", border: "rgba(239,68,68,0.42)" },
+    Branco: { dot: "#f8fafc", soft: "rgba(248,250,252,0.08)", border: "rgba(248,250,252,0.28)" },
+    Laranja: { dot: "#ff7a1a", soft: "rgba(255,122,26,0.14)", border: "rgba(255,122,26,0.48)" },
+  };
+  const normalizeTeamColor = (team, idx = 0) => {
+    const raw = String(team?.colorName || team?.name || "").toLowerCase();
+    if (raw.includes("amarelo")) return "Amarelo";
+    if (raw.includes("azul")) return "Azul";
+    if (raw.includes("preto")) return "Preto";
+    if (raw.includes("vermelho")) return "Vermelho";
+    if (raw.includes("branco")) return "Branco";
+    return ["Amarelo", "Azul", "Preto", "Vermelho"][idx % 4];
+  };
+  const positionRank = (position = "") => {
+    const value = String(position).toLowerCase();
+    if (value.includes("gol")) return 0;
+    if (value.includes("zag")) return 1;
+    if (value.includes("vol") || value.includes("mei")) return 2;
+    if (value.includes("ata")) return 3;
+    return 4;
+  };
+  const playerById = new Map(players.map((player) => [String(player.id), player]));
+  let lineupTeamsForStats =
+    lineupData && Array.isArray(lineupData.teams) && lineupData.teams.length
+      ? lineupData.teams.map((team, idx) => {
+          const colorName = normalizeTeamColor(team, idx);
+          const theme = colorThemeByName[colorName] || colorThemeByName.Vermelho;
+          const teamPlayers = (Array.isArray(team.players) ? team.players : [])
+            .filter((entry) => !entry.guest && playerById.has(String(entry.id)))
+            .map((entry) => playerById.get(String(entry.id)))
+            .filter((player) => presentPlayerIdSet.has(player.id))
+            .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR"));
+          return {
+            name: team.name || `Time ${colorName}`,
+            colorName,
+            theme,
+            players: teamPlayers,
+            isAdjustmentGroup: false,
+          };
+        }).filter((team) => team.players.length)
+      : [{
+          name: "Jogadores presentes",
+          colorName: "Rodada",
+          theme: colorThemeByName.Vermelho,
+          players: [...playersForStats].sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR")),
+          isAdjustmentGroup: false,
+        }];
+  if (lineupData && Array.isArray(lineupData.teams) && lineupData.teams.length) {
+    const includedIds = new Set();
+    lineupTeamsForStats.forEach((team) => {
+      team.players.forEach((player) => includedIds.add(player.id));
+    });
+    const missingPlayers = playersForStats
+      .filter((player) => !includedIds.has(player.id))
+      .sort((a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR"));
+    if (missingPlayers.length) {
+      lineupTeamsForStats.push({
+        name: "Goleiros",
+        colorName: "Laranja",
+        theme: colorThemeByName.Laranja,
+        players: missingPlayers,
+        isAdjustmentGroup: true,
+      });
+    }
+  }
 %>
 <section class="admin-panel rounded-[30px] p-5 md:p-7 space-y-6">
   <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
@@ -79,87 +149,179 @@
   </div>
 </section>
 
-<div class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.1fr),minmax(340px,0.9fr)]">
-  <div class="admin-panel rounded-[28px] p-5 md:p-6 space-y-4">
-    <div class="space-y-2">
-      <span class="admin-section-title">Mapa da pagina</span>
-      <h2 class="text-lg font-semibold text-horriver-light">Fluxo da rodada em ordem</h2>
-      <p class="text-sm text-horriver-gray">
-        A tela agora prioriza o caminho natural da noite: confirmar presencas, lancar stats,
-        montar os times, fechar a votacao e tocar o torneio se houver.
-      </p>
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <a href="#stats" class="px-4 py-2 rounded-full border border-horriver-border text-sm text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Presentes e stats</a>
-      <a href="#sorteador" class="px-4 py-2 rounded-full border border-horriver-border text-sm text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Sorteador</a>
-      <a href="#votacao" class="px-4 py-2 rounded-full border border-horriver-border text-sm text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Votacao</a>
-      <a href="#tournament" class="px-4 py-2 rounded-full border border-horriver-border text-sm text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition">Torneio</a>
-    </div>
-  </div>
-
-  <div class="admin-panel rounded-[28px] p-5 md:p-6 space-y-4">
-    <div class="space-y-2">
-      <span class="admin-section-title">Acoes rapidas</span>
-      <h2 class="text-lg font-semibold text-horriver-light">Atalhos da rodada</h2>
-      <p class="text-sm text-horriver-gray">
-        As operacoes que mais se repetem ficaram agrupadas aqui sem esconder os modulos principais.
-      </p>
-    </div>
-    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-      <button
-        type="button"
-        data-match-dialog-open="presence"
-        class="w-full text-left rounded-2xl border border-horriver-orange/35 bg-horriver-orange/10 px-4 py-3 text-sm font-semibold text-horriver-orange hover:bg-horriver-orange hover:text-black transition"
-      >
-        Definir presentes
-      </button>
-      <button
-        type="submit"
-        form="statsForm"
-        class="w-full text-left rounded-2xl border border-horriver-orange/35 bg-horriver-orange/10 px-4 py-3 text-sm font-semibold text-horriver-orange hover:bg-horriver-orange hover:text-black transition"
-      >
-        Salvar estatisticas
-      </button>
-      <a
-        href="#sorteador"
-        class="w-full rounded-2xl border border-horriver-border px-4 py-3 text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
-      >
-        Abrir sorteador
-      </a>
-      <a
-        href="/admin/matches/<%= match.id %>/votes"
-        class="w-full rounded-2xl border border-horriver-border px-4 py-3 text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
-      >
-        Ver votos enviados
-      </a>
-      <a
-        href="/admin/matches/<%= match.id %>/awards"
-        class="w-full rounded-2xl border border-horriver-border px-4 py-3 text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
-      >
-        Ver premios e imagem
-      </a>
-    </div>
-  </div>
-</div>
-
 <section id="stats" class="scroll-mt-24 mt-10 space-y-4">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
     <div>
       <span class="admin-section-title">Estatisticas</span>
-      <h2 class="mt-2 text-xl md:text-2xl font-semibold text-horriver-light">Lancamento da rodada</h2>
+      <h2 class="mt-2 text-xl md:text-2xl font-semibold text-horriver-light">Controle da rodada</h2>
       <p class="mt-2 text-sm text-horriver-gray">
-        A lista abaixo mostra somente os presentes confirmados. Para trocar nomes da rodada, abra a selecao de presencas.
+        Use esta area para preparar a pelada e abrir a janela unica de lancamento de estatisticas.
       </p>
     </div>
     <div class="text-xs text-horriver-gray">
       <%= hasSelectedPlayers ? `${playersForStats.length} jogadores prontos para lancamento.` : "Defina os presentes para liberar o lancamento." %>
     </div>
   </div>
+  <div class="admin-panel rounded-[28px] p-5 md:p-6 space-y-4">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div class="space-y-2">
+        <span class="admin-section-title">Acoes da rodada</span>
+        <h3 class="text-lg font-semibold text-horriver-light">Atalhos principais</h3>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-end">
+        <a
+          href="#sorteador"
+          class="rounded-2xl border border-horriver-border px-4 py-3 text-center text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+        >
+          Ir para o sorteador
+        </a>
+        <a
+          href="/admin/matches/<%= match.id %>/votes"
+          class="rounded-2xl border border-horriver-border px-4 py-3 text-center text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+        >
+          Conferir votos
+        </a>
+        <a
+          href="/admin/matches/<%= match.id %>/awards"
+          class="rounded-2xl border border-horriver-border px-4 py-3 text-center text-sm font-semibold text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
+        >
+          Premios e imagem
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-panel rounded-[28px] p-5 md:p-6 space-y-5">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div class="space-y-2">
+          <span class="admin-section-title">Lancamento principal</span>
+          <h3 class="text-2xl font-semibold text-horriver-light">Stats, foto e time vencedor em uma janela</h3>
+          <p class="text-sm text-horriver-gray max-w-2xl">
+            O lancamento completo agora acontece no modal: primeiro voce define a foto da home, depois preenche gols
+            e assistencias separados pelos times do sorteio. As notas aparecem somente como resultado da votacao.
+          </p>
+        </div>
+        <button
+          type="button"
+          data-match-dialog-open="stats-wizard"
+          class="w-full md:w-auto shrink-0 px-5 py-3 rounded-2xl bg-horriver-orange text-horriver-bg text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft disabled:opacity-50 disabled:cursor-not-allowed"
+          <%= hasSelectedPlayers ? "" : "disabled" %>
+        >
+          Lancar estatisticas
+        </button>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="admin-subtle-card rounded-2xl p-4">
+          <span class="admin-section-title">Presentes</span>
+          <div class="mt-3 flex items-end justify-between gap-3">
+            <strong class="text-3xl text-horriver-light"><%= presentPlayersCount %></strong>
+            <span class="text-xs text-horriver-gray"><%= players.length %> no elenco</span>
+          </div>
+          <p class="mt-2 text-xs text-horriver-gray">
+            <%= presentPlayersCount ? "Lista pronta para o lancamento." : "Selecione quem vai jogar antes dos stats." %>
+          </p>
+        </div>
+
+        <div class="admin-subtle-card rounded-2xl p-4">
+          <span class="admin-section-title">Sorteio</span>
+          <div class="mt-3 text-lg font-semibold text-horriver-light">
+            <%= lineupData && Array.isArray(lineupData.teams) && lineupData.teams.length ? `${lineupData.teams.length} times salvos` : "Sem time salvo" %>
+          </div>
+          <p class="mt-2 text-xs text-horriver-gray">
+            O modal usa os times visiveis do sorteador ou o ultimo sorteio salvo.
+          </p>
+        </div>
+
+        <div class="admin-subtle-card rounded-2xl p-4">
+          <span class="admin-section-title">Publicacao</span>
+          <div class="mt-3 text-lg font-semibold text-horriver-light">
+            <%= match.winnerColor ? `Time ${match.winnerColor}` : "Sem vencedor" %>
+          </div>
+          <p class="mt-2 text-xs text-horriver-gray">
+            A foto da home e a cor vencedora sao definidas no lancamento.
+          </p>
+        </div>
+      </div>
+
+      <div class="admin-subtle-card rounded-2xl p-4 md:p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <span class="admin-section-title">Lista de presentes</span>
+            <h4 class="mt-2 text-lg font-semibold text-horriver-light">
+              <%= presentPlayersCount ? `${presentPlayersCount} marcado(s) para a pelada` : "Nenhum presente marcado" %>
+            </h4>
+          </div>
+          <button
+            type="button"
+            data-match-dialog-open="presence"
+            class="w-full sm:w-auto rounded-2xl border border-horriver-orange/35 bg-horriver-orange/10 px-4 py-3 text-sm font-semibold text-horriver-orange hover:bg-horriver-orange hover:text-black transition"
+          >
+            <%= presentPlayersCount ? "Editar presentes" : "Selecionar presentes" %>
+          </button>
+        </div>
+
+        <% if (hasSelectedPlayers) { %>
+          <div class="grid gap-2 max-h-80 overflow-auto pr-1">
+            <% playersForStats.forEach((player) => {
+                const stat = statByPlayerId.get(player.id);
+                const isGoalkeeper = String(player.position || "").toLowerCase().includes("gol");
+                const ratingLabel = stat && stat.finalRating != null
+                  ? stat.finalRating.toFixed(2).replace(".", ",")
+                  : "-";
+            %>
+              <div class="rounded-2xl border border-horriver-border/60 bg-black/30 px-3 py-2.5">
+                <div class="grid gap-3 md:grid-cols-[minmax(180px,1fr),auto] md:items-center">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-horriver-light"><%= player.name %></p>
+                    <p class="mt-0.5 truncate text-[11px] uppercase text-horriver-orange">
+                      <%= player.position %><% if (player.nickname) { %> - <%= player.nickname %><% } %>
+                    </p>
+                  </div>
+                  <div class="grid <%= isGoalkeeper ? 'grid-cols-6 md:min-w-[500px]' : 'grid-cols-5 md:min-w-[430px]' %> gap-2 text-center text-[11px]">
+                    <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
+                      <span class="block uppercase text-horriver-gray">OVR</span>
+                      <strong class="mt-0.5 block text-horriver-orange"><%= player.overall != null ? player.overall : "-" %></strong>
+                    </div>
+                    <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
+                      <span class="block uppercase text-horriver-gray">Gols</span>
+                      <strong class="mt-0.5 block text-horriver-light"><%= stat && stat.goals != null ? stat.goals : 0 %></strong>
+                    </div>
+                    <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
+                      <span class="block uppercase text-horriver-gray">Assist.</span>
+                      <strong class="mt-0.5 block text-horriver-light"><%= stat && stat.assists != null ? stat.assists : 0 %></strong>
+                    </div>
+                    <% if (isGoalkeeper) { %>
+                      <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
+                        <span class="block uppercase text-horriver-gray">Def.</span>
+                        <strong class="mt-0.5 block text-horriver-light"><%= stat && stat.saves != null ? stat.saves : "-" %></strong>
+                      </div>
+                    <% } %>
+                    <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
+                      <span class="block uppercase text-horriver-gray">Nota</span>
+                      <strong class="mt-0.5 block text-horriver-orange"><%= ratingLabel %></strong>
+                    </div>
+                    <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
+                      <span class="block uppercase text-horriver-gray">Foto</span>
+                      <strong class="mt-0.5 block <%= stat && stat.appearedInPhoto ? 'text-emerald-400' : 'text-horriver-gray' %>"><%= stat && stat.appearedInPhoto ? "Sim" : "-" %></strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="rounded-2xl border border-dashed border-horriver-border/70 bg-black/20 px-4 py-5 text-sm text-horriver-gray">
+            Marque os jogadores confirmados antes de sortear os times ou lancar as estatisticas.
+          </div>
+        <% } %>
+      </div>
+  </div>
   <form
     action="/admin/matches/<%= match.id %>/stats/bulk"
     method="POST"
     id="statsForm"
-    class="space-y-4"
+    class="hidden"
     data-autosave="true"
     data-toast="Estatisticas salvas."
   >
@@ -240,10 +402,12 @@
             Ver premios e baixar imagem
           </a>
           <button
-            type="submit"
+            type="button"
+            data-match-dialog-open="stats-wizard"
             class="w-full px-4 py-3 rounded-2xl bg-horriver-orange text-horriver-bg text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+            <%= hasSelectedPlayers ? "" : "disabled" %>
           >
-            Salvar estatisticas
+            Lancar estatisticas
           </button>
         </div>
       </aside>
@@ -475,6 +639,179 @@
     </div>
   </form>
 </section>
+
+<div class="match-dialog" data-match-dialog="stats-wizard" hidden>
+  <div class="match-dialog__backdrop" data-match-dialog-close></div>
+  <div class="match-dialog__panel stats-wizard-dialog" role="dialog" aria-modal="true" aria-labelledby="stats-wizard-title">
+    <form
+      action="/admin/matches/<%= match.id %>/stats/wizard"
+      method="POST"
+      enctype="multipart/form-data"
+      id="statsWizardForm"
+      data-toast="Estatisticas salvas."
+    >
+      <div class="match-dialog__head">
+        <div class="space-y-2">
+          <span class="admin-kicker">Lancamento da rodada</span>
+          <h2 id="stats-wizard-title" class="text-2xl font-semibold text-horriver-light">
+            Time vencedor e estatisticas
+          </h2>
+          <p class="text-sm text-horriver-gray max-w-2xl">
+            Primeiro defina a publicacao da home. Depois lance os numeros pelos times do sorteio salvo.
+          </p>
+        </div>
+        <button type="button" class="match-dialog__close" data-match-dialog-close aria-label="Fechar lancamento">&times;</button>
+      </div>
+
+      <div class="match-dialog__body stats-wizard-body">
+        <div class="stats-wizard-steps" aria-hidden="true">
+          <span class="is-active" data-step-indicator="1">1. Home</span>
+          <span data-step-indicator="2">2. Stats</span>
+        </div>
+
+        <section class="stats-wizard-step" data-stats-step="1">
+          <div class="grid gap-4 lg:grid-cols-[320px,minmax(0,1fr)]">
+            <div class="admin-subtle-card rounded-2xl p-4 space-y-4">
+              <label class="flex flex-col gap-2 text-sm text-horriver-gray">
+                Cor do time vencedor
+                <select name="winnerColor" class="bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2.5 text-horriver-light">
+                  <option value="" <%= !match.winnerColor ? "selected" : "" %>>Nenhuma</option>
+                  <option value="Amarelo" <%= match.winnerColor === "Amarelo" ? "selected" : "" %>>Amarelo</option>
+                  <option value="Azul" <%= match.winnerColor === "Azul" ? "selected" : "" %>>Azul</option>
+                  <option value="Preto" <%= match.winnerColor === "Preto" ? "selected" : "" %>>Preto</option>
+                  <option value="Vermelho" <%= match.winnerColor === "Vermelho" ? "selected" : "" %>>Vermelho</option>
+                </select>
+              </label>
+              <label class="flex flex-col gap-2 text-sm text-horriver-gray">
+                Foto do time vencedor
+                <input
+                  id="matchTeamPhotoInput"
+                  type="file"
+                  name="teamPhoto"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="block w-full text-sm text-horriver-gray file:mr-3 file:rounded-full file:border-0 file:bg-horriver-orange file:px-3 file:py-2 file:text-sm file:font-semibold file:text-black"
+                />
+              </label>
+              <p class="text-xs text-horriver-gray">
+                Assim que voce escolher uma imagem, o editor de corte aparece ao lado.
+              </p>
+            </div>
+            <div id="matchTeamPhotoCropContainer" class="admin-preview-card hidden space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/80">
+                  Corte da nova foto
+                </p>
+                <span class="text-[10px] text-horriver-gray/70">Proporcao 16:9</span>
+              </div>
+              <div class="overflow-hidden rounded-xl border border-horriver-border/60 bg-black/50">
+                <img id="matchTeamPhotoCropImage" src="" alt="Pre-visualizacao para corte" />
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                <button
+                  type="button"
+                  id="applyMatchTeamPhotoCrop"
+                  class="w-full sm:w-auto px-4 py-2 rounded-full border border-horriver-orange/35 text-horriver-orange hover:bg-horriver-orange hover:text-black transition text-sm"
+                >
+                  Aplicar corte
+                </button>
+                <p id="matchTeamPhotoCropDone" class="hidden text-[11px] text-green-400">
+                  Corte preparado. Ao salvar, a imagem recortada sera enviada.
+                </p>
+              </div>
+              <p id="matchTeamPhotoCropError" class="hidden text-[11px] text-red-400"></p>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button type="button" data-stats-skip-photo class="text-xs font-semibold text-horriver-gray hover:text-horriver-orange">
+              Pular e lancar depois pelo painel
+            </button>
+          </div>
+        </section>
+
+        <section class="stats-wizard-step hidden" data-stats-step="2">
+          <div class="stats-team-grid" data-stats-team-grid data-lineup-source="<%= lineupData && Array.isArray(lineupData.teams) && lineupData.teams.length ? 'saved' : 'fallback' %>">
+            <% lineupTeamsForStats.forEach((team) => {
+                const isAdjustmentGroup = !!team.isAdjustmentGroup;
+                const allTeamPlayersInPhoto = !isAdjustmentGroup && team.players.length && team.players.every((player) => {
+                  const stat = statByPlayerId.get(player.id);
+                  return stat && stat.appearedInPhoto;
+                });
+            %>
+              <article class="stats-team-card" style="--team-dot:<%= team.theme.dot %>; --team-soft:<%= team.theme.soft %>; --team-border:<%= team.theme.border %>;">
+                <header>
+                  <span></span>
+                  <div>
+                    <strong><%= team.name %></strong>
+                    <small><%= team.colorName %> - <%= team.players.length %> jogador(es)</small>
+                  </div>
+                  <% if (!isAdjustmentGroup) { %>
+                    <label class="stats-team-photo-toggle">
+                      <input type="checkbox" data-team-photo-toggle <%= allTeamPlayersInPhoto ? "checked" : "" %> />
+                      Saiu na foto
+                    </label>
+                  <% } %>
+                </header>
+                <% if (!isAdjustmentGroup) { %>
+                  <% team.players.forEach((player) => {
+                      const stat = statByPlayerId.get(player.id);
+                  %>
+                    <input type="hidden" data-team-photo-field name="photo_<%= player.id %>" value="<%= stat && stat.appearedInPhoto ? 'on' : '' %>" <%= stat && stat.appearedInPhoto ? "" : "disabled" %> />
+                  <% }) %>
+                <% } %>
+                <div class="stats-team-list">
+                  <% team.players.forEach((player) => {
+                      const stat = statByPlayerId.get(player.id);
+                      const isGoalkeeper = String(player.position || "").toLowerCase().includes("gol");
+                  %>
+                    <div class="stats-player-row<%= isGoalkeeper ? ' has-saves' : '' %><%= isAdjustmentGroup ? ' has-photo-toggle' : '' %>">
+                      <input type="hidden" name="present_<%= player.id %>" value="on" />
+                      <div class="min-w-0">
+                        <p><%= player.name %></p>
+                        <span><%= player.position %><% if (player.nickname) { %> - <%= player.nickname %><% } %></span>
+                      </div>
+                      <label>
+                        Gols
+                        <input type="number" name="goals_<%= player.id %>" min="0" step="1" value="<%= stat && stat.goals != null ? stat.goals : 0 %>" />
+                      </label>
+                      <label>
+                        Assist.
+                        <input type="number" name="assists_<%= player.id %>" min="0" step="1" value="<%= stat && stat.assists != null ? stat.assists : 0 %>" />
+                      </label>
+                      <% if (isGoalkeeper) { %>
+                        <label>
+                          Defesas
+                          <input type="number" name="saves_<%= player.id %>" min="0" step="1" placeholder="-" value="<%= stat && stat.saves != null ? stat.saves : "" %>" />
+                        </label>
+                      <% } %>
+                      <label>
+                        Nota
+                        <span class="stats-rating-output" data-rating-player-id="<%= player.id %>"><%= stat && stat.finalRating != null ? stat.finalRating.toFixed(2).replace('.', ',') : "-" %></span>
+                      </label>
+                      <% if (isAdjustmentGroup) { %>
+                        <label class="stats-photo-toggle">
+                          Foto
+                          <input type="checkbox" name="photo_<%= player.id %>" <%= stat && stat.appearedInPhoto ? "checked" : "" %> />
+                        </label>
+                      <% } %>
+                    </div>
+                  <% }) %>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+      </div>
+
+      <div class="match-dialog__footer">
+        <button type="button" class="match-dialog__soft-button" data-match-dialog-close>Cancelar</button>
+        <input type="hidden" name="skipWeeklyPhoto" value="0" data-skip-weekly-photo />
+        <button type="button" class="match-dialog__soft-button hidden" data-stats-prev>Voltar</button>
+        <button type="button" class="match-dialog__primary" data-stats-next>Continuar</button>
+        <button type="submit" class="match-dialog__primary hidden" data-stats-submit>Salvar estatisticas</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <section id="votacao" class="scroll-mt-24 mt-12 space-y-4">
   <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">

@@ -745,20 +745,21 @@
             <div class="section-kicker">Mensalidades</div>
             <div class="section-title">Tabela de cobrancas do periodo</div>
           </div>
-          <div class="section-copy">Status, valores e vencimentos das mensalidades abrangidas pelo relatorio.</div>
+          <div class="section-copy">Status, plano de cobranca, valores e vencimentos das mensalidades abrangidas pelo relatorio.</div>
         </div>
 
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th style="width: 28%;">Participante</th>
-                <th style="width: 14%;">Status</th>
-                <th class="align-right" style="width: 11%;">Devido</th>
-                <th class="align-right" style="width: 11%;">Pago</th>
-                <th class="align-right" style="width: 11%;">Saldo</th>
-                <th style="width: 12%;">Vencimento</th>
-                <th style="width: 13%;">Pagamento</th>
+                <th style="width: 22%;">Participante</th>
+                <th style="width: 14%;">Plano</th>
+                <th style="width: 12%;">Status</th>
+                <th class="align-right" style="width: 10%;">Devido</th>
+                <th class="align-right" style="width: 10%;">Pago</th>
+                <th class="align-right" style="width: 10%;">Saldo</th>
+                <th style="width: 10%;">Vencimento</th>
+                <th style="width: 12%;">Pagamento</th>
               </tr>
             </thead>
             <tbody>
@@ -768,6 +769,10 @@
                   <td>
                     <span class="player"><%= row.playerName %></span>
                     <span class="subline"><%= row.playerSubtitle %></span>
+                  </td>
+                  <td>
+                    <span class="status status--<%= row.planTone %>"><%= row.planLabel %></span>
+                    <span class="subline"><%= row.planDetail %></span>
                   </td>
                   <td><span class="status status--<%= tone %>"><%= row.statusLabel %></span></td>
                   <td class="align-right"><%= row.dueLabel %></td>

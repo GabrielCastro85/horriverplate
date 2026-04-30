@@ -1,5 +1,5 @@
 // Utilidades para calculo de overall (faixa 60-95) com ajuste por posicao.
-// Entrada esperada para cada jogador: { player, goals, assists, matches, rating }
+// Entrada esperada para cada jogador: { player, goals, assists, saves, savesMatches, matches, rating }
 
 const OVERALL_MIN = 60;
 const OVERALL_MAX = 95;
@@ -9,8 +9,8 @@ const MIN_SAMPLE_CONFIDENCE = 0.25;
 const POSITION_PROFILES = {
   GOL: {
     key: "GOL",
-    weights: { rating: 0.75, goals: 0.05, assists: 0.2 },
-    references: { goalsPerMatch: 0.15, assistsPerMatch: 0.3 },
+    weights: { rating: 0.68, goals: 0.04, assists: 0.16, saves: 0.12 },
+    references: { goalsPerMatch: 0.15, assistsPerMatch: 0.3, savesPerMatch: 8 },
   },
   ZAG: {
     key: "ZAG",
@@ -83,6 +83,10 @@ function computeOverallFromEntries(entries) {
     const matches = Math.max(1, Number(e.matches) || 0);
     return Math.max(m, (Number(e.assists) || 0) / matches);
   }, 0);
+  const maxSavesPerMatch = safeEntries.reduce((m, e) => {
+    const matches = Math.max(1, Number(e.savesMatches) || 0);
+    return Math.max(m, (Number(e.saves) || 0) / matches);
+  }, 0);
 
   const computed = safeEntries.map((entry) => {
     const profile = getProfile(entry.player?.position);
@@ -91,6 +95,8 @@ function computeOverallFromEntries(entries) {
     const matches = Math.max(0, Number(entry.matches) || 0);
     const goals = Math.max(0, Number(entry.goals) || 0);
     const assists = Math.max(0, Number(entry.assists) || 0);
+    const saves = Math.max(0, Number(entry.saves) || 0);
+    const savesMatches = Math.max(0, Number(entry.savesMatches) || 0);
     const rating = Math.max(0, Number(entry.rating) || 0);
     const baseOverall = Number.isFinite(Number(entry.player?.baseOverall))
       ? Number(entry.player.baseOverall)
@@ -98,17 +104,34 @@ function computeOverallFromEntries(entries) {
 
     const goalsPerMatch = matches > 0 ? goals / matches : 0;
     const assistsPerMatch = matches > 0 ? assists / matches : 0;
+    const savesPerMatch = savesMatches > 0 ? saves / savesMatches : 0;
 
     const goalsNorm = clamp(goalsPerMatch / references.goalsPerMatch, 0, 1);
     const assistsNorm = clamp(assistsPerMatch / references.assistsPerMatch, 0, 1);
+    const savesNorm =
+      profile.key === "GOL" && savesMatches > 0
+        ? clamp(
+            Math.log1p(savesPerMatch) /
+              Math.log1p(Math.max(references.savesPerMatch || 1, maxSavesPerMatch || 1)),
+            0,
+            1
+          )
+        : 0;
     const ratingNorm = clamp(rating / 10, 0, 1);
     const presenceNorm = maxMatches > 0 ? matches / maxMatches : 0;
     const sampleConfidence = getSampleConfidence(matches);
 
+    const effectiveWeights = { ...weights };
+    if (profile.key === "GOL" && savesMatches <= 0 && effectiveWeights.saves) {
+      effectiveWeights.rating += effectiveWeights.saves;
+      effectiveWeights.saves = 0;
+    }
+
     const performanceScore =
-      ratingNorm * weights.rating +
-      goalsNorm * weights.goals +
-      assistsNorm * weights.assists;
+      ratingNorm * effectiveWeights.rating +
+      goalsNorm * effectiveWeights.goals +
+      assistsNorm * effectiveWeights.assists +
+      savesNorm * (effectiveWeights.saves || 0);
 
     const performanceOverall =
       OVERALL_MIN + clamp(performanceScore, 0, 1) * (OVERALL_MAX - OVERALL_MIN);
@@ -126,8 +149,10 @@ function computeOverallFromEntries(entries) {
         baseOverall,
         goalsPerMatch,
         assistsPerMatch,
+        savesPerMatch,
         goalsNorm,
         assistsNorm,
+        savesNorm,
         ratingNorm,
         presenceNorm,
         sampleConfidence,
@@ -141,6 +166,7 @@ function computeOverallFromEntries(entries) {
     computed,
     maxGoals,
     maxAssists,
+    maxSavesPerMatch,
     maxMatches,
     maxGoalsPerMatch,
     maxAssistsPerMatch,

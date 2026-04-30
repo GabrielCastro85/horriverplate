@@ -42,6 +42,7 @@ model Player {
   photoUrl           String?
   totalGoals         Int                 @default(0)
   totalAssists       Int                 @default(0)
+  totalSaves         Int                 @default(0)
   totalMatches       Int                 @default(0)
   totalPhotos        Int                 @default(0)
   totalRating        Float               @default(0)
@@ -154,6 +155,7 @@ model PlayerStat {
   present         Boolean  @default(false)
   goals           Int      @default(0)
   assists         Int      @default(0)
+  saves           Int?
   rating          Float?
   appearedInPhoto Boolean  @default(false)
   createdAt       DateTime @default(now())

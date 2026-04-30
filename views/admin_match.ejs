@@ -26,10 +26,13 @@
   const presentPlayerIdSet = new Set(
     stats.filter((stat) => stat.present).map((stat) => stat.playerId)
   );
+  const lineupData = typeof lineupResult !== "undefined" ? lineupResult : null;
   const initialOpenDialog = typeof openDialog === "string" ? openDialog : "";
 %>
 
 <style>
+  @import url("https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css");
+
   .admin-panel {
     background: linear-gradient(180deg, rgba(20, 20, 24, 0.72), rgba(10, 10, 14, 0.82));
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -289,6 +292,159 @@
   .match-dialog-open {
     overflow: hidden;
   }
+  .stats-wizard-dialog { width: min(1120px, calc(100vw - 32px)); }
+  .stats-wizard-body { overflow: auto; }
+  .stats-wizard-steps { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stats-wizard-steps span {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    color: rgba(180,182,195,0.85);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 12px;
+  }
+  .stats-wizard-steps span.is-active {
+    background: rgba(255,122,26,0.14);
+    border-color: rgba(255,122,26,0.5);
+    color: #ffb36a;
+  }
+  .admin-preview-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
+      rgba(0,0,0,0.18);
+    padding: 0.85rem;
+  }
+  .admin-preview-card img {
+    width: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    border-radius: 0.85rem;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  #matchTeamPhotoCropContainer .cropper-container {
+    max-width: 100%;
+  }
+  #matchTeamPhotoCropImage {
+    display: block;
+    max-width: 100%;
+  }
+  .stats-team-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .stats-team-card {
+    border: 1px solid var(--team-border);
+    border-radius: 22px;
+    background: linear-gradient(180deg, var(--team-soft), rgba(255,255,255,0.025));
+    overflow: hidden;
+  }
+  .stats-team-card header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .stats-team-card header > div {
+    min-width: 0;
+  }
+  .stats-team-card header > span {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--team-dot);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.05);
+  }
+  .stats-team-card header strong { display: block; color: #f8fafc; font-size: 14px; }
+  .stats-team-card header small { display: block; color: rgba(180,182,195,0.82); font-size: 11px; }
+  .stats-team-list { display: grid; gap: 8px; padding: 12px; }
+  .stats-player-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) repeat(3, 70px);
+    gap: 8px;
+    align-items: end;
+    border-radius: 16px;
+    background: rgba(0,0,0,0.26);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 10px;
+  }
+  .stats-player-row > .min-w-0 {
+    align-self: center;
+    text-align: center;
+  }
+  .stats-player-row.has-photo-toggle {
+    grid-template-columns: minmax(150px, 1fr) repeat(3, 70px) 54px;
+  }
+  .stats-player-row.has-saves {
+    grid-template-columns: minmax(150px, 1fr) repeat(4, 70px);
+  }
+  .stats-player-row.has-saves.has-photo-toggle {
+    grid-template-columns: minmax(150px, 1fr) repeat(4, 70px) 54px;
+  }
+  .stats-player-row p { color: #f8fafc; font-size: 13px; font-weight: 700; line-height: 1.15; }
+  .stats-player-row span {
+    color: #ff8a1c;
+    display: block;
+    font-size: 10px;
+    line-height: 1.2;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+  .stats-player-row label {
+    color: rgba(180,182,195,0.82);
+    display: grid;
+    font-size: 10px;
+    gap: 4px;
+    text-transform: uppercase;
+  }
+  .stats-player-row input[type="number"],
+  .stats-player-row input[type="text"] {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.38);
+    color: #f8fafc;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .stats-rating-output {
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    background: rgba(0,0,0,0.28);
+    color: #f8fafc;
+    display: flex;
+    font-size: 14px;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .stats-photo-toggle { align-items: center; justify-items: center; }
+  .stats-photo-toggle input { width: 20px; height: 20px; accent-color: #ff7a1a; }
+  .stats-team-photo-toggle {
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    color: rgba(248,250,252,0.86);
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 700;
+    gap: 7px;
+    margin-left: auto;
+    padding: 7px 10px;
+    white-space: nowrap;
+  }
+  .stats-team-photo-toggle input {
+    accent-color: #ff7a1a;
+    height: 16px;
+    width: 16px;
+  }
   @media (min-width: 720px) {
     .match-dialog__toolbar {
       grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
@@ -313,6 +469,9 @@
     .match-dialog__summary {
       grid-template-columns: 1fr;
     }
+    .stats-team-grid { grid-template-columns: 1fr; }
+    .stats-player-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stats-player-row > .min-w-0 { grid-column: 1 / -1; }
     .match-dialog__player {
       align-items: flex-start;
       flex-direction: column;
@@ -335,7 +494,8 @@
   totalAssistsCount,
   voteTokensTotal,
   voteTokensUsed,
-  voteTokensPending
+  voteTokensPending,
+  lineupData
 }) %>
 
 <div
@@ -552,6 +712,442 @@
       url.searchParams.delete("openDialog");
       window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
     }
+  })();
+</script>
+
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script>
+  (() => {
+    const dialog = document.querySelector('[data-match-dialog="stats-wizard"]');
+    const form = document.getElementById("statsWizardForm");
+    if (!dialog || !form) return;
+
+    const transitionMs = 200;
+    const stepEls = Array.from(dialog.querySelectorAll("[data-stats-step]"));
+    const indicators = Array.from(dialog.querySelectorAll("[data-step-indicator]"));
+    const nextBtn = dialog.querySelector("[data-stats-next]");
+    const prevBtn = dialog.querySelector("[data-stats-prev]");
+    const submitBtn = dialog.querySelector("[data-stats-submit]");
+    const skipInput = dialog.querySelector("[data-skip-weekly-photo]");
+    const skipBtn = dialog.querySelector("[data-stats-skip-photo]");
+    const fileInput = document.getElementById("matchTeamPhotoInput");
+    const cropContainer = document.getElementById("matchTeamPhotoCropContainer");
+    const cropImage = document.getElementById("matchTeamPhotoCropImage");
+    const applyCropBtn = document.getElementById("applyMatchTeamPhotoCrop");
+    const cropDone = document.getElementById("matchTeamPhotoCropDone");
+    const cropError = document.getElementById("matchTeamPhotoCropError");
+    let closeTimer = null;
+    let cropper = null;
+    let objectUrl = null;
+    let originalFileName = "time-vencedor.jpg";
+    let submitInFlight = false;
+
+    function setStep(step) {
+      stepEls.forEach((el) => el.classList.toggle("hidden", el.getAttribute("data-stats-step") !== String(step)));
+      indicators.forEach((el) => el.classList.toggle("is-active", el.getAttribute("data-step-indicator") === String(step)));
+      nextBtn?.classList.toggle("hidden", step !== 1);
+      prevBtn?.classList.toggle("hidden", step !== 2);
+      submitBtn?.classList.toggle("hidden", step !== 2);
+    }
+
+    function openDialog() {
+      if (closeTimer) window.clearTimeout(closeTimer);
+      dialog.hidden = false;
+      document.body.classList.add("match-dialog-open");
+      setupTeamPhotoToggles();
+      setStep(1);
+      window.requestAnimationFrame(() => dialog.classList.add("is-visible"));
+    }
+
+    function closeDialog() {
+      dialog.classList.remove("is-visible");
+      closeTimer = window.setTimeout(() => {
+        dialog.hidden = true;
+        document.body.classList.remove("match-dialog-open");
+      }, transitionMs);
+    }
+
+    function setCropError(message = "") {
+      if (!cropError) return;
+      cropError.textContent = message;
+      cropError.classList.toggle("hidden", !message);
+    }
+
+    function destroyCropper() {
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+    }
+
+    function resetCropInterface({ clearInput = false } = {}) {
+      destroyCropper();
+      cropContainer?.classList.add("hidden");
+      cropImage?.removeAttribute("src");
+      cropDone?.classList.add("hidden");
+      setCropError("");
+      if (clearInput && fileInput) fileInput.value = "";
+    }
+
+    function buildCroppedFileName(name) {
+      const cleaned = String(name || "time-vencedor").replace(/\.[^.]+$/, "").trim();
+      return `${cleaned || "time-vencedor"}-cortada.jpg`;
+    }
+
+    function applyCropToInput() {
+      return new Promise((resolve, reject) => {
+        if (!fileInput?.files?.length || !cropper) {
+          resolve(false);
+          return;
+        }
+
+        const canvas = cropper.getCroppedCanvas({
+          width: 1280,
+          height: 720,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: "high",
+        });
+
+        if (!canvas) {
+          resolve(false);
+          return;
+        }
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Nao foi possivel gerar o corte da imagem."));
+              return;
+            }
+
+            const croppedFile = new File([blob], buildCroppedFileName(originalFileName), {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            const transfer = new DataTransfer();
+            transfer.items.add(croppedFile);
+            fileInput.files = transfer.files;
+            cropDone?.classList.remove("hidden");
+            setCropError("");
+            resolve(true);
+          },
+          "image/jpeg",
+          0.92
+        );
+      });
+    }
+
+    const statsTeamGrid = dialog.querySelector("[data-stats-team-grid]");
+    const statsThemeByColor = {
+      Amarelo: { dot: "#facc15", soft: "rgba(250, 204, 21, 0.16)", border: "rgba(250, 204, 21, 0.58)" },
+      Azul: { dot: "#38bdf8", soft: "rgba(56, 189, 248, 0.14)", border: "rgba(56, 189, 248, 0.55)" },
+      Preto: { dot: "#e5e7eb", soft: "rgba(229, 231, 235, 0.10)", border: "rgba(229, 231, 235, 0.34)" },
+      Vermelho: { dot: "#ef4444", soft: "rgba(239, 68, 68, 0.14)", border: "rgba(239, 68, 68, 0.48)" },
+      Branco: { dot: "#f8fafc", soft: "rgba(248, 250, 252, 0.11)", border: "rgba(248, 250, 252, 0.40)" },
+      Laranja: { dot: "#ff7a1a", soft: "rgba(255, 122, 26, 0.14)", border: "rgba(255, 122, 26, 0.50)" },
+    };
+
+    function escapeStatsHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function normalizeStatsColorName(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+      if (normalized.includes("amare")) return "Amarelo";
+      if (normalized.includes("azul")) return "Azul";
+      if (normalized.includes("pret")) return "Preto";
+      if (normalized.includes("vermel")) return "Vermelho";
+      if (normalized.includes("branc")) return "Branco";
+      if (normalized.includes("laranja")) return "Laranja";
+      if (normalized.includes("goleir")) return "Laranja";
+      return "Vermelho";
+    }
+
+    function getStatsFieldValues() {
+      const values = {};
+      form.querySelectorAll("[name]").forEach((field) => {
+        const match = field.name.match(/^(goals|assists|saves|rating|photo|present)_(.+)$/);
+        if (!match) return;
+        const [, key, playerId] = match;
+        values[playerId] = values[playerId] || {};
+        values[playerId][key] = field.type === "checkbox" ? field.checked : field.value;
+      });
+      form.querySelectorAll("[data-rating-player-id]").forEach((field) => {
+        const playerId = field.getAttribute("data-rating-player-id");
+        if (!playerId) return;
+        values[playerId] = values[playerId] || {};
+        const text = field.textContent?.trim();
+        if (text && text !== "-") values[playerId].rating = text;
+      });
+      return values;
+    }
+
+    function positionRank(position) {
+      const value = String(position || "").toLowerCase();
+      if (value.includes("gol")) return 1;
+      if (value.includes("zag") || value.includes("def")) return 2;
+      if (value.includes("vol")) return 3;
+      if (value.includes("mei")) return 4;
+      if (value.includes("ata")) return 5;
+      return 6;
+    }
+
+    function isStatsGoalkeeper(position) {
+      const value = String(position || "").toLowerCase();
+      return value.includes("gol") || value.includes("goleir") || value.includes("goal");
+    }
+
+    function readSorterPlayer(li) {
+      if (!li?.dataset?.playerId || li.dataset.playerGuest === "true") return null;
+      return {
+        id: li.dataset.playerId,
+        name: li.dataset.playerName || li.textContent.trim(),
+        position: li.dataset.playerPosition || "",
+        nickname: li.dataset.playerNickname || "",
+      };
+    }
+
+    function buildStatsPlayerRow(player, valuesByPlayer, { showPhotoToggle = false } = {}) {
+      const values = valuesByPlayer[player.id] || {};
+      const details = [player.position, player.nickname].filter(Boolean).join(" - ");
+      const ratingLabel = values.rating ? values.rating : "-";
+      const isGoalkeeper = isStatsGoalkeeper(player.position);
+      return `
+        <div class="stats-player-row${isGoalkeeper ? " has-saves" : ""}${showPhotoToggle ? " has-photo-toggle" : ""}">
+          <input type="hidden" name="present_${escapeStatsHtml(player.id)}" value="on" />
+          <div class="min-w-0">
+            <p>${escapeStatsHtml(player.name)}</p>
+            <span>${escapeStatsHtml(details)}</span>
+          </div>
+          <label>
+            Gols
+            <input type="number" name="goals_${escapeStatsHtml(player.id)}" min="0" step="1" value="${escapeStatsHtml(values.goals ?? 0)}" />
+          </label>
+          <label>
+            Assist.
+            <input type="number" name="assists_${escapeStatsHtml(player.id)}" min="0" step="1" value="${escapeStatsHtml(values.assists ?? 0)}" />
+          </label>
+          ${
+            isGoalkeeper
+              ? `<label>
+                  Defesas
+                  <input type="number" name="saves_${escapeStatsHtml(player.id)}" min="0" step="1" placeholder="-" value="${escapeStatsHtml(values.saves ?? "")}" />
+                </label>`
+              : ""
+          }
+          <label>
+            Nota
+            <span class="stats-rating-output" data-rating-player-id="${escapeStatsHtml(player.id)}">${escapeStatsHtml(ratingLabel)}</span>
+          </label>
+          ${
+            showPhotoToggle
+              ? `<label class="stats-photo-toggle">
+                  Foto
+                  <input type="checkbox" name="photo_${escapeStatsHtml(player.id)}" ${values.photo ? "checked" : ""} />
+                </label>`
+              : ""
+          }
+        </div>
+      `;
+    }
+
+    function buildTeamPhotoFields(players, valuesByPlayer) {
+      return players
+        .map((player) => {
+          const values = valuesByPlayer[player.id] || {};
+          return `<input type="hidden" data-team-photo-field name="photo_${escapeStatsHtml(player.id)}" value="${values.photo ? "on" : ""}" ${values.photo ? "" : "disabled"} />`;
+        })
+        .join("");
+    }
+
+    function buildStatsTeamCard(team, valuesByPlayer) {
+      const colorName = normalizeStatsColorName(team.colorName);
+      const theme = statsThemeByColor[colorName] || statsThemeByColor.Vermelho;
+      const players = [...team.players].sort(
+        (a, b) => positionRank(a.position) - positionRank(b.position) || a.name.localeCompare(b.name, "pt-BR")
+      );
+      const isAdjustmentGroup = team.isAdjustmentGroup || /banco|ajustes|goleir/i.test(String(team.name || ""));
+      const allInPhoto = !isAdjustmentGroup && players.length > 0 && players.every((player) => valuesByPlayer[player.id]?.photo);
+      return `
+        <article class="stats-team-card" style="--team-dot:${theme.dot}; --team-soft:${theme.soft}; --team-border:${theme.border};">
+          <header>
+            <span></span>
+            <div>
+              <strong>${escapeStatsHtml(team.name)}</strong>
+              <small>${escapeStatsHtml(colorName)} - ${players.length} jogador(es)</small>
+            </div>
+            ${
+              isAdjustmentGroup
+                ? ""
+                : `<label class="stats-team-photo-toggle">
+                    <input type="checkbox" data-team-photo-toggle ${allInPhoto ? "checked" : ""} />
+                    Saiu na foto
+                  </label>`
+            }
+          </header>
+          ${isAdjustmentGroup ? "" : buildTeamPhotoFields(players, valuesByPlayer)}
+          <div class="stats-team-list">
+            ${players.map((player) => buildStatsPlayerRow(player, valuesByPlayer, { showPhotoToggle: isAdjustmentGroup })).join("")}
+          </div>
+        </article>
+      `;
+    }
+
+    function collectTeamsFromSorter() {
+      const teams = Array.from(document.querySelectorAll("#sorterResults [data-team]"))
+        .map((teamEl, index) => {
+          const select = teamEl.querySelector("[data-color-select]");
+          const colorName = teamEl.dataset.teamColorName || select?.selectedOptions?.[0]?.text || `Time ${index + 1}`;
+          const name = teamEl.querySelector("[data-team-name]")?.textContent?.trim() || `Time ${colorName}`;
+          const players = Array.from(teamEl.querySelectorAll("[data-team-list] li[data-player-id]"))
+            .map(readSorterPlayer)
+            .filter(Boolean);
+          return { name, colorName, players };
+        })
+        .filter((team) => team.players.length);
+
+      const assignedIds = new Set(teams.flatMap((team) => team.players.map((player) => String(player.id))));
+      const extraPlayers = Array.from(
+        document.querySelectorAll("#goalkeeperBenchBox li[data-player-id], #benchBox li[data-player-id], #availableBox li[data-player-id]")
+      )
+        .map(readSorterPlayer)
+        .filter((player) => player && !assignedIds.has(String(player.id)));
+
+      if (extraPlayers.length) {
+        teams.push({
+          name: "Goleiros",
+          colorName: "Laranja",
+          players: extraPlayers,
+          isAdjustmentGroup: true,
+        });
+      }
+
+      return teams;
+    }
+
+    function syncStatsTeamsFromSorter() {
+      if (!statsTeamGrid) return;
+      const teams = collectTeamsFromSorter();
+      if (!teams.length) {
+        setupTeamPhotoToggles();
+        return;
+      }
+      const valuesByPlayer = getStatsFieldValues();
+      statsTeamGrid.innerHTML = teams.map((team) => buildStatsTeamCard(team, valuesByPlayer)).join("");
+      statsTeamGrid.dataset.lineupSource = "sorter";
+      setupTeamPhotoToggles();
+    }
+
+    function setupTeamPhotoToggles() {
+      dialog.querySelectorAll("[data-team-photo-toggle]").forEach((toggle) => {
+        const card = toggle.closest(".stats-team-card");
+        if (!card) return;
+        const sync = () => {
+          if (toggle.checked) {
+            dialog.querySelectorAll("[data-team-photo-toggle]").forEach((otherToggle) => {
+              if (otherToggle !== toggle) otherToggle.checked = false;
+            });
+          }
+          card.querySelectorAll("[data-team-photo-field]").forEach((field) => {
+            field.disabled = !toggle.checked;
+            field.value = toggle.checked ? "on" : "";
+          });
+          dialog.querySelectorAll(".stats-team-card").forEach((otherCard) => {
+            if (otherCard === card) return;
+            otherCard.querySelectorAll("[data-team-photo-field]").forEach((field) => {
+              field.disabled = true;
+              field.value = "";
+            });
+          });
+        };
+        if (toggle.dataset.teamPhotoReady !== "1") {
+          toggle.addEventListener("change", sync);
+          toggle.dataset.teamPhotoReady = "1";
+        }
+        sync();
+      });
+    }
+
+    document.querySelectorAll('[data-match-dialog-open="stats-wizard"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        openDialog();
+      });
+    });
+    dialog.querySelectorAll("[data-match-dialog-close]").forEach((button) => button.addEventListener("click", closeDialog));
+    nextBtn?.addEventListener("click", () => {
+      syncStatsTeamsFromSorter();
+      setStep(2);
+    });
+    prevBtn?.addEventListener("click", () => setStep(1));
+    skipBtn?.addEventListener("click", () => {
+      if (skipInput) skipInput.value = "1";
+      resetCropInterface({ clearInput: true });
+      syncStatsTeamsFromSorter();
+      setStep(2);
+    });
+
+    fileInput?.addEventListener("change", () => {
+      const file = fileInput.files?.[0];
+      resetCropInterface();
+      if (skipInput) skipInput.value = "0";
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        setCropError("Selecione um arquivo de imagem valido para recortar.");
+        return;
+      }
+      if (typeof window.Cropper === "undefined") {
+        setCropError("O editor de corte nao carregou agora. Voce ainda pode enviar a imagem original.");
+        return;
+      }
+
+      originalFileName = file.name || "time-vencedor.jpg";
+      objectUrl = URL.createObjectURL(file);
+      cropImage.onload = () => {
+        if (cropper) cropper.destroy();
+        cropper = new window.Cropper(cropImage, {
+          aspectRatio: 16 / 9,
+          viewMode: 1,
+          autoCropArea: 1,
+          dragMode: "move",
+          responsive: true,
+          background: false,
+        });
+      };
+      cropImage.src = objectUrl;
+      cropContainer?.classList.remove("hidden");
+    });
+
+    applyCropBtn?.addEventListener("click", async () => {
+      try {
+        await applyCropToInput();
+      } catch (error) {
+        setCropError(error?.message || "Nao foi possivel aplicar o corte agora.");
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      if (submitInFlight) return;
+      if (!fileInput?.files?.length || !cropper || skipInput?.value === "1") return;
+      event.preventDefault();
+      try {
+        await applyCropToInput();
+        submitInFlight = true;
+        form.requestSubmit(event.submitter || undefined);
+      } catch (error) {
+        setCropError(error?.message || "Nao foi possivel preparar a imagem antes de salvar.");
+      }
+    });
   })();
 </script>
 
@@ -808,11 +1404,11 @@
       if (fallback && row && row[fallback] != null) return row[fallback];
       return 0;
     };
-    const lineupData = typeof lineupResult !== "undefined" ? lineupResult : null;
+    const tournamentLineupData = typeof lineupResult !== "undefined" ? lineupResult : null;
     const canImportDraw =
-      lineupData &&
-      Array.isArray(lineupData.teams) &&
-      lineupData.teams.length === 4;
+      tournamentLineupData &&
+      Array.isArray(tournamentLineupData.teams) &&
+      tournamentLineupData.teams.length === 4;
   %>
 
   <% if (!tournamentData) { %>
