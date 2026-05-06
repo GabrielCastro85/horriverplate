@@ -5,6 +5,7 @@ const prisma = require("../utils/db");
 const { getAchievementsStats } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 const { getCache, setCache } = require("../utils/page_cache");
+const { formatDateBR } = require("../utils/finance");
 const CACHE_TTL_MS = 60 * 1000;
 const SAO_PAULO_WEEKDAY_INDEX = {
   sun: 0,
@@ -449,7 +450,7 @@ router.get("/matches/:id", async (req, res) => {
 
     const baseUrl =
       process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
-    const matchDateLabel = new Date(match.playedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    const matchDateLabel = formatDateBR(match.playedAt);
     const matchDesc = match.description
       ? `Pelada em ${matchDateLabel}. ${match.description}`
       : `Pelada em ${matchDateLabel}.`;

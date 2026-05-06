@@ -441,7 +441,8 @@
         <div class="flex items-center gap-2">
           <button
             type="submit"
-            class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            id="pdfGenerateBtn"
+            class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Gerar PDF
           </button>
@@ -1017,14 +1018,14 @@
       action="/admin/recalculate-overall-historical"
       class="inline"
       data-toast="OVR historico recalculado com sucesso."
-      onsubmit="return confirm('Recalcular o OVR historico de todos os jogadores usando TODAS as peladas? Isso sobrescreve o overallDynamic atual de cada jogador.');"
+      onsubmit="if(!confirm('Recalcular o OVR historico de todos os jogadores usando TODAS as peladas? Isso sobrescreve o overallDynamic atual de cada jogador.')) return false; var btn=this.querySelector('[type=submit]'); btn.disabled=true; btn.textContent='Recalculando...';"
     >
       <button
         type="submit"
         class="w-full sm:w-auto px-3 py-2 rounded-full border border-horriver-orange
                text-[11px] md:text-xs text-horriver-orange
                hover:bg-horriver-orange hover:text-horriver-bg
-               transition-colors"
+               transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Recalcular OVR historico (todas as peladas)
       </button>
@@ -1400,5 +1401,20 @@
   })();
 </script>
 
+<script>
+  (function () {
+    const pdfBtn = document.getElementById("pdfGenerateBtn");
+    if (pdfBtn) {
+      pdfBtn.closest("form").addEventListener("submit", function () {
+        pdfBtn.disabled = true;
+        pdfBtn.textContent = "Gerando...";
+        setTimeout(function () {
+          pdfBtn.disabled = false;
+          pdfBtn.textContent = "Gerar PDF";
+        }, 5000);
+      });
+    }
+  })();
+</script>
 
 

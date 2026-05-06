@@ -872,14 +872,14 @@
         method="POST"
         action="/admin/recalculate-totals"
         class="inline"
-        onsubmit="return confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estatisticas.');"
+        onsubmit="if(!confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estatisticas.')) return false; var btn=this.querySelector('[type=submit]'); btn.disabled=true; btn.textContent='Recalculando...';"
       >
         <button
           type="submit"
           class="w-full sm:w-auto px-3 py-2 rounded-full border border-horriver-orange
                  text-[11px] md:text-xs text-horriver-orange
                  hover:bg-horriver-orange hover:text-horriver-bg
-                 transition-colors"
+                 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Recalcular totais de todos os jogadores
         </button>

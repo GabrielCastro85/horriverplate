@@ -26,6 +26,7 @@ const {
 } = require("../helpers/weeklyVoteValidation.helper");
 const { ensureFinanceSettings } = require("../services/financePage.service");
 const { syncMonthlyFeeForPlayerCompetence } = require("../services/financeAutomation.service");
+const { formatDateBR } = require("../utils/finance");
 
 // ==============================
 // ??? Middleware: exige admin logado
@@ -162,13 +163,6 @@ function sanitizeAuditPayload(input) {
   };
 
   return walk(input);
-}
-
-function formatDateBR(value) {
-  if (!value) return null;
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function formatMonthYearBR(month, year) {
