@@ -31,6 +31,7 @@ uploads/
 # Temporary files
 tmp/
 tmp-*
+tmp_*
 temp/
 *.tmp
 *.temp
@@ -39,6 +40,10 @@ temp/
 *~
 admin_match_head.txt
 admin_match_tail.txt
+
+# Backup files with extensions like .bak.ejs, .ejs.bakhead
+*.bak.*
+*.bakhead
 
 # Cache and local tooling outputs
 .cache/

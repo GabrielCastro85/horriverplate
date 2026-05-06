@@ -653,72 +653,87 @@ router.get("/fotos", async (req, res) => {
       include: { bestPlayer: true, winningMatch: true },
     });
 
-    const weeklyEntries = await Promise.all(
-      (weeklyAwards || []).map(async (award) => {
-        if (!award.bestPlayerId) {
-          return {
-            award,
-            stats: null,
-          };
-        }
+    // Batch fetch playerStats for weekly awards (evita N+1 queries)
+    const pairsWithMatch = (weeklyAwards || [])
+      .filter(a => a.bestPlayerId && (a.winningMatchId || a.winningMatch?.id))
+      .map(a => ({ playerId: a.bestPlayerId, matchId: a.winningMatchId || a.winningMatch?.id }));
 
-        const matchId = award.winningMatchId || award.winningMatch?.id || null;
-        let stats = [];
-        if (matchId) {
-          stats = await prisma.playerStat.findMany({
-            where: {
-              playerId: award.bestPlayerId,
-              matchId,
-            },
-          });
-        } else {
-          const weekStart = startOfDay(award.weekStart);
-          const weekEnd = endOfDay(
-            new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
-          );
-          stats = await prisma.playerStat.findMany({
-            where: {
-              playerId: award.bestPlayerId,
-              match: { playedAt: { gte: weekStart, lte: weekEnd } },
-            },
-          });
-        }
-
-        return {
-          award,
-          stats: buildStats(stats),
-        };
-      })
+    const awardsWithoutMatch = (weeklyAwards || []).filter(
+      a => a.bestPlayerId && !a.winningMatchId && !a.winningMatch?.id
     );
+
+    const [statsForPairs, statsForDateRange] = await Promise.all([
+      pairsWithMatch.length > 0
+        ? prisma.playerStat.findMany({
+            where: { OR: pairsWithMatch.map(p => ({ playerId: p.playerId, matchId: p.matchId })) },
+          })
+        : Promise.resolve([]),
+      awardsWithoutMatch.length > 0
+        ? prisma.playerStat.findMany({
+            where: { playerId: { in: [...new Set(awardsWithoutMatch.map(a => a.bestPlayerId))] } },
+            include: { match: { select: { playedAt: true } } },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const statsByPairKey = new Map();
+    statsForPairs.forEach(s => {
+      const key = `${s.playerId}:${s.matchId}`;
+      if (!statsByPairKey.has(key)) statsByPairKey.set(key, []);
+      statsByPairKey.get(key).push(s);
+    });
+
+    const statsByPlayer = new Map();
+    statsForDateRange.forEach(s => {
+      if (!statsByPlayer.has(s.playerId)) statsByPlayer.set(s.playerId, []);
+      statsByPlayer.get(s.playerId).push(s);
+    });
+
+    const weeklyEntries = (weeklyAwards || []).map(award => {
+      if (!award.bestPlayerId) return { award, stats: null };
+      const matchId = award.winningMatchId || award.winningMatch?.id || null;
+      if (matchId) {
+        const stats = statsByPairKey.get(`${award.bestPlayerId}:${matchId}`) || [];
+        return { award, stats: buildStats(stats) };
+      }
+      const weekStart = startOfDay(award.weekStart);
+      const weekEnd = endOfDay(new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000));
+      const filtered = (statsByPlayer.get(award.bestPlayerId) || []).filter(s => {
+        const playedAt = s.match?.playedAt;
+        return playedAt && playedAt >= weekStart && playedAt <= weekEnd;
+      });
+      return { award, stats: buildStats(filtered) };
+    });
 
     const monthlyAwards = await prisma.monthlyAward.findMany({
       orderBy: [{ year: "desc" }, { month: "desc" }],
       include: { craque: true },
     });
 
-    const monthlyEntries = await Promise.all(
-      (monthlyAwards || []).map(async (award) => {
-        if (!award.craqueId) {
-          return { award, stats: null };
-        }
-        const { start: monthStart, end: monthEnd } = getMonthRangeSaoPaulo(
-          award.year,
-          award.month
-        );
+    // Batch fetch playerStats para monthly awards (evita N+1 queries)
+    const monthlyPlayerIds = [...new Set((monthlyAwards || []).filter(a => a.craqueId).map(a => a.craqueId))];
+    const allMonthlyStats = monthlyPlayerIds.length > 0
+      ? await prisma.playerStat.findMany({
+          where: { playerId: { in: monthlyPlayerIds } },
+          include: { match: { select: { playedAt: true } } },
+        })
+      : [];
 
-        const stats = await prisma.playerStat.findMany({
-          where: {
-            playerId: award.craqueId,
-            match: { playedAt: { gte: monthStart, lt: monthEnd } },
-          },
-        });
+    const monthlyStatsByPlayer = new Map();
+    allMonthlyStats.forEach(s => {
+      if (!monthlyStatsByPlayer.has(s.playerId)) monthlyStatsByPlayer.set(s.playerId, []);
+      monthlyStatsByPlayer.get(s.playerId).push(s);
+    });
 
-        return {
-          award,
-          stats: buildStats(stats),
-        };
-      })
-    );
+    const monthlyEntries = (monthlyAwards || []).map(award => {
+      if (!award.craqueId) return { award, stats: null };
+      const { start: monthStart, end: monthEnd } = getMonthRangeSaoPaulo(award.year, award.month);
+      const filtered = (monthlyStatsByPlayer.get(award.craqueId) || []).filter(s => {
+        const playedAt = s.match?.playedAt;
+        return playedAt && playedAt >= monthStart && playedAt < monthEnd;
+      });
+      return { award, stats: buildStats(filtered) };
+    });
 
     const monthlyByKey = new Map(
       monthlyEntries.map((entry) => [

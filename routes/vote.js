@@ -3,7 +3,18 @@ const express = require("express");
 const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../utils/db");
+const rateLimit = require("express-rate-limit");
 const { detectSuspiciousVotePattern } = require("../helpers/weeklyVoteValidation.helper");
+
+const voteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).send("Muitas tentativas. Tente novamente em alguns minutos.");
+  },
+});
 
 const TEAM_COLOR_THEMES = {
   Amarelo: { dot: "#facc15", soft: "rgba(250, 204, 21, 0.14)", border: "rgba(250, 204, 21, 0.55)" },
@@ -199,7 +210,7 @@ router.get("/:token", async (req, res) => {
   });
 });
 
-router.post("/:token", async (req, res) => {
+router.post("/:token", voteLimiter, async (req, res) => {
   const tokenValue = req.params.token;
   const ctx = await loadContext(tokenValue);
 
@@ -541,9 +552,9 @@ async function handlePublicVote(req, res) {
 
 
 router.get("/match/:matchId/:token", renderPublicVote);
-router.post("/match/:matchId/:token", handlePublicVote);
+router.post("/match/:matchId/:token", voteLimiter, handlePublicVote);
 router.get("/match/:matchId", renderPublicVote);
-router.post("/match/:matchId", handlePublicVote);
+router.post("/match/:matchId", voteLimiter, handlePublicVote);
 
 
 module.exports = router;

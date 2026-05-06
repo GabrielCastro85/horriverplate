@@ -2,6 +2,17 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
+const rateLimit = require("express-rate-limit");
+
+const voteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).send("Muitas tentativas. Tente novamente em alguns minutos.");
+  },
+});
 
 const monthNames = [
   "Janeiro",
@@ -85,7 +96,7 @@ router.get("/:token", async (req, res) => {
   });
 });
 
-router.post("/:token", async (req, res) => {
+router.post("/:token", voteLimiter, async (req, res) => {
   const { token } = req.params;
   const ctx = await loadMonthlyVoteContext(token);
 

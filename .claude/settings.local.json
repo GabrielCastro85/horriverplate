@@ -4,7 +4,23 @@
       "Bash(node -e ' *)",
       "Bash(node --check \"c:/Users/gabri/OneDrive/Documentos/projeto-horriver-plate - 2/routes/admin.js\")",
       "Bash(node --check \"c:/Users/gabri/OneDrive/Documentos/projeto-horriver-plate - 2/utils/overall.js\")",
-      "Bash(grep -v \"//\")"
+      "Bash(grep -v \"//\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\gabri\\\\OneDrive\\\\Documentos\\\\projeto-horriver-plate - 2\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Format-List)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\gabri\\\\OneDrive\\\\Documentos\\\\projeto-horriver-plate - 2\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "Bash(grep -r \"sanitize\\\\|escape\\\\|sql\\\\`\" \"c:\\\\Users\\\\gabri\\\\OneDrive\\\\Documentos\\\\projeto-horriver-plate - 2\" --include=\"*.js\")",
+      "Bash(npx prisma *)",
+      "Bash(git ls-files *)",
+      "Bash(git rm *)",
+      "Bash(Remove-Item -Recurse -Force \"backup_extract\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force \"views/admin.bak.ejs\", \"views/rankings.ejs.bakhead\", \"prisma/schema.prisma.bak\", \"admin_match_head.txt\", \"admin_match_tail.txt\", \"tmp_admin_finance_source.js\", \"tmp_test_report.pdf\", \"tmp-report-fixed.pdf\", \"tmp-report.bin\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force tmp-*.png, tmp-*.pdf -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force tmp_*.png, tmp_*.pdf -ErrorAction SilentlyContinue)",
+      "Bash(Write-Output \"Limpeza concluída\")",
+      "Bash(git add *)"
     ]
   }
 }
