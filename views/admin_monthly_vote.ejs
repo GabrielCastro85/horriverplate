@@ -285,339 +285,298 @@
   </section>
 <% } %>
 
+<%
+  const _mc_goals   = monthlyVoteWinner ? (monthlyVoteWinner.goals   ?? 0) : 0;
+  const _mc_assists = monthlyVoteWinner ? (monthlyVoteWinner.assists  ?? 0) : 0;
+  let _mc_highlight;
+  if (_mc_goals > _mc_assists)       _mc_highlight = 'goals';
+  else if (_mc_assists > _mc_goals)  _mc_highlight = 'assists';
+  else                               _mc_highlight = 'rating';
+%>
 <% if (monthlyVoteSession && monthlyVoteWinner) { %>
-  <div class="fixed -left-[9999px] top-0 w-[1200px]" aria-hidden="true">
-    <section id="monthlyWinnerExportRoot" class="monthly-export-card">
-      <img src="/img/logo-32x32.svg" alt="" class="monthly-export-watermark" />
+  <div class="fixed -left-[9999px] top-0 w-[960px]" aria-hidden="true">
+    <section id="monthlyWinnerExportRoot" class="mc-export-card">
+      <img src="/img/logo-32x32.svg" alt="" class="mc-export-watermark" />
 
-      <header class="monthly-export-header">
-        <div class="monthly-export-brand">
-          <div class="monthly-export-brand-row">
-            <img src="/img/logo-32x32.svg" alt="Horriver Plate" class="monthly-export-brand-logo" />
-            <span class="monthly-export-brand-name">Horriver Plate</span>
+      <header class="mc-export-header">
+        <div class="mc-export-brand">
+          <div class="mc-export-brand-row">
+            <img src="/img/logo-32x32.svg" alt="Horriver Plate" class="mc-export-brand-logo" />
+            <span class="mc-export-brand-name">Horriver Plate</span>
           </div>
-          <h2 class="monthly-export-title">Craque do mes</h2>
+          <div class="mc-export-titles">
+            <h2 class="mc-export-title">Craque do Mes</h2>
+            <p class="mc-export-subtitle">Escolhido pela galera na votacao mensal.</p>
+          </div>
         </div>
-        <div class="monthly-export-meta">
-          <span class="monthly-export-meta-line"></span>
-          <p class="monthly-export-date"><%= monthNames[mvMonth - 1] %> / <%= mvYear %></p>
+        <div class="mc-export-meta">
+          <span class="mc-export-meta-line"></span>
+          <div class="mc-export-meta-body">
+            <p class="mc-export-meta-kicker">Competencia</p>
+            <p class="mc-export-meta-date"><%= monthNames[mvMonth - 1] %> / <%= mvYear %></p>
+            <p class="mc-export-meta-label">Votacao Mensal</p>
+          </div>
         </div>
       </header>
 
-      <div class="monthly-export-divider"></div>
+      <div class="mc-export-divider"></div>
 
-      <section class="monthly-export-hero">
-        <div class="monthly-export-hero-main">
-          <div class="monthly-export-avatar">
-            <img
-              src="<%= monthlyVoteWinner.photoUrl || '/img/logo-64x64.svg' %>"
-              alt="<%= monthlyVoteWinner.name %>"
-            />
-          </div>
-          <div class="monthly-export-info">
-            <p class="monthly-export-kicker">Destaque do mes</p>
-            <h3 class="monthly-export-name"><%= monthlyVoteWinner.name %></h3>
-            <% if (monthlyVoteWinner.nickname) { %>
-              <p class="monthly-export-nick">"<%= monthlyVoteWinner.nickname %>"</p>
+      <div class="mc-export-body">
+        <div class="mc-export-photo-col">
+          <div class="mc-export-photo-wrap">
+            <% if (monthlyVoteWinner.photoUrl) { %>
+              <img src="<%= monthlyVoteWinner.photoUrl %>" alt="<%= monthlyVoteWinner.name %>" class="mc-export-photo-img" />
+            <% } else { %>
+              <div class="mc-export-photo-fallback">
+                <img src="/img/logo-32x32.svg" alt="" class="mc-export-photo-fallback-icon" />
+              </div>
             <% } %>
           </div>
         </div>
-      </section>
 
-      <div class="monthly-export-stats">
-        <div class="monthly-export-stat">
-          <span class="label">Peladas</span>
-          <span class="value"><%= monthlyVoteWinner.matches ?? 0 %></span>
-        </div>
-        <div class="monthly-export-stat">
-          <span class="label">Gols</span>
-          <span class="value"><%= monthlyVoteWinner.goals ?? 0 %></span>
-        </div>
-        <div class="monthly-export-stat">
-          <span class="label">Assist.</span>
-          <span class="value"><%= monthlyVoteWinner.assists ?? 0 %></span>
-        </div>
-        <div class="monthly-export-stat">
-          <span class="label">Fotos</span>
-          <span class="value"><%= monthlyVoteWinner.photos ?? 0 %></span>
-        </div>
-        <div class="monthly-export-stat monthly-export-stat--wide">
-          <span class="label">Media</span>
-          <span class="value"><%= String(monthlyVoteWinner.avgRating || 0).replace('.', ',') %></span>
+        <div class="mc-export-content-col">
+          <div class="mc-export-player-section">
+            <p class="mc-export-player-kicker">Craque do Mes</p>
+            <p class="mc-export-player-name"><%= monthlyVoteWinner.name %></p>
+            <% if (monthlyVoteWinner.nickname) { %>
+              <p class="mc-export-player-nick">"<%= monthlyVoteWinner.nickname %>"</p>
+            <% } %>
+          </div>
+
+          <div class="mc-export-stats-grid">
+            <article class="mc-stat-card">
+              <svg class="mc-stat-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1.5" y="3.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                <line x1="5" y1="1.5" x2="5" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <line x1="11" y1="1.5" x2="11" y2="5.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <line x1="1.5" y1="7" x2="14.5" y2="7" stroke="currentColor" stroke-width="1"/>
+              </svg>
+              <p class="mc-stat-label">Jogos</p>
+              <p class="mc-stat-value"><%= monthlyVoteWinner.matches ?? 0 %></p>
+            </article>
+
+            <article class="mc-stat-card <%= _mc_highlight === 'goals' ? 'mc-stat-card--highlight' : '' %>">
+              <svg class="mc-stat-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+                <circle cx="8" cy="8" r="2.5" fill="currentColor"/>
+              </svg>
+              <p class="mc-stat-label">Gols</p>
+              <p class="mc-stat-value"><%= monthlyVoteWinner.goals ?? 0 %></p>
+            </article>
+
+            <article class="mc-stat-card <%= _mc_highlight === 'assists' ? 'mc-stat-card--highlight' : '' %>">
+              <svg class="mc-stat-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 12 Q7 5 13 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                <path d="M10.5 4 L13.5 7 L10.5 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <p class="mc-stat-label">Assist.</p>
+              <p class="mc-stat-value"><%= monthlyVoteWinner.assists ?? 0 %></p>
+            </article>
+
+            <article class="mc-stat-card <%= _mc_highlight === 'rating' ? 'mc-stat-card--highlight' : '' %>">
+              <svg class="mc-stat-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 2 L9.6 6.2 L14 6.5 L10.8 9.2 L11.8 13.5 L8 11 L4.2 13.5 L5.2 9.2 L2 6.5 L6.4 6.2 Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+              </svg>
+              <p class="mc-stat-label">Media</p>
+              <p class="mc-stat-value"><%= String(monthlyVoteWinner.avgRating || 0).replace('.', ',') %></p>
+            </article>
+          </div>
         </div>
       </div>
 
-      <footer class="monthly-export-footer">
+      <footer class="mc-export-footer">
+        <span>horriverplate.onrender.com</span>
         <span>@_hpfrc</span>
-        <span class="dot">&bull;</span>
-        <span>horriverplate</span>
       </footer>
     </section>
   </div>
 <% } %>
 
 <style>
-  .monthly-export-card {
+  /* ── Card container ─────────────────────────────────────── */
+  .mc-export-card {
     position: relative;
     overflow: hidden;
-    width: 1200px;
-    padding: 36px 38px 28px;
+    width: 900px;
+    padding: 28px 32px 24px;
     border-radius: 34px;
     border: 1px solid rgba(255, 122, 26, 0.16);
     background:
-      radial-gradient(circle at top left, rgba(118, 24, 50, 0.12) 0%, transparent 32%),
+      radial-gradient(circle at top left,  rgba(118, 24, 50, 0.12) 0%, transparent 32%),
       radial-gradient(circle at top right, rgba(255, 122, 26, 0.04) 0%, transparent 18%),
       radial-gradient(circle at bottom right, rgba(24, 44, 82, 0.12) 0%, transparent 28%),
       linear-gradient(180deg, #2a0005 0%, #160208 34%, #050509 100%);
     color: #f3f4f6;
     font-family: "Manrope", system-ui, sans-serif;
-    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
-  .monthly-export-watermark {
+
+  /* ── Watermark (mais sutil, sem blur) ───────────────────── */
+  .mc-export-watermark {
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 560px;
-    height: 560px;
+    width: 480px;
+    height: 480px;
     transform: translate(-50%, -44%);
-    opacity: 0.025;
-    filter: grayscale(1) brightness(0.96) blur(2px);
+    opacity: 0.016;
+    filter: grayscale(1) brightness(0.8);
     pointer-events: none;
     user-select: none;
   }
-  .monthly-export-header {
+
+  /* ── Header ─────────────────────────────────────────────── */
+  .mc-export-header {
     position: relative;
     z-index: 1;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 36px;
+    gap: 32px;
   }
-  .monthly-export-brand {
-    display: flex;
-    flex-direction: column;
-    gap: 11px;
+  .mc-export-brand { display: flex; flex-direction: column; gap: 12px; }
+  .mc-export-brand-row { display: flex; align-items: center; gap: 12px; }
+  .mc-export-brand-logo { width: 28px; height: 28px; object-fit: contain; opacity: 0.8; }
+  .mc-export-brand-name {
+    font-size: 14px; font-weight: 800; letter-spacing: 0.24em;
+    text-transform: uppercase; color: #ffb36a;
   }
-  .monthly-export-brand-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .monthly-export-brand-logo {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    opacity: 0.8;
-  }
-  .monthly-export-brand-name {
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: rgba(255, 179, 106, 0.9);
-  }
-  .monthly-export-kicker {
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(226, 232, 240, 0.76);
-  }
-  .monthly-export-title {
-    font-family: "Bebas Neue", "Oswald", sans-serif;
-    font-size: 76px;
-    font-weight: 400;
-    line-height: 0.94;
-    letter-spacing: 0.82px;
-    color: #f8fafc;
-  }
-  .monthly-export-subtitle {
-    display: none;
-  }
-  .monthly-export-meta {
-    min-width: 260px;
-    padding-top: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-  }
-  .monthly-export-meta-line {
-    width: 92px;
-    height: 1px;
-    opacity: 0.66;
-    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.22) 100%);
-  }
-  .monthly-export-date {
-    font-size: 39px;
-    font-weight: 870;
-    line-height: 0.98;
-    letter-spacing: -0.038em;
-    color: #f8fafc;
-    text-align: right;
-  }
-  .monthly-export-meta-label {
-    font-size: 12px;
-    font-weight: 740;
-    line-height: 1;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(226, 232, 240, 0.6);
-    text-align: right;
-  }
-  .monthly-export-divider {
-    position: relative;
-    z-index: 1;
-    height: 1px;
-    margin: 34px 0 38px;
-    opacity: 0.62;
-    background: linear-gradient(90deg, rgba(34,197,94,0.50) 0%, rgba(250,204,21,0.52) 28%, rgba(239,68,68,0.48) 58%, rgba(59,130,246,0.50) 100%);
-  }
-  .monthly-export-hero {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-    align-items: center;
-    padding: 24px 26px;
-    border-radius: 30px;
-    border: 1px solid rgba(255, 122, 26, 0.22);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.16)),
-      rgba(0, 0, 0, 0.14);
-  }
-  .monthly-export-hero-main {
-    display: grid;
-    grid-template-columns: 124px 1fr;
-    gap: 24px;
-    align-items: center;
-    justify-content: center;
-    max-width: 760px;
-    margin: 0 auto;
-  }
-  .monthly-export-avatar {
-    width: 124px;
-    height: 124px;
-    border-radius: 28px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 122, 26, 0.24);
-    background: rgba(0, 0, 0, 0.28);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
-  }
-  .monthly-export-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .monthly-export-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
-    text-align: center;
-  }
-  .monthly-export-name {
+  .mc-export-titles { display: flex; flex-direction: column; gap: 0; }
+  .mc-export-title {
     margin: 0;
     font-family: "Bebas Neue", "Oswald", sans-serif;
-    font-size: 68px;
-    font-weight: 400;
-    line-height: 0.92;
-    letter-spacing: 0.7px;
-    color: #f8fafc;
+    font-size: 4.2rem; font-weight: 400; line-height: 1.0; color: #f8fafc;
   }
-  .monthly-export-nick {
-    margin-top: 2px;
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.12;
-    color: rgba(203, 213, 225, 0.56);
+  .mc-export-subtitle {
+    margin: 10px 0 0; font-size: 1rem; font-weight: 500; line-height: 1.5;
+    color: rgba(148, 163, 184, 0.8);
   }
-  .monthly-export-copy {
-    display: none;
+  .mc-export-meta {
+    min-width: 200px; padding-top: 8px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
   }
-  .monthly-export-votes-box {
-    display: none;
+  .mc-export-meta-line {
+    display: block; width: 80px; height: 1px; opacity: 0.45;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2));
   }
-  .monthly-export-votes-label {
-    display: none;
+  .mc-export-meta-body { text-align: right; display: flex; flex-direction: column; gap: 4px; }
+  .mc-export-meta-kicker {
+    margin: 0; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.18em; color: rgba(148, 163, 184, 0.66);
   }
-  .monthly-export-votes-value {
-    display: none;
+  .mc-export-meta-date { margin: 4px 0 0; font-size: 1.05rem; font-weight: 600; color: #f8fafc; }
+  .mc-export-meta-label {
+    margin: 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.16em; color: rgba(148, 163, 184, 0.56);
   }
-  .monthly-export-stats {
-    position: relative;
-    z-index: 1;
-    margin-top: 22px;
+
+  /* ── Divider (menos opacidade) ──────────────────────────── */
+  .mc-export-divider {
+    position: relative; z-index: 1;
+    height: 1px; margin: 26px 0 26px; opacity: 0.38;
+    background: linear-gradient(90deg,
+      rgba(34,197,94,0.50)  0%,
+      rgba(250,204,21,0.52) 28%,
+      rgba(239,68,68,0.48)  58%,
+      rgba(59,130,246,0.50) 100%);
+  }
+
+  /* ── Body: foto + conteúdo ──────────────────────────────── */
+  .mc-export-body {
+    position: relative; z-index: 1;
+    display: flex; gap: 26px; align-items: stretch;
+  }
+
+  /* Coluna da foto */
+  .mc-export-photo-col { flex-shrink: 0; width: 206px; }
+  .mc-export-photo-wrap {
+    width: 100%; height: 100%; min-height: 240px;
+    border-radius: 20px; overflow: hidden;
+    border: 2px solid rgba(255, 166, 50, 0.42);
+    background: rgba(10, 6, 12, 0.65);
+  }
+  .mc-export-photo-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mc-export-photo-fallback {
+    width: 100%; height: 100%; min-height: 240px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mc-export-photo-fallback-icon { width: 64px; height: 64px; opacity: 0.18; }
+
+  /* Coluna do conteúdo */
+  .mc-export-content-col {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+
+  /* Info do jogador */
+  .mc-export-player-section {
+    display: flex; flex-direction: column; gap: 4px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .mc-export-player-kicker {
+    margin: 0; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.22em; color: rgba(148, 163, 184, 0.7);
+  }
+  .mc-export-player-name {
+    margin: 0;
+    font-family: "Bebas Neue", "Oswald", sans-serif;
+    font-size: 3.6rem; font-weight: 400; line-height: 0.92; color: #f8fafc;
+  }
+  .mc-export-player-nick {
+    margin: 4px 0 0; font-size: 14px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase; color: rgba(148, 163, 184, 0.56);
+  }
+
+  /* ── Stats grid 2×2 ─────────────────────────────────────── */
+  .mc-export-stats-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 12px;
-  }
-  .monthly-export-stat {
-    border-radius: 22px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12)),
-      rgba(0, 0, 0, 0.16);
-    padding: 16px 12px;
-    text-align: center;
-  }
-  .monthly-export-stat--wide {
-    border-color: rgba(255, 122, 26, 0.18);
-  }
-  .monthly-export-stat .label {
-    display: block;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    color: rgba(203, 213, 225, 0.68);
-  }
-  .monthly-export-stat .value {
-    display: block;
-    margin-top: 8px;
-    font-size: 30px;
-    font-weight: 700;
-    color: #ff7a1a;
-  }
-  .monthly-export-footer {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    margin-top: 28px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    font-size: 10.5px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(226,232,240,0.34);
+    flex: 1 1 auto;
   }
-  .monthly-export-footer .dot {
-    opacity: 0.42;
+  .mc-stat-card {
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background:
+      linear-gradient(160deg, rgba(255,255,255,0.025) 0%, rgba(0,0,0,0.10) 100%),
+      rgba(0, 0, 0, 0.18);
+    padding: 16px 18px 16px;
+    display: flex; flex-direction: column; gap: 6px;
+    overflow: hidden;
   }
-  @media (max-width: 900px) {
-    .monthly-export-header {
-      flex-direction: column;
-    }
-    .monthly-export-meta {
-      min-width: 0;
-      width: 100%;
-      align-items: flex-start;
-      padding-top: 0;
-    }
-    .monthly-export-date,
-    .monthly-export-meta-label {
-      text-align: left;
-    }
-    .monthly-export-hero-main {
-      grid-template-columns: 1fr;
-      justify-items: center;
-      text-align: center;
-    }
-    .monthly-export-stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .mc-stat-card--highlight {
+    border-color: rgba(255, 122, 26, 0.38);
+    background:
+      linear-gradient(160deg, rgba(255,122,26,0.06) 0%, rgba(0,0,0,0.10) 100%),
+      rgba(0, 0, 0, 0.18);
+  }
+  .mc-stat-icon {
+    display: block; width: 15px; height: 15px;
+    color: rgba(148, 163, 184, 0.5); flex-shrink: 0;
+  }
+  .mc-stat-card--highlight .mc-stat-icon { color: rgba(255, 122, 26, 0.65); }
+  .mc-stat-label {
+    margin: 0; font-size: 9.5px; text-transform: uppercase;
+    letter-spacing: 0.18em; color: rgba(148, 163, 184, 0.65);
+  }
+  .mc-stat-card--highlight .mc-stat-label { color: rgba(255, 166, 80, 0.78); }
+  .mc-stat-value {
+    margin: 4px 0 0;
+    font-family: "Bebas Neue", "Oswald", sans-serif;
+    font-size: 2.6rem; font-weight: 400; line-height: 1.15; color: #eef2f7;
+  }
+  .mc-stat-card--highlight .mc-stat-value { color: #ff7a1a; }
+
+  /* ── Footer ─────────────────────────────────────────────── */
+  .mc-export-footer {
+    position: relative; z-index: 1;
+    margin-top: 22px; padding-top: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.15em; color: rgba(226, 232, 240, 0.28);
   }
 </style>
 <script>
@@ -625,6 +584,8 @@
     const btn = document.getElementById("exportMonthlyWinnerBtn");
     const root = document.getElementById("monthlyWinnerExportRoot");
     if (!btn || !root) return;
+
+    const isMonthlyClosed = <%- monthlyVoteClosed ? 'true' : 'false' %>;
 
     const buildRoundedCanvas = (sourceCanvas, radius) => {
       const output = document.createElement("canvas");
@@ -656,20 +617,41 @@
     };
 
     btn.addEventListener("click", async () => {
+      if (!isMonthlyClosed) {
+        alert("Encerre a votacao antes de exportar o card do vencedor. Clique em 'Encerrar votacao' e tente novamente.");
+        return;
+      }
       btn.disabled = true;
       btn.textContent = "Gerando...";
       try {
-        if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready;
-        }
+        await (document.fonts?.ready || Promise.resolve());
+
+        const imgs = Array.from(root.querySelectorAll("img"));
+        await Promise.all(imgs.map((img) => {
+          if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+            setTimeout(resolve, 8000);
+          });
+        }));
+
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        const SCALE = 3;
         const canvas = await html2canvas(root, {
-          scale: 2,
+          scale: SCALE,
           backgroundColor: null,
           useCORS: true,
+          allowTaint: false,
+          logging: false,
+          width: root.offsetWidth,
           height: root.scrollHeight,
+          windowWidth: root.offsetWidth,
           windowHeight: root.scrollHeight,
+          imageTimeout: 15000,
         });
-        const roundedCanvas = buildRoundedCanvas(canvas, 68);
+        const roundedCanvas = buildRoundedCanvas(canvas, 34 * SCALE);
         const link = document.createElement("a");
         link.download = `craque-do-mes-${<%= mvMonth %>}-${<%= mvYear %>}.png`;
         link.href = roundedCanvas.toDataURL("image/png");

@@ -771,6 +771,21 @@
     .rk-scroll table[data-rk-type="overall"] td:nth-child(4)::before { content: "Overall"; }
     .rk-scroll table[data-rk-type="last10"] td:nth-child(4)::before { content: "Indice"; }
   }
+
+  .rk-main-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .rk-main-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.5rem;
+      align-items: start;
+    }
+  }
 </style>
 
 <section class="page-shell animate-fadeIn">
@@ -1012,9 +1027,7 @@
   </section>
 
   <!-- GRID DE RANKINGS PRINCIPAIS -->
-  <section class="space-y-6">
-    <!-- 1ª LINHA: GOLS + ASSISTS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <section class="rk-main-grid">
       <!-- ================= GOLS ================= -->
       <div id="ranking-gols" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
@@ -1140,10 +1153,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- 2ª LINHA: GA + MÉDIA DE NOTAS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- ================= GOLS + ASSISTÊNCIAS ================= -->
       <div id="ranking-defesas" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
@@ -1335,10 +1344,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- 3ª LINHA: REI DAS FOTOS + REI DAS PRESENÇAS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- ================= FOTOS ================= -->
       <div id="ranking-fotos" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
@@ -1468,41 +1473,30 @@
           </div>
         </div>
       </div>
-    </div>
-</section>
-
-  <!-- OVERALL (60–100) + ÚLTIMOS 10 JOGOS -->
-  <section class="space-y-6 mt-4">
-    <h2 class="font-title text-2xl text-horriver-light">
-      Desempenho geral e últimas 10 peladas
-    </h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] md:text-xs">
-      <!-- OVERALL -->
+      <!-- ================= OVERALL ================= -->
       <div id="ranking-overall" class="card-highlight rounded-3xl p-[1px] rk-anchor">
-        <div class="card-inner p-4 md:p-5 flex flex-col h-full">
+        <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h3 class="font-title text-lg text-horriver-light">
-                Ranking Overall Dinâmico (mínimo 60)
-              </h3>
-              <p class="text-[11px] text-horriver-gray">
-                Índice das 10 peladas mais recentes do recorte, com mais peso para as notas
-                e ajuste por posição para ser justo com goleiros e zagueiros.
+              <h2 class="font-title text-lg text-horriver-light">
+                Ranking Overall
+              </h2>
+              <p class="text-[11px] text-horriver-gray mt-0.5">
+                OVR salvo de cada jogador — mesmo valor exibido no sorteador de times.
               </p>
             </div>
             <span
               class="badge-pulse inline-flex items-center px-3 py-1 rounded-full
                      bg-black/60 border border-horriver-red/70 text-[11px] text-horriver-orange"
             >
-              60–100
+              60–99
             </span>
           </div>
 
           <div class="mt-4 flex-1 overflow-hidden rk-ranking-body">
             <% if (!overall.length) { %>
               <p class="text-sm text-horriver-gray">
-                Nenhum dado para este período.
+                Nenhum dado disponível.
               </p>
             <% } else { %>
               <%- renderRankingPodium(overall, [
@@ -1543,6 +1537,13 @@
           </div>
         </div>
       </div>
+</section>
+
+  <!-- ÚLTIMAS 10 PELADAS -->
+  <section class="space-y-6 mt-4">
+    <h2 class="font-title text-2xl text-horriver-light">
+      Forma recente
+    </h2>
 
       <!-- ÚLTIMOS 10 JOGOS -->
       <div id="ranking-ultimos-10" class="card-highlight rounded-3xl p-[1px] rk-anchor">
@@ -1609,7 +1610,6 @@
           </div>
         </div>
       </div>
-    </div>
   </section>
 
   <!-- RANKINGS DE PRÊMIOS (CRAQUE DA SEMANA / MÊS) -->

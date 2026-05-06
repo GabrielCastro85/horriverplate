@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
-const { computeOverallFromEntries } = require("../utils/overall");
+const { resolveOverallScore } = require("../utils/overall");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
 const cache = new Map();
@@ -430,19 +430,28 @@ router.get("/", async (req, res) => {
         return b.matches - a.matches;
       });
 
-    // ======= OVERALL 0-100 (pesos por posição) =======
-    const { computed: overallComputed } = computeOverallFromEntries(recentAggregates);
-    const overallRanking = overallComputed
-      .filter((e) => e.matches > 0 || e.goals > 0 || e.assists > 0)
-      .map((e) => {
-        return { ...e, overallScore: Math.round(e.overall || 60) };
-      })
-      .sort((a, b) => {
-        if (b.overallScore !== a.overallScore) return b.overallScore - a.overallScore;
-        if (b.rating !== a.rating) return b.rating - a.rating;
-        if (b.goals !== a.goals) return b.goals - a.goals;
-        return b.assists - a.assists;
-      });
+    // ======= OVERALL — campo salvo (mesma fonte do sorteador) =======
+    // Ignora filtros de data; aplica só filtro de posição (playerWhere).
+    // Fonte: player.overallDynamic → player.baseOverall → 60 (resolveOverallScore).
+    const overallPlayers = await prisma.player.findMany({
+      where: playerWhere,
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        nickname: true,
+        photoUrl: true,
+        overallDynamic: true,
+        baseOverall: true,
+      },
+    });
+    const overallRanking = overallPlayers
+      .filter((p) => p.overallDynamic != null)
+      .map((p) => ({
+        player: p,
+        overallScore: Math.round(resolveOverallScore(p, null)),
+      }))
+      .sort((a, b) => b.overallScore - a.overallScore);
 
     // ======= PRESEN+–AS =======
     const matchesRanking = [...entries]

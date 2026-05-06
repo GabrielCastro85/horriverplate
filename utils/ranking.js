@@ -1,5 +1,5 @@
 const prisma = require("./db");
-const { computeOverallFromEntries } = require("./overall");
+const { computeOverallFromEntries, calculateHistoricalOverall } = require("./overall");
 
 const MATCH_WINDOW = 10;
 
@@ -113,6 +113,29 @@ async function recalculateOverallForAllPlayers() {
   return { count: ops.length };
 }
 
+// Recalcula o OVR de todos os jogadores usando TODAS as peladas históricas
+// e salva o resultado em player.overallDynamic.
+async function recalculateHistoricalOverallForAllPlayers() {
+  const players = await prisma.player.findMany({
+    include: {
+      stats: { include: { match: true } },
+    },
+  });
+
+  const ops = players.map((p) => {
+    const newOvr = calculateHistoricalOverall(p, p.stats);
+    return prisma.player.update({
+      where: { id: p.id },
+      data: { overallDynamic: newOvr, overallLastUpdated: new Date() },
+    });
+  });
+
+  await prisma.$transaction(ops);
+  console.log(`OVR histórico recalculado para ${ops.length} jogadores.`);
+  return { count: ops.length };
+}
+
 module.exports = {
   recalculateOverallForAllPlayers,
+  recalculateHistoricalOverallForAllPlayers,
 };

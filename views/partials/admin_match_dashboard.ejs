@@ -278,7 +278,7 @@
                       <%= player.position %><% if (player.nickname) { %> - <%= player.nickname %><% } %>
                     </p>
                   </div>
-                  <div class="grid <%= isGoalkeeper ? 'grid-cols-6 md:min-w-[500px]' : 'grid-cols-5 md:min-w-[430px]' %> gap-2 text-center text-[11px]">
+                  <div class="grid <%= isGoalkeeper ? 'grid-cols-3 sm:grid-cols-6 md:min-w-[500px]' : 'grid-cols-3 sm:grid-cols-5 md:min-w-[430px]' %> gap-2 text-center text-[11px]">
                     <div class="rounded-xl border border-horriver-border/50 bg-black/30 px-2 py-1.5">
                       <span class="block uppercase text-horriver-gray">OVR</span>
                       <strong class="mt-0.5 block text-horriver-orange"><%= player.overall != null ? player.overall : "-" %></strong>
@@ -969,7 +969,7 @@
           </div>
 
           <div class="overflow-x-auto text-[11px] md:text-xs w-full max-h-[60vh]">
-            <table class="w-full min-w-[640px] border-collapse admin-table">
+            <table class="w-full border-collapse admin-table">
               <thead class="bg-black/80">
                 <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
                   <th class="py-2 px-4 text-left font-normal">Jogador</th>

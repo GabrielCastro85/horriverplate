@@ -2,34 +2,36 @@
 // Entrada esperada para cada jogador: { player, goals, assists, saves, savesMatches, matches, rating }
 
 const OVERALL_MIN = 60;
-const OVERALL_MAX = 95;
+const OVERALL_MAX = 99;
 const FULL_CONFIDENCE_MATCHES = 6;
 const MIN_SAMPLE_CONFIDENCE = 0.25;
 
+// Pesos para computeOverallFromEntries (janela últimas 10 peladas / fallback sorteador).
+// Nota domina; gols por jogo normalizam dentro do grupo — não pesam excessivamente.
 const POSITION_PROFILES = {
   GOL: {
     key: "GOL",
-    weights: { rating: 0.68, goals: 0.04, assists: 0.16, saves: 0.12 },
+    weights: { rating: 0.80, goals: 0.00, assists: 0.08, saves: 0.12 },
     references: { goalsPerMatch: 0.15, assistsPerMatch: 0.3, savesPerMatch: 8 },
   },
   ZAG: {
     key: "ZAG",
-    weights: { rating: 0.68, goals: 0.12, assists: 0.2 },
+    weights: { rating: 0.82, goals: 0.04, assists: 0.14 },
     references: { goalsPerMatch: 0.35, assistsPerMatch: 0.35 },
   },
   MEI: {
     key: "MEI",
-    weights: { rating: 0.5, goals: 0.22, assists: 0.28 },
+    weights: { rating: 0.72, goals: 0.10, assists: 0.18 },
     references: { goalsPerMatch: 0.7, assistsPerMatch: 0.8 },
   },
   ATA: {
     key: "ATA",
-    weights: { rating: 0.42, goals: 0.43, assists: 0.15 },
+    weights: { rating: 0.60, goals: 0.24, assists: 0.16 },
     references: { goalsPerMatch: 1.0, assistsPerMatch: 0.45 },
   },
   OUTRO: {
     key: "OUTRO",
-    weights: { rating: 0.58, goals: 0.24, assists: 0.18 },
+    weights: { rating: 0.72, goals: 0.14, assists: 0.14 },
     references: { goalsPerMatch: 0.7, assistsPerMatch: 0.6 },
   },
 };
@@ -199,8 +201,96 @@ function buildOverallScoreMap(computedRows) {
   return map;
 }
 
+// ─── Cálculo histórico (usa TODAS as peladas do jogador) ─────────────────────
+// Pesos: nota média 50%, contribuição por posição 25%, presença 15%, forma recente 10%
+function calculateHistoricalOverall(player, allStats) {
+  const position = normalizePosition(player?.position);
+  const { references } = POSITION_PROFILES[position] || POSITION_PROFILES.OUTRO;
+
+  const presentStats = (allStats || []).filter((s) => s.present);
+  const totalMatches = presentStats.length;
+
+  if (totalMatches === 0) return OVERALL_MIN;
+
+  const sorted = [...presentStats].sort((a, b) => {
+    const da = a.match?.playedAt ? new Date(a.match.playedAt).getTime() : 0;
+    const db = b.match?.playedAt ? new Date(b.match.playedAt).getTime() : 0;
+    return db - da;
+  });
+
+  let goals = 0, assists = 0, saves = 0, ratingSum = 0, ratingCount = 0;
+  for (const s of presentStats) {
+    goals   += s.goals   || 0;
+    assists += s.assists || 0;
+    saves   += s.saves   || 0;
+    if (s.rating != null) { ratingSum += s.rating; ratingCount++; }
+  }
+
+  const avgRating      = ratingCount > 0 ? ratingSum / ratingCount : 5;
+  const goalsPerMatch  = goals   / totalMatches;
+  const assistsPerMatch= assists / totalMatches;
+  const savesPerMatch  = saves   / totalMatches;
+
+  // Forma recente: últimas 5 peladas
+  let recentSum = 0, recentCount = 0;
+  for (const s of sorted.slice(0, 5)) {
+    if (s.rating != null) { recentSum += s.rating; recentCount++; }
+  }
+  const recentRating = recentCount > 0 ? recentSum / recentCount : avgRating;
+
+  // Normalização (per-game, contra referência por posição)
+  const ratingNorm  = clamp(avgRating    / 10, 0, 1);
+  const recentNorm  = clamp(recentRating / 10, 0, 1);
+  const goalsNorm   = clamp(goalsPerMatch   / (references.goalsPerMatch   || 1), 0, 1);
+  const assistsNorm = clamp(assistsPerMatch / (references.assistsPerMatch || 1), 0, 1);
+
+  // Presença: 12+ peladas = regularidade máxima
+  const presenceScore = clamp(totalMatches / 12, 0, 1);
+
+  // Pesos explícitos por posição (total = 1.0).
+  // ZAG e GOL redistribuem o peso ofensivo não usado para nota, evitando punição por poucos gols.
+  const w =
+    position === "ATA"   ? { rating: 0.60, goals: 0.09, assists: 0.06, presence: 0.15, recent: 0.10 }
+    : position === "MEI" ? { rating: 0.60, goals: 0.05, assists: 0.10, presence: 0.15, recent: 0.10 }
+    : position === "ZAG" ? { rating: 0.69, goals: 0.02, assists: 0.04, presence: 0.15, recent: 0.10 }
+    : position === "GOL" ? { rating: 0.74, goals: 0.00, assists: 0.01, presence: 0.15, recent: 0.10 }
+    :                      { rating: 0.60, goals: 0.07, assists: 0.08, presence: 0.15, recent: 0.10 };
+
+  const performanceScore =
+    ratingNorm    * w.rating   +
+    goalsNorm     * w.goals    +
+    assistsNorm   * w.assists  +
+    presenceScore * w.presence +
+    recentNorm    * w.recent;
+  const performanceOverall = OVERALL_MIN + clamp(performanceScore, 0, 1) * (OVERALL_MAX - OVERALL_MIN);
+
+  const sampleConf = getSampleConfidence(totalMatches);
+  const baseOv = Number.isFinite(Number(player?.baseOverall)) ? Number(player.baseOverall) : OVERALL_MIN;
+
+  return clamp(Math.round(baseOv * (1 - sampleConf) + performanceOverall * sampleConf), OVERALL_MIN, OVERALL_MAX);
+}
+
+// ─── Ajuste incremental pós-pelada ──────────────────────────────────────────
+// Aplica delta de -2 a +2 sobre o OVR atual com base na nota da partida.
+function updatePlayerOverallAfterMatch(currentOvr, matchStat) {
+  const safe = clamp(Math.round(Number.isFinite(currentOvr) ? currentOvr : OVERALL_MIN), OVERALL_MIN, OVERALL_MAX);
+  const rating = matchStat?.rating;
+  if (rating == null) return safe;
+
+  let delta = 0;
+  if      (rating < 5.5) delta = -2;
+  else if (rating < 6.5) delta = -1;
+  else if (rating < 7.5) delta =  0;
+  else if (rating < 8.5) delta = +1;
+  else                   delta = +2;
+
+  return clamp(safe + delta, OVERALL_MIN, OVERALL_MAX);
+}
+
 module.exports = {
   computeOverallFromEntries,
   resolveOverallScore,
   buildOverallScoreMap,
+  calculateHistoricalOverall,
+  updatePlayerOverallAfterMatch,
 };

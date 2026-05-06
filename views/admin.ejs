@@ -1009,6 +1009,27 @@
       </div>
     </div>
   </section>
+
+  <section class="pt-4 border-t border-horriver-border/60 space-y-2">
+    <p class="text-[11px] text-horriver-gray">Manutencao do sistema de OVR</p>
+    <form
+      method="POST"
+      action="/admin/recalculate-overall-historical"
+      class="inline"
+      data-toast="OVR historico recalculado com sucesso."
+      onsubmit="return confirm('Recalcular o OVR historico de todos os jogadores usando TODAS as peladas? Isso sobrescreve o overallDynamic atual de cada jogador.');"
+    >
+      <button
+        type="submit"
+        class="w-full sm:w-auto px-3 py-2 rounded-full border border-horriver-orange
+               text-[11px] md:text-xs text-horriver-orange
+               hover:bg-horriver-orange hover:text-horriver-bg
+               transition-colors"
+      >
+        Recalcular OVR historico (todas as peladas)
+      </button>
+    </form>
+  </section>
 </div>
 
 <script>

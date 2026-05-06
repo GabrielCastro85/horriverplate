@@ -1221,9 +1221,10 @@
         const exportHeight = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height || 0);
         const canvas = await html2canvas(el, {
           backgroundColor: null,
-          scale: 2,
+          scale: 3,
           height: exportHeight,
           windowHeight: exportHeight,
+          imageTimeout: 15000,
         });
         const roundedCanvas = buildRoundedCanvas(canvas, 44);
 
@@ -3794,10 +3795,11 @@
           await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
           const canvas = await html2canvas(card, {
             backgroundColor: null,
-            scale: 2,
+            scale: 3,
             useCORS: true,
             windowWidth: Math.ceil(card.scrollWidth),
             windowHeight: Math.ceil(card.scrollHeight),
+            imageTimeout: 15000,
           });
           const roundedCanvas = buildRoundedCanvas(canvas, 68);
           document.body.removeChild(card);

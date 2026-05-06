@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(node --check \"c:/Users/gabri/OneDrive/Documentos/projeto-horriver-plate - 2/routes/admin.js\")",
+      "Bash(node --check \"c:/Users/gabri/OneDrive/Documentos/projeto-horriver-plate - 2/utils/overall.js\")",
+      "Bash(grep -v \"//\")"
+    ]
+  }
+}

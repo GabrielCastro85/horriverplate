@@ -16,7 +16,8 @@ const {
 const { deleteCache } = require("../utils/page_cache");
 
 const { getDynamicOverallSnapshot } = require("../utils/live_overall");
-const { recalculateOverallForAllPlayers } = require("../utils/ranking");
+const { recalculateOverallForAllPlayers, recalculateHistoricalOverallForAllPlayers } = require("../utils/ranking");
+const { updatePlayerOverallAfterMatch } = require("../utils/overall");
 const { rebuildAchievementsForAllPlayers } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 const {
@@ -588,7 +589,7 @@ async function captureAwardsCardPng(matchId, adminToken) {
     await page.setViewport({
       width: 1600,
       height: 2200,
-      deviceScaleFactor: 2,
+      deviceScaleFactor: 3,
     });
 
     await page.setCookie({
@@ -1286,6 +1287,25 @@ async function recomputeTotalsForPlayers(playerIds) {
   }
 }
 
+// Ajusta overallDynamic de cada jogador presente numa pelada (+/-2 por nota).
+// Só altera jogadores que já têm overallDynamic definido (baseline histórico).
+async function updateAllPlayersOverallAfterMatch(matchId) {
+  const stats = await prisma.playerStat.findMany({
+    where: { matchId, present: true },
+    include: { player: true },
+  });
+  const ops = stats
+    .filter((s) => s.player?.overallDynamic != null)
+    .map((s) => {
+      const newOvr = updatePlayerOverallAfterMatch(s.player.overallDynamic, s);
+      return prisma.player.update({
+        where: { id: s.playerId },
+        data: { overallDynamic: newOvr, overallLastUpdated: new Date() },
+      });
+    });
+  if (ops.length) await prisma.$transaction(ops);
+}
+
 // ==============================
 // ?? Painel principal /admin
 // ==============================
@@ -1670,10 +1690,28 @@ router.post("/monthly-vote/:id/close", requireAdmin, async (req, res) => {
     const sessionId = Number(req.params.id);
     if (!sessionId) return res.redirect("/admin/monthly-vote");
 
-    await prisma.monthlyVoteSession.update({
+    const session = await prisma.monthlyVoteSession.update({
       where: { id: sessionId },
       data: { expiresAt: new Date() },
     });
+
+    const ballots = await prisma.monthlyVoteBallot.findMany({
+      where: { token: { sessionId } },
+    });
+    if (ballots.length) {
+      const counts = ballots.reduce((acc, b) => {
+        acc[b.candidateId] = (acc[b.candidateId] || 0) + 1;
+        return acc;
+      }, {});
+      const winnerId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+      if (winnerId) {
+        await prisma.monthlyAward.upsert({
+          where: { month_year: { month: session.month, year: session.year } },
+          update: { craqueId: Number(winnerId) },
+          create: { month: session.month, year: session.year, craqueId: Number(winnerId) },
+        });
+      }
+    }
 
     return res.redirect("/admin/monthly-vote?monthlyVoteClosed=1");
   } catch (err) {
@@ -3181,6 +3219,7 @@ async function saveMatchStatsFromBody(matchId, body) {
 
     await recomputeTotalsForPlayers(Array.from(touchedPlayerIds));
     await recalculateOverallForAllPlayers();
+    await updateAllPlayersOverallAfterMatch(matchId);
 
     const financeSettings = await ensureFinanceSettings();
     const matchDate = new Date(match.playedAt);
@@ -3639,7 +3678,7 @@ router.get("/matches/:id", requireAdmin, async (req, res) => {
     const { scoreMap: overallById } = await getDynamicOverallSnapshot();
     const playersWithOverall = players.map((p) => ({
       ...p,
-      overall: overallById.get(p.id) ?? 60,
+      overall: p.overallDynamic ?? overallById.get(p.id) ?? 60,
     }));
     
     const voteSession = match.voteSessions.length > 0 ? match.voteSessions[0] : null;
@@ -4001,6 +4040,19 @@ router.post("/recalculate-overall", requireAdmin, async (req, res) => {
 
 
 
+// ===============================================
+// Rota: Recalcular OVR histórico (todas as peladas)
+// ===============================================
+router.post("/recalculate-overall-historical", requireAdmin, async (req, res) => {
+  try {
+    const { count } = await recalculateHistoricalOverallForAllPlayers();
+    res.redirect(`/admin?success=historicalOvrRecalculated&count=${count}`);
+  } catch (err) {
+    console.error("Erro ao recalcular OVR histórico:", err);
+    res.redirect("/admin?error=historicalOvrError");
+  }
+});
+
 // ==============================
 // ?? Sorteador de times (configuravel, usa OVERALL do ranking)
 // ==============================
@@ -4212,14 +4264,14 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
       name: s.player.name,
       nickname: s.player.nickname,
       position: s.player.position || "Outros",
-      // for–a combinando overall histórico + desempenho recente (últimas 10)
+      // força combinando overall histórico + desempenho recente (últimas 10)
       strength: (() => {
-        const baseOverall = overallMap.get(s.playerId) ?? 60;
+        const baseOverall = s.player.overallDynamic ?? overallMap.get(s.playerId) ?? 60;
         const last10Score = last10ScoreMap.get(s.playerId) ?? 0; // 0-10
         const combined = Math.round(baseOverall * 0.6 + (last10Score * 10) * 0.4);
         return combined;
       })(),
-      displayOverall: overallMap.get(s.playerId) ?? null,
+      displayOverall: s.player.overallDynamic ?? overallMap.get(s.playerId) ?? null,
       guest: false,
     }));
 

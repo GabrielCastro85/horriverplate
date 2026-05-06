@@ -239,7 +239,7 @@
       e.stopPropagation();
       const card = document.getElementById("awards-card");
       if (!card) return;
-      html2canvas(card, { backgroundColor: null, scale: 2, useCORS: true }).then((canvas) => {
+      html2canvas(card, { backgroundColor: null, scale: 3, useCORS: true, imageTimeout: 15000 }).then((canvas) => {
         const roundedCanvas = buildRoundedCanvas(canvas, 52);
         roundedCanvas.toBlob((blob) => {
           if (!blob) return;
