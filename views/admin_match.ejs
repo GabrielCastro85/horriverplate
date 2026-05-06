@@ -1209,9 +1209,44 @@
       return output;
     };
 
+    const downloadCanvas = (canvas, filename) =>
+      new Promise((resolve, reject) => {
+        if (!canvas.toBlob) {
+          reject(new Error("Canvas export is not supported."));
+          return;
+        }
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error("Could not generate image blob."));
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = filename;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            resolve();
+          }, 1000);
+        }, "image/png");
+      });
+
+    const releaseCanvas = (canvas) => {
+      if (!canvas) return;
+      canvas.width = 0;
+      canvas.height = 0;
+    };
+
     const runExport = async (targetId, name) => {
       const el = document.getElementById(targetId);
       if (!el) return;
+      let canvas = null;
+      let roundedCanvas = null;
       try {
         await loadHtml2Canvas();
         document.body.classList.add("is-exporting");
@@ -1219,22 +1254,20 @@
         await (document.fonts?.ready || Promise.resolve());
 
         const exportHeight = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height || 0);
-        const canvas = await html2canvas(el, {
+        canvas = await html2canvas(el, {
           backgroundColor: null,
-          scale: 3,
+          scale: Math.min(2, window.devicePixelRatio || 1.5),
           height: exportHeight,
           windowHeight: exportHeight,
           imageTimeout: 15000,
         });
-        const roundedCanvas = buildRoundedCanvas(canvas, 44);
-
-        const link = document.createElement("a");
-        link.download = `${name}.png`;
-        link.href = roundedCanvas.toDataURL("image/png");
-        link.click();
+        roundedCanvas = buildRoundedCanvas(canvas, 44);
+        await downloadCanvas(roundedCanvas, `${name}.png`);
       } catch (err) {
         console.error(err);
       } finally {
+        releaseCanvas(roundedCanvas);
+        releaseCanvas(canvas);
         el.classList.remove("is-exporting");
         document.body.classList.remove("is-exporting");
       }
@@ -3365,6 +3398,39 @@
             return null;
           };
 
+          const downloadCanvas = (canvas, filename) =>
+            new Promise((resolve, reject) => {
+              if (!canvas.toBlob) {
+                reject(new Error("Canvas export is not supported."));
+                return;
+              }
+
+              canvas.toBlob((blob) => {
+                if (!blob) {
+                  reject(new Error("Could not generate image blob."));
+                  return;
+                }
+
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.download = filename;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => {
+                  URL.revokeObjectURL(url);
+                  resolve();
+                }, 1000);
+              }, "image/png");
+            });
+
+          const releaseCanvas = (canvas) => {
+            if (!canvas) return;
+            canvas.width = 0;
+            canvas.height = 0;
+          };
+
           const sponsorNameByLabelClient = {
             Amarelo: "Natureza em Flores",
             Vermelho: "Matheus Gomes Barbearia",
@@ -3793,21 +3859,24 @@
             })
           );
           await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-          const canvas = await html2canvas(card, {
-            backgroundColor: null,
-            scale: 3,
-            useCORS: true,
-            windowWidth: Math.ceil(card.scrollWidth),
-            windowHeight: Math.ceil(card.scrollHeight),
-            imageTimeout: 15000,
-          });
-          const roundedCanvas = buildRoundedCanvas(canvas, 68);
-          document.body.removeChild(card);
-
-          const link = document.createElement("a");
-          link.download = "times-sorteio.png";
-          link.href = roundedCanvas.toDataURL("image/png");
-          link.click();
+          let canvas = null;
+          let roundedCanvas = null;
+          try {
+            canvas = await html2canvas(card, {
+              backgroundColor: null,
+              scale: Math.min(2, window.devicePixelRatio || 1.5),
+              useCORS: true,
+              windowWidth: Math.ceil(card.scrollWidth),
+              windowHeight: Math.ceil(card.scrollHeight),
+              imageTimeout: 15000,
+            });
+            roundedCanvas = buildRoundedCanvas(canvas, 68);
+            await downloadCanvas(roundedCanvas, "times-sorteio.png");
+          } finally {
+            releaseCanvas(roundedCanvas);
+            releaseCanvas(canvas);
+            if (card.isConnected) document.body.removeChild(card);
+          }
           shareStatus.textContent = "Imagem baixada.";
         } catch (err) {
           console.error(err);
@@ -3823,9 +3892,6 @@
   }
   })();
 </script>
-
-
-
 
 
 

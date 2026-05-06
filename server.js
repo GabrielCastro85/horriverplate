@@ -26,6 +26,8 @@ const monthlyVoteRouter = require("./routes/monthly_vote");
 let sharp = null;
 try {
   sharp = require("sharp");
+  sharp.concurrency(1);
+  sharp.cache({ memory: 32, files: 20, items: 100 });
 } catch (err) {
   console.warn("Sharp not available, thumbnails disabled.");
 }

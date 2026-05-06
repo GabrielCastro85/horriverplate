@@ -325,7 +325,13 @@
         <div class="mc-export-photo-col">
           <div class="mc-export-photo-wrap">
             <% if (monthlyVoteWinner.photoUrl) { %>
-              <img src="<%= monthlyVoteWinner.photoUrl %>" alt="<%= monthlyVoteWinner.name %>" class="mc-export-photo-img" />
+              <img
+                src="<%= thumbUrl(monthlyVoteWinner.photoUrl, 640) %>"
+                srcset="<%= thumbUrl(monthlyVoteWinner.photoUrl, 640) %> 1x, <%= thumbUrl(monthlyVoteWinner.photoUrl, 960) %> 2x"
+                alt="<%= monthlyVoteWinner.name %>"
+                class="mc-export-photo-img"
+                crossorigin="anonymous"
+              />
             <% } else { %>
               <div class="mc-export-photo-fallback">
                 <img src="/img/logo-32x32.svg" alt="" class="mc-export-photo-fallback-icon" />
@@ -616,6 +622,39 @@
       return output;
     };
 
+    const downloadCanvas = (canvas, filename) =>
+      new Promise((resolve, reject) => {
+        if (!canvas.toBlob) {
+          reject(new Error("Canvas export is not supported."));
+          return;
+        }
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error("Could not generate image blob."));
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = filename;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            resolve();
+          }, 1000);
+        }, "image/png");
+      });
+
+    const releaseCanvas = (canvas) => {
+      if (!canvas) return;
+      canvas.width = 0;
+      canvas.height = 0;
+    };
+
     btn.addEventListener("click", async () => {
       if (!isMonthlyClosed) {
         alert("Encerre a votacao antes de exportar o card do vencedor. Clique em 'Encerrar votacao' e tente novamente.");
@@ -623,6 +662,8 @@
       }
       btn.disabled = true;
       btn.textContent = "Gerando...";
+      let canvas = null;
+      let roundedCanvas = null;
       try {
         await (document.fonts?.ready || Promise.resolve());
 
@@ -638,27 +679,29 @@
 
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-        const SCALE = 3;
-        const canvas = await html2canvas(root, {
+        const SCALE = Math.min(2, window.devicePixelRatio || 1.5);
+        const exportWidth = Math.ceil(root.offsetWidth || root.getBoundingClientRect().width || 900);
+        const exportHeight = Math.ceil(root.scrollHeight || root.getBoundingClientRect().height || 520);
+        canvas = await html2canvas(root, {
           scale: SCALE,
           backgroundColor: null,
           useCORS: true,
           allowTaint: false,
           logging: false,
-          width: root.offsetWidth,
-          height: root.scrollHeight,
-          windowWidth: root.offsetWidth,
-          windowHeight: root.scrollHeight,
+          width: exportWidth,
+          height: exportHeight,
+          windowWidth: exportWidth,
+          windowHeight: exportHeight,
           imageTimeout: 15000,
         });
-        const roundedCanvas = buildRoundedCanvas(canvas, 34 * SCALE);
-        const link = document.createElement("a");
-        link.download = `craque-do-mes-${<%= mvMonth %>}-${<%= mvYear %>}.png`;
-        link.href = roundedCanvas.toDataURL("image/png");
-        link.click();
+        roundedCanvas = buildRoundedCanvas(canvas, 34 * SCALE);
+        await downloadCanvas(roundedCanvas, `craque-do-mes-${<%= mvMonth %>}-${<%= mvYear %>}.png`);
       } catch (err) {
+        console.error(err);
         alert("Nao foi possivel gerar a imagem.");
       } finally {
+        releaseCanvas(roundedCanvas);
+        releaseCanvas(canvas);
         btn.disabled = false;
         btn.textContent = "Exportar card do vencedor";
       }
