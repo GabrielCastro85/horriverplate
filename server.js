@@ -6,6 +6,7 @@ const fs = require("fs");
 const cookieParser = require("cookie-parser");
 const expressLayouts = require("express-ejs-layouts");
 const compression = require("compression");
+const helmet = require("helmet");
 const csrf = require("csurf");
 
 const prisma = require("./utils/db");
@@ -91,6 +92,10 @@ app.locals.thumbUrl = (url, width) => {
 // Middlewares básicos
 // ==============================
 app.use(compression());
+app.use(helmet({
+  contentSecurityPolicy: false,       // CDNs externos (cropperjs, html2canvas, unpkg)
+  crossOriginEmbedderPolicy: false,   // iframes e recursos cross-origin usados no site
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());

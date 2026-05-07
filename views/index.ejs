@@ -143,7 +143,7 @@
         </div>
 
         <!-- Dots -->
-        <div class="hidden md:flex flex-col items-end gap-1 text-[10px]">
+        <div class="flex flex-col items-center md:items-end gap-1 text-[10px]">
           <div class="flex items-center gap-2 mb-1">
             <% hallSlides.forEach((slide, i) => { %>
               <button
@@ -368,9 +368,16 @@
         </span>
 
         <% if (!monthlyCraque) { %>
-          <p class="text-sm text-horriver-light/80 text-center max-w-xl">
-            Nenhum craque do mês cadastrado ainda. Defina um no painel do administrador.
-          </p>
+          <div class="flex flex-col items-center gap-2 py-8 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0
+                   01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0
+                   01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <p class="text-sm text-center">Nenhum craque do mês cadastrado ainda. Defina um no painel do administrador.</p>
+          </div>
         <% } else { %>
           <div class="flex flex-col items-center gap-4">
             <div
@@ -481,9 +488,16 @@
           </span>
 
           <% if (!weeklyAward || !weeklyAward.bestPlayer) { %>
-            <p class="text-[13px] text-horriver-light/80 text-center">
-              Nenhum jogador definido como craque da semana.
-            </p>
+            <div class="flex flex-col items-center gap-2 py-8 text-horriver-gray/70">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0
+                     01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0
+                     01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+              </svg>
+              <p class="text-sm text-center">Nenhum jogador definido como craque da semana.</p>
+            </div>
           <% } else { %>
             <div class="flex flex-col items-center gap-3">
               <div
@@ -606,9 +620,16 @@
         </div>
 
         <% if (!weeklyAward || (!weeklyAward.teamPhotoUrl && !weeklyAward.winningMatch)) { %>
-          <p class="text-[13px] text-horriver-light/80 text-center">
-            Nenhuma foto ou pelada destaque definida para a semana.
-          </p>
+          <div class="flex flex-col items-center gap-2 py-8 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0
+                   01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0
+                   01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <p class="text-sm text-center">Nenhuma foto ou pelada destaque definida para a semana.</p>
+          </div>
         <% } else { %>
           <% if (weeklyAward.winningMatch) { %>
             <div class="text-center">
@@ -727,9 +748,10 @@
       <div id="rk-gols-home" class="rk-home-tab">
         <% const gols = limit(topScorers, 5); %>
         <% if (!gols.length) { %>
-          <p class="text-sm text-horriver-gray">
-            Nenhum dado de gols ainda.
-          </p>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de gols ainda.</p>
+          </div>
         <% } else { %>
           <table class="min-w-full text-[11px]">
             <thead class="bg-horriver-red/20">
@@ -765,9 +787,10 @@
       <div id="rk-assist-home" class="rk-home-tab hidden">
         <% const ass = limit(topAssists, 5); %>
         <% if (!ass.length) { %>
-          <p class="text-sm text-horriver-gray">
-            Nenhum dado de assistências ainda.
-          </p>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de assistências ainda.</p>
+          </div>
         <% } else { %>
           <table class="min-w-full text-[11px]">
             <thead class="bg-horriver-red/20">
@@ -803,9 +826,10 @@
       <div id="rk-notas-home" class="rk-home-tab hidden">
         <% const notas = limit(topRatings, 5); %>
         <% if (!notas.length) { %>
-          <p class="text-sm text-horriver-gray">
-            Nenhum dado de notas ainda.
-          </p>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de notas ainda.</p>
+          </div>
         <% } else { %>
           <table class="min-w-full text-[11px]">
             <thead class="bg-horriver-red/20">
@@ -841,9 +865,10 @@
       <div id="rk-fotos-home" class="rk-home-tab hidden">
         <% const fotos = limit(photoKings, 5); %>
         <% if (!fotos.length) { %>
-          <p class="text-sm text-horriver-gray">
-            Nenhum dado de fotos ainda.
-          </p>
+          <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <p class="text-sm text-center">Nenhum dado de fotos ainda.</p>
+          </div>
         <% } else { %>
           <table class="min-w-full text-[11px]">
             <thead class="bg-horriver-red/20">
@@ -907,7 +932,7 @@
           >
             <div class="flex items-center gap-3">
               <div
-                class="avatar-glow h-10 w-10 rounded-full bg-horriver-red/30 flex items-center justify-center
+                class="avatar-glow h-10 w-10 rounded-full bg-horriver-orange/10 flex items-center justify-center
                        overflow-hidden"
               >
                 <% if (p.photoUrl) { %>
@@ -921,7 +946,7 @@
                     class="h-full w-full object-cover"
                   />
                 <% } else { %>
-                  <span class="text-sm font-semibold text-horriver-light">
+                  <span class="text-sm font-bold text-horriver-orange">
                     <%= p.name.charAt(0).toUpperCase() %>
                   </span>
                 <% } %>
@@ -954,9 +979,10 @@
     </h2>
 
     <% if (!recentMatches || !recentMatches.length) { %>
-      <p class="text-sm text-horriver-gray">
-        Nenhuma pelada cadastrada ainda.
-      </p>
+      <div class="flex flex-col items-center gap-2 py-6 text-horriver-gray/70">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+        <p class="text-sm text-center">Nenhuma pelada cadastrada ainda.</p>
+      </div>
     <% } else { %>
       <div class="space-y-2 text-xs">
         <% recentMatches.forEach((m) => { %>
@@ -981,9 +1007,11 @@
               </p>
               <a
                 href="/matches/<%= m.id %>"
-                class="text-horriver-gray underline hover:text-horriver-orange"
+                class="inline-flex items-center px-2.5 py-1 rounded-full border border-horriver-border
+                       text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange
+                       transition-colors text-[10px]"
               >
-                Ver stats
+                Ver stats →
               </a>
             </div>
           </div>

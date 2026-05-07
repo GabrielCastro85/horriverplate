@@ -166,6 +166,7 @@ model PlayerStat {
   player          Player   @relation(fields: [playerId], references: [id])
 
   @@unique([playerId, matchId])
+  @@index([matchId])
 }
 
 model WeeklyAward {
@@ -225,6 +226,7 @@ model VoteToken {
   session       VoteSession @relation(fields: [voteSessionId], references: [id])
 
   @@unique([voteSessionId, playerId])
+  @@index([playerId])
 }
 
 model VoteBallot {
@@ -270,6 +272,7 @@ model VoteRanking {
   ballot       VoteBallot @relation(fields: [voteBallotId], references: [id])
 
   @@unique([voteBallotId, position, rank])
+  @@index([playerId])
 }
 
 model VoteLink {
@@ -283,6 +286,9 @@ model VoteLink {
   VoteChoice VoteChoice[]
   Match      Match        @relation(fields: [matchId], references: [id])
   Player     Player       @relation(fields: [playerId], references: [id])
+
+  @@index([playerId])
+  @@index([matchId])
 }
 
 model MonthlyVoteSession {
@@ -311,6 +317,7 @@ model MonthlyVoteToken {
   player    Player             @relation(fields: [playerId], references: [id])
 
   @@unique([sessionId, playerId])
+  @@index([playerId])
 }
 
 model MonthlyVoteBallot {
@@ -320,6 +327,8 @@ model MonthlyVoteBallot {
   createdAt   DateTime         @default(now())
   token       MonthlyVoteToken @relation(fields: [tokenId], references: [id])
   candidate   Player           @relation("MonthlyVoteCandidate", fields: [candidateId], references: [id])
+
+  @@index([candidateId])
 }
 
 model VoteChoice {
@@ -330,6 +339,9 @@ model VoteChoice {
   targetPlayerId Int
   Player         Player       @relation(fields: [targetPlayerId], references: [id])
   VoteLink       VoteLink     @relation(fields: [voteLinkId], references: [id])
+
+  @@index([voteLinkId])
+  @@index([targetPlayerId])
 }
 
 model Achievement {

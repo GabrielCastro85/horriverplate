@@ -581,10 +581,13 @@
       }
       .footer-links a {
         color: rgba(156, 163, 175, 0.9);
-        transition: color 0.2s ease;
+        transition: color 0.2s ease, text-decoration-color 0.2s ease;
+        text-decoration: underline;
+        text-decoration-color: transparent;
       }
       .footer-links a:hover {
         color: #ff7a1a;
+        text-decoration-color: rgba(255, 122, 26, 0.5);
       }
       .section-badge {
         position: relative;

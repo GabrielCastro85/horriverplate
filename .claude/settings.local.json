@@ -20,7 +20,20 @@
       "Bash(Remove-Item -Force tmp-*.png, tmp-*.pdf -ErrorAction SilentlyContinue)",
       "Bash(Remove-Item -Force tmp_*.png, tmp_*.pdf -ErrorAction SilentlyContinue)",
       "Bash(Write-Output \"Limpeza concluída\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"c:\\\\Users\\\\gabri\\\\OneDrive\\\\Documentos\\\\projeto-horriver-plate - 2\\\\routes\\\\admin\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"Done\")",
+      "Bash(node -e \"require\\('./routes/admin.js'\\); console.log\\('OK'\\)\")",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('./server.js'\\); console.log\\('OK'\\)\")",
+      "Bash(node -e \"require\\('./utils/upload'\\); console.log\\('upload OK'\\)\")",
+      "Bash(node -e \"require\\('./routes/admin/players'\\); console.log\\('players OK'\\)\")",
+      "Bash(node -e \"require\\('./routes/admin/awards'\\); console.log\\('awards OK'\\)\")",
+      "Bash(node -e \"require\\('./routes/admin.js'\\); console.log\\('admin OK'\\)\")",
+      "Bash(node -e \"require\\('./routes/elenco.js'\\); require\\('./routes/admin/players.js'\\); console.log\\('OK'\\)\")",
+      "Bash(node -e \"require\\('./routes/index.js'\\); console.log\\('OK'\\)\")"
     ]
   }
 }

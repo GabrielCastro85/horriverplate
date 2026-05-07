@@ -131,25 +131,22 @@ router.get("/", async (req, res) => {
       });
 
       if (!stats.length) {
-        const latestStat = await prisma.playerStat.findFirst({
+        const allStats = await prisma.playerStat.findMany({
           where: { playerId: monthlyCraque.craqueId },
           include: { match: true },
           orderBy: { match: { playedAt: "desc" } },
         });
 
-        if (latestStat?.match?.playedAt) {
-          const ref = new Date(latestStat.match.playedAt);
-          const refMonth = ref.getMonth() + 1;
-          const refYear = ref.getFullYear();
-          const range = getMonthRangeSaoPaulo(refYear, refMonth);
-          stats = await prisma.playerStat.findMany({
-            where: {
-              playerId: monthlyCraque.craqueId,
-              match: { playedAt: { gte: range.start, lt: range.end } },
-            },
-          });
-          monthlyStatsMonth = refMonth;
-          monthlyStatsYear = refYear;
+        if (allStats.length) {
+          const ref = new Date(allStats[0].match.playedAt);
+          monthlyStatsMonth = ref.getMonth() + 1;
+          monthlyStatsYear = ref.getFullYear();
+          const range = getMonthRangeSaoPaulo(monthlyStatsYear, monthlyStatsMonth);
+          stats = allStats.filter(
+            (s) =>
+              new Date(s.match.playedAt) >= range.start &&
+              new Date(s.match.playedAt) < range.end
+          );
         }
       }
 

@@ -43,7 +43,41 @@ const uploadPlayerPhoto = createUpload("players");
 // Upload de foto do time da semana
 const uploadWeeklyTeamPhoto = createUpload("weekly");
 
+// Redimensiona e comprime a imagem salva pelo multer.
+// Retorna o novo filename (basename) após o processamento.
+async function processUploadedImage(filePath, type) {
+  let sharp;
+  try {
+    sharp = require("sharp");
+  } catch {
+    return path.basename(filePath);
+  }
+
+  const dims =
+    type === "weekly"
+      ? { width: 1280, height: 720, quality: 85 }
+      : { width: 600, height: 600, quality: 82 };
+
+  const ext = path.extname(filePath).toLowerCase();
+  const baseNoExt = filePath.slice(0, filePath.length - path.extname(filePath).length);
+  const outPath = ext === ".jpg" || ext === ".jpeg" ? filePath : baseNoExt + ".jpg";
+  const tmpPath = outPath + ".tmp";
+
+  await sharp(filePath)
+    .resize(dims.width, dims.height, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: dims.quality })
+    .toFile(tmpPath);
+
+  fs.renameSync(tmpPath, outPath);
+  if (outPath !== filePath) {
+    try { fs.unlinkSync(filePath); } catch {}
+  }
+
+  return path.basename(outPath);
+}
+
 module.exports = {
   uploadPlayerPhoto,
   uploadWeeklyTeamPhoto,
+  processUploadedImage,
 };

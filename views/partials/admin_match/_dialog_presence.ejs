@@ -1,0 +1,216 @@
+<div
+  class="match-dialog <%= initialOpenDialog === 'presence' ? 'is-visible' : '' %>"
+  data-match-dialog="presence"
+  <%= initialOpenDialog === 'presence' ? '' : 'hidden' %>
+>
+  <div class="match-dialog__backdrop" data-match-dialog-close></div>
+  <div
+    class="match-dialog__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="presence-dialog-title"
+  >
+    <div class="match-dialog__head">
+      <div class="space-y-2">
+        <span class="admin-kicker">Selecao da rodada</span>
+        <h2 id="presence-dialog-title" class="text-2xl font-semibold text-horriver-light">
+          Escolha quem vai estar presente em <%= matchDateLabel %>
+        </h2>
+        <p class="text-sm text-horriver-gray max-w-2xl">
+          Depois de confirmar, a tela principal mostra so os nomes escolhidos com os mesmos campos
+          de gols, assistencias, nota e foto que voce ja usa hoje.
+        </p>
+      </div>
+      <button type="button" class="match-dialog__close" data-match-dialog-close aria-label="Fechar selecao de presentes">&times;</button>
+    </div>
+
+    <form method="POST" action="/admin/matches/<%= match.id %>/presence" data-presence-form>
+      <div class="match-dialog__body">
+        <div class="match-dialog__toolbar">
+          <label class="match-dialog__search">
+            <span>Buscar jogador</span>
+            <input
+              type="search"
+              placeholder="Nome, apelido ou posicao"
+              data-presence-search
+            />
+          </label>
+
+          <div class="match-dialog__summary">
+            <div class="match-dialog__mini-card">
+              <span>Selecionados</span>
+              <strong data-presence-count><%= presentPlayersCount %></strong>
+            </div>
+            <div class="match-dialog__mini-card">
+              <span>Total disponivel</span>
+              <strong><%= players.length %></strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="match-dialog__actions">
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="match-dialog__soft-button" data-presence-select="all">
+              Selecionar todos
+            </button>
+            <button type="button" class="match-dialog__soft-button" data-presence-select="none">
+              Limpar todos
+            </button>
+          </div>
+          <span class="text-xs text-horriver-gray">
+            A confirmacao salva a rodada e atualiza a lista principal.
+          </span>
+        </div>
+
+        <div class="match-dialog__list" data-presence-list>
+          <% players.forEach((player) => { %>
+            <%
+              const playerStat = stats.find((stat) => stat.playerId === player.id);
+              const rowSearch = `${player.name || ""} ${player.nickname || ""} ${player.position || ""}`.toLowerCase();
+            %>
+            <article
+              class="match-dialog__player"
+              data-presence-player
+              data-player-search="<%= rowSearch %>"
+            >
+              <div class="match-dialog__player-main">
+                <div class="match-dialog__player-name"><%= player.name %></div>
+                <div class="match-dialog__player-meta">
+                  <% if (player.nickname) { %>
+                    <span>"<%= player.nickname %>"</span>
+                  <% } %>
+                  <span><%= player.position %></span>
+                  <span>OVR <%= player.overall != null ? player.overall : "-" %></span>
+                </div>
+              </div>
+
+              <label class="match-dialog__player-toggle">
+                <input
+                  type="checkbox"
+                  name="present_<%= player.id %>"
+                  data-presence-input
+                  data-player-name="<%= player.name %>"
+                  data-player-nickname="<%= player.nickname || "" %>"
+                  data-player-position="<%= player.position || "" %>"
+                  data-player-strength="<%= player.overall != null ? player.overall : "" %>"
+                  data-player-overall="<%= player.overall != null ? player.overall : "" %>"
+                  <%= presentPlayerIdSet.has(player.id) || (playerStat && playerStat.present) ? "checked" : "" %>
+                />
+                <span>Presente</span>
+              </label>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="match-dialog__footer">
+        <button type="button" class="match-dialog__soft-button" data-match-dialog-close>Cancelar</button>
+        <button type="submit" class="match-dialog__primary">
+          Confirmar presentes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const dialog = document.querySelector('[data-match-dialog="presence"]');
+    if (!dialog) return;
+
+    const transitionMs = 200;
+    const searchInput = dialog.querySelector("[data-presence-search]");
+    const playerRows = Array.from(dialog.querySelectorAll("[data-presence-player]"));
+    const countNode = dialog.querySelector("[data-presence-count]");
+    let closeTimer = null;
+
+    const syncCount = () => {
+      const count = playerRows.reduce((sum, row) => {
+        const input = row.querySelector("[data-presence-input]");
+        return sum + (input?.checked ? 1 : 0);
+      }, 0);
+      if (countNode) countNode.textContent = String(count);
+    };
+
+    const syncSearch = () => {
+      const term = String(searchInput?.value || "").trim().toLowerCase();
+      playerRows.forEach((row) => {
+        const haystack = row.getAttribute("data-player-search") || "";
+        row.hidden = term ? !haystack.includes(term) : false;
+      });
+    };
+
+    const openDialog = () => {
+      if (closeTimer) {
+        window.clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      dialog.hidden = false;
+      document.body.classList.add("match-dialog-open");
+      window.requestAnimationFrame(() => {
+        dialog.classList.add("is-visible");
+      });
+      window.setTimeout(() => searchInput?.focus(), 120);
+    };
+
+    const closeDialog = () => {
+      if (closeTimer) {
+        window.clearTimeout(closeTimer);
+      }
+      dialog.classList.remove("is-visible");
+      closeTimer = window.setTimeout(() => {
+        dialog.hidden = true;
+        document.body.classList.remove("match-dialog-open");
+        closeTimer = null;
+      }, transitionMs);
+    };
+
+    document.querySelectorAll('[data-match-dialog-open="presence"]').forEach((button) => {
+      button.addEventListener("click", openDialog);
+    });
+
+    dialog.querySelectorAll("[data-match-dialog-close]").forEach((button) => {
+      button.addEventListener("click", closeDialog);
+    });
+
+    dialog.querySelectorAll("[data-presence-input]").forEach((input) => {
+      input.addEventListener("change", syncCount);
+    });
+
+    dialog.querySelectorAll("[data-presence-select]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.getAttribute("data-presence-select");
+        playerRows.forEach((row) => {
+          const input = row.querySelector("[data-presence-input]");
+          if (!input) return;
+          input.checked = mode === "all";
+        });
+        syncCount();
+      });
+    });
+
+    if (searchInput) {
+      searchInput.addEventListener("input", syncSearch);
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !dialog.hidden) {
+        event.preventDefault();
+        closeDialog();
+      }
+    });
+
+    syncSearch();
+    syncCount();
+
+    if (!dialog.hidden) {
+      document.body.classList.add("match-dialog-open");
+    }
+
+    if (!dialog.hidden && window.history?.replaceState) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("openDialog");
+      window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+    }
+  })();
+</script>
