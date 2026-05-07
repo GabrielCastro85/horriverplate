@@ -1,0 +1,738 @@
+<%
+  /*
+   * views/share/lineup_card.ejs
+   * Variáveis: teams, goalkeepers, matchDate, matchDescription, baseUrl
+   * teams[]: { name, colorName, colorValue, players[]: { nome, nickname, pos, isGuest } }
+   * goalkeepers[]: { nome, nickname, isGuest }
+   */
+
+  const cleanBaseUrl = String(baseUrl || "").replace(/\/$/, "");
+  const logoMarkUrl = `${cleanBaseUrl}/img/logo-512x512.svg`;
+  const logoIconUrl = `${cleanBaseUrl}/img/logo-64x64.svg`;
+
+  const escHtml = (value = "") =>
+    String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const getIdentity = (player = {}) => {
+    const name = String(player.nome || "").trim();
+    const nick = String(player.nickname || "").trim();
+    if (!nick || nick.toLowerCase() === name.toLowerCase()) {
+      return { primary: name || "Jogador", secondary: "" };
+    }
+
+    const firstName = (name.split(/\s+/)[0] || "").toLowerCase();
+    if (firstName && nick.toLowerCase().startsWith(firstName)) {
+      return { primary: nick, secondary: name };
+    }
+
+    return { primary: nick, secondary: name };
+  };
+
+  const posAbbr = (pos = "") => {
+    const raw = String(pos || "").toUpperCase();
+    if (raw.includes("GOL")) return "GOL";
+    if (raw.includes("ZAG") || raw.includes("DEF")) return "ZAG";
+    if (raw.includes("MEI") || raw.includes("VOL")) return "MEI";
+    if (raw.includes("ATA")) return "ATA";
+    return raw.slice(0, 3) || "---";
+  };
+
+  const posRank = (pos = "") => ({ GOL: 0, ZAG: 1, MEI: 2, ATA: 3 }[posAbbr(pos)] ?? 4);
+
+  const colorTheme = (colorName = "") => {
+    const key = String(colorName || "").trim();
+    const themes = {
+      Amarelo: {
+        strip: "linear-gradient(90deg, #fff36b 0%, #facc15 46%, #a16207 100%)",
+        border: "rgba(250, 204, 21, 0.70)",
+        glow: "rgba(250, 204, 21, 0.24)",
+        panel:
+          "linear-gradient(180deg, rgba(119, 82, 6, 0.82) 0%, rgba(67, 43, 9, 0.78) 22%, rgba(26, 19, 9, 0.84) 100%)",
+        rowBg: "rgba(255, 255, 255, 0.045)",
+        rowBorder: "rgba(255, 255, 255, 0.105)",
+        divider: "rgba(250, 204, 21, 0.26)",
+        rank: "#fde047",
+      },
+      Preto: {
+        strip: "linear-gradient(90deg, #f8fafc 0%, #94a3b8 46%, #475569 100%)",
+        border: "rgba(203, 213, 225, 0.52)",
+        glow: "rgba(203, 213, 225, 0.16)",
+        panel:
+          "linear-gradient(180deg, rgba(45, 47, 55, 0.84) 0%, rgba(29, 30, 37, 0.80) 24%, rgba(15, 16, 21, 0.86) 100%)",
+        rowBg: "rgba(255, 255, 255, 0.042)",
+        rowBorder: "rgba(255, 255, 255, 0.105)",
+        divider: "rgba(203, 213, 225, 0.22)",
+        rank: "#f8fafc",
+      },
+      Vermelho: {
+        strip: "linear-gradient(90deg, #fb7185 0%, #ef4444 46%, #f97316 100%)",
+        border: "rgba(248, 113, 113, 0.68)",
+        glow: "rgba(239, 68, 68, 0.26)",
+        panel:
+          "linear-gradient(180deg, rgba(101, 12, 29, 0.84) 0%, rgba(58, 9, 21, 0.80) 24%, rgba(24, 8, 14, 0.88) 100%)",
+        rowBg: "rgba(255, 255, 255, 0.045)",
+        rowBorder: "rgba(255, 255, 255, 0.10)",
+        divider: "rgba(248, 113, 113, 0.24)",
+        rank: "#ff8a6d",
+      },
+      Azul: {
+        strip: "linear-gradient(90deg, #7dd3fc 0%, #3b82f6 48%, #1d4ed8 100%)",
+        border: "rgba(96, 165, 250, 0.58)",
+        glow: "rgba(59, 130, 246, 0.22)",
+        panel:
+          "linear-gradient(180deg, rgba(24, 67, 141, 0.82) 0%, rgba(18, 42, 92, 0.78) 24%, rgba(10, 16, 35, 0.86) 100%)",
+        rowBg: "rgba(255, 255, 255, 0.045)",
+        rowBorder: "rgba(255, 255, 255, 0.10)",
+        divider: "rgba(96, 165, 250, 0.24)",
+        rank: "#7dd3fc",
+      },
+    };
+
+    return themes[key] || themes.Vermelho;
+  };
+
+  const splitTeamName = (value = "") => {
+    const clean = String(value || "Time").replace(/\s+/g, " ").trim();
+    const words = clean.split(" ").filter(Boolean);
+    if (words.length <= 1) return [clean];
+
+    let best = null;
+    for (let i = 1; i < words.length; i += 1) {
+      const left = words.slice(0, i).join(" ");
+      const right = words.slice(i).join(" ");
+      const longest = Math.max(left.length, right.length);
+      const diff = Math.abs(left.length - right.length);
+      const score = longest * 3 + diff;
+      if (!best || score < best.score) best = { lines: [left, right], score };
+    }
+
+    return best.lines;
+  };
+
+  const titleSizeFor = (lines = [], columns = 3) => {
+    const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
+
+    if (columns <= 1) {
+      if (longest >= 24) return 58;
+      if (longest >= 20) return 64;
+      if (longest >= 16) return 70;
+      return 78;
+    }
+
+    if (columns === 2) {
+      if (longest >= 24) return 48;
+      if (longest >= 20) return 52;
+      if (longest >= 16) return 58;
+      if (longest >= 13) return 62;
+      return 70;
+    }
+
+    if (longest >= 24) return 34;
+    if (longest >= 20) return 38;
+    if (longest >= 17) return 42;
+    if (longest >= 14) return 44;
+    if (longest >= 12) return 45;
+    if (longest >= 11) return 50;
+    if (longest >= 10) return 52;
+    return 58;
+  };
+
+  const teamCount = Array.isArray(teams) ? teams.length : 0;
+  const gridCols = teamCount === 4 ? 2 : Math.min(Math.max(teamCount, 1), 3);
+  const gridClass = gridCols === 3 ? "is-three" : gridCols === 2 ? "is-two" : "is-one";
+%>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1500" />
+  <title>Times Sorteados</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 1500px;
+      min-width: 1500px;
+      background: transparent;
+      display: inline-block;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    body {
+      font-family: "Manrope", system-ui, sans-serif;
+      color: #f8fafc;
+      line-height: 1;
+    }
+
+    .lc-card {
+      position: relative;
+      width: 1500px;
+      min-height: 1340px;
+      overflow: hidden;
+      isolation: isolate;
+      border-radius: 52px;
+      background:
+        radial-gradient(circle at 8% -6%, rgba(139, 19, 32, 0.34) 0%, transparent 32%),
+        radial-gradient(circle at 82% 14%, rgba(255, 122, 26, 0.10) 0%, transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(255, 122, 26, 0.08) 0%, transparent 34%),
+        linear-gradient(180deg, #330309 0%, #160207 37%, #050509 100%);
+      border: 1px solid rgba(255, 122, 26, 0.25);
+      box-shadow: 0 34px 90px rgba(0, 0, 0, 0.50);
+    }
+
+    .lc-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255,255,255,0.020) 1px, transparent 1px);
+      background-size: 92px 92px;
+      opacity: 0.22;
+      mask-image: radial-gradient(circle at 50% 54%, rgba(0,0,0,0.58) 0%, transparent 70%);
+    }
+
+    .lc-watermark {
+      position: absolute;
+      left: 50%;
+      top: 56%;
+      z-index: 0;
+      width: 840px;
+      height: 840px;
+      object-fit: contain;
+      transform: translate(-50%, -50%);
+      opacity: 0.070;
+      filter: grayscale(1) brightness(1.15) contrast(1.05);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .lc-inner {
+      position: relative;
+      z-index: 1;
+      min-height: 1340px;
+      padding: 34px 34px 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lc-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 34px;
+      margin-bottom: 26px;
+    }
+
+    .lc-brand {
+      margin: 12px 0 48px;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(255, 179, 106, 0.94);
+    }
+
+    .lc-title {
+      position: relative;
+      display: inline-block;
+      padding-bottom: 11px;
+      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
+      font-size: 74px;
+      font-weight: 700;
+      line-height: 0.92;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #f8fafc;
+      text-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+      white-space: nowrap;
+    }
+
+    .lc-title::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 260px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ff7a1a 0%, rgba(255, 122, 26, 0.66) 44%, rgba(255, 122, 26, 0.10) 100%);
+    }
+
+    .lc-date-card {
+      flex: 0 0 434px;
+      min-height: 164px;
+      padding: 34px 26px 20px;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 122, 26, 0.34);
+      background: linear-gradient(180deg, rgba(18, 17, 23, 0.96) 0%, rgba(12, 12, 16, 0.98) 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 58px;
+      gap: 20px;
+      align-items: end;
+      box-shadow: 0 24px 52px rgba(0, 0, 0, 0.22);
+    }
+
+    .lc-date-label {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(226, 232, 240, 0.60);
+    }
+
+    .lc-date {
+      display: block;
+      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
+      font-size: 56px;
+      font-weight: 700;
+      line-height: 0.94;
+      letter-spacing: 0.02em;
+      color: #f8fafc;
+      white-space: nowrap;
+    }
+
+    .lc-count {
+      display: block;
+      margin-top: 4px;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(226, 232, 240, 0.74);
+    }
+
+    .lc-logo-ring {
+      width: 58px;
+      height: 58px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 122, 26, 0.92);
+      background: rgba(12, 12, 16, 0.82);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset, 0 12px 26px rgba(0,0,0,0.20);
+    }
+
+    .lc-logo-ring img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+
+    .lc-top-rule {
+      height: 1px;
+      margin-bottom: 26px;
+      border: none;
+      background: linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0) 100%);
+    }
+
+    .lc-teams {
+      display: grid;
+      grid-template-columns: repeat(<%= gridCols %>, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .lc-team {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border-radius: 30px;
+      border: 1px solid var(--team-border);
+      background: var(--team-panel);
+      box-shadow:
+        0 22px 42px rgba(0, 0, 0, 0.24),
+        0 0 54px var(--team-glow),
+        0 0 0 1px rgba(255,255,255,0.025) inset;
+    }
+
+    .lc-team::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 0%, var(--team-glow) 0%, transparent 56%),
+        linear-gradient(90deg, rgba(255,255,255,0.045) 0%, transparent 24%, rgba(255,255,255,0.028) 62%, transparent 100%);
+    }
+
+    .lc-team-strip {
+      height: 10px;
+      background: var(--team-strip);
+    }
+
+    .lc-team-body {
+      position: relative;
+      z-index: 1;
+      min-height: 720px;
+      padding: 18px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .lc-team-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      color: rgba(255,255,255,0.58);
+    }
+
+    .lc-team-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.50);
+      white-space: nowrap;
+    }
+
+    .lc-team-index {
+      font-size: 16px;
+      letter-spacing: 0;
+      color: var(--team-rank);
+    }
+
+    .lc-player-count {
+      flex: 0 0 auto;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(255,255,255,0.90);
+      white-space: nowrap;
+    }
+
+    .lc-team-name {
+      min-height: 104px;
+      padding-right: 6px;
+      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
+      font-size: var(--team-title-size);
+      font-weight: 700;
+      line-height: 0.92;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #f8fafc;
+      text-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+      word-break: keep-all;
+      overflow-wrap: normal;
+      hyphens: none;
+    }
+
+    .lc-team-name span {
+      display: block;
+      max-width: 100%;
+      white-space: nowrap;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      hyphens: none;
+    }
+
+    .lc-team-divider {
+      height: 1px;
+      border: none;
+      background: linear-gradient(90deg, var(--team-divider) 0%, rgba(255,255,255,0.04) 100%);
+      margin-top: -4px;
+    }
+
+    .lc-players {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .lc-player {
+      min-height: 76px;
+      padding: 16px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--row-border);
+      background: var(--row-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.10);
+    }
+
+    .lc-player-id {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .lc-player-primary {
+      display: block;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 19px;
+      font-weight: 900;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+      color: #f8fafc;
+    }
+
+    .lc-player-secondary {
+      display: block;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: rgba(226,232,240,0.70);
+    }
+
+    .lc-player-meta {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lc-player-guest {
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(255,179,106,0.78);
+    }
+
+    .lc-player-pos {
+      min-width: 38px;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.10em;
+      text-align: right;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.62);
+    }
+
+    .lc-goalkeepers {
+      margin-top: 22px;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(199, 139, 91, 0.44);
+      background: linear-gradient(180deg, rgba(61, 43, 27, 0.42) 0%, rgba(19, 17, 20, 0.80) 100%);
+      box-shadow: 0 22px 44px rgba(0,0,0,0.18);
+    }
+
+    .lc-gk-strip {
+      height: 10px;
+      background: linear-gradient(90deg, #d4a06d 0%, rgba(199,139,91,0.72) 42%, rgba(199,139,91,0.16) 100%);
+    }
+
+    .lc-gk-body {
+      padding: 18px 18px 18px;
+    }
+
+    .lc-gk-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .lc-gk-title {
+      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .lc-gk-count {
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(255,236,213,0.86);
+    }
+
+    .lc-gk-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lc-gk-row {
+      min-height: 72px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.075);
+      background: rgba(255,255,255,0.028);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+    }
+
+    .lc-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(226,232,240,0.42);
+    }
+  </style>
+</head>
+<body>
+  <div class="lc-card">
+    <img src="<%= logoMarkUrl %>" alt="" class="lc-watermark" aria-hidden="true" />
+
+    <div class="lc-inner">
+      <header class="lc-header">
+        <div class="lc-heading">
+          <div class="lc-brand">Horriver Plate</div>
+          <h1 class="lc-title">Times Sorteados</h1>
+        </div>
+
+        <aside class="lc-date-card">
+          <span class="lc-date-label">Sorteio oficial</span>
+          <div>
+            <span class="lc-date"><%= escHtml(matchDate || "Hoje") %></span>
+            <span class="lc-count"><%= teamCount %> times</span>
+          </div>
+          <span class="lc-logo-ring">
+            <img src="<%= logoIconUrl %>" alt="Horriver Plate" />
+          </span>
+        </aside>
+      </header>
+
+      <hr class="lc-top-rule" />
+
+      <main class="lc-teams <%= gridClass %>">
+        <% teams.forEach(function(team, index) {
+          const theme = colorTheme(team.colorName);
+          const titleLines = splitTeamName(team.name);
+          const titleSize = titleSizeFor(titleLines, gridCols);
+          const sortedPlayers = (team.players || []).slice().sort(function(a, b) {
+            const rankDiff = posRank(a.pos) - posRank(b.pos);
+            if (rankDiff !== 0) return rankDiff;
+            return getIdentity(a).primary.localeCompare(getIdentity(b).primary, "pt-BR");
+          });
+        %>
+        <section
+          class="lc-team"
+          style="--team-strip:<%= theme.strip %>;--team-border:<%= theme.border %>;--team-glow:<%= theme.glow %>;--team-panel:<%= theme.panel %>;--team-divider:<%= theme.divider %>;--team-rank:<%= theme.rank %>;--row-bg:<%= theme.rowBg %>;--row-border:<%= theme.rowBorder %>;--team-title-size:<%= titleSize %>px;"
+        >
+          <div class="lc-team-strip"></div>
+          <div class="lc-team-body">
+            <div class="lc-team-top">
+              <span class="lc-team-label"><strong class="lc-team-index">#<%= index + 1 %></strong> Time sorteado</span>
+              <span class="lc-player-count"><%= sortedPlayers.length %> jogadores</span>
+            </div>
+
+            <h2 class="lc-team-name">
+              <% titleLines.forEach(function(line) { %>
+                <span><%= escHtml(line) %></span>
+              <% }); %>
+            </h2>
+
+            <hr class="lc-team-divider" />
+
+            <div class="lc-players">
+              <% sortedPlayers.forEach(function(player) {
+                const id = getIdentity(player);
+                const abbr = posAbbr(player.pos);
+              %>
+              <div class="lc-player">
+                <div class="lc-player-id">
+                  <span class="lc-player-primary"><%= escHtml(id.primary) %></span>
+                  <% if (id.secondary) { %>
+                    <span class="lc-player-secondary"><%= escHtml(id.secondary) %></span>
+                  <% } %>
+                </div>
+                <div class="lc-player-meta">
+                  <% if (player.isGuest) { %><span class="lc-player-guest">Conv.</span><% } %>
+                  <span class="lc-player-pos"><%= escHtml(abbr) %></span>
+                </div>
+              </div>
+              <% }); %>
+            </div>
+          </div>
+        </section>
+        <% }); %>
+      </main>
+
+      <% if (goalkeepers && goalkeepers.length) { %>
+      <section class="lc-goalkeepers">
+        <div class="lc-gk-strip"></div>
+        <div class="lc-gk-body">
+          <div class="lc-gk-header">
+            <h2 class="lc-gk-title">Goleiros</h2>
+            <span class="lc-gk-count"><%= goalkeepers.length %> jogador<% if (goalkeepers.length !== 1) { %>es<% } %></span>
+          </div>
+
+          <div class="lc-gk-list">
+            <% goalkeepers.forEach(function(goalkeeper) {
+              const id = getIdentity(goalkeeper);
+            %>
+            <div class="lc-gk-row">
+              <div class="lc-player-id">
+                <span class="lc-player-primary"><%= escHtml(id.primary) %></span>
+                <% if (id.secondary) { %>
+                  <span class="lc-player-secondary"><%= escHtml(id.secondary) %></span>
+                <% } %>
+              </div>
+              <div class="lc-player-meta">
+                <% if (goalkeeper.isGuest) { %><span class="lc-player-guest">Conv.</span><% } %>
+                <span class="lc-player-pos">GOL</span>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+        </div>
+      </section>
+      <% } %>
+
+      <footer class="lc-footer">
+        <span>horriverplate.onrender.com</span>
+        <span>@_hpfrc</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

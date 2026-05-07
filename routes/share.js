@@ -288,4 +288,133 @@ router.get("/voting-result.png", async (req, res) => {
   }
 });
 
+// ── Lineup card templates ───────────────────────────────────────────────────
+const LINEUP_TEMPLATE = path.join(__dirname, "../views/share/lineup_card.ejs");
+
+function resolveShareBaseUrl() {
+  const configured =
+    process.env.SHARE_BASE_URL ||
+    process.env.PUBLIC_BASE_URL ||
+    process.env.APP_URL ||
+    process.env.BASE_URL;
+
+  if (configured) return String(configured).replace(/\/$/, "");
+
+  return process.env.NODE_ENV === "production"
+    ? "https://horriverplate.onrender.com"
+    : `http://localhost:${process.env.PORT || 3000}`;
+}
+
+// ── Debug: renderiza HTML do card de times ─────────────────────────────────
+router.post("/lineup-html", async (req, res) => {
+  try {
+    const { teams, goalkeepers, matchDate, matchDescription } = req.body || {};
+    if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
+
+    const baseUrl = resolveShareBaseUrl();
+    const html = await ejs.renderFile(LINEUP_TEMPLATE, {
+      teams,
+      goalkeepers: goalkeepers || [],
+      matchDate: matchDate || "",
+      matchDescription: matchDescription || "Pelada",
+      baseUrl,
+    });
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(html);
+  } catch (err) {
+    console.error("[share-lineup-html] Erro:", err);
+    res.status(500).send(`<pre>${err.message}\n\n${err.stack}</pre>`);
+  }
+});
+
+// ── PNG via Puppeteer — card de times sorteados ────────────────────────────
+router.post("/lineup.png", async (req, res) => {
+  const t0 = Date.now();
+  let browser;
+  try {
+    const { teams, goalkeepers, matchDate, matchDescription } = req.body || {};
+    if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
+
+    console.log(`[share] Iniciando lineup PNG — ${teams.length} times`);
+
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--hide-scrollbars",
+      ],
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1500, height: 1800, deviceScaleFactor: 2 });
+
+    const baseUrl = resolveShareBaseUrl();
+    const html = await ejs.renderFile(LINEUP_TEMPLATE, {
+      teams,
+      goalkeepers: goalkeepers || [],
+      matchDate: matchDate || "",
+      matchDescription: matchDescription || "Pelada",
+      baseUrl,
+    });
+
+    // domcontentloaded evita travar esperando Google Fonts CDN fechar conexão
+    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 20000 });
+    // Aguarda fontes com timeout de segurança
+    await Promise.race([
+      page.evaluateHandle(() => document.fonts.ready),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
+    // Buffer mínimo para renderização
+    await new Promise((r) => setTimeout(r, 200));
+
+    const failedImages = await page.evaluate(async () => {
+      await Promise.all(
+        Array.from(document.images).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve;
+                setTimeout(resolve, 8000);
+              })
+        )
+      );
+      return Array.from(document.images)
+        .filter((img) => img.naturalWidth === 0)
+        .map((img) => img.src);
+    });
+
+    if (failedImages.length) {
+      console.warn(`[share] Imagens com falha (${failedImages.length}):`, failedImages);
+    }
+
+    const cardEl = await page.$(".lc-card");
+    if (!cardEl) throw new Error("Elemento .lc-card não encontrado");
+
+    const raw = await cardEl.screenshot({ type: "png", omitBackground: true });
+    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+
+    if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
+
+    const tmpPath = path.join(os.tmpdir(), `lineup-${Date.now()}.png`);
+    fs.writeFileSync(tmpPath, buf);
+    console.log(`[share] Lineup PNG — ${buf.length} bytes em ${Date.now() - t0}ms`);
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Disposition", `attachment; filename="times-sorteio.png"`);
+    res.setHeader("Content-Length", buf.length);
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(buf);
+  } catch (err) {
+    console.error("[share] Erro lineup PNG:", err);
+    if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
+  } finally {
+    if (browser) await browser.close().catch(() => {});
+  }
+});
+
 module.exports = router;

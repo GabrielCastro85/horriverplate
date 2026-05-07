@@ -1734,20 +1734,31 @@
     const scroller = nav.querySelector(".rk-jump-nav__scroller");
     let clickedTarget = null;
     let clickedTargetReached = false;
+    let activeId = null;
+    let rafId = null;
 
-    const setActive = (id) => {
+    const centerActiveLink = (link) => {
+      if (!scroller || !link) return;
+
+      const targetLeft =
+        link.offsetLeft - scroller.clientWidth / 2 + link.offsetWidth / 2;
+
+      scroller.scrollTo({
+        left: Math.max(0, targetLeft),
+        behavior: "smooth",
+      });
+    };
+
+    const setActive = (id, options = {}) => {
+      const shouldCenter = options.center !== false && activeId !== id;
+      activeId = id;
+
       links.forEach((link) => {
         const active = link.getAttribute("href") === `#${id}`;
         link.classList.toggle("is-active", active);
         if (active) {
           link.setAttribute("aria-current", "true");
-          if (scroller) {
-            link.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
-              inline: "center",
-            });
-          }
+          if (shouldCenter) centerActiveLink(link);
         } else {
           link.removeAttribute("aria-current");
         }
@@ -1762,7 +1773,7 @@
         event.preventDefault();
         clickedTarget = target.id;
         clickedTargetReached = false;
-        setActive(target.id);
+        setActive(target.id, { center: true });
         target.scrollIntoView({ behavior: "smooth", block: "start" });
 
         if (history.replaceState) {
@@ -1794,7 +1805,7 @@
           const rect = clickedSection.getBoundingClientRect();
           if (rect.top <= marker && rect.bottom > marker) {
             clickedTargetReached = true;
-            setActive(clickedTarget);
+            setActive(clickedTarget, { center: false });
             return;
           }
           if (!clickedTargetReached) return;
@@ -1803,12 +1814,20 @@
         clickedTargetReached = false;
       }
       const current = getCurrentSection();
-      if (current) setActive(current.id);
+      if (current) setActive(current.id, { center: false });
+    };
+
+    const requestUpdateFromScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        updateFromScroll();
+      });
     };
 
     updateFromScroll();
-    window.addEventListener("scroll", updateFromScroll, { passive: true });
-    window.addEventListener("resize", updateFromScroll);
+    window.addEventListener("scroll", requestUpdateFromScroll, { passive: true });
+    window.addEventListener("resize", requestUpdateFromScroll);
   })();
 </script>
 
