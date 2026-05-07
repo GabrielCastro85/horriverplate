@@ -22,6 +22,7 @@ const elencoRouter = require("./routes/elenco");
 const sobreRouter = require("./routes/sobre");
 const awardsRouter = require("./routes/awards"); // ? NOVO: rota da premiação
 const playerRouter = require("./routes/player");
+const shareRouter = require("./routes/share");
 const voteRouter = require("./routes/vote");
 const monthlyVoteRouter = require("./routes/monthly_vote");
 let sharp = null;
@@ -343,6 +344,7 @@ app.use("/elenco", elencoRouter);
 app.use("/sobre", sobreRouter);
 app.use("/premiacao", awardsRouter); // ? NOVO: página de premiação
 app.use("/jogador", playerRouter);
+app.use("/share", shareRouter);
 app.use("/admin", adminFinanceRouter);
 app.use("/admin", adminRouter);
 app.use("/votar", voteRouter);

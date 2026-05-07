@@ -13,9 +13,52 @@
     : "page-shell w-full max-w-5xl mx-auto px-4 sm:px-6 animate-fadeIn";
 %>
 
+<style>
+  .player-export-preview-frame {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px;
+  }
+
+  #player-export-card {
+    width: 400px;
+    transform: none;
+    zoom: 1;
+  }
+
+  #player-export-card.is-export-clone,
+  #player-export-card.is-export-clone * {
+    transform: none !important;
+    zoom: 1 !important;
+    filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  #player-export-card.is-export-clone {
+    position: fixed !important;
+    left: -99999px !important;
+    top: 0 !important;
+    width: 400px !important;
+  }
+
+  @media (max-width: 440px) {
+    .player-export-preview-frame {
+      margin-left: -4px;
+      margin-right: -4px;
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+  }
+</style>
+
 <section class="<%= shellClass %>">
   <header class="page-hero space-y-6">
-    <div class="grid gap-5 lg:grid-cols-[auto,1fr,0.9fr] lg:items-start">
+    <div class="grid gap-5 md:grid-cols-[auto,1fr] lg:grid-cols-[auto,1fr,0.9fr] lg:items-start">
       <div class="relative w-32 h-32 rounded-full overflow-hidden border-4 border-horriver-orange/90 shadow-card-soft shrink-0 mx-auto md:mx-0">
         <% if (player.photoUrl) { %>
           <img
@@ -42,9 +85,24 @@
           <% if (player.nickname) { %>
             <p class="text-horriver-orange text-sm">(<%= player.nickname %>)</p>
           <% } %>
+          <%
+            const _ovrTrend = typeof ovrTrend !== 'undefined' ? ovrTrend : 'stable';
+            const _ovrDelta = typeof ovrDelta !== 'undefined' ? ovrDelta : 0;
+          %>
           <div class="flex flex-wrap gap-2 justify-center md:justify-start">
             <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= player.position || "Sem posicao" %></strong> posicao</span>
             <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= Math.round(latestOverall || 0) %></strong> overall</span>
+            <% if (_ovrTrend === 'up') { %>
+              <span class="inline-flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1.5 text-[11px] leading-none text-green-400">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                Em alta<% if (_ovrDelta) { %> +<%= _ovrDelta %><% } %>
+              </span>
+            <% } else if (_ovrTrend === 'down') { %>
+              <span class="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-[11px] leading-none text-red-400">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                Em queda<% if (_ovrDelta) { %> <%= _ovrDelta %><% } %>
+              </span>
+            <% } %>
           </div>
         </div>
 
@@ -56,6 +114,23 @@
               class="px-4 py-2 rounded-full border border-horriver-border bg-black/35 text-horriver-light hover:border-horriver-orange hover:text-horriver-orange transition"
             >
               Copiar link do perfil
+            </button>
+            <button
+              type="button"
+              id="btnToggleExportCard"
+              class="px-4 py-2 rounded-full border border-horriver-orange/50 bg-horriver-orange/10 text-horriver-orange hover:bg-horriver-orange hover:text-black transition text-sm font-semibold"
+            >
+              Exportar card
+            </button>
+            <button
+              type="button"
+              id="btnGerarPng"
+              data-player-id="<%= player.id %>"
+              class="px-4 py-2 rounded-full border border-horriver-border bg-black/20 text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange transition text-sm font-medium
+                     opacity-0 scale-95 pointer-events-none"
+              style="transition: opacity 0.18s ease, transform 0.18s ease;"
+            >
+              Gerar PNG
             </button>
             <span id="copyStatus" class="text-[11px] text-horriver-gray hidden">Copiado!</span>
           </div>
@@ -137,7 +212,7 @@
     </div>
   </section>
 
-  <div class="grid lg:grid-cols-2 gap-4">
+  <div class="grid md:grid-cols-2 gap-4">
     <section class="page-section">
       <div class="page-section__inner page-section__inner--lg space-y-4">
         <div class="<%= sectionHeadingClass %>">
@@ -189,7 +264,7 @@
              const maxG = Math.max(...sortedGoals.map(g => g.value), 1);
         %>
           <div class="w-full overflow-x-auto <%= surfaceSoftClass %> p-4">
-            <div class="flex items-end gap-3 h-48 min-w-[640px]">
+            <div class="flex items-end gap-3 h-48 min-w-[360px]">
             <% sortedGoals.forEach(g => { 
                  const [year, month] = g.label.split("-");
                  const monthIdx = Math.max(1, Math.min(12, parseInt(month, 10)));
@@ -252,29 +327,153 @@
   </section>
 </section>
 
+<!-- EXPORT CARD (collapses/expands) -->
+<% if (!isModalProfile) { %>
+<div id="exportCardPanel" class="hidden max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-4 animate-fadeIn">
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <div>
+      <p class="text-[10px] text-horriver-gray/60 uppercase tracking-[0.18em] mb-0.5">Compartilhar</p>
+      <h2 class="font-title text-2xl text-horriver-light">Card do jogador</h2>
+    </div>
+    <button
+      id="btnDownloadCard"
+      data-player-id="<%= player.id %>"
+      class="px-4 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition shadow-card-soft"
+    >
+      Baixar PNG
+    </button>
+  </div>
+
+  <!-- O card que será capturado pelo html2canvas -->
+  <div class="player-export-preview-frame" id="playerExportPreviewFrame">
+    <div id="player-export-card" class="mx-auto" style="width:400px;">
+      <%- include('partials/player_export_card', { c: {
+        player:        player,
+        totals:        totals,
+        ovr:           Math.round(latestOverall || 0),
+        ovrTrend:      _ovrTrend,
+        ovrDelta:      _ovrDelta,
+        achievements:  (achievements || []).slice(0, 10),
+        photoUrl:      player.photoUrl ? thumbUrl(player.photoUrl, 176) : null,
+        logoSmall:     '/img/logo-32x32.svg',
+        logoWatermark: '/img/logo-128x128.svg',
+        scale: 1,
+      }}) %>
+    </div>
+  </div>
+</div>
+<% } %>
+
 <% if (!isModalProfile) { %>
   <script>
     (function () {
+      // ── Copiar link ──────────────────────────────────────────────
       const btn = document.getElementById("copyProfileLink");
       const status = document.getElementById("copyStatus");
-      if (!btn || !navigator.clipboard) return;
+      if (btn && navigator.clipboard) {
+        btn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(window.location.href);
+            if (status) {
+              status.classList.remove("hidden");
+              status.textContent = "Copiado!";
+              setTimeout(() => status.classList.add("hidden"), 2000);
+            }
+          } catch (err) {
+            if (status) {
+              status.classList.remove("hidden");
+              status.textContent = "Erro ao copiar";
+              setTimeout(() => status.classList.add("hidden"), 2000);
+            }
+          }
+        });
+      }
 
-      btn.addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(window.location.href);
-          if (status) {
-            status.classList.remove("hidden");
-            status.textContent = "Copiado!";
-            setTimeout(() => status.classList.add("hidden"), 2000);
-          }
-        } catch (err) {
-          if (status) {
-            status.classList.remove("hidden");
-            status.textContent = "Erro ao copiar";
-            setTimeout(() => status.classList.add("hidden"), 2000);
-          }
+      // ── Export card ──────────────────────────────────────────────
+      const btnToggle  = document.getElementById("btnToggleExportCard");
+      const cardPanel  = document.getElementById("exportCardPanel");
+      const btnDl      = document.getElementById("btnDownloadCard");
+      const exportCard = document.getElementById("player-export-card");
+      const btnPng     = document.getElementById("btnGerarPng");
+
+      function showPngBtn(show) {
+        if (!btnPng) return;
+        if (show) {
+          btnPng.classList.remove("opacity-0", "scale-95", "pointer-events-none");
+          btnPng.classList.add("opacity-100", "scale-100");
+        } else {
+          btnPng.classList.add("opacity-0", "scale-95", "pointer-events-none");
+          btnPng.classList.remove("opacity-100", "scale-100");
         }
-      });
+      }
+
+      if (btnToggle && cardPanel) {
+        btnToggle.addEventListener("click", () => {
+          const hidden = cardPanel.classList.toggle("hidden");
+          btnToggle.textContent = hidden ? "Exportar card" : "Fechar card";
+          showPngBtn(!hidden);
+          if (!hidden) {
+            cardPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      }
+
+      if (btnPng) {
+        btnPng.addEventListener("click", async () => {
+          const playerId = btnPng.dataset.playerId;
+          const original = btnPng.textContent;
+          btnPng.textContent = "Gerando...";
+          btnPng.disabled = true;
+
+          try {
+            const res = await fetch(`/share/player-card-test.png?playerId=${playerId}`);
+            if (!res.ok) throw new Error(`Erro ${res.status}`);
+            const blob = await res.blob();
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement("a");
+            a.href     = url;
+            a.download = `player-card-${playerId}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          } catch (err) {
+            console.error("[export] Falha ao gerar PNG:", err);
+            alert("Não foi possível gerar o PNG. Tente novamente.");
+          } finally {
+            btnPng.textContent = original;
+            btnPng.disabled = false;
+          }
+        });
+      }
+
+      if (btnDl) {
+        btnDl.addEventListener("click", async () => {
+          const playerId = btnDl.dataset.playerId;
+          const original = btnDl.textContent;
+          btnDl.textContent = "Gerando...";
+          btnDl.disabled = true;
+          try {
+            const res = await fetch(`/share/player-card-test.png?playerId=${playerId}`);
+            if (!res.ok) throw new Error(`Erro ${res.status}`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `player-card-${playerId}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          } catch (err) {
+            console.error("[export] Falha:", err);
+            alert("Não foi possível gerar o PNG. Tente novamente.");
+          } finally {
+            btnDl.textContent = original;
+            btnDl.disabled = false;
+          }
+        });
+      }
     })();
   </script>
 <% } %>

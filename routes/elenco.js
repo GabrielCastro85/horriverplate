@@ -47,6 +47,12 @@ router.get("/", async (req, res) => {
     const players = await prisma.player.findMany({
       where,
       orderBy: { name: "asc" },
+      include: {
+        overallHistory: {
+          orderBy: { calculatedAt: "desc" },
+          take: 3,
+        },
+      },
     });
 
     const payload = {

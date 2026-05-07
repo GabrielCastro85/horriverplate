@@ -1,0 +1,377 @@
+<%
+/*
+  Partial: player_export_card
+  Recebe o objeto `c` com:
+    c.player        — player row
+    c.totals        — { goals, assists, matches, photos }
+    c.ovr           — número overall
+    c.ovrTrend      — 'up' | 'down' | 'stable'
+    c.ovrDelta      — número
+    c.achievements  — array (pré-filtrado, sem limite aqui)
+    c.photoUrl      — URL absoluta ou relativa da foto (já processada pelo caller)
+    c.logoSmall     — URL do logo pequeno
+    c.logoWatermark — URL do logo watermark
+    c.scale         — 1 (preview página) | 2 (Puppeteer)
+*/
+
+// ── Prioridade de exibição no card ──────────────────────────────────────────
+// Quanto maior o score, mais cedo aparece. Combina raridade + categoria + targetValue.
+const _RARITY_W    = { lendaria: 1000, ouro: 700, prata: 400, bronze: 100 };
+const _CATEGORY_W  = { lendaria: 500, premios: 260, premio: 260, gols: 200, assistencias: 170, notas: 140, presenca: 100, zagueiro: 60 };
+
+function _achScore(pa) {
+  const a = pa.achievement || {};
+  return ((_RARITY_W[a.rarity]   || 50)
+        + (_CATEGORY_W[a.category] || 0)
+        + ((a.targetValue || 0) / 10));
+}
+
+const _topAchs = [...(c.achievements || [])]
+  .sort((a, b) => _achScore(b) - _achScore(a))
+  .slice(0, 4);
+
+const _is2x    = c.scale === 2;
+const _cardCls = _is2x ? 'pec-card pec-card--2x' : 'pec-card';
+%>
+<style>
+  /* ── Base ───────────────────────────────────────────────── */
+  .pec-card {
+    position: relative;
+    width: 400px;
+    border-radius: 20px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 12% 10%, rgba(139,19,32,0.26) 0%, transparent 38%),
+      radial-gradient(circle at 86% 86%, rgba(255,122,26,0.10) 0%, transparent 34%),
+      linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
+    border: 1px solid rgba(255,122,26,0.22);
+    box-shadow: 0 20px 48px rgba(0,0,0,0.52);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  /* ── Watermark ── */
+  .pec-watermark {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px; height: 200px;
+    opacity: 0.03;
+    filter: grayscale(1);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ── Inner wrapper ── */
+  .pec-inner {
+    position: relative;
+    z-index: 1;
+    padding: 22px 22px 26px;
+  }
+
+  /* ── Branding ── */
+  .pec-branding {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+  .pec-logo { width: 16px; height: 16px; opacity: 0.85; }
+  .pec-brand-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: #ffb36a;
+    line-height: 1;
+  }
+
+  /* ── Player row ── */
+  .pec-player-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  /* ── Photo ── */
+  .pec-photo {
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2.5px solid rgba(255,122,26,0.85);
+    box-shadow: 0 0 18px rgba(255,122,26,0.28);
+    background: #111;
+  }
+  .pec-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .pec-photo-fallback {
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,122,26,0.10);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    color: #ff7a1a;
+    line-height: 1;
+  }
+
+  /* ── Player info ── */
+  .pec-info { flex: 1; min-width: 0; padding-top: 4px; }
+  .pec-position {
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.20em;
+    color: rgba(178,184,194,0.60);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .pec-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    line-height: 0.96;
+    color: #f5f5f5;
+    word-break: break-word;
+    margin-bottom: 4px;
+  }
+  .pec-nickname {
+    font-size: 10px;
+    color: #ff7a1a;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  /* ── OVR (vertical) ── */
+  .pec-ovr {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding-top: 4px;
+  }
+  .pec-ovr-label {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: rgba(255,179,106,0.72);
+    line-height: 1;
+  }
+  .pec-ovr-line {
+    display: block;
+    width: 26px; height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #8b1320, #ff7a1a);
+  }
+  .pec-ovr-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    line-height: 0.92;
+    color: #f5f5f5;
+  }
+  .pec-ovr-trend-up   { font-size: 9px; font-weight: 700; color: #4ade80; line-height: 1; }
+  .pec-ovr-trend-down { font-size: 9px; font-weight: 700; color: #f87171; line-height: 1; }
+
+  /* ── Divider ── */
+  .pec-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,122,26,0.62), transparent);
+    margin-bottom: 12px;
+  }
+
+  /* ── Stats grid (vertical: label → line → number) ── */
+  .pec-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 12px;
+  }
+  .pec-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 8px 4px 12px;
+    text-align: center;
+  }
+  .pec-stat:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.07); }
+  .pec-stat-label {
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: rgba(178,184,194,0.60);
+    line-height: 1;
+  }
+  .pec-stat-line {
+    display: block;
+    width: 18px; height: 2px;
+    border-radius: 999px;
+    background: rgba(255,122,26,0.82);
+  }
+  .pec-stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    line-height: 1;
+    color: #f5f5f5;
+  }
+
+  /* ── Achievements ── */
+  .pec-achievements {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 10px;
+    margin-bottom: 12px;
+  }
+  .pec-achievement {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 0 7px;
+    border-bottom: 1px solid rgba(255,122,26,0.18);
+  }
+  .pec-achievement-icon { font-size: 9px; color: #ff7a1a; flex-shrink: 0; line-height: 1; }
+  .pec-achievement-text {
+    font-size: 8px;
+    font-weight: 500;
+    color: rgba(255,179,106,0.90);
+    line-height: 1.3;
+    min-width: 0;
+  }
+
+  /* ── Footer ── */
+  .pec-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 7px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: rgba(178,184,194,0.26);
+  }
+
+  /* ── 2× scale overrides (Puppeteer 800px card) ─────────── */
+  .pec-card--2x { width: 800px; border-radius: 40px; box-shadow: 0 40px 96px rgba(0,0,0,0.52); }
+  .pec-card--2x .pec-watermark { width: 400px; height: 400px; }
+  .pec-card--2x .pec-inner { padding: 44px 44px 52px; }
+  .pec-card--2x .pec-branding { gap: 14px; margin-bottom: 28px; }
+  .pec-card--2x .pec-logo { width: 32px; height: 32px; }
+  .pec-card--2x .pec-brand-name { font-size: 20px; }
+  .pec-card--2x .pec-player-row { gap: 24px; margin-bottom: 28px; }
+  .pec-card--2x .pec-photo { width: 152px; height: 152px; border-width: 5px; box-shadow: 0 0 36px rgba(255,122,26,0.28); }
+  .pec-card--2x .pec-photo-fallback { font-size: 60px; }
+  .pec-card--2x .pec-info { padding-top: 8px; }
+  .pec-card--2x .pec-position { font-size: 16px; margin-bottom: 8px; }
+  .pec-card--2x .pec-name { font-size: 68px; margin-bottom: 8px; }
+  .pec-card--2x .pec-nickname { font-size: 20px; }
+  .pec-card--2x .pec-ovr { gap: 10px; padding-top: 8px; }
+  .pec-card--2x .pec-ovr-label { font-size: 16px; }
+  .pec-card--2x .pec-ovr-line { width: 52px; height: 4px; }
+  .pec-card--2x .pec-ovr-value { font-size: 84px; }
+  .pec-card--2x .pec-ovr-trend-up,
+  .pec-card--2x .pec-ovr-trend-down { font-size: 18px; }
+  .pec-card--2x .pec-divider { height: 2px; margin-bottom: 24px; }
+  .pec-card--2x .pec-stats { margin-bottom: 24px; }
+  .pec-card--2x .pec-stat { gap: 10px; padding: 16px 8px 24px; }
+  .pec-card--2x .pec-stat-label { font-size: 16px; }
+  .pec-card--2x .pec-stat-line { width: 36px; height: 4px; }
+  .pec-card--2x .pec-stat-value { font-size: 48px; }
+  .pec-card--2x .pec-achievements { gap: 12px 20px; margin-bottom: 24px; }
+  .pec-card--2x .pec-achievement { gap: 12px; padding: 10px 0 14px; }
+  .pec-card--2x .pec-achievement-icon { font-size: 18px; }
+  .pec-card--2x .pec-achievement-text { font-size: 16px; }
+  .pec-card--2x .pec-footer { padding-top: 20px; font-size: 14px; }
+</style>
+
+<div class="<%= _cardCls %>">
+
+  <img class="pec-watermark" src="<%= c.logoWatermark %>" alt="" />
+
+  <div class="pec-inner">
+
+    <!-- Branding -->
+    <div class="pec-branding">
+      <img class="pec-logo" src="<%= c.logoSmall %>" alt="" />
+      <span class="pec-brand-name">Horriver Plate</span>
+    </div>
+
+    <!-- Player row -->
+    <div class="pec-player-row">
+      <div class="pec-photo">
+        <% if (c.photoUrl) { %>
+          <img src="<%= c.photoUrl %>" alt="<%= c.player.name %>" />
+        <% } else { %>
+          <div class="pec-photo-fallback"><%= c.player.name.charAt(0).toUpperCase() %></div>
+        <% } %>
+      </div>
+
+      <div class="pec-info">
+        <% if (c.player.position) { %><p class="pec-position"><%= c.player.position %></p><% } %>
+        <p class="pec-name"><%= c.player.name %></p>
+        <% if (c.player.nickname) { %><p class="pec-nickname">"<%= c.player.nickname %>"</p><% } %>
+      </div>
+
+      <div class="pec-ovr">
+        <span class="pec-ovr-label">OVR</span>
+        <span class="pec-ovr-line"></span>
+        <span class="pec-ovr-value"><%= c.ovr %></span>
+        <% if (c.ovrTrend === 'up') { %>
+          <span class="pec-ovr-trend-up">↑<% if (c.ovrDelta) { %>+<%= c.ovrDelta %><% } %></span>
+        <% } else if (c.ovrTrend === 'down') { %>
+          <span class="pec-ovr-trend-down">↓<% if (c.ovrDelta) { %><%= Math.abs(c.ovrDelta) %><% } %></span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="pec-divider"></div>
+
+    <!-- Stats -->
+    <div class="pec-stats">
+      <% [
+        { label: 'Jogos',   val: c.totals.matches },
+        { label: 'Gols',    val: c.totals.goals },
+        { label: 'Assist.', val: c.totals.assists },
+        { label: 'Fotos',   val: c.totals.photos },
+      ].forEach(function(s) { %>
+        <div class="pec-stat">
+          <span class="pec-stat-label"><%= s.label %></span>
+          <span class="pec-stat-line"></span>
+          <strong class="pec-stat-value"><%= s.val %></strong>
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- Conquistas -->
+    <% if (_topAchs.length) { %>
+      <div class="pec-achievements">
+        <% _topAchs.forEach(function(pa) { %>
+          <div class="pec-achievement">
+            <span class="pec-achievement-icon">★</span>
+            <span class="pec-achievement-text"><%= pa.achievement.title || pa.achievement.name %></span>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <!-- Footer -->
+    <div class="pec-footer">
+      <span>horriverplate.onrender.com</span>
+      <span>@_hpfrc</span>
+    </div>
+
+  </div>
+</div>

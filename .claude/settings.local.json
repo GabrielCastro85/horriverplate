@@ -33,7 +33,28 @@
       "Bash(node -e \"require\\('./routes/admin/awards'\\); console.log\\('awards OK'\\)\")",
       "Bash(node -e \"require\\('./routes/admin.js'\\); console.log\\('admin OK'\\)\")",
       "Bash(node -e \"require\\('./routes/elenco.js'\\); require\\('./routes/admin/players.js'\\); console.log\\('OK'\\)\")",
-      "Bash(node -e \"require\\('./routes/index.js'\\); console.log\\('OK'\\)\")"
+      "Bash(node -e \"require\\('./routes/index.js'\\); console.log\\('OK'\\)\")",
+      "Bash(node -e \"const ejs = require\\('ejs'\\); const fs = require\\('fs'\\); const template = fs.readFileSync\\('views/index.ejs', 'utf8'\\); console.log\\('EJS syntax check: OK, size =', template.length, 'chars'\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const t=fs.readFileSync\\('views/index.ejs','utf8'\\); console.log\\('OK, tamanho:', t.length, 'chars'\\);\")",
+      "Bash(node -e \"require\\('./server'\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/manifest.json)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('OK:', d['name'], d['display']\\)\")",
+      "Bash(curl -s -o /dev/null -w \"sw.js: %{http_code}\" http://localhost:3000/sw.js)",
+      "Bash(curl -s -o /dev/null -w \"home: %{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" http://localhost:3000/)",
+      "Bash(Get-ChildItem views *)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Sort-Object)",
+      "Bash(node --check server.js)",
+      "Bash(node --check routes/index.js)",
+      "Bash(node --check routes/player.js)",
+      "Bash(node --check routes/elenco.js)",
+      "Bash(node -e \"require\\('./routes/share'\\)\")",
+      "Bash(npx puppeteer *)",
+      "Bash(node -e \"require\\('./routes/share'\\); console.log\\('OK'\\)\")",
+      "Bash(node -e 'const prisma = require\\('\\\\''./utils/db'\\\\''\\); prisma.achievement.findMany\\({ select: { id: true, code: true, category: true, rarity: true, title: true, name: true } }\\).then\\(r => console.log\\(JSON.stringify\\(r, null, 2\\)\\)\\).catch\\(console.error\\).finally\\(\\(\\) => prisma.$disconnect\\(\\)\\)')",
+      "Bash(node -e 'const prisma = require\\('\\\\''./utils/db'\\\\''\\); prisma.achievement.findMany\\({ select: { id: true, code: true, category: true, rarity: true, title: true } }\\).then\\(r => console.log\\(JSON.stringify\\(r, null, 2\\)\\)\\).catch\\(console.error\\).finally\\(\\(\\) => prisma.$disconnect\\(\\)\\)')"
     ]
   }
 }

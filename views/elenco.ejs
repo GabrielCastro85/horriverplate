@@ -215,13 +215,21 @@
               ></div>
             </div>
 
+            <%
+              const _pOvr = p.overallDynamic != null ? Math.round(p.overallDynamic) : (p.baseOverall ? Math.round(p.baseOverall) : null);
+              const _pHist = p.overallHistory || [];
+              const _pTrend = _pHist.length >= 2
+                ? (_pHist[0].overall > _pHist[1].overall + 0.5 ? 'up' : _pHist[0].overall < _pHist[1].overall - 0.5 ? 'down' : 'stable')
+                : (_pOvr != null && p.baseOverall && _pOvr > Math.round(p.baseOverall) + 2 ? 'up' : 'stable');
+              const _pDelta = _pHist.length >= 2 ? Math.abs(Math.round(_pHist[0].overall - _pHist[1].overall)) : 0;
+            %>
             <!-- Conteudo -->
             <div class="relative z-10 p-4 flex flex-col gap-3">
-              <!-- Topo: avatar + nome -->
+              <!-- Topo: avatar + nome + OVR -->
               <div class="flex items-center gap-3">
                 <div
                   class="h-12 w-12 rounded-full bg-horriver-orange/10 border border-horriver-orange/70
-                         flex items-center justify-center overflow-hidden avatar-glow"
+                         flex items-center justify-center overflow-hidden avatar-glow shrink-0"
                 >
                   <% if (p.photoUrl) { %>
                     <img
@@ -240,7 +248,7 @@
                   <% } %>
                 </div>
 
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                   <p class="font-semibold text-horriver-light text-sm truncate">
                     <%= p.name %>
                   </p>
@@ -253,6 +261,20 @@
                     <%= p.position %>
                   </p>
                 </div>
+
+                <% if (_pOvr) { %>
+                  <div class="shrink-0 flex flex-col items-center justify-center w-11 h-11 rounded-xl bg-black/50 border border-horriver-border">
+                    <span class="text-[8px] text-horriver-gray/55 uppercase leading-none tracking-wide">OVR</span>
+                    <span class="text-[15px] font-bold text-horriver-light leading-none mt-0.5"><%= _pOvr %></span>
+                    <% if (_pTrend === 'up') { %>
+                      <span class="text-[9px] text-green-400 font-semibold leading-none mt-0.5">↑<% if (_pDelta) { %><%= _pDelta %><% } %></span>
+                    <% } else if (_pTrend === 'down') { %>
+                      <span class="text-[9px] text-red-400 font-semibold leading-none mt-0.5">↓<% if (_pDelta) { %><%= _pDelta %><% } %></span>
+                    <% } else { %>
+                      <span class="text-[9px] text-horriver-gray/30 leading-none mt-0.5">—</span>
+                    <% } %>
+                  </div>
+                <% } %>
               </div>
 
               <!-- Linha divisoria -->
@@ -261,7 +283,7 @@
               <!-- Stats rapidos -->
               <div class="grid grid-cols-2 gap-2 text-[10px]">
                 <div
-                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
+                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-border
                          flex flex-col items-center"
                 >
                   <p class="text-horriver-gray flex items-center gap-1">
@@ -274,7 +296,7 @@
                 </div>
 
                 <div
-                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-red/60
+                  class="px-2 py-1.5 rounded-2xl bg-black/50 border border-horriver-border
                          flex flex-col items-center"
                 >
                   <p class="text-horriver-gray flex items-center gap-1">

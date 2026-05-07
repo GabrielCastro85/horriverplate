@@ -39,6 +39,13 @@
     <link rel="icon" sizes="192x192" href="/img/logo-192x192.svg" />
     <link rel="icon" sizes="512x512" href="/img/logo-512x512.svg" />
 
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="HP" />
+
     <meta name="theme-color" content="#050509" />
 
     <!-- Open Graph (compartilhamento em redes sociais) -->
@@ -707,6 +714,13 @@
         gtag('config', 'G-0JGR9T4CY9');
       </script>
     <% } %>
+    <!-- Service Worker (PWA) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); });
+      }
+    </script>
+
     <!-- html2canvas para gerar imagem dos rankings -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <!-- SortableJS para drag-and-drop de times -->
@@ -1116,7 +1130,7 @@
       </div>
 
       <!-- CONTEUDO -->
-      <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-10 md:py-12">
+      <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8 md:py-12 overflow-x-hidden">
         <%- body %>
       </main>
 

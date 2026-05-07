@@ -128,6 +128,18 @@ async function buildPlayerProfileViewModel(req, id) {
     overallSeries = [{ date: new Date(), overall: latestOverall }];
   }
 
+  // OVR trend: compare last 2 entries in the series
+  let ovrTrend = "stable"; // 'up' | 'down' | 'stable'
+  let ovrDelta = 0;
+  const _ovrLen = overallSeries.length;
+  if (_ovrLen >= 2) {
+    const _curr = overallSeries[_ovrLen - 1].overall;
+    const _prev = overallSeries[_ovrLen - 2].overall;
+    ovrDelta = Math.round(_curr - _prev);
+    if (ovrDelta > 0) ovrTrend = "up";
+    else if (ovrDelta < 0) ovrTrend = "down";
+  }
+
   await evaluateAchievementsForPlayer(id);
 
   const achievements = await prisma.playerAchievement.findMany({
@@ -167,6 +179,8 @@ async function buildPlayerProfileViewModel(req, id) {
     overallHistory,
     latestOverall,
     overallSeries,
+    ovrTrend,
+    ovrDelta,
     metaDescription: descParts.join(" "),
     metaImage: playerImageUrl,
     ogTitle: `${player.name} | Horriver Plate`,

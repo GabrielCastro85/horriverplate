@@ -348,6 +348,77 @@ router.get("/", async (req, res) => {
     });
 
     // =====================================================
+    // FEED DE ATIVIDADES
+    // =====================================================
+    const recentHatTricks = await prisma.playerStat.findMany({
+      where: { goals: { gte: 3 }, present: true },
+      include: {
+        player: true,
+        match: { select: { playedAt: true, id: true } },
+      },
+      orderBy: { match: { playedAt: "desc" } },
+      take: 6,
+    });
+
+    const FEED_MONTH_NAMES = [
+      "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+      "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
+    ];
+
+    const _activityItems = [];
+
+    recentMatches.slice(0, 6).forEach((m) => {
+      const winner = m.winnerTeam || (m.winnerColor ? `Time ${m.winnerColor}` : null);
+      _activityItems.push({
+        type: "match",
+        label: m.description || "Pelada realizada",
+        sub: winner ? `Vencedor: ${winner}` : "Sem vencedor definido",
+        timestamp: m.playedAt,
+        matchId: m.id,
+        player: null,
+      });
+    });
+
+    if (weeklyAward?.bestPlayer) {
+      _activityItems.push({
+        type: "weekly_award",
+        label: `${weeklyAward.bestPlayer.nickname || weeklyAward.bestPlayer.name} é o Craque da Semana`,
+        sub: weeklyAward.bestPlayer.position || "Destaque da pelada",
+        timestamp: weeklyAward.winningMatch?.playedAt || weeklyAward.weekStart,
+        matchId: weeklyAward.winningMatchId || null,
+        player: weeklyAward.bestPlayer,
+      });
+    }
+
+    if (monthlyCraque?.craque) {
+      const mName = FEED_MONTH_NAMES[(monthlyCraque.month || 1) - 1] || "";
+      _activityItems.push({
+        type: "monthly_award",
+        label: `${monthlyCraque.craque.nickname || monthlyCraque.craque.name} é o Craque de ${mName}`,
+        sub: monthlyCraque.craque.position || "Melhor do mês",
+        timestamp: new Date(`${monthlyCraque.year}-${String(monthlyCraque.month).padStart(2, "0")}-15`),
+        matchId: null,
+        player: monthlyCraque.craque,
+      });
+    }
+
+    recentHatTricks.forEach((s) => {
+      const g = s.goals || 0;
+      const label = g >= 5 ? "manita" : g >= 4 ? "póker" : "hat-trick";
+      _activityItems.push({
+        type: "hat_trick",
+        label: `${s.player.nickname || s.player.name} fez ${label}!`,
+        sub: `${g} gols em uma pelada`,
+        timestamp: s.match?.playedAt,
+        matchId: s.match?.id || null,
+        player: s.player,
+      });
+    });
+
+    _activityItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const activityFeed = _activityItems.slice(0, 12);
+
+    // =====================================================
     // RENDER
     // =====================================================
     const payload = {
@@ -371,6 +442,7 @@ router.get("/", async (req, res) => {
 
       players,
       recentMatches,
+      activityFeed,
     };
 
     setCache("home", payload);

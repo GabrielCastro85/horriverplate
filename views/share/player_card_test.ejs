@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>Card <%= player.name %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: transparent;
+      display: inline-block;
+      line-height: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+  </style>
+</head>
+<body>
+    <%- include('../partials/player_export_card', { c: {
+      player:       player,
+      totals:       totals,
+      ovr:          ovr,
+      ovrTrend:     ovrTrend,
+      ovrDelta:     ovrDelta,
+      achievements: achievements,
+      photoUrl:     player.photoUrl ? (baseUrl + player.photoUrl) : null,
+      logoSmall:    baseUrl + '/img/logo-32x32.svg',
+      logoWatermark: baseUrl + '/img/logo-128x128.svg',
+      scale: 2,
+    }}) %>
+</body>
+</html>
