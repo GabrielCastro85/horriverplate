@@ -51,10 +51,15 @@
   lineupData
 }) %>
 
-<%- include('partials/admin_match/_dialog_presence') %>
+<%- include('partials/admin_match/_dialog_presence', {
+  initialOpenDialog,
+  matchDateLabel,
+  presentPlayersCount,
+  presentPlayerIdSet,
+}) %>
 
 <%- include('partials/admin_match/_scripts_main') %>
 
 <%- include('partials/admin_match/_section_tournament') %>
 
-<%- include('partials/admin_match/_scripts_sorteador') %>
+<%- include('partials/admin_match/_scripts_sorteador', { lineupData }) %>

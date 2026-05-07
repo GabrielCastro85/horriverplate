@@ -50,6 +50,7 @@ function getFileAssetVersion(targetPath, fallbackSeed = Date.now()) {
 
 const ASSET_VERSION =
   process.env.ASSET_VERSION || getFileAssetVersion(CSS_BUNDLE_PATH);
+const CUSTOM_CSS_VERSION = getFileAssetVersion(path.join(PUBLIC_DIR, "css", "custom.css"), ASSET_VERSION);
 const FINANCE_ASSET_VERSION = getFileAssetVersion(FINANCE_CSS_BUNDLE_PATH, ASSET_VERSION);
 const FINANCE_JS_ASSET_VERSION = getFileAssetVersion(FINANCE_JS_BUNDLE_PATH, FINANCE_ASSET_VERSION);
 
@@ -78,6 +79,7 @@ app.set("view engine", "ejs");
 app.use(expressLayouts);
 app.set("layout", "layout"); // usa views/layout.ejs como layout padrão
 app.locals.assetVersion = ASSET_VERSION;
+app.locals.customCssVersion = CUSTOM_CSS_VERSION;
 app.locals.financeAssetVersion = FINANCE_ASSET_VERSION;
 app.locals.financeJsAssetVersion = FINANCE_JS_ASSET_VERSION;
 app.locals.thumbUrl = (url, width) => {

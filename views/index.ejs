@@ -398,53 +398,62 @@
             <p class="text-sm text-center">Nenhum craque da semana definido ainda.</p>
           </div>
         <% } else { %>
-          <div class="flex items-center gap-4 md:gap-10">
-            <!-- Avatar -->
-            <div class="shrink-0 md:order-last w-20 h-20 md:w-36 md:h-36 rounded-full overflow-hidden border-[2px] md:border-[3px] border-horriver-orange bg-black/70 flex items-center justify-center" style="box-shadow: 0 0 22px rgba(255,140,0,0.38);">
-              <% if (weeklyAward.bestPlayer.photoUrl) { %>
-                <img src="<%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 288) %>"
-                     srcset="<%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 288) %> 1x, <%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 576) %> 2x"
-                     sizes="(min-width:768px) 144px, 80px"
-                     alt="<%= weeklyAward.bestPlayer.name %>"
-                     class="w-full h-full object-cover" loading="lazy" />
-              <% } else { %>
-                <span class="text-3xl font-bold text-horriver-orange"><%= weeklyAward.bestPlayer.name.charAt(0).toUpperCase() %></span>
-              <% } %>
-            </div>
-            <%
-              const weeklyOvr = weeklyAward.bestPlayer.overallDynamic != null
-                ? weeklyAward.bestPlayer.overallDynamic
-                : (weeklyAward.bestPlayer.baseOverall || null);
-            %>
-            <!-- Info -->
-            <div class="flex-1 flex flex-col gap-2.5 min-w-0">
+          <%
+            const weeklyOvr = weeklyAward.bestPlayer.overallDynamic != null
+              ? weeklyAward.bestPlayer.overallDynamic
+              : (weeklyAward.bestPlayer.baseOverall || null);
+          %>
+          <div class="hsc-layout">
+            <div class="hsc-info">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Craque da semana</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Craque da semana</span>
                 <% if (weeklyAward.winningMatch) { %>
-                  <span class="text-[10px] text-horriver-gray/50"><%= fmtDate(weeklyAward.winningMatch.playedAt) %></span>
+                  <span class="text-[10px] text-horriver-gray/45"><%= fmtDate(weeklyAward.winningMatch.playedAt) %></span>
                 <% } %>
               </div>
-              <div class="space-y-0.5">
-                <h2 class="font-title text-xl md:text-3xl text-horriver-light leading-tight"><%= weeklyAward.bestPlayer.name %></h2>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <% if (weeklyAward.bestPlayer.position) { %><span class="text-[10px] text-horriver-orange uppercase tracking-wide"><%= weeklyAward.bestPlayer.position %></span><% } %>
-                  <% if (weeklyOvr) { %><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-horriver-red/20 border border-horriver-red/30 text-[9px]"><span class="text-horriver-gray/55 uppercase tracking-wider">OVR</span>&nbsp;<span class="font-bold text-horriver-light"><%= weeklyOvr %></span></span><% } %>
+              <div>
+                <h2 class="font-title text-[2rem] md:text-[2.8rem] text-horriver-light leading-[0.96]"><%= weeklyAward.bestPlayer.name %></h2>
+                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <% if (weeklyAward.bestPlayer.position) { %>
+                    <span class="text-[10px] text-horriver-orange uppercase tracking-wide font-semibold"><%= weeklyAward.bestPlayer.position %></span>
+                  <% } %>
+                  <% if (weeklyOvr) { %>
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-horriver-red/20 border border-horriver-red/30 text-[9px]">
+                      <span class="text-horriver-gray/55 uppercase tracking-wider">OVR</span>&nbsp;<span class="font-bold text-horriver-light"><%= weeklyOvr %></span>
+                    </span>
+                  <% } %>
                 </div>
               </div>
-              <div class="grid grid-cols-3 gap-2 w-full max-w-[17rem] md:max-w-xs">
-                <div class="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl bg-black/50 border border-white/[0.11] min-w-0">
-                  <span class="block text-[9px] text-horriver-gray/60 uppercase tracking-wider leading-none whitespace-nowrap">Gols</span>
-                  <span class="block text-[17px] font-bold text-horriver-light leading-none"><%= wStats ? wStats.goals : 0 %></span>
+              <div class="hsc-stats">
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Gols</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= wStats ? wStats.goals : 0 %></span>
                 </div>
-                <div class="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl bg-black/50 border border-white/[0.11] min-w-0">
-                  <span class="block text-[9px] text-horriver-gray/60 uppercase tracking-wider leading-none whitespace-nowrap">Assist.</span>
-                  <span class="block text-[17px] font-bold text-horriver-light leading-none"><%= wStats ? wStats.assists : 0 %></span>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Assist.</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= wStats ? wStats.assists : 0 %></span>
                 </div>
-                <div class="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl bg-black/50 border border-white/[0.11] min-w-0">
-                  <span class="block text-[9px] text-horriver-gray/60 uppercase tracking-wider leading-none whitespace-nowrap">Nota</span>
-                  <span class="block text-[17px] font-bold text-horriver-light leading-none"><%= wStats ? fmtRating(wStats.avgRating) : '0,00' %></span>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Nota</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= wStats ? fmtRating(wStats.avgRating) : '0,00' %></span>
                 </div>
               </div>
+            </div>
+            <div class="hsc-media">
+              <div class="hsc-glow"></div>
+              <% if (weeklyAward.bestPlayer.photoUrl) { %>
+                <img
+                  src="<%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 356) %>"
+                  srcset="<%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 356) %> 1x, <%= thumbUrl(weeklyAward.bestPlayer.photoUrl, 712) %> 2x"
+                  alt="<%= weeklyAward.bestPlayer.name %>"
+                  class="hsc-player-img" loading="lazy"
+                />
+              <% } else { %>
+                <div class="hsc-player-fb"><%= weeklyAward.bestPlayer.name.charAt(0).toUpperCase() %></div>
+              <% } %>
             </div>
           </div>
         <% } %>
@@ -464,52 +473,64 @@
               ? monthlyCraque.craque.overallDynamic
               : (monthlyCraque.craque && monthlyCraque.craque.baseOverall ? monthlyCraque.craque.baseOverall : null);
           %>
-          <div class="flex items-center gap-4 md:gap-10">
-            <!-- Avatar -->
-            <div class="shrink-0 md:order-last w-20 h-20 md:w-40 md:h-40 rounded-full overflow-hidden border-[2px] md:border-[4px] border-horriver-orange bg-black/70 flex items-center justify-center" style="box-shadow: 0 0 26px rgba(255,140,0,0.42);">
-              <% if (monthlyCraque.craque && monthlyCraque.craque.photoUrl) { %>
-                <img src="<%= thumbUrl(monthlyCraque.craque.photoUrl, 320) %>"
-                     srcset="<%= thumbUrl(monthlyCraque.craque.photoUrl, 320) %> 1x, <%= thumbUrl(monthlyCraque.craque.photoUrl, 640) %> 2x"
-                     sizes="(min-width:768px) 160px, 80px"
-                     alt="<%= monthlyCraque.craque.name %>"
-                     class="w-full h-full object-cover" loading="lazy" />
-              <% } else if (monthlyCraque.craque) { %>
-                <span class="text-3xl font-bold text-horriver-orange"><%= monthlyCraque.craque.name.charAt(0).toUpperCase() %></span>
-              <% } %>
-            </div>
-            <!-- Info -->
-            <div class="flex-1 flex flex-col gap-2.5 min-w-0">
+          <div class="hsc-layout">
+            <div class="hsc-info">
               <div class="flex items-center gap-2 flex-wrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Craque do mês</span>
-                <span class="text-[10px] text-horriver-gray/50"><%= monthNames[(monthlyStatsMonth || monthlyCraque.month) - 1] %> <%= (monthlyStatsYear || monthlyCraque.year) %></span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Craque do mês</span>
+                <span class="text-[10px] text-horriver-gray/45"><%= monthNames[(monthlyStatsMonth || monthlyCraque.month) - 1] %> <%= (monthlyStatsYear || monthlyCraque.year) %></span>
               </div>
               <% if (monthlyCraque.craque) { %>
-                <div class="space-y-0.5">
-                  <h2 class="font-title text-xl md:text-3xl text-horriver-light leading-tight"><%= monthlyCraque.craque.name %></h2>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <% if (monthlyCraque.craque.position) { %><span class="text-[10px] text-horriver-orange uppercase tracking-wide"><%= monthlyCraque.craque.position %></span><% } %>
-                    <% if (monthlyOvr) { %><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-horriver-red/20 border border-horriver-red/30 text-[9px]"><span class="text-horriver-gray/55 uppercase tracking-wider">OVR</span>&nbsp;<span class="font-bold text-horriver-light"><%= monthlyOvr %></span></span><% } %>
+                <div>
+                  <h2 class="font-title text-[2rem] md:text-[2.8rem] text-horriver-light leading-[0.96]"><%= monthlyCraque.craque.name %></h2>
+                  <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <% if (monthlyCraque.craque.position) { %>
+                      <span class="text-[10px] text-horriver-orange uppercase tracking-wide font-semibold"><%= monthlyCraque.craque.position %></span>
+                    <% } %>
+                    <% if (monthlyOvr) { %>
+                      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-horriver-red/20 border border-horriver-red/30 text-[9px]">
+                        <span class="text-horriver-gray/55 uppercase tracking-wider">OVR</span>&nbsp;<span class="font-bold text-horriver-light"><%= monthlyOvr %></span>
+                      </span>
+                    <% } %>
                   </div>
                 </div>
               <% } %>
-              <div class="grid grid-cols-4 gap-2 w-full max-w-[20rem] md:max-w-sm">
-                <div class="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl bg-black/50 border border-white/[0.11] min-w-0">
-                  <span class="block text-[9px] text-horriver-gray/60 uppercase tracking-wider leading-none whitespace-nowrap">Gols</span>
-                  <span class="block text-[17px] font-bold text-horriver-light leading-none"><%= mStats ? mStats.goals : 0 %></span>
+              <div class="hsc-stats">
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Gols</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? mStats.goals : 0 %></span>
                 </div>
-                <div class="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl bg-black/50 border border-white/[0.11] min-w-0">
-                  <span class="block text-[9px] text-horriver-gray/60 uppercase tracking-wider leading-none whitespace-nowrap">Assist.</span>
-                  <span class="block text-[17px] font-bold text-horriver-light leading-none"><%= mStats ? mStats.assists : 0 %></span>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Assist.</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? mStats.assists : 0 %></span>
                 </div>
-                <div class="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl bg-black/50 border border-white/[0.11] min-w-0">
-                  <span class="block text-[9px] text-horriver-gray/60 uppercase tracking-wider leading-none whitespace-nowrap">Jogos</span>
-                  <span class="block text-[17px] font-bold text-horriver-light leading-none"><%= mStats ? mStats.matches : 0 %></span>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Jogos</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? mStats.matches : 0 %></span>
                 </div>
-                <div class="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl bg-black/50 border border-white/[0.11] min-w-0">
-                  <span class="block text-[9px] text-horriver-gray/60 uppercase tracking-wider leading-none whitespace-nowrap">Nota</span>
-                  <span class="block text-[17px] font-bold text-horriver-light leading-none"><%= mStats ? fmtRating(mStats.avgRating) : '0,00' %></span>
+                <div class="hsc-stat">
+                  <span class="hsc-stat__label">Nota</span>
+                  <span class="hsc-stat__line"></span>
+                  <span class="hsc-stat__val"><%= mStats ? fmtRating(mStats.avgRating) : '0,00' %></span>
                 </div>
               </div>
+            </div>
+            <div class="hsc-media">
+              <div class="hsc-glow"></div>
+              <% if (monthlyCraque.craque && monthlyCraque.craque.photoUrl) { %>
+                <img
+                  src="<%= thumbUrl(monthlyCraque.craque.photoUrl, 356) %>"
+                  srcset="<%= thumbUrl(monthlyCraque.craque.photoUrl, 356) %> 1x, <%= thumbUrl(monthlyCraque.craque.photoUrl, 712) %> 2x"
+                  alt="<%= monthlyCraque.craque.name %>"
+                  class="hsc-player-img" loading="lazy"
+                />
+              <% } else if (monthlyCraque.craque) { %>
+                <div class="hsc-player-fb"><%= monthlyCraque.craque.name.charAt(0).toUpperCase() %></div>
+              <% } else { %>
+                <div class="hsc-player-fb">?</div>
+              <% } %>
             </div>
           </div>
         <% } %>
@@ -517,23 +538,31 @@
 
       <!-- Slide 2: Foto da semana (condicional) -->
       <% if (weeklyAward && weeklyAward.teamPhotoUrl) { %>
-        <div class="hero-slide px-5 pb-7 pt-4 md:px-8 md:pb-8" data-index="2">
-          <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-              <span class="section-badge inline-flex items-center px-3 py-1 rounded-full bg-horriver-red/30 border border-horriver-red/60 text-[11px] text-horriver-gray">Time da semana</span>
-              <% if (weeklyAward.winningMatch) { %>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/30 border border-horriver-border text-[10px] text-horriver-gray">
-                  Pelada <span class="text-horriver-light font-semibold ml-1"><%= fmtDate(weeklyAward.winningMatch.playedAt) %></span>
-                </div>
-              <% } %>
+        <div class="hero-slide px-5 pb-6 pt-3 md:px-8 md:pb-8" data-index="2">
+          <div class="hsc-layout">
+            <div class="hsc-info">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-horriver-red/20 border border-horriver-red/40 text-[10px] text-horriver-gray tracking-wide">Time da semana</span>
+                <% if (weeklyAward.winningMatch) { %>
+                  <span class="text-[10px] text-horriver-gray/45"><%= fmtDate(weeklyAward.winningMatch.playedAt) %></span>
+                <% } %>
+              </div>
+              <div>
+                <p class="font-title text-[1.75rem] md:text-[2.5rem] text-horriver-light leading-[0.96]">
+                  <%= (weeklyAward.winningMatch && weeklyAward.winningMatch.description) ? weeklyAward.winningMatch.description : 'Pelada da semana' %>
+                </p>
+                <p class="text-[10px] text-horriver-gray/50 mt-1.5 uppercase tracking-wide">Foto oficial da rodada</p>
+              </div>
+              <p class="text-[11px] text-horriver-gray/55 leading-snug">
+                Clique na foto para ampliar.
+              </p>
             </div>
-            <div class="rounded-2xl overflow-hidden bg-black/80 border border-horriver-orange/40 flex items-center justify-center" style="max-height:260px;">
-              <img src="<%= weeklyAward.teamPhotoUrl %>" alt="Time da semana"
-                   class="w-full h-auto object-contain" style="max-height:260px;" loading="lazy" />
+            <div class="hsc-media">
+              <button type="button" class="hsc-team-photo-btn" data-src="<%= weeklyAward.teamPhotoUrl %>" aria-label="Ver foto em tamanho completo">
+                <img src="<%= weeklyAward.teamPhotoUrl %>" alt="Foto do time da semana"
+                     class="hsc-team-img" loading="lazy" />
+              </button>
             </div>
-            <% if (weeklyAward.winningMatch && weeklyAward.winningMatch.description) { %>
-              <p class="text-[12px] text-horriver-gray text-center"><%= weeklyAward.winningMatch.description %></p>
-            <% } %>
           </div>
         </div>
       <% } %>
@@ -541,6 +570,16 @@
     </div><!-- /hero-track -->
     <div class="hero-progress" id="heroProgress"></div>
   </section>
+
+  <!-- Lightbox: foto do time -->
+  <div id="photoLightbox" class="photo-lightbox" role="dialog" aria-modal="true" aria-label="Foto do time" hidden>
+    <button type="button" class="photo-lightbox__close" aria-label="Fechar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+    <img id="photoLightboxImg" src="" alt="" class="photo-lightbox__img" />
+  </div>
 
   <!-- ======================================================
        RANKINGS RÁPIDOS
@@ -1121,6 +1160,40 @@
         }, { passive: true });
       }
     }
+
+    // ==========================
+    // Team photo lightbox
+    // ==========================
+    const lightbox    = document.getElementById("photoLightbox");
+    const lightboxImg = document.getElementById("photoLightboxImg");
+    const lightboxBtn = lightbox && lightbox.querySelector(".photo-lightbox__close");
+
+    function openLightbox(src, alt) {
+      if (!lightbox) return;
+      lightboxImg.src = src;
+      lightboxImg.alt = alt || "";
+      lightbox.hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+    function closeLightbox() {
+      if (!lightbox) return;
+      lightbox.hidden = true;
+      lightboxImg.src = "";
+      document.body.style.overflow = "";
+    }
+
+    document.querySelectorAll(".hsc-team-photo-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const src = btn.dataset.src || "";
+        const alt = btn.querySelector("img")?.alt || "";
+        openLightbox(src, alt);
+      });
+    });
+
+    if (lightboxBtn) lightboxBtn.addEventListener("click", closeLightbox);
+    if (lightbox) lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && lightbox && !lightbox.hidden) closeLightbox(); });
+
   });
 </script>
 

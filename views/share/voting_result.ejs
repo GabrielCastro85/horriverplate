@@ -1,0 +1,495 @@
+<%
+  const fmtScore = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num.toFixed(2) : '-';
+  };
+  const matchDateLabel = new Date(match.playedAt).toLocaleDateString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+  });
+  const photoUrl = (player) => {
+    if (!player?.photoUrl) return baseUrl + '/img/logo-128x128.svg';
+    return baseUrl + player.photoUrl;
+  };
+  const craque = awards?.craque || null;
+  const positionOf = (item) => item?.player?.position || item?.positionNorm || '';
+  const highlights = [
+    { abbr: 'GOL', item: awards?.melhor_goleiro },
+    { abbr: 'ZAG', item: awards?.melhor_zagueiro },
+    { abbr: 'MEI', item: awards?.melhor_meia },
+    { abbr: 'ATA', item: awards?.melhor_atacante },
+  ].filter(h => h.item);
+%>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=900" />
+  <title>Resultado da Votação</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: transparent;
+      display: inline-block;
+      line-height: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    /* ── Card ── */
+    .vrc-card {
+      position: relative;
+      width: 800px;
+      border-radius: 40px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(139,19,32,0.26) 0%, transparent 38%),
+        radial-gradient(circle at 86% 86%, rgba(255,122,26,0.10) 0%, transparent 34%),
+        linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
+      border: 1px solid rgba(255,122,26,0.22);
+      box-shadow: 0 40px 96px rgba(0,0,0,0.52);
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    /* ── Watermark ── */
+    .vrc-watermark {
+      position: absolute;
+      left: 50%; top: 42%;
+      transform: translate(-50%, -50%);
+      width: 420px; height: 420px;
+      opacity: 0.03;
+      filter: grayscale(1);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ── Inner ── */
+    .vrc-inner {
+      position: relative;
+      z-index: 1;
+      padding: 44px 48px 52px;
+    }
+
+    /* ── Branding ── */
+    .vrc-branding {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .vrc-logo { width: 32px; height: 32px; opacity: 0.85; }
+    .vrc-brand-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: #ffb36a;
+      line-height: 1;
+    }
+
+    /* ── Title row ── */
+    .vrc-title-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .vrc-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      line-height: 0.94;
+      color: #f5f5f5;
+      letter-spacing: 0.02em;
+    }
+    .vrc-title-meta {
+      text-align: right;
+      padding-bottom: 6px;
+      flex-shrink: 0;
+    }
+    .vrc-title-meta-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.20em;
+      color: rgba(178,184,194,0.52);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .vrc-title-meta-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: #f5f5f5;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    .vrc-title-meta-date {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ff7a1a;
+      line-height: 1;
+    }
+
+    /* ── Dividers ── */
+    .vrc-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,122,26,0.62), transparent);
+      margin-bottom: 30px;
+    }
+    .vrc-divider--subtle {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+      margin-bottom: 26px;
+    }
+
+    /* ── Section label ── */
+    .vrc-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.26em;
+      color: rgba(178,184,194,0.50);
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    /* ── Craque block ── */
+    .vrc-craque {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin-bottom: 36px;
+    }
+    .vrc-craque-photo {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 3px solid rgba(255,122,26,0.85);
+      box-shadow: 0 0 28px rgba(255,122,26,0.28);
+      background: #111;
+    }
+    .vrc-craque-photo img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .vrc-craque-photo-fallback {
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,122,26,0.10);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: #ff7a1a;
+      line-height: 1;
+    }
+    .vrc-craque-info { flex: 1; min-width: 0; }
+    .vrc-craque-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 68px;
+      line-height: 0.92;
+      color: #f5f5f5;
+      word-break: break-word;
+      margin-bottom: 8px;
+    }
+    .vrc-craque-position {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.20em;
+      color: rgba(178,184,194,0.60);
+      line-height: 1;
+    }
+    .vrc-craque-score-box {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 28px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,122,26,0.30);
+      background: rgba(255,122,26,0.06);
+    }
+    .vrc-craque-score-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.26em;
+      color: rgba(255,179,106,0.72);
+      line-height: 1;
+    }
+    .vrc-craque-score-line {
+      display: block;
+      width: 40px; height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #8b1320, #ff7a1a);
+    }
+    .vrc-craque-score-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 76px;
+      line-height: 0.88;
+      color: #ff7a1a;
+    }
+
+    /* ── Mini photo (shared by highlights + top5) ── */
+    .vrc-mini-photo {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1.5px solid rgba(255,122,26,0.40);
+      background: #111;
+    }
+    .vrc-mini-photo img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .vrc-mini-photo-fallback {
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,122,26,0.10);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: #ff7a1a;
+      line-height: 1;
+    }
+
+    /* ── Highlights rows ── */
+    .vrc-highlights { margin-bottom: 36px; }
+    .vrc-highlight-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .vrc-highlight-row:last-child { border-bottom: none; }
+    .vrc-highlight-abbr {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 0.10em;
+      color: rgba(255,122,26,0.72);
+      width: 44px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .vrc-highlight-name {
+      flex: 1;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #f5f5f5;
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+    .vrc-highlight-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #ff7a1a;
+      line-height: 1;
+      flex-shrink: 0;
+      min-width: 56px;
+      text-align: right;
+    }
+
+    /* ── Top 5 rows ── */
+    .vrc-top5 { margin-bottom: 36px; }
+    .vrc-top5-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .vrc-top5-row:last-child { border-bottom: none; }
+    .vrc-top5-rank {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: rgba(255,122,26,0.52);
+      width: 28px;
+      flex-shrink: 0;
+      text-align: center;
+      line-height: 1;
+    }
+    .vrc-top5-rank--gold   { color: #f5c542; }
+    .vrc-top5-rank--silver { color: rgba(210,210,220,0.70); }
+    .vrc-top5-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .vrc-top5-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #f5f5f5;
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+    .vrc-top5-pos {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: rgba(178,184,194,0.52);
+      line-height: 1;
+    }
+    .vrc-top5-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #f5f5f5;
+      flex-shrink: 0;
+      min-width: 56px;
+      text-align: right;
+      line-height: 1;
+    }
+    .vrc-top5-score--gold { color: #f5c542; }
+
+    /* ── Footer ── */
+    .vrc-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: rgba(178,184,194,0.26);
+    }
+  </style>
+</head>
+<body>
+  <div class="vrc-card">
+
+    <img class="vrc-watermark" src="<%= baseUrl %>/img/logo-128x128.svg" alt="" />
+
+    <div class="vrc-inner">
+
+      <!-- Branding -->
+      <div class="vrc-branding">
+        <img class="vrc-logo" src="<%= baseUrl %>/img/logo-32x32.svg" alt="" />
+        <span class="vrc-brand-name">Horriver Plate</span>
+      </div>
+
+      <!-- Título + info da pelada -->
+      <div class="vrc-title-row">
+        <h1 class="vrc-title">Resultado<br>da Votação</h1>
+        <div class="vrc-title-meta">
+          <p class="vrc-title-meta-label">Pelada</p>
+          <p class="vrc-title-meta-name"><%= match.description || 'Pelada' %></p>
+          <p class="vrc-title-meta-date"><%= matchDateLabel %></p>
+        </div>
+      </div>
+
+      <!-- Divider principal -->
+      <div class="vrc-divider"></div>
+
+      <!-- Craque da Pelada -->
+      <p class="vrc-section-label">Craque da Pelada</p>
+      <div class="vrc-craque">
+
+        <div class="vrc-craque-photo">
+          <% if (craque?.player?.photoUrl) { %>
+            <img src="<%= photoUrl(craque.player) %>" alt="<%= craque.player.name %>" />
+          <% } else { %>
+            <div class="vrc-craque-photo-fallback">
+              <%= craque?.player?.name?.charAt(0)?.toUpperCase() || '?' %>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="vrc-craque-info">
+          <p class="vrc-craque-name"><%= craque?.player?.name || 'Craque' %></p>
+          <% if (positionOf(craque)) { %>
+            <p class="vrc-craque-position"><%= positionOf(craque) %></p>
+          <% } %>
+        </div>
+
+        <div class="vrc-craque-score-box">
+          <span class="vrc-craque-score-label">Nota</span>
+          <span class="vrc-craque-score-line"></span>
+          <span class="vrc-craque-score-value"><%= fmtScore(craque?.finalRating) %></span>
+        </div>
+
+      </div>
+
+      <!-- Destaques por posição -->
+      <% if (highlights.length > 0) { %>
+        <div class="vrc-divider--subtle"></div>
+        <p class="vrc-section-label">Destaques por Posição</p>
+        <div class="vrc-highlights">
+          <% highlights.forEach(function(h) { %>
+            <div class="vrc-highlight-row">
+              <span class="vrc-highlight-abbr"><%= h.abbr %></span>
+              <div class="vrc-mini-photo">
+                <% if (h.item.player?.photoUrl) { %>
+                  <img src="<%= photoUrl(h.item.player) %>" alt="" />
+                <% } else { %>
+                  <div class="vrc-mini-photo-fallback">
+                    <%= h.item.player?.name?.charAt(0)?.toUpperCase() || '?' %>
+                  </div>
+                <% } %>
+              </div>
+              <span class="vrc-highlight-name"><%= h.item.player?.name || '-' %></span>
+              <span class="vrc-highlight-score"><%= fmtScore(h.item.finalRating) %></span>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <!-- Top 5 da noite -->
+      <% if (topScores.length > 0) { %>
+        <div class="vrc-divider--subtle"></div>
+        <p class="vrc-section-label">Top 5 da Noite</p>
+        <div class="vrc-top5">
+          <% topScores.forEach(function(s, i) { %>
+            <%
+              const rankCls = i === 0 ? ' vrc-top5-rank--gold'
+                            : i === 1 ? ' vrc-top5-rank--silver'
+                            : '';
+              const scoreCls = i === 0 ? ' vrc-top5-score--gold' : '';
+              const pos5 = s.player?.position || s.positionNorm || '';
+            %>
+            <div class="vrc-top5-row">
+              <span class="vrc-top5-rank<%= rankCls %>"><%= i + 1 %></span>
+              <div class="vrc-mini-photo">
+                <% if (s.player?.photoUrl) { %>
+                  <img src="<%= photoUrl(s.player) %>" alt="" />
+                <% } else { %>
+                  <div class="vrc-mini-photo-fallback">
+                    <%= s.player?.name?.charAt(0)?.toUpperCase() || '?' %>
+                  </div>
+                <% } %>
+              </div>
+              <div class="vrc-top5-info">
+                <span class="vrc-top5-name"><%= s.player?.name || '-' %></span>
+                <% if (pos5) { %><span class="vrc-top5-pos"><%= pos5 %></span><% } %>
+              </div>
+              <span class="vrc-top5-score<%= scoreCls %>"><%= fmtScore(s.finalRating) %></span>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <!-- Footer -->
+      <div class="vrc-footer">
+        <span>horriverplate.onrender.com</span>
+        <span>@_hpfrc</span>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

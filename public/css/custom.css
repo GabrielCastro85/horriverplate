@@ -540,7 +540,7 @@ body {
   border-color: var(--hp-orange);
 }
 
-/* Hero stat cell */
+/* Hero stat cell (legacy, kept for compatibility) */
 .hero-stat {
   display: flex;
   flex-direction: column;
@@ -572,6 +572,193 @@ body {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+/* ===========================
+   Hero Carousel — Slide layouts (v3)
+   =========================== */
+
+/* Unified 2-column layout for all 3 slides */
+.hsc-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+}
+.hsc-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.hsc-media {
+  flex-shrink: 0;
+  position: relative;
+}
+/* Decorative glow — purely visual, no layout impact */
+.hsc-glow {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  bottom: -16px;
+  left: 0;
+  background: radial-gradient(circle at 70% 50%, rgba(255, 122, 26, 0.20) 0%, transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Player photo (portrait) */
+.hsc-player-img,
+.hsc-player-fb {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 144px;
+  height: 176px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 122, 26, 0.50);
+  object-fit: cover;
+  object-position: top center;
+}
+.hsc-player-fb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 122, 26, 0.08);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 60px;
+  color: #ff7a1a;
+}
+
+/* Team photo (landscape) */
+.hsc-team-img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 200px;
+  height: 136px;
+  border-radius: 14px;
+  object-fit: cover;
+  object-position: center;
+  border: 1.5px solid rgba(255, 122, 26, 0.35);
+  box-shadow: 0 0 24px rgba(255, 122, 26, 0.12);
+}
+
+/* Stats row */
+.hsc-stats {
+  display: flex;
+  gap: 7px;
+}
+.hsc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 7px 10px 9px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.52);
+  border: 1px solid rgba(255, 122, 26, 0.22);
+  flex: 1;
+  min-width: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 122, 26, 0.06);
+}
+.hsc-stat__label {
+  font-size: 9px;
+  color: rgba(178, 184, 194, 0.72);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  line-height: 1;
+}
+.hsc-stat__line {
+  display: block;
+  width: 14px;
+  height: 1.5px;
+  background: rgba(255, 122, 26, 0.75);
+  border-radius: 999px;
+  margin: 3px auto 4px;
+}
+.hsc-stat__val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.5rem;
+  color: #f5f5f5;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  .hsc-layout { gap: 24px; align-items: center; }
+  .hsc-player-img, .hsc-player-fb { width: 174px; height: 210px; border-radius: 20px; }
+  .hsc-player-fb { font-size: 78px; }
+  .hsc-team-img { width: 280px; height: 188px; border-radius: 18px; }
+  .hsc-stat { padding: 9px 14px 11px; }
+  .hsc-stat__val { font-size: 1.75rem; }
+  .hsc-stat__line { width: 18px; }
+}
+
+@media (max-width: 767px) {
+  .hsc-layout { gap: 10px; }
+  .hsc-player-img, .hsc-player-fb { width: 80px; height: 98px; border-radius: 10px; }
+  .hsc-player-fb { font-size: 36px; }
+  .hsc-team-img { width: 140px; height: 94px; border-radius: 10px; }
+  .hsc-stat { padding: 5px 8px 7px; }
+  .hsc-stat__val { font-size: 1.125rem; }
+  .hsc-stat__line { width: 10px; }
+}
+
+/* ===========================
+   Team photo lightbox
+   =========================== */
+.hsc-team-photo-btn {
+  display: block;
+  cursor: zoom-in;
+  background: none;
+  border: none;
+  padding: 0;
+  line-height: 0;
+}
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: lb-in 0.18s ease;
+}
+.photo-lightbox[hidden] { display: none; }
+@keyframes lb-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.photo-lightbox__img {
+  max-width: 100%;
+  max-height: 88vh;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.56);
+  display: block;
+}
+.photo-lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e5e7eb;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.photo-lightbox__close:hover { background: rgba(255, 255, 255, 0.20); }
 
 /* ===========================
    Consistent section links
