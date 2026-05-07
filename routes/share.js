@@ -291,27 +291,13 @@ router.get("/voting-result.png", async (req, res) => {
 // ── Lineup card templates ───────────────────────────────────────────────────
 const LINEUP_TEMPLATE = path.join(__dirname, "../views/share/lineup_card.ejs");
 
-function resolveShareBaseUrl() {
-  const configured =
-    process.env.SHARE_BASE_URL ||
-    process.env.PUBLIC_BASE_URL ||
-    process.env.APP_URL ||
-    process.env.BASE_URL;
-
-  if (configured) return String(configured).replace(/\/$/, "");
-
-  return process.env.NODE_ENV === "production"
-    ? "https://horriverplate.onrender.com"
-    : `http://localhost:${process.env.PORT || 3000}`;
-}
-
 // ── Debug: renderiza HTML do card de times ─────────────────────────────────
 router.post("/lineup-html", async (req, res) => {
   try {
     const { teams, goalkeepers, matchDate, matchDescription } = req.body || {};
     if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
 
-    const baseUrl = resolveShareBaseUrl();
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
     const html = await ejs.renderFile(LINEUP_TEMPLATE, {
       teams,
       goalkeepers: goalkeepers || [],
@@ -352,7 +338,7 @@ router.post("/lineup.png", async (req, res) => {
     const page = await browser.newPage();
     await page.setViewport({ width: 1500, height: 1800, deviceScaleFactor: 2 });
 
-    const baseUrl = resolveShareBaseUrl();
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
     const html = await ejs.renderFile(LINEUP_TEMPLATE, {
       teams,
       goalkeepers: goalkeepers || [],
@@ -362,6 +348,8 @@ router.post("/lineup.png", async (req, res) => {
     });
 
     // domcontentloaded evita travar esperando Google Fonts CDN fechar conexão
+    // Primeiro navega para a mesma origem dos assets para evitar bloqueio CORP/NotSameOrigin.
+    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded", timeout: 15000 });
     await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 20000 });
     // Aguarda fontes com timeout de segurança
     await Promise.race([

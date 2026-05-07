@@ -7,8 +7,8 @@
    */
 
   const cleanBaseUrl = String(baseUrl || "").replace(/\/$/, "");
-  const logoMarkUrl = `${cleanBaseUrl}/img/logo-512x512.svg`;
-  const logoIconUrl = `${cleanBaseUrl}/img/logo-64x64.svg`;
+  const logoMarkUrl = `${cleanBaseUrl}/img/logo-128x128.svg`;
+  const logoIconUrl = `${cleanBaseUrl}/img/logo-32x32.svg`;
 
   const escHtml = (value = "") =>
     String(value)
@@ -117,28 +117,28 @@
     const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
 
     if (columns <= 1) {
-      if (longest >= 24) return 58;
-      if (longest >= 20) return 64;
-      if (longest >= 16) return 70;
-      return 78;
-    }
-
-    if (columns === 2) {
-      if (longest >= 24) return 48;
-      if (longest >= 20) return 52;
-      if (longest >= 16) return 58;
-      if (longest >= 13) return 62;
+      if (longest >= 24) return 50;
+      if (longest >= 20) return 56;
+      if (longest >= 16) return 62;
       return 70;
     }
 
-    if (longest >= 24) return 34;
-    if (longest >= 20) return 38;
-    if (longest >= 17) return 42;
-    if (longest >= 14) return 44;
-    if (longest >= 12) return 45;
-    if (longest >= 11) return 50;
-    if (longest >= 10) return 52;
-    return 58;
+    if (columns === 2) {
+      if (longest >= 24) return 42;
+      if (longest >= 20) return 46;
+      if (longest >= 16) return 52;
+      if (longest >= 13) return 56;
+      return 62;
+    }
+
+    if (longest >= 24) return 32;
+    if (longest >= 20) return 36;
+    if (longest >= 17) return 40;
+    if (longest >= 14) return 42;
+    if (longest >= 12) return 43;
+    if (longest >= 11) return 47;
+    if (longest >= 10) return 49;
+    return 54;
   };
 
   const teamCount = Array.isArray(teams) ? teams.length : 0;
@@ -387,7 +387,7 @@
       padding: 18px 18px 18px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
 
     .lc-team-top {
@@ -428,19 +428,20 @@
     }
 
     .lc-team-name {
-      min-height: 104px;
+      min-height: 98px;
       padding-right: 6px;
       font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
       font-size: var(--team-title-size);
       font-weight: 700;
-      line-height: 0.92;
-      letter-spacing: 0.03em;
+      line-height: 0.95;
+      letter-spacing: 0.025em;
       text-transform: uppercase;
       color: #f8fafc;
-      text-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+      text-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
       word-break: keep-all;
       overflow-wrap: normal;
       hyphens: none;
+      overflow: hidden;
     }
 
     .lc-team-name span {
