@@ -1,11 +1,14 @@
+const { z } = require("zod");
 const prisma = require("../utils/db");
 const {
   decimalToNumber,
   roundCurrency,
+  formatDateBR,
   formatDateBRShortYear,
   computeMonthlyFeeStatus,
   computeMonthlyFeeBalance,
   getPaymentMethodLabel,
+  getTransactionCategoryLabel,
   getMonthDateRange,
   FINANCE_TRANSACTION_CATEGORY_OPTIONS,
 } = require("../utils/finance");
@@ -38,6 +41,7 @@ const {
   isPlayerEligibleForMonthlyFee,
   fetchMonthlyMatchChargeUsage,
   calculateMonthlyFeeBreakdown,
+  buildMonthlyFeeRuleUpdate,
 } = require("../services/financeRules.service");
 const { recordFinanceEvent } = require("../services/financeEventLog.service");
 const {
@@ -54,9 +58,21 @@ const {
   getFinanceHashByTab,
   getMonthlyFeeHash,
   ensureFinanceSettings,
+  clearFinanceSettingsCache,
   buildFinancePageViewModel,
   buildFinanceRenderView,
 } = require("../services/financePage.service");
+
+const CreateCashTransactionSchema = z.object({
+  type: z.string().min(1),
+  category: z.string().min(1),
+  amount: z.string().min(1),
+});
+
+const CreateGuestPaymentSchema = z.object({
+  guestName: z.string().min(1),
+  amount: z.string().min(1),
+});
 
 function requireAdmin(req, res, next) {
   if (!req.admin) {
@@ -302,6 +318,7 @@ async function handleEnsureMonthlyCompetence(req, res) {
       return redirectToFinance(res, { ...filters, error: "sem-jogadores-ativos" }, redirectHash);
     }
 
+    const today = getSaoPauloTodayDate();
     const result = await ensureMonthlyCompetence({
       prisma,
       month: filters.month,
@@ -311,8 +328,50 @@ async function handleEnsureMonthlyCompetence(req, res) {
       competencePlanMap,
       useManualCompetencePlans,
       dryRun: false,
-      referenceDate: getSaoPauloTodayDate(),
+      referenceDate: today,
     });
+
+    // Atualiza mensalidades ja existentes cujo plano foi alterado na janela de geracao
+    let updatedCount = 0;
+    if (useManualCompetencePlans && competencePlanMap.size > 0) {
+      const existingFees = await prisma.monthlyFee.findMany({
+        where: { month: filters.month, year: filters.year },
+        include: { player: true },
+      });
+
+      for (const fee of existingFees) {
+        if (fee.status === "PAID") continue; // nao altera mensalidades ja quitadas
+        if (!competencePlanMap.has(fee.playerId)) continue;
+
+        const newPlan = normalizeParticipantType(competencePlanMap.get(fee.playerId), "PER_MATCH");
+        if (!["MONTHLY", "PER_MATCH", "EXEMPT"].includes(newPlan)) continue;
+        if (fee.participantType === newPlan) continue; // plano nao mudou
+
+        const breakdown = calculateMonthlyFeeBreakdown({
+          player: fee.player,
+          settings,
+          month: fee.month,
+          year: fee.year,
+          participantTypeOverride: newPlan,
+          matchesPlayed: fee.matchesPlayed,
+          lateMatchesPlayed: fee.lateMatchesPlayed,
+          matchChargeUsage: null,
+          manualDiscountAmount: fee.manualDiscountAmount || 0,
+          amountPaid: fee.amountPaid || 0,
+          currentStatus: fee.status,
+          currentBillingMode: fee.billingMode,
+          referenceDate: today,
+          latePerMatchAmount: fee.latePerMatchAmount,
+        });
+
+        await prisma.monthlyFee.update({
+          where: { id: fee.id },
+          data: buildMonthlyFeeRuleUpdate(fee, breakdown),
+        });
+        updatedCount++;
+      }
+    }
+
     const planSummary = summarizeCompetencePlayerPlans(eligiblePlayers, competencePlanMap);
 
     await createFinanceAudit(req, "finance.monthly_competence.ensure", "Competencia mensal garantida", {
@@ -321,6 +380,7 @@ async function handleEnsureMonthlyCompetence(req, res) {
       eligibleCount: result.eligibleCount,
       missingCount: result.missingCount,
       createdCount: result.createdCount,
+      updatedCount,
       useManualCompetencePlans,
       monthlyCount: planSummary.monthlyCount,
       perMatchCount: planSummary.perMatchCount,
@@ -330,7 +390,7 @@ async function handleEnsureMonthlyCompetence(req, res) {
 
     return redirectToFinance(
       res,
-      { ...filters, notice: result.createdCount > 0 ? "competencia-preparada" : "mensalidades-ja-existentes" },
+      { ...filters, notice: (result.createdCount > 0 || updatedCount > 0) ? "competencia-preparada" : "mensalidades-ja-existentes" },
       redirectHash
     );
   } catch (err) {
@@ -456,6 +516,7 @@ async function updateFinanceSettings(req, res) {
       autoGenerateCompetence,
     });
 
+    clearFinanceSettingsCache();
     const refreshedSettings = await ensureFinanceSettings();
     await syncMonthlyCompetenceRules({
       prisma,
@@ -1329,6 +1390,10 @@ async function exemptMonthlyFee(req, res) {
 
 async function createCashTransaction(req, res) {
   try {
+    if (!CreateCashTransactionSchema.safeParse(req.body).success) {
+      return redirectToFinance(res, { ...req.body, error: "categoria-caixa" }, "#finance-cash");
+    }
+
     const type = normalizeUppercaseValue(req.body.type, "EXPENSE");
     const category = normalizeUppercaseValue(req.body.category, "");
     const allowedCategories = (FINANCE_TRANSACTION_CATEGORY_OPTIONS[type] || []).map((item) => item.value);
@@ -1446,9 +1511,13 @@ async function deleteCashTransaction(req, res) {
 }
 async function createGuestPayment(req, res) {
   try {
+    if (!CreateGuestPaymentSchema.safeParse(req.body).success) {
+      return redirectToFinance(res, { ...req.body, error: "convidado" }, "#finance-guests");
+    }
+
     const amount = parseMoneyInput(req.body.amount, 0);
     const guestName = getOptionalTrimmedString(req.body.guestName);
-    if (amount <= 0 || !guestName) {
+    if (amount <= 0) {
       return redirectToFinance(res, { ...req.body, error: "convidado" }, "#finance-guests");
     }
 
@@ -1588,6 +1657,45 @@ async function deleteGuestPayment(req, res) {
   }
 }
 
+async function exportFinanceCsv(req, res) {
+  try {
+    const filters = normalizeFinanceFilters(req.query);
+    const { start, end } = getMonthDateRange(filters.year, filters.month);
+
+    const transactions = await prisma.cashTransaction.findMany({
+      where: { date: { gte: start, lt: end } },
+      include: {
+        player: { select: { name: true } },
+        monthlyFee: { select: { month: true, year: true } },
+        guestPayment: { select: { guestName: true } },
+      },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
+    });
+
+    const header = ["Data", "Tipo", "Categoria", "Valor (R$)", "Descricao", "Nota"];
+    const rows = transactions.map((tx) => [
+      formatDateBR(tx.date),
+      tx.type === "INCOME" ? "Entrada" : "Saida",
+      getTransactionCategoryLabel(tx.category),
+      decimalToNumber(tx.amount).toFixed(2).replace(".", ","),
+      tx.description || "",
+      tx.note || "",
+    ]);
+
+    const escape = (cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`;
+    const csv = [header, ...rows].map((row) => row.map(escape).join(";")).join("\r\n");
+
+    const mm = String(filters.month).padStart(2, "0");
+    const filename = `financeiro-${mm}-${filters.year}.csv`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send("﻿" + csv);
+  } catch (err) {
+    console.error("Erro ao exportar CSV financeiro:", err);
+    res.status(500).send("Erro ao gerar o CSV financeiro.");
+  }
+}
+
 async function resetFinanceCompetence(req, res) {
   try {
     const filters = normalizeFinanceFilters(req.body);
@@ -1678,6 +1786,7 @@ module.exports = {
   renderFinancePage,
   renderFinanceReportPreview,
   renderFinanceReportPdf,
+  exportFinanceCsv,
   updateFinanceSettings,
   updateFinancePlayer,
   handleEnsureMonthlyCompetence,

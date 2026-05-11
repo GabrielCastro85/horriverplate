@@ -1,0 +1,248 @@
+<%
+  const monthNames = [
+    '', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  ];
+  const monthLabel = monthNames[mvMonth] || ('Mês ' + mvMonth);
+  const fmtScore = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toFixed(2) : '–';
+  };
+  const photoSrc = winner && winner.photoUrl ? (baseUrl + winner.photoUrl) : null;
+%>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=900" />
+  <title>Craque do Mês — <%= monthLabel %> <%= mvYear %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: transparent;
+      display: inline-block;
+      line-height: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+    .mc-card {
+      position: relative;
+      width: 800px;
+      border-radius: 40px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 14% 8%, rgba(139,19,32,0.30) 0%, transparent 40%),
+        radial-gradient(circle at 88% 90%, rgba(255,122,26,0.12) 0%, transparent 36%),
+        linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
+      border: 1px solid rgba(255,122,26,0.22);
+      box-shadow: 0 40px 96px rgba(0,0,0,0.52);
+      font-family: 'Inter', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+    .mc-watermark {
+      position: absolute;
+      left: 50%; top: 44%;
+      transform: translate(-50%, -50%);
+      width: 440px; height: 440px;
+      opacity: 0.03;
+      filter: grayscale(1);
+      pointer-events: none;
+      user-select: none;
+    }
+    .mc-inner {
+      position: relative;
+      z-index: 1;
+      padding: 44px 48px 52px;
+    }
+    .mc-branding {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .mc-logo { width: 32px; height: 32px; opacity: 0.85; }
+    .mc-brand-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: #ffb36a;
+      line-height: 1;
+    }
+    .mc-title-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .mc-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      line-height: 0.94;
+      color: #f5f5f5;
+      letter-spacing: 0.02em;
+    }
+    .mc-period { text-align: right; padding-bottom: 6px; flex-shrink: 0; }
+    .mc-period-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.22em; color: rgba(178,184,194,0.52); line-height: 1; margin-bottom: 6px;
+    }
+    .mc-period-value {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: #ff7a1a; line-height: 1;
+    }
+    .mc-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,122,26,0.62), transparent);
+      margin-bottom: 32px;
+    }
+    .mc-divider--subtle { height: 1px; background: rgba(255,255,255,0.06); margin-bottom: 28px; }
+    .mc-winner { display: flex; align-items: center; gap: 32px; margin-bottom: 36px; }
+    .mc-winner-photo {
+      width: 140px; height: 140px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      border: 3px solid rgba(255,122,26,0.85); box-shadow: 0 0 36px rgba(255,122,26,0.30); background: #111;
+    }
+    .mc-winner-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mc-winner-photo-fallback {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      background: rgba(255,122,26,0.10); font-family: 'Bebas Neue', sans-serif;
+      font-size: 56px; color: #ff7a1a; line-height: 1;
+    }
+    .mc-winner-info { flex: 1; min-width: 0; }
+    .mc-winner-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.26em;
+      color: rgba(255,179,106,0.70); line-height: 1; margin-bottom: 10px;
+    }
+    .mc-winner-name {
+      font-family: 'Bebas Neue', sans-serif; font-size: 72px; line-height: 0.90;
+      color: #f5f5f5; word-break: break-word; margin-bottom: 10px;
+    }
+    .mc-votes-badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+      border-radius: 999px; background: rgba(255,122,26,0.10); border: 1px solid rgba(255,122,26,0.32);
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em;
+      color: #ffb36a; line-height: 1;
+    }
+    .mc-score-box {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 22px 30px; border-radius: 20px; border: 1px solid rgba(255,122,26,0.30);
+      background: rgba(255,122,26,0.06);
+    }
+    .mc-score-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.26em;
+      color: rgba(255,179,106,0.72); line-height: 1;
+    }
+    .mc-score-line {
+      display: block; width: 40px; height: 3px; border-radius: 999px;
+      background: linear-gradient(90deg, #8b1320, #ff7a1a);
+    }
+    .mc-score-value {
+      font-family: 'Bebas Neue', sans-serif; font-size: 80px; line-height: 0.88; color: #ff7a1a;
+    }
+    .mc-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 36px;
+    }
+    .mc-stat {
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 16px;
+      background: rgba(255,255,255,0.03); padding: 18px 14px; text-align: center;
+    }
+    .mc-stat-value {
+      font-family: 'Bebas Neue', sans-serif; font-size: 44px; color: #f5f5f5;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .mc-stat-label {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.20em; color: rgba(178,184,194,0.50); line-height: 1;
+    }
+    .mc-stat--accent .mc-stat-value { color: #ff7a1a; }
+    .mc-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em;
+      color: rgba(178,184,194,0.26);
+    }
+  </style>
+</head>
+<body>
+  <div class="mc-card">
+    <img class="mc-watermark" src="<%= baseUrl %>/img/logo-128x128.svg" alt="" />
+    <div class="mc-inner">
+
+      <div class="mc-branding">
+        <img class="mc-logo" src="<%= baseUrl %>/img/logo-32x32.svg" alt="" />
+        <span class="mc-brand-name">Horriver Plate</span>
+      </div>
+
+      <div class="mc-title-row">
+        <h1 class="mc-title">Craque<br>do Mês</h1>
+        <div class="mc-period">
+          <p class="mc-period-label">Período</p>
+          <p class="mc-period-value"><%= monthLabel %> <%= mvYear %></p>
+        </div>
+      </div>
+
+      <div class="mc-divider"></div>
+
+      <div class="mc-winner">
+        <div class="mc-winner-photo">
+          <% if (photoSrc) { %>
+            <img src="<%= photoSrc %>" alt="<%= winner.name %>" />
+          <% } else { %>
+            <div class="mc-winner-photo-fallback">
+              <%= winner && winner.name ? winner.name.charAt(0).toUpperCase() : '?' %>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="mc-winner-info">
+          <p class="mc-winner-label">Vencedor</p>
+          <p class="mc-winner-name"><%= (winner && winner.name) ? winner.name : '–' %></p>
+          <% if (winner && winner.votes != null) { %>
+            <span class="mc-votes-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="opacity:0.7"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <%= winner.votes %> <%= winner.votes === 1 ? 'voto' : 'votos' %>
+            </span>
+          <% } %>
+        </div>
+
+        <div class="mc-score-box">
+          <span class="mc-score-label">Score</span>
+          <span class="mc-score-line"></span>
+          <span class="mc-score-value"><%= fmtScore(winner && winner.score) %></span>
+        </div>
+      </div>
+
+      <div class="mc-divider--subtle"></div>
+
+      <div class="mc-stats">
+        <div class="mc-stat">
+          <div class="mc-stat-value"><%= (winner && winner.matches != null) ? winner.matches : '–' %></div>
+          <div class="mc-stat-label">Jogos</div>
+        </div>
+        <div class="mc-stat">
+          <div class="mc-stat-value"><%= (winner && winner.goals != null) ? winner.goals : '–' %></div>
+          <div class="mc-stat-label">Gols</div>
+        </div>
+        <div class="mc-stat">
+          <div class="mc-stat-value"><%= (winner && winner.assists != null) ? winner.assists : '–' %></div>
+          <div class="mc-stat-label">Assist.</div>
+        </div>
+        <div class="mc-stat mc-stat--accent">
+          <div class="mc-stat-value"><%= (winner && winner.avgRating != null) ? Number(winner.avgRating).toFixed(2) : '–' %></div>
+          <div class="mc-stat-label">Nota Média</div>
+        </div>
+      </div>
+
+      <div class="mc-footer">
+        <span>horriverplate.onrender.com</span>
+        <span>@_hpfrc</span>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -164,7 +164,7 @@
           </p>
         </div>
 
-        <form method="POST" action="/admin/finance/competence/reset" class="space-y-3">
+        <form method="POST" action="/admin/finance/competence/reset" class="space-y-3" id="reset-competence-form">
           <%- stateFields({ tab: 'settings' }) %>
           <div class="finance-inline-stats">
             <div class="finance-inline-stat">
@@ -173,13 +173,69 @@
             </div>
           </div>
           <button
-            type="submit"
+            type="button"
             class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
-            data-confirm="Resetar os dados financeiros de <%= currentFinanceView.page.monthReferenceLabel %>? Isso apaga mensalidades, convidados referenciados no mes e lancamentos manuais do caixa desse periodo."
+            onclick="document.getElementById('reset-confirm-dialog').showModal()"
           >
             Resetar dados da competencia
           </button>
         </form>
+
+        <dialog id="reset-confirm-dialog" style="background:rgba(10,10,18,0.98);border:1px solid rgba(220,38,38,0.3);border-radius:14px;padding:0;width:min(440px,92vw);color:inherit;box-shadow:0 24px 64px rgba(0,0,0,0.8);">
+          <style>#reset-confirm-dialog::backdrop{background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)}</style>
+          <div class="p-6 space-y-4">
+            <div class="space-y-1">
+              <p class="text-xs text-red-300 uppercase tracking-wide font-semibold">Confirmacao necessaria</p>
+              <h3 class="font-title text-lg text-horriver-light">Resetar competencia</h3>
+              <p class="text-sm text-horriver-gray">
+                Esta acao apaga permanentemente mensalidades, convidados e lancamentos manuais de
+                <strong class="text-horriver-light"><%= currentFinanceView.page.monthReferenceLabel %></strong>.
+              </p>
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs text-horriver-gray">
+                Digite <span class="text-horriver-light font-semibold"><%= currentFinanceView.page.monthReferenceLabel %></span> para confirmar:
+              </label>
+              <input
+                id="reset-confirm-input"
+                type="text"
+                autocomplete="off"
+                placeholder="<%= currentFinanceView.page.monthReferenceLabel %>"
+                class="w-full px-3 py-2 rounded-lg bg-black/60 border border-horriver-border text-horriver-light text-sm focus:outline-none focus:border-red-400/60"
+              />
+            </div>
+            <div class="flex gap-2 justify-end pt-1">
+              <button
+                type="button"
+                class="finance-soft-button text-horriver-gray"
+                onclick="document.getElementById('reset-confirm-dialog').close();document.getElementById('reset-confirm-input').value='';document.getElementById('reset-confirm-submit').disabled=true"
+              >
+                Cancelar
+              </button>
+              <button
+                id="reset-confirm-submit"
+                type="button"
+                disabled
+                class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                onclick="document.getElementById('reset-competence-form').submit()"
+              >
+                Resetar
+              </button>
+            </div>
+          </div>
+          <script>
+            (function () {
+              var input = document.getElementById('reset-confirm-input');
+              var submit = document.getElementById('reset-confirm-submit');
+              var expected = '<%= currentFinanceView.page.monthReferenceLabel.replace(/'/g, "\\'") %>';
+              if (input && submit) {
+                input.addEventListener('input', function () {
+                  submit.disabled = input.value.trim() !== expected;
+                });
+              }
+            })();
+          </script>
+        </dialog>
       </div>
     </div>
 

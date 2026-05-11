@@ -12,120 +12,6 @@
   ];
 %>
 
-<style>
-  .player-dialog[hidden] {
-    display: none;
-  }
-  .player-dialog {
-    position: fixed;
-    inset: 0;
-    z-index: 95;
-  }
-  .player-dialog__backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(2, 6, 23, 0.78);
-    backdrop-filter: blur(6px);
-  }
-  .player-dialog__panel {
-    position: relative;
-    z-index: 1;
-    width: min(1080px, calc(100vw - 32px));
-    max-height: calc(100vh - 32px);
-    margin: 16px auto;
-    border-radius: 28px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: linear-gradient(180deg, rgba(16, 16, 20, 0.98), rgba(8, 8, 12, 0.98));
-    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    opacity: 0;
-    transform: translateY(18px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-  }
-  .player-dialog.is-visible .player-dialog__panel {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .player-dialog__head,
-  .player-dialog__body {
-    padding: 20px 22px;
-  }
-  .player-dialog__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-  .player-dialog__body {
-    min-height: 0;
-    overflow-y: auto;
-  }
-  .player-dialog__close {
-    width: 40px;
-    height: 40px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.03);
-    color: #f8fafc;
-    font-size: 24px;
-    line-height: 1;
-  }
-  .player-dialog__close:hover {
-    border-color: rgba(255, 122, 26, 0.45);
-    color: #ff7a1a;
-  }
-  .player-dialog__full-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 40px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0 16px;
-    color: #f8fafc;
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .player-dialog__full-link:hover {
-    border-color: rgba(255, 122, 26, 0.45);
-    color: #ff7a1a;
-  }
-  .player-dialog__status {
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.03);
-    padding: 18px 20px;
-    color: rgba(226, 232, 240, 0.86);
-    font-size: 14px;
-  }
-  .player-dialog__status[hidden] {
-    display: none;
-  }
-  .player-dialog__status--error {
-    border-color: rgba(248, 113, 113, 0.4);
-    color: #fecaca;
-  }
-  .player-dialog-open {
-    overflow: hidden;
-  }
-  @media (max-width: 640px) {
-    .player-dialog__panel {
-      width: min(100vw - 16px, 100%);
-      margin: 8px auto;
-      max-height: calc(100vh - 16px);
-    }
-    .player-dialog__head,
-    .player-dialog__body {
-      padding: 16px;
-    }
-    .player-dialog__head {
-      flex-direction: column;
-    }
-  }
-</style>
 
 <section class="space-y-6 animate-fadeIn">
   <!-- Cabecalho -->
@@ -195,10 +81,6 @@
         <% players.forEach((p) => { %>
           <a
             href="/jogador/<%= p.id %>"
-            data-player-modal-trigger
-            data-player-modal-url="/jogador/<%= p.id %>/modal"
-            data-player-name="<%= p.name %>"
-            aria-haspopup="dialog"
             class="player-card card-unified group relative rounded-3xl overflow-hidden
                    bg-gradient-to-br from-black/80 via-horriver-dark to-black
                    transition-transform hover:-translate-y-1"
@@ -356,60 +238,6 @@
   </section>
 </section>
 
-<div class="player-dialog" data-player-dialog hidden>
-  <div class="player-dialog__backdrop" data-player-dialog-close></div>
-  <div
-    class="player-dialog__panel"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="player-dialog-title"
-  >
-    <div class="player-dialog__head">
-      <div class="space-y-2">
-        <span class="hero-badge text-horriver-gray">
-          <span class="hero-icon">JP</span>
-          Perfil no elenco
-        </span>
-        <h2 id="player-dialog-title" class="text-2xl font-semibold text-horriver-light" data-player-dialog-title>
-          Perfil do jogador
-        </h2>
-        <p class="text-sm text-horriver-gray max-w-2xl">
-          Veja estatisticas, conquistas e partidas recentes sem sair da pagina de elenco.
-        </p>
-      </div>
-
-      <div class="flex items-center gap-2 self-start">
-        <a
-          href="#"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="player-dialog__full-link"
-          data-player-dialog-full
-        >
-          Abrir pagina
-        </a>
-        <button
-          type="button"
-          class="player-dialog__close"
-          data-player-dialog-close
-          aria-label="Fechar perfil do jogador"
-        >
-          &times;
-        </button>
-      </div>
-    </div>
-
-    <div class="player-dialog__body">
-      <div class="player-dialog__status" data-player-dialog-loading hidden>
-        Carregando perfil...
-      </div>
-      <div class="player-dialog__status player-dialog__status--error" data-player-dialog-error hidden>
-        Nao foi possivel carregar o perfil agora.
-      </div>
-      <div data-player-dialog-content hidden></div>
-    </div>
-  </div>
-</div>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -420,22 +248,6 @@
     const totalEl = document.getElementById("player-total");
     const emptyEl = document.getElementById("player-empty");
     const chipsEl = document.getElementById("active-filters");
-    const dialog = document.querySelector("[data-player-dialog]");
-    const dialogTitle = dialog?.querySelector("[data-player-dialog-title]");
-    const dialogFullLink = dialog?.querySelector("[data-player-dialog-full]");
-    const dialogLoading = dialog?.querySelector("[data-player-dialog-loading]");
-    const dialogError = dialog?.querySelector("[data-player-dialog-error]");
-    const dialogContent = dialog?.querySelector("[data-player-dialog-content]");
-    const dialogCloseButtons = Array.from(
-      dialog?.querySelectorAll("[data-player-dialog-close]") || []
-    );
-    const dialogOpeners = Array.from(document.querySelectorAll("[data-player-modal-trigger]"));
-    const modalCache = new Map();
-    const dialogVisibleClass = "is-visible";
-    const dialogBodyClass = "player-dialog-open";
-    let dialogHideTimer = null;
-    let activeFetchController = null;
-
     if (totalEl) totalEl.textContent = String(cards.length);
 
     function renderChips(term, posLabel) {
@@ -512,131 +324,6 @@
         applyFilters();
       });
     }
-
-    function setDialogState(state, message = "") {
-      if (!dialogLoading || !dialogError || !dialogContent) return;
-
-      dialogLoading.hidden = state !== "loading";
-      dialogError.hidden = state !== "error";
-      dialogContent.hidden = state !== "content";
-
-      if (state === "loading") {
-        dialogLoading.textContent = message || "Carregando perfil...";
-      }
-      if (state === "error") {
-        dialogError.textContent = message || "Nao foi possivel carregar o perfil agora.";
-      }
-    }
-
-    function openDialog() {
-      if (!dialog) return;
-      if (dialogHideTimer) {
-        window.clearTimeout(dialogHideTimer);
-        dialogHideTimer = null;
-      }
-
-      dialog.hidden = false;
-      window.requestAnimationFrame(() => {
-        dialog.classList.add(dialogVisibleClass);
-      });
-      document.body.classList.add(dialogBodyClass);
-    }
-
-    function closeDialog() {
-      if (!dialog) return;
-
-      if (activeFetchController) {
-        activeFetchController.abort();
-        activeFetchController = null;
-      }
-
-      dialog.classList.remove(dialogVisibleClass);
-      document.body.classList.remove(dialogBodyClass);
-      dialogHideTimer = window.setTimeout(() => {
-        dialog.hidden = true;
-      }, 200);
-    }
-
-    async function openPlayerModal(trigger) {
-      if (!dialog || !dialogContent) return;
-
-      const modalUrl = trigger.dataset.playerModalUrl;
-      const fullUrl = trigger.getAttribute("href") || modalUrl;
-      const playerName = trigger.dataset.playerName || "Perfil do jogador";
-
-      if (!modalUrl) return;
-
-      if (dialogTitle) dialogTitle.textContent = playerName;
-      if (dialogFullLink) dialogFullLink.href = fullUrl;
-
-      openDialog();
-
-      if (modalCache.has(modalUrl)) {
-        dialogContent.innerHTML = modalCache.get(modalUrl);
-        setDialogState("content");
-        return;
-      }
-
-      setDialogState("loading", `Carregando perfil de ${playerName}...`);
-
-      if (activeFetchController) {
-        activeFetchController.abort();
-      }
-
-      activeFetchController =
-        typeof AbortController === "function" ? new AbortController() : null;
-
-      try {
-        const response = await fetch(modalUrl, {
-          headers: {
-            "X-Requested-With": "fetch",
-          },
-          signal: activeFetchController?.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Falha ao carregar perfil (${response.status})`);
-        }
-
-        const html = await response.text();
-        modalCache.set(modalUrl, html);
-        dialogContent.innerHTML = html;
-        setDialogState("content");
-      } catch (error) {
-        if (error?.name === "AbortError") return;
-        setDialogState("error", "Nao foi possivel carregar o perfil agora. Tente novamente.");
-      } finally {
-        activeFetchController = null;
-      }
-    }
-
-    dialogOpeners.forEach((trigger) => {
-      trigger.addEventListener("click", (event) => {
-        if (
-          event.defaultPrevented ||
-          event.button !== 0 ||
-          event.metaKey ||
-          event.ctrlKey ||
-          event.shiftKey ||
-          event.altKey
-        ) {
-          return;
-        }
-
-        event.preventDefault();
-        openPlayerModal(trigger);
-      });
-    });
-
-    dialogCloseButtons.forEach((button) => {
-      button.addEventListener("click", closeDialog);
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && dialog && !dialog.hidden) {
-        closeDialog();
-      }
-    });
 
     applyFilters();
   });

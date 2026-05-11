@@ -832,6 +832,22 @@
             <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= posLabel(selPos) %></strong></span>
           </div>
 
+          <!-- Chips rápidos de posição -->
+          <div class="flex flex-wrap gap-1.5 pt-1 pb-0.5">
+            <% [['all','Todas'], ['Goleiro','Goleiro'], ['Zagueiro','Zagueiro'], ['Meia','Meia'], ['Atacante','Atacante']].forEach(([val, label]) => {
+                 const isActive = selPos === val;
+                 const qs = new URLSearchParams({ year: String(selYear), month: String(selMonth), position: val }).toString();
+            %>
+              <a
+                href="/rankings?<%= qs %>"
+                class="px-3 py-1.5 rounded-full text-[11px] font-semibold transition
+                  <%= isActive
+                    ? 'bg-horriver-orange text-black'
+                    : 'border border-horriver-border text-horriver-gray hover:border-horriver-orange hover:text-horriver-orange' %>"
+              ><%= label %></a>
+            <% }) %>
+          </div>
+
           <div class="flex flex-wrap items-end gap-3">
             <div class="min-w-[120px]">
               <label class="block text-horriver-gray mb-1">Ano</label>

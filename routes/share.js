@@ -8,6 +8,29 @@ const fs = require("fs");
 const os = require("os");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
+// ── Cache em disco para PNGs gerados pelo Puppeteer ────────────────────────
+const CACHE_DIR = path.join(os.tmpdir(), "share-png-cache");
+try { fs.mkdirSync(CACHE_DIR, { recursive: true }); } catch (_) {}
+
+function cachePath(key) {
+  return path.join(CACHE_DIR, key + ".png");
+}
+
+function readCache(key, maxAgeMs = Infinity) {
+  try {
+    const p = cachePath(key);
+    const stat = fs.statSync(p);
+    if (Date.now() - stat.mtimeMs > maxAgeMs) return null;
+    return fs.readFileSync(p);
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeCache(key, buf) {
+  try { fs.writeFileSync(cachePath(key), buf); } catch (_) {}
+}
+
 async function buildShareData(playerId) {
   const player = await prisma.player.findUnique({
     where: { id: playerId },
@@ -76,6 +99,18 @@ router.get("/player-card-test.png", async (req, res) => {
   const t0 = Date.now();
   console.log(`[share] Iniciando card PNG — player #${playerId}`);
 
+  // Cache de 1 hora (dados do jogador podem mudar)
+  const cacheKey = `player-card-${playerId}`;
+  const cached = readCache(cacheKey, 60 * 60 * 1000);
+  if (cached) {
+    console.log(`[share] Cache hit — player #${playerId} (${Date.now() - t0}ms)`);
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Disposition", `attachment; filename="player-card-${playerId}.png"`);
+    res.setHeader("Content-Length", cached.length);
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(cached);
+  }
+
   let browser;
   try {
     // Valida existência do jogador antes de abrir o browser
@@ -140,10 +175,7 @@ router.get("/player-card-test.png", async (req, res) => {
     console.log(`[share] Buffer: ${buf.length} bytes`);
     if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
 
-    // Salva cópia em tmp para validação
-    const tmpPath = path.join(os.tmpdir(), `player-card-${playerId}.png`);
-    fs.writeFileSync(tmpPath, buf);
-    console.log(`[share] Cópia salva em: ${tmpPath}`);
+    writeCache(cacheKey, buf);
     console.log(`[share] Concluído em ${Date.now() - t0}ms — player #${playerId} (${data.player.name})`);
 
     res.setHeader("Content-Type", "image/png");
@@ -207,6 +239,22 @@ router.get("/voting-result.png", async (req, res) => {
   const t0 = Date.now();
   console.log(`[share] Iniciando voting result PNG — match #${matchId}`);
 
+  // Cache permanente — resultado de votação não muda após encerrado
+  const cacheKeyVoting = `voting-result-${matchId}`;
+  const cachedVoting = readCache(cacheKeyVoting);
+  if (cachedVoting) {
+    console.log(`[share] Cache hit — voting result match #${matchId} (${Date.now() - t0}ms)`);
+    const data = await buildVotingData(matchId);
+    const dateLabel = data
+      ? new Date(data.match.playedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }).replace(/\//g, "-")
+      : matchId;
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Disposition", `attachment; filename="resultado-votacao-${dateLabel}.png"`);
+    res.setHeader("Content-Length", cachedVoting.length);
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(cachedVoting);
+  }
+
   let browser;
   try {
     const data = await buildVotingData(matchId);
@@ -264,9 +312,7 @@ router.get("/voting-result.png", async (req, res) => {
     console.log(`[share] Buffer: ${buf.length} bytes`);
     if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
 
-    const tmpPath = path.join(os.tmpdir(), `voting-result-${matchId}.png`);
-    fs.writeFileSync(tmpPath, buf);
-    console.log(`[share] Cópia salva em: ${tmpPath}`);
+    writeCache(cacheKeyVoting, buf);
     console.log(`[share] Concluído em ${Date.now() - t0}ms — match #${matchId}`);
 
     const dateLabel = new Date(data.match.playedAt)
@@ -283,6 +329,153 @@ router.get("/voting-result.png", async (req, res) => {
     if (!res.headersSent) {
       res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
     }
+  } finally {
+    if (browser) await browser.close().catch(() => {});
+  }
+});
+
+// ── Monthly craque template ────────────────────────────────────────────────
+const MONTHLY_CRAQUE_TEMPLATE = path.join(__dirname, "../views/share/monthly_craque.ejs");
+
+async function buildMonthlyCraqueData(sessionId) {
+  const session = await prisma.monthlyVoteSession.findUnique({
+    where: { id: sessionId },
+  });
+  if (!session) return null;
+
+  const candidates = Array.isArray(session.candidates) ? session.candidates : [];
+  if (!candidates.length) return null;
+
+  const ballots = await prisma.monthlyVoteBallot.findMany({
+    where: { token: { sessionId } },
+  });
+
+  const counts = ballots.reduce((acc, b) => {
+    acc[b.candidateId] = (acc[b.candidateId] || 0) + 1;
+    return acc;
+  }, {});
+
+  const winner = [...candidates]
+    .map((c) => ({ ...c, votes: counts[c.id] || 0 }))
+    .sort((a, b) => {
+      if (b.votes !== a.votes) return b.votes - a.votes;
+      if (b.score !== a.score) return (b.score || 0) - (a.score || 0);
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    })[0];
+
+  return { winner, mvMonth: session.month, mvYear: session.year };
+}
+
+// ── Debug: renderiza HTML do card de craque do mês ─────────────────────────
+router.get("/monthly-craque-html", async (req, res) => {
+  const sessionId = parseInt(req.query.sessionId, 10);
+  if (isNaN(sessionId)) return res.status(400).send("sessionId inválido");
+
+  try {
+    const data = await buildMonthlyCraqueData(sessionId);
+    if (!data) return res.status(404).send("Sessão ou vencedor não encontrado");
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const html = await ejs.renderFile(MONTHLY_CRAQUE_TEMPLATE, { ...data, baseUrl });
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(html);
+  } catch (err) {
+    console.error("[share-monthly-craque-html] Erro:", err);
+    res.status(500).send(`<pre>${err.message}\n\n${err.stack}</pre>`);
+  }
+});
+
+// ── PNG via Puppeteer — card de craque do mês ──────────────────────────────
+router.get("/monthly-craque.png", async (req, res) => {
+  const sessionId = parseInt(req.query.sessionId, 10);
+  if (isNaN(sessionId)) return res.status(400).send("sessionId inválido");
+
+  const t0 = Date.now();
+  console.log(`[share] Iniciando monthly craque PNG — session #${sessionId}`);
+
+  // Cache permanente — vencedor não muda após sessão encerrada
+  const cacheKeyCraque = `monthly-craque-${sessionId}`;
+  const cachedCraque = readCache(cacheKeyCraque);
+  if (cachedCraque) {
+    console.log(`[share] Cache hit — monthly craque session #${sessionId} (${Date.now() - t0}ms)`);
+    const data = await buildMonthlyCraqueData(sessionId);
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Disposition", `attachment; filename="craque-do-mes-${data?.mvMonth ?? sessionId}-${data?.mvYear ?? ""}.png"`);
+    res.setHeader("Content-Length", cachedCraque.length);
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(cachedCraque);
+  }
+
+  let browser;
+  try {
+    const data = await buildMonthlyCraqueData(sessionId);
+    if (!data) return res.status(404).send("Sessão ou vencedor não encontrado");
+
+    const host = `${req.protocol}://${req.get("host")}`;
+    const htmlUrl = `${host}/share/monthly-craque-html?sessionId=${sessionId}`;
+    console.log(`[share] Navegando para: ${htmlUrl}`);
+
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--hide-scrollbars",
+      ],
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1000, height: 800, deviceScaleFactor: 2 });
+
+    await page.goto(htmlUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.evaluateHandle(() => document.fonts.ready);
+
+    const failedImages = await page.evaluate(async () => {
+      await Promise.all(
+        Array.from(document.images).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve;
+                setTimeout(resolve, 8000);
+              })
+        )
+      );
+      return Array.from(document.images)
+        .filter((img) => img.naturalWidth === 0)
+        .map((img) => img.src);
+    });
+
+    if (failedImages.length) {
+      console.warn(`[share] Imagens com falha (${failedImages.length}):`, failedImages);
+    }
+
+    const cardElement = await page.$(".mc-card");
+    if (!cardElement) throw new Error("Elemento .mc-card não encontrado na página");
+
+    const raw = await cardElement.screenshot({ type: "png", omitBackground: true });
+    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+
+    if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
+
+    writeCache(cacheKeyCraque, buf);
+    console.log(`[share] Concluído em ${Date.now() - t0}ms — session #${sessionId} (${data.winner?.name})`);
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="craque-do-mes-${data.mvMonth}-${data.mvYear}.png"`
+    );
+    res.setHeader("Content-Length", buf.length);
+    res.setHeader("Cache-Control", "no-store");
+    return res.end(buf);
+  } catch (err) {
+    console.error(`[share] Erro monthly craque — session #${sessionId}:`, err);
+    if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
   } finally {
     if (browser) await browser.close().catch(() => {});
   }

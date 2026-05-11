@@ -14,6 +14,11 @@ router.get(
   adminFinanceController.requireAdmin,
   adminFinanceController.renderFinanceReportPdf
 );
+router.get(
+  "/finance/reports/csv",
+  adminFinanceController.requireAdmin,
+  adminFinanceController.exportFinanceCsv
+);
 router.post("/finance/settings", adminFinanceController.requireAdmin, adminFinanceController.updateFinanceSettings);
 router.post(
   "/finance/competence/reset",

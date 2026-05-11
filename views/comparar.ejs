@@ -1,0 +1,255 @@
+<%
+  const hasComparison = playerA && playerB;
+  const pillClass = "inline-flex items-center gap-1.5 rounded-full border border-horriver-border bg-white/[0.04] px-3 py-1.5 text-[11px] leading-none text-horriver-light";
+  const surfaceClass = "rounded-[1.35rem] border border-horriver-border bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
+
+  const statLabel = (a, b, higherIsBetter = true) => {
+    if (a === b) return 'tie';
+    return (higherIsBetter ? a > b : a < b) ? 'a' : 'b';
+  };
+
+  const fmtRating = (v) => (v == null ? '—' : Number(v).toFixed(2).replace('.', ','));
+%>
+
+<div class="page-shell w-full max-w-5xl mx-auto px-4 sm:px-6 animate-fadeIn space-y-8">
+
+  <!-- Header -->
+  <header class="page-hero space-y-3">
+    <span class="hero-badge text-horriver-gray">
+      <span class="hero-icon">CP</span>
+      Comparador
+    </span>
+    <h1 class="text-3xl md:text-4xl font-title text-horriver-light">
+      <% if (hasComparison) { %>
+        <span class="text-horriver-orange"><%= playerA.player.name %></span>
+        <span class="text-horriver-gray/60 mx-2">vs</span>
+        <span class="text-horriver-orange"><%= playerB.player.name %></span>
+      <% } else { %>
+        Comparar Jogadores
+      <% } %>
+    </h1>
+    <p class="text-sm text-horriver-gray/80">Selecione dois jogadores para comparar estatísticas lado a lado.</p>
+  </header>
+
+  <!-- Seletor -->
+  <form
+    method="GET"
+    action=""
+    id="comparatorForm"
+    class="<%= surfaceClass %> p-5 space-y-4"
+  >
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="space-y-1.5">
+        <label class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/70">Jogador A</label>
+        <select
+          name="a"
+          id="selectA"
+          class="w-full rounded-xl border border-horriver-border bg-black/40 px-3 py-2.5 text-sm text-horriver-light focus:border-horriver-orange focus:outline-none"
+        >
+          <option value="">Selecionar jogador...</option>
+          <% players.forEach(p => { %>
+            <option value="<%= p.id %>" <%= (hasComparison && playerA.player.id === p.id) ? 'selected' : '' %>>
+              <%= p.name %><% if (p.nickname) { %> (<%= p.nickname %>)<% } %> — <%= p.position %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="space-y-1.5">
+        <label class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/70">Jogador B</label>
+        <select
+          name="b"
+          id="selectB"
+          class="w-full rounded-xl border border-horriver-border bg-black/40 px-3 py-2.5 text-sm text-horriver-light focus:border-horriver-orange focus:outline-none"
+        >
+          <option value="">Selecionar jogador...</option>
+          <% players.forEach(p => { %>
+            <option value="<%= p.id %>" <%= (hasComparison && playerB.player.id === p.id) ? 'selected' : '' %>>
+              <%= p.name %><% if (p.nickname) { %> (<%= p.nickname %>)<% } %> — <%= p.position %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="flex justify-end">
+      <button
+        type="submit"
+        class="px-5 py-2 rounded-full bg-horriver-orange text-black text-sm font-semibold hover:bg-orange-500 transition"
+      >
+        Comparar
+      </button>
+    </div>
+  </form>
+
+  <% if (hasComparison) { %>
+  <%
+    const stats = [
+      { label: 'Overall',      a: Math.round(playerA.latestOverall), b: Math.round(playerB.latestOverall), higher: true },
+      { label: 'Jogos',        a: playerA.totals.matches,            b: playerB.totals.matches,            higher: true },
+      { label: 'Gols',         a: playerA.totals.goals,              b: playerB.totals.goals,              higher: true },
+      { label: 'Assistências', a: playerA.totals.assists,            b: playerB.totals.assists,            higher: true },
+      { label: 'Nota média',   a: playerA.totals.avgRating,          b: playerB.totals.avgRating,          higher: true, fmt: fmtRating },
+      { label: 'Fotos',        a: playerA.totals.photos,             b: playerB.totals.photos,             higher: true },
+    ];
+
+    let winsA = 0, winsB = 0;
+    stats.forEach(s => {
+      const va = s.a ?? -1, vb = s.b ?? -1;
+      if (va > vb) winsA++; else if (vb > va) winsB++;
+    });
+  %>
+
+  <!-- Placar geral -->
+  <div class="grid grid-cols-3 gap-3 text-center">
+    <div class="<%= surfaceClass %> p-4 space-y-1">
+      <% if (playerA.player.photoUrl) { %>
+        <img src="<%= thumbUrl(playerA.player.photoUrl, 96) %>" class="w-14 h-14 rounded-full object-cover border-2 border-horriver-orange/70 mx-auto" alt="<%= playerA.player.name %>">
+      <% } else { %>
+        <div class="w-14 h-14 rounded-full bg-horriver-orange/20 flex items-center justify-center mx-auto text-horriver-orange text-lg font-title"><%= playerA.player.name[0] %></div>
+      <% } %>
+      <p class="font-title text-lg text-horriver-light leading-tight"><%= playerA.player.name %></p>
+      <p class="text-[11px] text-horriver-orange uppercase"><%= playerA.player.position %></p>
+      <p class="text-2xl font-title <%= winsA > winsB ? 'text-green-400' : 'text-horriver-gray/60' %>"><%= winsA %></p>
+      <p class="text-[10px] text-horriver-gray/60 uppercase tracking-wider">categorias</p>
+    </div>
+
+    <div class="<%= surfaceClass %> p-4 flex flex-col items-center justify-center gap-1">
+      <span class="text-[10px] uppercase tracking-[0.18em] text-horriver-gray/50">resultado</span>
+      <span class="font-title text-4xl text-horriver-light"><%= winsA %> – <%= winsB %></span>
+      <% if (winsA === winsB) { %>
+        <span class="text-[11px] text-horriver-gray/60">Empate</span>
+      <% } else { %>
+        <span class="text-[11px] text-horriver-orange font-semibold">
+          <%= winsA > winsB ? playerA.player.name : playerB.player.name %> vence
+        </span>
+      <% } %>
+    </div>
+
+    <div class="<%= surfaceClass %> p-4 space-y-1">
+      <% if (playerB.player.photoUrl) { %>
+        <img src="<%= thumbUrl(playerB.player.photoUrl, 96) %>" class="w-14 h-14 rounded-full object-cover border-2 border-horriver-orange/70 mx-auto" alt="<%= playerB.player.name %>">
+      <% } else { %>
+        <div class="w-14 h-14 rounded-full bg-horriver-orange/20 flex items-center justify-center mx-auto text-horriver-orange text-lg font-title"><%= playerB.player.name[0] %></div>
+      <% } %>
+      <p class="font-title text-lg text-horriver-light leading-tight"><%= playerB.player.name %></p>
+      <p class="text-[11px] text-horriver-orange uppercase"><%= playerB.player.position %></p>
+      <p class="text-2xl font-title <%= winsB > winsA ? 'text-green-400' : 'text-horriver-gray/60' %>"><%= winsB %></p>
+      <p class="text-[10px] text-horriver-gray/60 uppercase tracking-wider">categorias</p>
+    </div>
+  </div>
+
+  <!-- Tabela de estatísticas -->
+  <section class="<%= surfaceClass %> overflow-hidden">
+    <div class="px-5 pt-5 pb-3">
+      <h2 class="font-title text-2xl text-horriver-light">Estatísticas</h2>
+      <p class="text-xs text-horriver-gray/70 mt-0.5">Comparação direta. Verde = vantagem.</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[420px]">
+        <thead>
+          <tr class="border-t border-horriver-border/40">
+            <th class="px-5 py-2.5 text-left text-[11px] uppercase tracking-[0.12em] text-horriver-gray/60 w-1/3"><%= playerA.player.name.split(' ')[0] %></th>
+            <th class="px-3 py-2.5 text-center text-[11px] uppercase tracking-[0.12em] text-horriver-gray/40 w-1/3">Categoria</th>
+            <th class="px-5 py-2.5 text-right text-[11px] uppercase tracking-[0.12em] text-horriver-gray/60 w-1/3"><%= playerB.player.name.split(' ')[0] %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% stats.forEach(s => {
+               const winner = statLabel(s.a ?? -1, s.b ?? -1, s.higher);
+               const fmtVal = s.fmt || (v => v ?? '—');
+               const clsA = winner === 'a' ? 'text-green-400 font-bold' : winner === 'tie' ? 'text-horriver-light' : 'text-horriver-gray/50';
+               const clsB = winner === 'b' ? 'text-green-400 font-bold' : winner === 'tie' ? 'text-horriver-light' : 'text-horriver-gray/50';
+          %>
+            <tr class="border-t border-horriver-border/30 hover:bg-white/[0.02]">
+              <td class="px-5 py-3 text-left text-base font-semibold <%= clsA %>"><%= fmtVal(s.a) %></td>
+              <td class="px-3 py-3 text-center text-[11px] uppercase tracking-[0.12em] text-horriver-gray/50"><%= s.label %></td>
+              <td class="px-5 py-3 text-right text-base font-semibold <%= clsB %>"><%= fmtVal(s.b) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Gráficos de Overall -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <% [playerA, playerB].forEach((p, idx) => {
+         const series = p.overallSeries || [];
+         const n = series.length;
+         if (n < 2) return;
+         const step = 100 / (n - 1);
+         const allOvr = series.map(o => o.overall);
+         const minOvr = Math.max(0, Math.min(...allOvr) - 4);
+         const maxOvr = Math.min(100, Math.max(...allOvr) + 4);
+         const range = maxOvr - minOvr || 1;
+         let path = '', fill = '';
+         series.forEach((o, i) => {
+           const x = (i * step).toFixed(1);
+           const y = (40 - ((o.overall - minOvr) / range) * 38).toFixed(1);
+           path += (i === 0 ? 'M' : ' L') + x + ',' + y;
+         });
+         fill = path + ' V40 H0 Z';
+         const first = series[0], last = series[n - 1];
+         const lastX = ((n - 1) * step).toFixed(1);
+         const firstY = (40 - ((first.overall - minOvr) / range) * 38).toFixed(1);
+         const lastY = (40 - ((last.overall - minOvr) / range) * 38).toFixed(1);
+         const delta = Math.round(last.overall - first.overall);
+    %>
+    <section class="<%= surfaceClass %> p-4 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <p class="text-[10px] uppercase tracking-[0.14em] text-horriver-gray/60">Evolução OVR</p>
+          <h3 class="font-title text-lg text-horriver-light"><%= p.player.name %></h3>
+        </div>
+        <span class="<%= pillClass %>">OVR <strong class="text-horriver-orange font-semibold ml-1"><%= Math.round(p.latestOverall) %></strong></span>
+      </div>
+      <svg viewBox="0 0 100 40" class="w-full h-28 text-horriver-orange" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="ovrGrad<%= idx %>" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="currentColor" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <path d="<%= fill %>" fill="url(#ovrGrad<%= idx %>)"/>
+        <path d="<%= path %>" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="0" cy="<%= firstY %>" r="1.6" fill="currentColor" opacity="0.5"/>
+        <circle cx="<%= lastX %>" cy="<%= lastY %>" r="2.2" fill="currentColor"/>
+      </svg>
+      <div class="flex items-center justify-between text-[11px] text-horriver-gray/60">
+        <span><%= new Date(first.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'America/Sao_Paulo' }) %> — OVR <%= Math.round(first.overall) %></span>
+        <% if (delta > 0) { %><span class="text-green-400 font-semibold">+<%= delta %> pts</span>
+        <% } else if (delta < 0) { %><span class="text-red-400 font-semibold"><%= delta %> pts</span>
+        <% } else { %><span class="text-horriver-gray/40">Sem variação</span><% } %>
+        <span>OVR <%= Math.round(last.overall) %></span>
+      </div>
+    </section>
+    <% }) %>
+  </div>
+
+  <!-- Links para perfis -->
+  <div class="flex flex-wrap gap-3 justify-center">
+    <a href="/jogador/<%= playerA.player.id %>" class="px-4 py-2 rounded-full border border-horriver-border text-horriver-gray text-sm hover:border-horriver-orange hover:text-horriver-orange transition">
+      Ver perfil de <%= playerA.player.name %>
+    </a>
+    <a href="/jogador/<%= playerB.player.id %>" class="px-4 py-2 rounded-full border border-horriver-border text-horriver-gray text-sm hover:border-horriver-orange hover:text-horriver-orange transition">
+      Ver perfil de <%= playerB.player.name %>
+    </a>
+  </div>
+
+  <% } %>
+</div>
+
+<script>
+  (function () {
+    const form = document.getElementById('comparatorForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const a = document.getElementById('selectA').value;
+      const b = document.getElementById('selectB').value;
+      if (!a || !b) { alert('Selecione os dois jogadores.'); return; }
+      if (a === b) { alert('Selecione jogadores diferentes.'); return; }
+      window.location.href = '/comparar/' + a + '/' + b;
+    });
+  })();
+</script>

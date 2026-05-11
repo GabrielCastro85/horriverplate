@@ -814,6 +814,28 @@
         return selected?.value || "PER_MATCH";
       };
 
+      const syncPlanPresentation = (row) => {
+        row.querySelectorAll(".finance-competence-plan-pill").forEach((label) => {
+          const input = label.querySelector("[data-competence-plan-input]");
+          const isSelected = Boolean(input?.checked);
+          label.classList.toggle("is-selected", isSelected);
+          label.setAttribute("aria-checked", String(isSelected));
+        });
+      };
+
+      const setRowPlan = (row, plan) => {
+        const target = row.querySelector(`[data-competence-plan-input][value="${plan}"]`);
+        if (!target || target.disabled) return false;
+
+        row.querySelectorAll("[data-competence-plan-input]").forEach((input) => {
+          input.checked = input === target;
+        });
+
+        syncPlanPresentation(row);
+        syncCounts();
+        return true;
+      };
+
       const syncCounts = () => {
         const counts = {
           MONTHLY: 0,
@@ -841,8 +863,23 @@
 
       playerRows.forEach((row) => {
         row.querySelectorAll("[data-competence-plan-input]").forEach((input) => {
-          input.addEventListener("change", syncCounts);
+          input.addEventListener("change", () => {
+            syncPlanPresentation(row);
+            syncCounts();
+          });
         });
+
+        row.querySelectorAll(".finance-competence-plan-pill").forEach((label) => {
+          label.setAttribute("role", "radio");
+          label.addEventListener("click", (event) => {
+            const input = label.querySelector("[data-competence-plan-input]");
+            if (!input || input.disabled) return;
+            event.preventDefault();
+            setRowPlan(row, input.value);
+          });
+        });
+
+        syncPlanPresentation(row);
       });
 
       form.querySelectorAll("[data-set-competence-plan]").forEach((button) => {
@@ -850,8 +887,7 @@
           const plan = button.getAttribute("data-set-competence-plan") || "PER_MATCH";
 
           playerRows.forEach((row) => {
-            const target = row.querySelector(`[data-competence-plan-input][value="${plan}"]`);
-            if (target && !target.disabled) target.checked = true;
+            setRowPlan(row, plan);
           });
 
           syncCounts();

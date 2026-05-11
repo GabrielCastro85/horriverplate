@@ -384,14 +384,32 @@ function parseOptionalCurrencyInput(value) {
   return parseOptionalMoneyInput(value);
 }
 
+let _settingsCache = null;
+let _settingsCacheAt = 0;
+const SETTINGS_TTL_MS = 5 * 60 * 1000;
+
+function clearFinanceSettingsCache() {
+  _settingsCache = null;
+  _settingsCacheAt = 0;
+}
+
 async function ensureFinanceSettings() {
+  const now = Date.now();
+  if (_settingsCache && now - _settingsCacheAt < SETTINGS_TTL_MS) {
+    return _settingsCache;
+  }
+
   const existing = await prisma.financeSettings.findFirst({
     orderBy: { id: "asc" },
   });
 
-  if (existing) return existing;
+  if (existing) {
+    _settingsCache = existing;
+    _settingsCacheAt = now;
+    return existing;
+  }
 
-  return prisma.financeSettings.create({
+  const created = await prisma.financeSettings.create({
     data: {
       defaultMonthlyAmount: 50,
       dueDay: 10,
@@ -405,6 +423,9 @@ async function ensureFinanceSettings() {
         "Bom dia, {name}!\nSegue o Pix para você pagar o valor de {amount} da mensalidade da pelada referente a {monthYear}:\n{pixKey}{receiverLine}",
     },
   });
+  _settingsCache = created;
+  _settingsCacheAt = now;
+  return created;
 }
 
 
@@ -1109,6 +1130,7 @@ module.exports = {
   getMonthlyFeeHash,
   parseOptionalCurrencyInput,
   ensureFinanceSettings,
+  clearFinanceSettingsCache,
   buildFinancePageViewModel,
   buildFinanceRenderView,
   loadFinancePageData: buildFinancePageViewModel,

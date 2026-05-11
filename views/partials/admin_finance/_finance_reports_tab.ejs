@@ -56,6 +56,7 @@
       <div class="flex flex-wrap gap-2">
         <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir previa</a>
         <a href="<%= activeExportOption.href %>" target="_blank" rel="noopener" class="finance-cta">Gerar PDF</a>
+        <a href="/admin/finance/reports/csv?month=<%= filters.month %>&year=<%= filters.year %>" class="finance-soft-button">Exportar CSV</a>
       </div>
     </aside>
   </section>

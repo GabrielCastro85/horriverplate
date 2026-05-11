@@ -446,6 +446,31 @@
         font-weight: 700;
         color: #ff7a1a;
       }
+      /* --- Bracket --- */
+      .trn-bracket { overflow-x: auto; padding-bottom: 4px; }
+      .trn-col-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(178,184,194,0.5); margin-bottom: 10px; }
+      .trn-round-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(178,184,194,0.5); }
+      .trn-bracket-inner { display: flex; align-items: stretch; gap: 0; min-width: max-content; }
+      .trn-col { display: flex; flex-direction: column; }
+      .trn-games-col { display: flex; flex-direction: column; gap: 20px; }
+      .trn-col--final { align-self: center; }
+      .trn-game-card { border: 1px solid rgba(148,163,184,0.2); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.35); width: 260px; }
+      .trn-game-card--final { border-color: rgba(255,122,26,0.45); background: rgba(255,122,26,0.04); width: 280px; }
+      .trn-team { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; gap: 10px; }
+      .trn-team + .trn-team { border-top: 1px solid rgba(148,163,184,0.1); }
+      .trn-team--winner { background: rgba(255,122,26,0.08); }
+      .trn-team-name { font-size: 12px; color: rgba(178,184,194,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+      .trn-team--winner .trn-team-name { color: #f5f5f5; font-weight: 600; }
+      .trn-score { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: rgba(148,163,184,0.45); min-width: 24px; text-align: right; line-height: 1; }
+      .trn-team--winner .trn-score { color: #ff7a1a; }
+      .trn-score-pending { font-size: 14px; color: rgba(148,163,184,0.3); }
+      .trn-penalty-note { padding: 4px 14px 7px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(148,163,184,0.4); }
+      .trn-bracket-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(178,184,194,0.5); margin-bottom: 10px; white-space: nowrap; }
+      .trn-connector { display: flex; flex-direction: column; align-self: stretch; width: 28px; flex-shrink: 0; }
+      .trn-connector-top { flex: 1; border-right: 1.5px solid rgba(255,122,26,0.3); border-bottom: 1.5px solid rgba(255,122,26,0.3); border-bottom-right-radius: 3px; }
+      .trn-connector-bottom { flex: 1; border-right: 1.5px solid rgba(255,122,26,0.3); border-top: 1.5px solid rgba(255,122,26,0.3); border-top-right-radius: 3px; }
+      .trn-connector-solo { align-self: center; width: 100%; height: 1.5px; background: rgba(255,122,26,0.3); }
+      .trn-champion-tag { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(255,122,26,0.12); border: 1px solid rgba(255,122,26,0.35); font-size: 10px; color: #ff7a1a; text-transform: uppercase; letter-spacing: 0.1em; }
     </style>
     <section class="space-y-4">
       <div class="flex items-center justify-between">
@@ -474,6 +499,107 @@
           </button>
         </div>
       </div>
+
+      <%
+        var semiGames = gamesByStage['SEMI'] || [];
+        var finalGames = gamesByStage['FINAL'] || [];
+        var hasKnockout = semiGames.length > 0 || finalGames.length > 0;
+      %>
+      <% if (hasKnockout) { %>
+      <%
+        var fGame = finalGames.length > 0 ? finalGames[0] : null;
+        var fHome = fGame ? teamById.get(fGame.homeTeamId) : null;
+        var fAway = fGame ? teamById.get(fGame.awayTeamId) : null;
+        var fHomeWin = fGame && fGame.winnerTeamId != null && fGame.winnerTeamId === fGame.homeTeamId;
+        var fAwayWin = fGame && fGame.winnerTeamId != null && fGame.winnerTeamId === fGame.awayTeamId;
+        var fHasScore = fGame && fGame.homeGoals != null && fGame.awayGoals != null;
+        var champion = fGame && fGame.winnerTeamId ? teamById.get(fGame.winnerTeamId) : null;
+        var connColor = 'rgba(255,122,26,0.32)';
+      %>
+      <div class="rounded-2xl border border-horriver-border/50 bg-black/25 p-4 overflow-x-auto">
+        <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-horriver-gray/50 mb-4">Chave do Torneio</p>
+        <table style="border-collapse:collapse;border-spacing:0;table-layout:fixed;">
+          <tbody>
+            <% if (semiGames.length >= 2) { %>
+            <tr>
+              <td style="vertical-align:top;padding-bottom:10px;width:260px;">
+                <div class="trn-bracket-label">Semifinais</div>
+                <% var g0 = semiGames[0]; var h0=teamById.get(g0.homeTeamId); var a0=teamById.get(g0.awayTeamId); var hw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.homeTeamId; var aw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.awayTeamId; var hs0=g0.homeGoals!=null&&g0.awayGoals!=null; %>
+                <div class="trn-game-card">
+                  <div class="trn-team <%= hw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(h0,'Time') %></span><span class="trn-score"><%= hs0?g0.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= aw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(a0,'Time') %></span><span class="trn-score"><%= hs0?g0.awayGoals:'–' %></span></div>
+                  <% if (g0.decidedBy==='PENALTIES'&&g0.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= g0.homePenalties %>–<%= g0.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <td style="border-right:1.5px solid <%= connColor %>;border-bottom:1.5px solid <%= connColor %>;width:32px;"></td>
+              <% if (fGame) { %>
+              <td rowspan="3" style="vertical-align:middle;padding-left:0;width:280px;">
+                <div class="trn-bracket-label">Final</div>
+                <% if (champion) { %><div class="trn-champion-tag"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14l2 5c0 3.866-3.134 7-7 7H10C6.134 15 3 11.866 3 8L5 3zm7 13c2.21 0 4-1.79 4-4H8c0 2.21 1.79 4 4 4zm-3 2h6l1 3H8l1-3z"/></svg><%- renderTeamName(champion,'Campeão') %></div><% } %>
+                <div class="trn-game-card trn-game-card--final">
+                  <div class="trn-team <%= fHomeWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fHome,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= fAwayWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fAway,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.awayGoals:'–' %></span></div>
+                  <% if (fGame.decidedBy==='PENALTIES'&&fGame.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= fGame.homePenalties %>–<%= fGame.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <% } %>
+            </tr>
+            <tr>
+              <td style="height:14px;"></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;">
+                <% var g1=semiGames[1]; var h1=teamById.get(g1.homeTeamId); var a1=teamById.get(g1.awayTeamId); var hw1=g1.winnerTeamId!=null&&g1.winnerTeamId===g1.homeTeamId; var aw1=g1.winnerTeamId!=null&&g1.winnerTeamId===g1.awayTeamId; var hs1=g1.homeGoals!=null&&g1.awayGoals!=null; %>
+                <div class="trn-game-card">
+                  <div class="trn-team <%= hw1?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(h1,'Time') %></span><span class="trn-score"><%= hs1?g1.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= aw1?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(a1,'Time') %></span><span class="trn-score"><%= hs1?g1.awayGoals:'–' %></span></div>
+                  <% if (g1.decidedBy==='PENALTIES'&&g1.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= g1.homePenalties %>–<%= g1.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <td style="border-right:1.5px solid <%= connColor %>;border-top:1.5px solid <%= connColor %>;"></td>
+            </tr>
+            <% } else if (semiGames.length === 1) { %>
+            <tr>
+              <td style="vertical-align:top;width:260px;">
+                <div class="trn-bracket-label">Semifinais</div>
+                <% var g0=semiGames[0]; var h0=teamById.get(g0.homeTeamId); var a0=teamById.get(g0.awayTeamId); var hw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.homeTeamId; var aw0=g0.winnerTeamId!=null&&g0.winnerTeamId===g0.awayTeamId; var hs0=g0.homeGoals!=null&&g0.awayGoals!=null; %>
+                <div class="trn-game-card">
+                  <div class="trn-team <%= hw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(h0,'Time') %></span><span class="trn-score"><%= hs0?g0.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= aw0?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(a0,'Time') %></span><span class="trn-score"><%= hs0?g0.awayGoals:'–' %></span></div>
+                  <% if (g0.decidedBy==='PENALTIES'&&g0.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= g0.homePenalties %>–<%= g0.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <td style="border-top:1.5px solid <%= connColor %>;vertical-align:middle;width:32px;"></td>
+              <% if (fGame) { %>
+              <td style="vertical-align:top;padding-left:0;width:280px;">
+                <div class="trn-bracket-label">Final</div>
+                <% if (champion) { %><div class="trn-champion-tag">...<%- renderTeamName(champion,'Campeão') %></div><% } %>
+                <div class="trn-game-card trn-game-card--final">
+                  <div class="trn-team <%= fHomeWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fHome,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= fAwayWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fAway,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.awayGoals:'–' %></span></div>
+                  <% if (fGame.decidedBy==='PENALTIES'&&fGame.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= fGame.homePenalties %>–<%= fGame.awayPenalties %></div><% } %>
+                </div>
+              </td>
+              <% } %>
+            </tr>
+            <% } else if (fGame) { %>
+            <tr>
+              <td style="vertical-align:top;padding-left:0;" colspan="3">
+                <div class="trn-bracket-label">Final</div>
+                <% if (champion) { %><div class="trn-champion-tag"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14l2 5c0 3.866-3.134 7-7 7H10C6.134 15 3 11.866 3 8L5 3zm7 13c2.21 0 4-1.79 4-4H8c0 2.21 1.79 4 4 4zm-3 2h6l1 3H8l1-3z"/></svg><%- renderTeamName(champion,'Campeão') %></div><% } %>
+                <div class="trn-game-card trn-game-card--final" style="width:220px;">
+                  <div class="trn-team <%= fHomeWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fHome,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.homeGoals:'–' %></span></div>
+                  <div class="trn-team <%= fAwayWin?'trn-team--winner':'' %>"><span class="trn-team-name"><%- renderTeamName(fAway,'Time') %></span><span class="trn-score"><%= fHasScore?fGame.awayGoals:'–' %></span></div>
+                  <% if (fGame.decidedBy==='PENALTIES'&&fGame.homePenalties!=null) { %><div class="trn-penalty-note">Pênaltis: <%= fGame.homePenalties %>–<%= fGame.awayPenalties %></div><% } %>
+                </div>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
 
       <div class="grid gap-4">
         <div id="tournament-standings-export" class="tournament-export">
@@ -856,7 +982,6 @@
     });
   })();
 </script>
-
 
 
 

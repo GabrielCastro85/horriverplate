@@ -57,7 +57,8 @@
       "Bash(node -e 'const prisma = require\\('\\\\''./utils/db'\\\\''\\); prisma.achievement.findMany\\({ select: { id: true, code: true, category: true, rarity: true, title: true } }\\).then\\(r => console.log\\(JSON.stringify\\(r, null, 2\\)\\)\\).catch\\(console.error\\).finally\\(\\(\\) => prisma.$disconnect\\(\\)\\)')",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\gabri\\\\OneDrive\\\\Documentos\\\\projeto-horriver-plate - 2\" -Recurse -Name)",
       "Bash(Get-ChildItem \"c:\\\\Users\\\\gabri\\\\OneDrive\\\\Documentos\\\\projeto-horriver-plate - 2\" -Recurse -Name)",
-      "Bash(Select-String -Pattern \"\\(lineup|sorteio|share\\)\")"
+      "Bash(Select-String -Pattern \"\\(lineup|sorteio|share\\)\")",
+      "Bash(grep -E \"\\\\.\\(ejs|html\\)$\")"
     ]
   }
 }

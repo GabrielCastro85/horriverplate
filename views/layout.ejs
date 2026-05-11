@@ -492,6 +492,20 @@
           letter-spacing: 0.02em;
         }
       }
+      @media (min-width: 768px) {
+        #mobileMenu:not(.hidden) {
+          display: flex;
+          justify-content: flex-end;
+          align-items: flex-start;
+          padding-top: 80px;
+          padding-right: 1rem;
+        }
+        #mobilePanel {
+          margin: 0;
+          width: 18rem;
+          max-width: none;
+        }
+      }
       @media (max-width: 767px) {
         body {
           padding-bottom: calc(72px + env(safe-area-inset-bottom));
@@ -740,6 +754,7 @@
         if (path.startsWith("/hall-da-fama")) return "hall";
         if (path.startsWith("/fotos")) return "fotos";
         if (path.startsWith("/sobre")) return "sobre";
+        if (path.startsWith("/comparar")) return "comparar";
         return "home";
       })();
       const isAdmin = _isAdminLayout;
@@ -834,47 +849,6 @@
                 Elenco
               </a>
             </li>
-            <li>
-              <a
-                href="/tierlist"
-                <%- currentPage==='tierlist' ? 'aria-current="page"' : '' %>
-                class="site-nav-link"
-              >
-                Tierlist
-              </a>
-            </li>
-
-            <% if (showHallLink) { %>
-              <li>
-                <a
-                  href="/hall-da-fama"
-                  <%- currentPage==='hall' ? 'aria-current="page"' : '' %>
-                  class="site-nav-link"
-                >
-                  Hall da Fama
-                </a>
-              </li>
-            <% } %>
-
-            <li>
-              <a
-                href="/fotos"
-                <%- currentPage==='fotos' ? 'aria-current="page"' : '' %>
-                class="site-nav-link"
-              >
-                Fotos
-              </a>
-            </li>
-
-            <li>
-              <a
-                href="/sobre"
-                <%- currentPage==='sobre' ? 'aria-current="page"' : '' %>
-                class="site-nav-link"
-              >
-                Sobre
-              </a>
-            </li>
           </ul>
 
           <!-- DIREITA -->
@@ -940,6 +914,21 @@
             <% } %>
           </div>
 
+          <!-- HAMBURGER DESKTOP -->
+          <button
+            data-mobile-menu-trigger
+            aria-label="Menu completo"
+            aria-expanded="false"
+            aria-controls="mobileMenu"
+            class="hidden md:inline-flex items-center justify-center w-9 h-9 shrink-0 rounded-full border border-horriver-orange/70"
+          >
+            <span class="flex flex-col gap-[5px]">
+              <span class="hamburger-line line-1"></span>
+              <span class="hamburger-line line-2"></span>
+              <span class="hamburger-line line-3"></span>
+            </span>
+          </button>
+
           <!-- HAMBURGER MOBILE -->
           <button
             id="mobileMenuBtn"
@@ -996,13 +985,6 @@
                 <span>Gols, assistencias, media e desempenho</span>
               </span>
             </a>
-            <a href="/tierlist" <%- currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="site-mobile-link">
-              <span class="mobile-menu-icon">TL</span>
-              <span class="mobile-menu-copy">
-                <strong>Tierlist</strong>
-                <span>Monte e compare os jogadores</span>
-              </span>
-            </a>
             <a href="/peladas" <%- currentPage==='peladas' ? 'aria-current="page"' : '' %> class="site-mobile-link">
               <span class="mobile-menu-icon">PJ</span>
               <span class="mobile-menu-copy">
@@ -1017,6 +999,20 @@
               <span class="mobile-menu-copy">
                 <strong>Elenco</strong>
                 <span>Jogadores, posicoes e perfis</span>
+              </span>
+            </a>
+            <a href="/comparar" <%- currentPage==='comparar' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">CP</span>
+              <span class="mobile-menu-copy">
+                <strong>Comparar</strong>
+                <span>Confronto direto entre jogadores</span>
+              </span>
+            </a>
+            <a href="/tierlist" <%- currentPage==='tierlist' ? 'aria-current="page"' : '' %> class="site-mobile-link">
+              <span class="mobile-menu-icon">TL</span>
+              <span class="mobile-menu-copy">
+                <strong>Tierlist</strong>
+                <span>Monte e compare os jogadores</span>
               </span>
             </a>
 

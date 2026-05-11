@@ -288,14 +288,14 @@
 
                 <p class="finance-subtle">
                   <% if (player.isLocked) { %>
-                    <%= lockedMeta %>
+                    <%= lockedMeta %> Voce pode alterar o plano; a mensalidade sera recalculada.
                   <% } else { %>
                     Se nao mexer nesta linha, o jogador entra automaticamente como avulso do mes.
                   <% } %>
                 </p>
               </div>
 
-              <fieldset class="finance-competence-plan-group" <%= player.isLocked ? "disabled" : "" %>>
+              <fieldset class="finance-competence-plan-group">
                 <label class="finance-competence-plan-pill">
                   <input
                     type="radio"

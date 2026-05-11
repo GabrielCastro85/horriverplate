@@ -585,4 +585,52 @@
   })();
 </script>
 
+<script>
+  (() => {
+    const btn = document.getElementById('btnDownloadVotingCard');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const matchId = btn.dataset.matchId;
+      const original = btn.textContent;
+      btn.textContent = 'Gerando...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/share/voting-result.png?matchId=' + matchId);
+        if (!res.ok) throw new Error('Erro ' + res.status);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'resultado-votacao-' + matchId + '.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('[export] Falha ao gerar card:', err);
+        alert('Nao foi possivel gerar o card. Tente novamente.');
+      } finally {
+        btn.textContent = original;
+        btn.disabled = false;
+      }
+    });
+  })();
+
+  (() => {
+    const nav = document.querySelector('.rounded-2xl.sticky.top-0');
+    if (!nav) return;
+    const OFFSET = 72;
+    nav.querySelectorAll('a[href^="#"]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        const target = document.querySelector(link.getAttribute('href'));
+        if (!target) return;
+        e.preventDefault();
+        const top = target.getBoundingClientRect().top + window.scrollY - OFFSET;
+        window.scrollTo({ top, behavior: 'smooth' });
+        if (history.replaceState) history.replaceState(null, '', link.getAttribute('href'));
+      });
+    });
+  })();
+</script>
+
 </section>

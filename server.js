@@ -25,6 +25,8 @@ const playerRouter = require("./routes/player");
 const shareRouter = require("./routes/share");
 const voteRouter = require("./routes/vote");
 const monthlyVoteRouter = require("./routes/monthly_vote");
+const matchesRouter = require("./routes/matches");
+const comparatorRouter = require("./routes/comparator");
 let sharp = null;
 try {
   sharp = require("sharp");
@@ -352,6 +354,8 @@ app.use("/admin", adminRouter);
 app.use("/votar", voteRouter);
 app.use("/vote", voteRouter);
 app.use("/monthly-vote", monthlyVoteRouter);
+app.use("/matches", matchesRouter);
+app.use("/comparar", comparatorRouter);
 
 
 // ==============================
