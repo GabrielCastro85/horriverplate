@@ -8,8 +8,11 @@
   });
   const photoUrl = (player) => {
     if (!player?.photoUrl) return baseUrl + '/img/logo-128x128.svg';
-    return baseUrl + player.photoUrl;
+    if (/^https?:\/\//i.test(player.photoUrl)) return player.photoUrl;
+    return baseUrl + '/' + String(player.photoUrl).replace(/^\/+/, '');
   };
+  const logoMarkSrc = typeof logoMarkUrl !== 'undefined' && logoMarkUrl ? logoMarkUrl : baseUrl + '/img/logo-128x128.svg';
+  const logoIconSrc = typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.svg';
   const craque = awards?.craque || null;
   const positionOf = (item) => item?.player?.position || item?.positionNorm || '';
   const highlights = [
@@ -23,14 +26,16 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=900" />
+  <meta name="viewport" content="width=720" />
   <title>Resultado da Votação</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
+      width: 720px;
+      min-width: 720px;
       background: transparent;
       display: inline-block;
       line-height: 0;
@@ -41,16 +46,16 @@
     /* ── Card ── */
     .vrc-card {
       position: relative;
-      width: 800px;
-      border-radius: 40px;
+      width: 720px;
+      border-radius: 34px;
       overflow: hidden;
       background:
         radial-gradient(circle at 12% 10%, rgba(139,19,32,0.26) 0%, transparent 38%),
         radial-gradient(circle at 86% 86%, rgba(255,122,26,0.10) 0%, transparent 34%),
         linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
       border: 1px solid rgba(255,122,26,0.22);
-      box-shadow: 0 40px 96px rgba(0,0,0,0.52);
-      font-family: 'Inter', system-ui, sans-serif;
+      box-shadow: 0 18px 42px rgba(0,0,0,0.34);
+      font-family: 'Manrope', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       text-rendering: geometricPrecision;
     }
@@ -60,9 +65,8 @@
       position: absolute;
       left: 50%; top: 42%;
       transform: translate(-50%, -50%);
-      width: 420px; height: 420px;
+      width: 380px; height: 380px;
       opacity: 0.03;
-      filter: grayscale(1);
       pointer-events: none;
       user-select: none;
     }
@@ -71,7 +75,7 @@
     .vrc-inner {
       position: relative;
       z-index: 1;
-      padding: 44px 48px 52px;
+      padding: 34px 34px 38px;
     }
 
     /* ── Branding ── */
@@ -79,7 +83,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 32px;
+      margin-bottom: 26px;
     }
     .vrc-logo { width: 32px; height: 32px; opacity: 0.85; }
     .vrc-brand-name {
@@ -97,11 +101,11 @@
       align-items: flex-end;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 36px;
+      margin-bottom: 28px;
     }
     .vrc-title {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 64px;
+      font-size: 58px;
       line-height: 0.94;
       color: #f5f5f5;
       letter-spacing: 0.02em;
@@ -138,12 +142,12 @@
     .vrc-divider {
       height: 1px;
       background: linear-gradient(90deg, transparent, rgba(255,122,26,0.62), transparent);
-      margin-bottom: 30px;
+      margin-bottom: 24px;
     }
     .vrc-divider--subtle {
       height: 1px;
       background: rgba(255,255,255,0.06);
-      margin-bottom: 26px;
+      margin-bottom: 22px;
     }
 
     /* ── Section label ── */
@@ -154,18 +158,18 @@
       letter-spacing: 0.26em;
       color: rgba(178,184,194,0.50);
       line-height: 1;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     /* ── Craque block ── */
     .vrc-craque {
       display: flex;
       align-items: center;
-      gap: 28px;
-      margin-bottom: 36px;
+      gap: 22px;
+      margin-bottom: 28px;
     }
     .vrc-craque-photo {
-      width: 120px; height: 120px;
+      width: 110px; height: 110px;
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
@@ -192,7 +196,7 @@
     .vrc-craque-info { flex: 1; min-width: 0; }
     .vrc-craque-name {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 68px;
+      font-size: 54px;
       line-height: 0.92;
       color: #f5f5f5;
       word-break: break-word;
@@ -212,7 +216,7 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      padding: 20px 28px;
+      padding: 16px 20px;
       border-radius: 20px;
       border: 1px solid rgba(255,122,26,0.30);
       background: rgba(255,122,26,0.06);
@@ -233,7 +237,7 @@
     }
     .vrc-craque-score-value {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 76px;
+      font-size: 56px;
       line-height: 0.88;
       color: #ff7a1a;
     }
@@ -265,12 +269,12 @@
     }
 
     /* ── Highlights rows ── */
-    .vrc-highlights { margin-bottom: 36px; }
+    .vrc-highlights { margin-bottom: 28px; }
     .vrc-highlight-row {
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 13px 0;
+      padding: 11px 0;
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
     .vrc-highlight-row:last-child { border-bottom: none; }
@@ -302,12 +306,12 @@
     }
 
     /* ── Top 5 rows ── */
-    .vrc-top5 { margin-bottom: 36px; }
+    .vrc-top5 { margin-bottom: 28px; }
     .vrc-top5-row {
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 13px 0;
+      padding: 11px 0;
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
     .vrc-top5-row:last-child { border-bottom: none; }
@@ -360,7 +364,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 20px;
+      padding-top: 16px;
       border-top: 1px solid rgba(255,255,255,0.06);
       font-size: 13px;
       font-weight: 600;
@@ -373,13 +377,13 @@
 <body>
   <div class="vrc-card">
 
-    <img class="vrc-watermark" src="<%= baseUrl %>/img/logo-128x128.svg" alt="" />
+    <img class="vrc-watermark" src="<%= logoMarkSrc %>" alt="" />
 
     <div class="vrc-inner">
 
       <!-- Branding -->
       <div class="vrc-branding">
-        <img class="vrc-logo" src="<%= baseUrl %>/img/logo-32x32.svg" alt="" />
+        <img class="vrc-logo" src="<%= logoIconSrc %>" alt="" />
         <span class="vrc-brand-name">Horriver Plate</span>
       </div>
 

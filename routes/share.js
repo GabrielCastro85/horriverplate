@@ -165,6 +165,18 @@ async function buildVotingData(matchId) {
     .sort((a, b) => b.finalRating - a.finalRating)
     .slice(0, 5);
 
+  const normalizePlayerPhoto = (player) => {
+    if (!player?.photoUrl || /^https?:\/\//i.test(player.photoUrl)) return;
+    const rel = player.photoUrl.replace(/^\/+/, "");
+    const abs = path.join(__dirname, "../public", rel);
+    if (!abs.startsWith(path.join(__dirname, "../public")) || !fs.existsSync(abs)) {
+      player.photoUrl = null;
+    }
+  };
+
+  topScores.forEach((score) => normalizePlayerPhoto(score.player));
+  Object.values(result.awards || {}).forEach((award) => normalizePlayerPhoto(award?.player));
+
   return { match, awards: result.awards, topScores };
 }
 
@@ -178,7 +190,13 @@ router.get("/voting-result-html", async (req, res) => {
     if (!data) return res.status(404).send("Pelada ou dados de votação não encontrados");
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const html = await ejs.renderFile(VOTING_TEMPLATE, { ...data, baseUrl });
+    const logoDataUri = await getLineupLogoDataUri();
+    const html = await ejs.renderFile(VOTING_TEMPLATE, {
+      ...data,
+      baseUrl,
+      logoMarkUrl: logoDataUri,
+      logoIconUrl: logoDataUri,
+    });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(html);
@@ -196,8 +214,8 @@ router.get("/voting-result.jpg", async (req, res) => {
   const t0 = Date.now();
   console.log(`[share:voting-result] request match #${matchId}`);
 
-  // Cache permanente — resultado de votação não muda após encerrado
-  const cacheKeyVoting = `voting-result-${matchId}`;
+  // Cache versionado para evitar devolver imagens antigas quando o layout muda.
+  const cacheKeyVoting = `voting-result-v3-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -212,10 +230,16 @@ router.get("/voting-result.jpg", async (req, res) => {
     const data = await buildVotingData(matchId);
     if (!data) return res.status(404).send("Pelada ou dados de votação não encontrados");
 
-    const host = `${req.protocol}://${req.get("host")}`;
-    const htmlUrl = `${host}/share/voting-result-html?matchId=${matchId}`;
-    const buf = await renderImageFromUrl({
-      url: htmlUrl,
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const logoDataUri = await getLineupLogoDataUri();
+    const html = await ejs.renderFile(VOTING_TEMPLATE, {
+      ...data,
+      baseUrl,
+      logoMarkUrl: logoDataUri,
+      logoIconUrl: logoDataUri,
+    });
+    const buf = await renderImageFromHtml({
+      html,
       selector: ".vrc-card",
       width: 720,
       height: 1280,
