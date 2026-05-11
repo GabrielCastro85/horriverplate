@@ -21,23 +21,23 @@ const MONTH_OPTIONS = MONTH_NAMES_PT.map((label, index) => ({
 const FINANCE_TABS = [
   {
     key: "overview",
-    label: "Visao Geral",
-    description: "Dashboard rapido da competencia e do caixa.",
+    label: "Visão Geral",
+    description: "Dashboard rápido da competência e do caixa.",
   },
   {
     key: "monthly",
     label: "Mensalidades",
-    description: "Controle do mes e edicao das cobrancas.",
+    description: "Controle do mês e edição das cobranças.",
   },
   {
     key: "charge",
-    label: "Cobranca",
-    description: "Pendencias prontas para acao.",
+    label: "Cobrança",
+    description: "Pendências prontas para ação.",
   },
   {
     key: "cash",
     label: "Caixa",
-    description: "Extrato e lancamentos do periodo.",
+    description: "Extrato e lançamentos do período.",
   },
   {
     key: "guests",
@@ -46,13 +46,13 @@ const FINANCE_TABS = [
   },
   {
     key: "reports",
-    label: "Relatorios",
-    description: "Prestacao de contas e exportacoes.",
+    label: "Relatórios",
+    description: "Prestação de contas e exportações.",
   },
   {
     key: "settings",
-    label: "Configuracoes",
-    description: "Pix, cobranca padrao e elegibilidade.",
+    label: "Configurações",
+    description: "Pix, cobrança padrão e elegibilidade.",
   },
 ];
 

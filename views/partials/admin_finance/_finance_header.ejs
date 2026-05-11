@@ -15,24 +15,72 @@
   const { noticeText, errorText, monthReferenceLabel, activeTabMeta } = ui;
   const { stateFields, buildFinanceQuery } = actions;
   const { formatCurrencyBR } = helpers;
-  const adminHandle =
+  const adminHandleRaw =
     typeof admin !== "undefined" && admin && admin.email
       ? String(admin.email).split("@")[0]
       : "Admin";
+  const adminHandle = adminHandleRaw
+    ? adminHandleRaw.charAt(0).toUpperCase() + adminHandleRaw.slice(1)
+    : "Admin";
   const receivedPercentage = Math.min(Math.round(summary.receivedPercentage || 0), 100);
+  const tabHeroMap = {
+    overview: {
+      kicker: "Resumo financeiro",
+      title: "Visão geral do financeiro.",
+      description: "Acompanhe caixa, pendências, recebimento do mês e alertas principais em um único painel.",
+      action: "Dashboard da competência",
+    },
+    monthly: {
+      kicker: "Mensalidades",
+      title: "Mensalidades da competência.",
+      description: "Edite planos, acompanhe pagamentos e mantenha as cobranças do mês organizadas jogador por jogador.",
+      action: "Controle de pagamentos",
+    },
+    charge: {
+      kicker: "Cobrança",
+      title: "Fila de cobrança.",
+      description: "Veja quem ainda precisa de ação, copie mensagens e resolva pendências sem procurar em outras telas.",
+      action: "Pendências e mensagens",
+    },
+    cash: {
+      kicker: "Caixa",
+      title: "Extrato do caixa.",
+      description: "Registre entradas e saídas, revise lançamentos manuais e acompanhe o saldo consolidado do período.",
+      action: "Movimentações do período",
+    },
+    guests: {
+      kicker: "Convidados",
+      title: "Pagamentos avulsos.",
+      description: "Controle convidados, valores pagos por presença e entradas que também alimentam o caixa.",
+      action: "Avulsos integrados",
+    },
+    reports: {
+      kicker: "Relatórios",
+      title: "Prestação de contas.",
+      description: "Gere resumos, PDFs e leituras executivas para fechar o período com clareza.",
+      action: "Exportações e histórico",
+    },
+    settings: {
+      kicker: "Configurações",
+      title: "Regras do financeiro.",
+      description: "Ajuste Pix, valores padrão, elegibilidade e regras individuais dos jogadores.",
+      action: "Regras e participantes",
+    },
+  };
+  const activeHero = tabHeroMap[activeTab] || tabHeroMap.overview;
   const quickMenuMeta = {
-    overview: { short: "VG", helper: "Resumo do modulo" },
-    monthly: { short: "MS", helper: "Controle do mes" },
-    charge: { short: "CB", helper: "Fila de cobranca" },
+    overview: { short: "VG", helper: "Resumo do módulo" },
+    monthly: { short: "MS", helper: "Controle do mês" },
+    charge: { short: "CB", helper: "Fila de cobrança" },
     cash: { short: "CX", helper: "Extrato e caixa" },
-    guests: { short: "GV", helper: "Avulsos do periodo" },
-    reports: { short: "RL", helper: "Prestacao de contas" },
+    guests: { short: "GV", helper: "Avulsos do período" },
+    reports: { short: "RL", helper: "Prestação de contas" },
     settings: { short: "CFG", helper: "Regras e Pix" },
   };
 %>
 
 <header class="finance-dashboard-header">
-  <section class="finance-dashboard-hero">
+  <section class="finance-dashboard-hero finance-dashboard-hero--<%= activeTab %>">
     <div class="finance-dashboard-hero__brand">
       <div class="finance-dashboard-hero__crest" aria-hidden="true">
         <img src="/img/logo-64x64.svg" alt="Horriver Plate" />
@@ -41,13 +89,17 @@
       <div class="finance-dashboard-hero__copy">
         <div class="space-y-2">
           <p class="finance-dashboard-hero__eyebrow">
-            Ola, <strong class="text-horriver-light"><%= adminHandle %></strong>. Aqui esta o resumo do financeiro.
+            Olá, <strong class="text-horriver-light"><%= adminHandle %></strong>. Você está em <strong class="text-horriver-orange"><%= activeTabMeta.label %></strong>.
           </p>
+          <div class="finance-dashboard-hero__section-pill">
+            <span><%= activeHero.kicker %></span>
+            <strong><%= activeHero.action %></strong>
+          </div>
           <h1 class="font-title finance-dashboard-hero__title">
-            Central financeira do Horriver Plate.
+            <%= activeHero.title %>
           </h1>
           <p class="finance-dashboard-hero__description">
-            Controle mensal, cobranca, caixa e relatorios em um fluxo mais rapido, com foco no que precisa de acao agora.
+            <%= activeHero.description %>
           </p>
         </div>
 
@@ -64,15 +116,15 @@
       <div class="finance-dashboard-quickmenu">
         <div class="finance-dashboard-quickmenu__head">
           <div class="space-y-1">
-            <div class="finance-kicker">Menu rapido</div>
-            <p class="text-sm font-semibold text-horriver-light">Acesso direto as areas mais usadas</p>
+            <div class="finance-kicker">Menu rápido</div>
+            <p class="text-sm font-semibold text-horriver-light">Troque de área sem perder a competência</p>
           </div>
-          <span class="finance-chip"><%= activeTabMeta.label %></span>
+          <span class="finance-chip finance-chip--accent"><%= activeTabMeta.label %></span>
         </div>
 
         <div class="finance-dashboard-quickmenu__grid">
           <% financeTabs.forEach((tab) => { const tabMeta = quickMenuMeta[tab.key] || { short: tab.label.slice(0, 2).toUpperCase(), helper: tab.description }; %>
-            <a href="<%= tab.href %>" class="finance-dashboard-quickmenu__item <%= tab.active ? 'finance-dashboard-quickmenu__item--active' : '' %>">
+            <a href="<%= tab.href %>" class="finance-dashboard-quickmenu__item finance-dashboard-quickmenu__item--<%= tab.key %> <%= tab.active ? 'finance-dashboard-quickmenu__item--active' : '' %>">
               <span class="finance-dashboard-quickmenu__icon"><%= tabMeta.short %></span>
               <span class="finance-dashboard-quickmenu__content">
                 <span class="finance-dashboard-quickmenu__label"><%= tab.label %></span>
