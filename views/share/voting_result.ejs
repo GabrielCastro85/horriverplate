@@ -7,6 +7,7 @@
     timeZone: 'America/Sao_Paulo',
   });
   const photoUrl = (player) => {
+    if (player?.photoDataUri) return player.photoDataUri;
     if (!player?.photoUrl) return baseUrl + '/img/logo-128x128.svg';
     if (/^https?:\/\//i.test(player.photoUrl)) return player.photoUrl;
     return baseUrl + '/' + String(player.photoUrl).replace(/^\/+/, '');

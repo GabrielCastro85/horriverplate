@@ -165,17 +165,63 @@ async function buildVotingData(matchId) {
     .sort((a, b) => b.finalRating - a.finalRating)
     .slice(0, 5);
 
-  const normalizePlayerPhoto = (player) => {
-    if (!player?.photoUrl || /^https?:\/\//i.test(player.photoUrl)) return;
-    const rel = player.photoUrl.replace(/^\/+/, "");
-    const abs = path.join(__dirname, "../public", rel);
-    if (!abs.startsWith(path.join(__dirname, "../public")) || !fs.existsSync(abs)) {
+  const publicDir = path.resolve(__dirname, "../public");
+  const photoCache = new Map();
+  const embedPlayerPhoto = async (player) => {
+    if (!player?.photoUrl) return;
+
+    const cacheKey = player.photoUrl;
+    if (photoCache.has(cacheKey)) {
+      player.photoDataUri = photoCache.get(cacheKey);
+      if (!player.photoDataUri) player.photoUrl = null;
+      return;
+    }
+
+    try {
+      const sharp = require("sharp");
+      let sourceBuffer = null;
+
+      if (/^https?:\/\//i.test(player.photoUrl)) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3500);
+        const response = await fetch(player.photoUrl, { signal: controller.signal });
+        clearTimeout(timer);
+        if (response.ok) {
+          sourceBuffer = Buffer.from(await response.arrayBuffer());
+        }
+      } else {
+        const rel = player.photoUrl.replace(/^\/+/, "");
+        const abs = path.resolve(publicDir, rel);
+        if (abs.startsWith(publicDir + path.sep) && fs.existsSync(abs)) {
+          sourceBuffer = fs.readFileSync(abs);
+        }
+      }
+
+      if (!sourceBuffer) {
+        photoCache.set(cacheKey, null);
+        player.photoUrl = null;
+        return;
+      }
+
+      const photoBuffer = await sharp(sourceBuffer)
+        .rotate()
+        .resize(180, 180, { fit: "cover", position: "center" })
+        .jpeg({ quality: 82, mozjpeg: true })
+        .toBuffer();
+      const dataUri = `data:image/jpeg;base64,${photoBuffer.toString("base64")}`;
+      photoCache.set(cacheKey, dataUri);
+      player.photoDataUri = dataUri;
+    } catch (err) {
+      console.warn(`[share:voting-result] foto ignorada (${player.name || player.id || "jogador"}):`, err.message);
+      photoCache.set(cacheKey, null);
       player.photoUrl = null;
     }
   };
 
-  topScores.forEach((score) => normalizePlayerPhoto(score.player));
-  Object.values(result.awards || {}).forEach((award) => normalizePlayerPhoto(award?.player));
+  await Promise.all([
+    ...topScores.map((score) => embedPlayerPhoto(score.player)),
+    ...Object.values(result.awards || {}).map((award) => embedPlayerPhoto(award?.player)),
+  ]);
 
   return { match, awards: result.awards, topScores };
 }
@@ -215,7 +261,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v3-${matchId}`;
+  const cacheKeyVoting = `voting-result-v4-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
