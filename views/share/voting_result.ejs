@@ -14,6 +14,8 @@
   };
   const logoMarkSrc = typeof logoMarkUrl !== 'undefined' && logoMarkUrl ? logoMarkUrl : baseUrl + '/img/logo-128x128.svg';
   const logoIconSrc = typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.svg';
+  const displayName = (player) => player?.nickname || player?.name || '-';
+  const initialOf = (player) => displayName(player).charAt(0).toUpperCase() || '?';
   const craque = awards?.craque || null;
   const positionOf = (item) => item?.player?.position || item?.positionNorm || '';
   const highlights = [
@@ -406,17 +408,17 @@
       <div class="vrc-craque">
 
         <div class="vrc-craque-photo">
-          <% if (craque?.player?.photoUrl) { %>
-            <img src="<%= photoUrl(craque.player) %>" alt="<%= craque.player.name %>" />
+          <% if (craque?.player?.photoUrl || craque?.player?.photoDataUri) { %>
+            <img src="<%= photoUrl(craque.player) %>" alt="<%= displayName(craque.player) %>" />
           <% } else { %>
             <div class="vrc-craque-photo-fallback">
-              <%= craque?.player?.name?.charAt(0)?.toUpperCase() || '?' %>
+              <%= initialOf(craque?.player) %>
             </div>
           <% } %>
         </div>
 
         <div class="vrc-craque-info">
-          <p class="vrc-craque-name"><%= craque?.player?.name || 'Craque' %></p>
+          <p class="vrc-craque-name"><%= craque?.player ? displayName(craque.player) : 'Craque' %></p>
           <% if (positionOf(craque)) { %>
             <p class="vrc-craque-position"><%= positionOf(craque) %></p>
           <% } %>
@@ -439,15 +441,15 @@
             <div class="vrc-highlight-row">
               <span class="vrc-highlight-abbr"><%= h.abbr %></span>
               <div class="vrc-mini-photo">
-                <% if (h.item.player?.photoUrl) { %>
+                <% if (h.item.player?.photoUrl || h.item.player?.photoDataUri) { %>
                   <img src="<%= photoUrl(h.item.player) %>" alt="" />
                 <% } else { %>
                   <div class="vrc-mini-photo-fallback">
-                    <%= h.item.player?.name?.charAt(0)?.toUpperCase() || '?' %>
+                    <%= initialOf(h.item.player) %>
                   </div>
                 <% } %>
               </div>
-              <span class="vrc-highlight-name"><%= h.item.player?.name || '-' %></span>
+              <span class="vrc-highlight-name"><%= displayName(h.item.player) %></span>
               <span class="vrc-highlight-score"><%= fmtScore(h.item.finalRating) %></span>
             </div>
           <% }); %>
@@ -470,16 +472,16 @@
             <div class="vrc-top5-row">
               <span class="vrc-top5-rank<%= rankCls %>"><%= i + 1 %></span>
               <div class="vrc-mini-photo">
-                <% if (s.player?.photoUrl) { %>
+                <% if (s.player?.photoUrl || s.player?.photoDataUri) { %>
                   <img src="<%= photoUrl(s.player) %>" alt="" />
                 <% } else { %>
                   <div class="vrc-mini-photo-fallback">
-                    <%= s.player?.name?.charAt(0)?.toUpperCase() || '?' %>
+                    <%= initialOf(s.player) %>
                   </div>
                 <% } %>
               </div>
               <div class="vrc-top5-info">
-                <span class="vrc-top5-name"><%= s.player?.name || '-' %></span>
+                <span class="vrc-top5-name"><%= displayName(s.player) %></span>
                 <% if (pos5) { %><span class="vrc-top5-pos"><%= pos5 %></span><% } %>
               </div>
               <span class="vrc-top5-score<%= scoreCls %>"><%= fmtScore(s.finalRating) %></span>

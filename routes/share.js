@@ -261,7 +261,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v4-${matchId}`;
+  const cacheKeyVoting = `voting-result-v5-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
