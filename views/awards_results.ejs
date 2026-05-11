@@ -134,6 +134,14 @@
   .awards-footer-line {
     border-top: 1px solid rgba(255,255,255,0.06);
   }
+  .awards-preview-image {
+    display: block;
+    width: min(720px, 100%);
+    height: auto;
+    margin: 0 auto;
+    border-radius: 34px;
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
+  }
   @media (max-width: 900px) {
     .awards-export-meta {
       min-width: 0;
@@ -169,9 +177,17 @@
       </a>
     </header>
 
+    <figure id="awards-card" class="mx-auto max-w-[720px]">
+      <img
+        src="/share/voting-result.jpg?matchId=<%= match.id %>&preview=1"
+        alt="Preview do resultado da votação"
+        class="awards-preview-image"
+      />
+    </figure>
+
     <div
-      id="awards-card"
-      class="awards-export-card mx-auto max-w-[920px] p-7 md:p-8"
+      id="awards-card-legacy"
+      class="hidden awards-export-card mx-auto max-w-[920px] p-7 md:p-8"
     >
       <img src="/img/logo-32x32.svg" alt="" class="awards-export-watermark" />
 
