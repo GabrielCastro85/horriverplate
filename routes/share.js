@@ -8,6 +8,50 @@ const fs = require("fs");
 const os = require("os");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
 
+const EXPORT_DEVICE_SCALE_FACTOR = Number(process.env.EXPORT_DEVICE_SCALE_FACTOR || "1.5");
+const PUPPETEER_ARGS = [
+  "--no-sandbox",
+  "--disable-setuid-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+  "--disable-extensions",
+  "--disable-background-networking",
+  "--disable-default-apps",
+  "--disable-sync",
+  "--hide-scrollbars",
+  "--metrics-recording-only",
+  "--mute-audio",
+  "--no-first-run",
+  "--no-zygote",
+];
+
+let pngRenderQueue = Promise.resolve();
+
+function enqueuePngRender(task) {
+  const run = pngRenderQueue.then(task, task);
+  pngRenderQueue = run.catch(() => {});
+  return run;
+}
+
+async function launchPngBrowser() {
+  return puppeteer.launch({
+    headless: true,
+    args: PUPPETEER_ARGS,
+  });
+}
+
+function clampDeviceScaleFactor(value) {
+  return Number.isFinite(value) && value > 0 ? Math.min(value, 2) : 1.5;
+}
+
+async function setExportViewport(page, width, height) {
+  await page.setViewport({
+    width,
+    height,
+    deviceScaleFactor: clampDeviceScaleFactor(EXPORT_DEVICE_SCALE_FACTOR),
+  });
+}
+
 // ── Cache em disco para PNGs gerados pelo Puppeteer ────────────────────────
 const CACHE_DIR = path.join(os.tmpdir(), "share-png-cache");
 try { fs.mkdirSync(CACHE_DIR, { recursive: true }); } catch (_) {}
@@ -111,8 +155,9 @@ router.get("/player-card-test.png", async (req, res) => {
     return res.end(cached);
   }
 
-  let browser;
-  try {
+  return enqueuePngRender(async () => {
+    let browser;
+    try {
     // Valida existência do jogador antes de abrir o browser
     const data = await buildShareData(playerId);
     if (!data) return res.status(404).send("Jogador não encontrado");
@@ -122,20 +167,11 @@ router.get("/player-card-test.png", async (req, res) => {
     const htmlUrl = `${host}/share/player-card-test-html?playerId=${playerId}`;
     console.log(`[share] Navegando para: ${htmlUrl}`);
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--hide-scrollbars",
-      ],
-    });
+    browser = await launchPngBrowser();
 
     const page = await browser.newPage();
     // Viewport generoso para acomodar o card 800px sem clipar
-    await page.setViewport({ width: 900, height: 1100, deviceScaleFactor: 2 });
+    await setExportViewport(page, 900, 1100);
 
     // goto carrega a página completa com todos os assets resolvidos via HTTP
     await page.goto(htmlUrl, { waitUntil: "networkidle0", timeout: 30000 });
@@ -183,14 +219,15 @@ router.get("/player-card-test.png", async (req, res) => {
     res.setHeader("Content-Length", buf.length);
     res.setHeader("Cache-Control", "no-store");
     return res.end(buf);
-  } catch (err) {
-    console.error(`[share] Erro — player #${playerId}:`, err);
-    if (!res.headersSent) {
-      res.status(500).send(`Erro ao gerar card: ${err.message}`);
+    } catch (err) {
+      console.error(`[share] Erro — player #${playerId}:`, err);
+      if (!res.headersSent) {
+        res.status(500).send(`Erro ao gerar card: ${err.message}`);
+      }
+    } finally {
+      if (browser) await browser.close().catch(() => {});
     }
-  } finally {
-    if (browser) await browser.close().catch(() => {});
-  }
+  });
 });
 
 // ── Voting result data builder ─────────────────────────────────────────────
@@ -255,8 +292,9 @@ router.get("/voting-result.png", async (req, res) => {
     return res.end(cachedVoting);
   }
 
-  let browser;
-  try {
+  return enqueuePngRender(async () => {
+    let browser;
+    try {
     const data = await buildVotingData(matchId);
     if (!data) return res.status(404).send("Pelada ou dados de votação não encontrados");
 
@@ -264,19 +302,10 @@ router.get("/voting-result.png", async (req, res) => {
     const htmlUrl = `${host}/share/voting-result-html?matchId=${matchId}`;
     console.log(`[share] Navegando para: ${htmlUrl}`);
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--hide-scrollbars",
-      ],
-    });
+    browser = await launchPngBrowser();
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 900, height: 1800, deviceScaleFactor: 2 });
+    await setExportViewport(page, 900, 1800);
 
     await page.goto(htmlUrl, { waitUntil: "networkidle0", timeout: 30000 });
 
@@ -324,14 +353,15 @@ router.get("/voting-result.png", async (req, res) => {
     res.setHeader("Content-Length", buf.length);
     res.setHeader("Cache-Control", "no-store");
     return res.end(buf);
-  } catch (err) {
-    console.error(`[share] Erro voting result — match #${matchId}:`, err);
-    if (!res.headersSent) {
-      res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
+    } catch (err) {
+      console.error(`[share] Erro voting result — match #${matchId}:`, err);
+      if (!res.headersSent) {
+        res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
+      }
+    } finally {
+      if (browser) await browser.close().catch(() => {});
     }
-  } finally {
-    if (browser) await browser.close().catch(() => {});
-  }
+  });
 });
 
 // ── Monthly craque template ────────────────────────────────────────────────
@@ -407,8 +437,9 @@ router.get("/monthly-craque.png", async (req, res) => {
     return res.end(cachedCraque);
   }
 
-  let browser;
-  try {
+  return enqueuePngRender(async () => {
+    let browser;
+    try {
     const data = await buildMonthlyCraqueData(sessionId);
     if (!data) return res.status(404).send("Sessão ou vencedor não encontrado");
 
@@ -416,19 +447,10 @@ router.get("/monthly-craque.png", async (req, res) => {
     const htmlUrl = `${host}/share/monthly-craque-html?sessionId=${sessionId}`;
     console.log(`[share] Navegando para: ${htmlUrl}`);
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--hide-scrollbars",
-      ],
-    });
+    browser = await launchPngBrowser();
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 1000, height: 800, deviceScaleFactor: 2 });
+    await setExportViewport(page, 1000, 800);
 
     await page.goto(htmlUrl, { waitUntil: "networkidle0", timeout: 30000 });
     await page.evaluateHandle(() => document.fonts.ready);
@@ -473,12 +495,13 @@ router.get("/monthly-craque.png", async (req, res) => {
     res.setHeader("Content-Length", buf.length);
     res.setHeader("Cache-Control", "no-store");
     return res.end(buf);
-  } catch (err) {
-    console.error(`[share] Erro monthly craque — session #${sessionId}:`, err);
-    if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
-  } finally {
-    if (browser) await browser.close().catch(() => {});
-  }
+    } catch (err) {
+      console.error(`[share] Erro monthly craque — session #${sessionId}:`, err);
+      if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
+    } finally {
+      if (browser) await browser.close().catch(() => {});
+    }
+  });
 });
 
 // ── Lineup card templates ───────────────────────────────────────────────────
@@ -510,26 +533,18 @@ router.post("/lineup-html", async (req, res) => {
 // ── PNG via Puppeteer — card de times sorteados ────────────────────────────
 router.post("/lineup.png", async (req, res) => {
   const t0 = Date.now();
-  let browser;
-  try {
+  return enqueuePngRender(async () => {
+    let browser;
+    try {
     const { teams, goalkeepers, matchDate, matchDescription } = req.body || {};
     if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
 
     console.log(`[share] Iniciando lineup PNG — ${teams.length} times`);
 
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--hide-scrollbars",
-      ],
-    });
+    browser = await launchPngBrowser();
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 1500, height: 1800, deviceScaleFactor: 2 });
+    await setExportViewport(page, 1500, 1800);
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const html = await ejs.renderFile(LINEUP_TEMPLATE, {
@@ -581,8 +596,6 @@ router.post("/lineup.png", async (req, res) => {
 
     if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
 
-    const tmpPath = path.join(os.tmpdir(), `lineup-${Date.now()}.png`);
-    fs.writeFileSync(tmpPath, buf);
     console.log(`[share] Lineup PNG — ${buf.length} bytes em ${Date.now() - t0}ms`);
 
     res.setHeader("Content-Type", "image/png");
@@ -590,12 +603,13 @@ router.post("/lineup.png", async (req, res) => {
     res.setHeader("Content-Length", buf.length);
     res.setHeader("Cache-Control", "no-store");
     return res.end(buf);
-  } catch (err) {
-    console.error("[share] Erro lineup PNG:", err);
-    if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
-  } finally {
-    if (browser) await browser.close().catch(() => {});
-  }
+    } catch (err) {
+      console.error("[share] Erro lineup PNG:", err);
+      if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
+    } finally {
+      if (browser) await browser.close().catch(() => {});
+    }
+  });
 });
 
 module.exports = router;
