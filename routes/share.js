@@ -427,8 +427,7 @@ router.post("/lineup-html", async (req, res) => {
   }
 });
 
-// ── JPEG via Puppeteer — card de times sorteados ───────────────────────────
-router.post("/lineup.jpg", async (req, res) => {
+async function generateLineupJpeg(req, res) {
   const t0 = Date.now();
   const { teams, goalkeepers, matchDate, matchDescription, format } = req.body || {};
   if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
@@ -458,6 +457,7 @@ router.post("/lineup.jpg", async (req, res) => {
         type: "jpeg",
         quality: 88,
         logPrefix: "[share:lineup]",
+        scaleToWidth: viewport.width,
       });
 
       console.log(`[share:lineup] done ${viewport.format} in ${Date.now() - t0}ms`);
@@ -469,15 +469,15 @@ router.post("/lineup.jpg", async (req, res) => {
         return res.status(500).send(`Não foi possível gerar a imagem dos times. Tente novamente.${detail}`);
       }
     }
-});
+}
 
-// ── PNG legado — card de times sorteados ───────────────────────────────────
-router.post("/lineup.png", async (req, res) => {
-  console.warn("[share] /lineup.png legado: use /share/lineup.jpg.");
-  res.setHeader("Cache-Control", "no-store");
-  return res
-    .status(410)
-    .send("Atualize a pagina e tente novamente. A imagem dos times agora e gerada em JPG.");
+// ── JPEG via Puppeteer — card de times sorteados ───────────────────────────
+router.post("/lineup.jpg", generateLineupJpeg);
+
+// ── Compatibilidade: clientes antigos ainda podem chamar .png ──────────────
+router.post("/lineup.png", (req, res) => {
+  console.warn("[share] /lineup.png legado: gerando JPEG por compatibilidade.");
+  return generateLineupJpeg(req, res);
 });
 
 // ── JPEG via Puppeteer — exports de torneio ────────────────────────────────

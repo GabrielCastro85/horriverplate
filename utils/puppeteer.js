@@ -12,6 +12,11 @@ const PUPPETEER_ARGS = [
   "--hide-scrollbars",
   "--metrics-recording-only",
   "--mute-audio",
+  "--disable-component-update",
+  "--disable-domain-reliability",
+  "--disable-features=AcceptCHFrame,BackForwardCache,MediaRouter,OptimizationHints,Translate",
+  "--disable-renderer-backgrounding",
+  "--disable-software-rasterizer",
   "--no-first-run",
   "--no-zygote",
   "--single-process",
@@ -19,8 +24,46 @@ const PUPPETEER_ARGS = [
 
 let browserPromise = null;
 let imageQueue = Promise.resolve();
+let browserIdleTimer = null;
+
+const BROWSER_IDLE_TIMEOUT_MS = Number.parseInt(
+  process.env.PUPPETEER_IDLE_TIMEOUT_MS || "3000",
+  10
+);
+const KEEP_BROWSER_ALIVE = process.env.PUPPETEER_KEEP_BROWSER_ALIVE === "1";
+
+function clearBrowserIdleTimer() {
+  if (!browserIdleTimer) return;
+  clearTimeout(browserIdleTimer);
+  browserIdleTimer = null;
+}
+
+function scheduleBrowserIdleClose(logPrefix = "[share:image]") {
+  if (KEEP_BROWSER_ALIVE || BROWSER_IDLE_TIMEOUT_MS <= 0) return;
+  clearBrowserIdleTimer();
+
+  browserIdleTimer = setTimeout(async () => {
+    const currentBrowserPromise = browserPromise;
+    browserPromise = null;
+    browserIdleTimer = null;
+
+    if (!currentBrowserPromise) return;
+    try {
+      const browser = await currentBrowserPromise;
+      if (browser.isConnected()) await browser.close();
+      console.log(`${logPrefix} browser closed after idle ${BROWSER_IDLE_TIMEOUT_MS}ms`);
+      console.log(`${logPrefix} memory idle ${formatMemoryUsage()}`);
+    } catch (err) {
+      console.warn(`${logPrefix} browser idle close failed:`, err.message);
+    }
+  }, BROWSER_IDLE_TIMEOUT_MS);
+
+  if (typeof browserIdleTimer.unref === "function") browserIdleTimer.unref();
+}
 
 async function getBrowser() {
+  clearBrowserIdleTimer();
+
   if (!browserPromise) {
     browserPromise = puppeteer
       .launch({
@@ -43,7 +86,14 @@ async function getBrowser() {
 }
 
 function resetBrowser() {
+  clearBrowserIdleTimer();
+  const currentBrowserPromise = browserPromise;
   browserPromise = null;
+  if (currentBrowserPromise) {
+    currentBrowserPromise
+      .then((browser) => browser.close().catch(() => {}))
+      .catch(() => {});
+  }
 }
 
 function enqueueImageJob(job) {
@@ -121,6 +171,7 @@ async function renderImageJob({
   logPrefix = "[share:image]",
   cookies = [],
   allowScripts = false,
+  scaleToWidth = null,
   waitUntil = "networkidle0",
   timeout = 30000,
 }) {
@@ -153,6 +204,30 @@ async function renderImageJob({
       const target = await page.$(selector);
       if (!target) throw new Error(`Elemento ${selector} nao encontrado.`);
 
+      if (scaleToWidth) {
+        const scale = await page.evaluate(
+          ({ selector: targetSelector, maxWidth }) => {
+            const element = document.querySelector(targetSelector);
+            if (!element) return 1;
+
+            const rect = element.getBoundingClientRect();
+            if (!rect.width || rect.width <= maxWidth) return 1;
+
+            const nextScale = maxWidth / rect.width;
+            document.documentElement.style.width = `${maxWidth}px`;
+            document.body.style.width = `${maxWidth}px`;
+            document.body.style.minWidth = `${maxWidth}px`;
+            element.style.transform = `scale(${nextScale})`;
+            element.style.transformOrigin = "top left";
+            element.style.willChange = "transform";
+            return nextScale;
+          },
+          { selector, maxWidth: scaleToWidth }
+        );
+        console.log(`${logPrefix} scale ${scale.toFixed(3)} to width ${scaleToWidth}`);
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      }
+
       const screenshotOptions = type === "jpeg"
         ? { type: "jpeg", quality }
         : { type: "png", omitBackground: false };
@@ -169,6 +244,7 @@ async function renderImageJob({
       throw err;
     } finally {
       if (page) await page.close().catch(() => {});
+      scheduleBrowserIdleClose(logPrefix);
     }
   });
 }
