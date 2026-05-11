@@ -2,7 +2,6 @@ const express = require("express");
 const crypto = require("crypto");
 const prisma = require("../../utils/db");
 const { computeMatchRatingsAndAwards } = require("../../utils/match_ratings");
-const { captureAwardsCardJpg } = require("./reports");
 const { recomputeTotalsForPlayers, updateAllPlayersOverallAfterMatch } = require("./shared");
 const { recalculateOverallForAllPlayers } = require("../../utils/ranking");
 const { ensureFinanceSettings } = require("../../services/financePage.service");
@@ -2166,23 +2165,7 @@ router.get("/matches/:id/awards/export", requireAdmin, async (req, res) => {
     });
     if (!match) return res.redirect("/admin");
 
-    const jpgBuffer = await captureAwardsCardJpg(matchId, req.cookies?.adminToken);
-    const dateLabel = new Date(match.playedAt)
-      .toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
-      .replace(/\//g, "-");
-    const descLabel = String(match.description || "pelada")
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase();
-
-    res.setHeader("Content-Type", "image/jpeg");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="resultado-votacao-${descLabel || "pelada"}-${dateLabel}.jpg"`
-    );
-    return res.end(jpgBuffer);
+    return res.redirect(302, `/share/voting-result.jpg?matchId=${match.id}`);
   } catch (err) {
     console.error("Erro ao exportar imagem dos premios:", err);
     return res.status(500).send("Nao foi possivel gerar a imagem agora.");
