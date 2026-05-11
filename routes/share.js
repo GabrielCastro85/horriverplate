@@ -1,63 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/db");
-const puppeteer = require("puppeteer");
 const ejs = require("ejs");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
+const {
+  renderImageFromHtml,
+  renderImageFromUrl,
+  viewportFor,
+} = require("../utils/puppeteer");
 
-const EXPORT_DEVICE_SCALE_FACTOR = Number(process.env.EXPORT_DEVICE_SCALE_FACTOR || "1.5");
-const PUPPETEER_ARGS = [
-  "--no-sandbox",
-  "--disable-setuid-sandbox",
-  "--disable-dev-shm-usage",
-  "--disable-gpu",
-  "--disable-extensions",
-  "--disable-background-networking",
-  "--disable-default-apps",
-  "--disable-sync",
-  "--hide-scrollbars",
-  "--metrics-recording-only",
-  "--mute-audio",
-  "--no-first-run",
-  "--no-zygote",
-];
-
-let pngRenderQueue = Promise.resolve();
-
-function enqueuePngRender(task) {
-  const run = pngRenderQueue.then(task, task);
-  pngRenderQueue = run.catch(() => {});
-  return run;
-}
-
-async function launchPngBrowser() {
-  return puppeteer.launch({
-    headless: true,
-    args: PUPPETEER_ARGS,
-  });
-}
-
-function clampDeviceScaleFactor(value) {
-  return Number.isFinite(value) && value > 0 ? Math.min(value, 2) : 1.5;
-}
-
-async function setExportViewport(page, width, height) {
-  await page.setViewport({
-    width,
-    height,
-    deviceScaleFactor: clampDeviceScaleFactor(EXPORT_DEVICE_SCALE_FACTOR),
-  });
-}
-
-// ── Cache em disco para PNGs gerados pelo Puppeteer ────────────────────────
-const CACHE_DIR = path.join(os.tmpdir(), "share-png-cache");
+// ── Cache em disco para imagens geradas pelo Puppeteer ─────────────────────
+const CACHE_DIR = path.join(os.tmpdir(), "share-image-cache");
 try { fs.mkdirSync(CACHE_DIR, { recursive: true }); } catch (_) {}
 
 function cachePath(key) {
-  return path.join(CACHE_DIR, key + ".png");
+  return path.join(CACHE_DIR, key + ".jpg");
 }
 
 function readCache(key, maxAgeMs = Infinity) {
@@ -73,6 +33,14 @@ function readCache(key, maxAgeMs = Infinity) {
 
 function writeCache(key, buf) {
   try { fs.writeFileSync(cachePath(key), buf); } catch (_) {}
+}
+
+function sendJpeg(res, buffer, filename) {
+  res.setHeader("Content-Type", "image/jpeg");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Length", buffer.length);
+  res.setHeader("Cache-Control", "no-store");
+  return res.end(buffer);
 }
 
 async function buildShareData(playerId) {
@@ -135,99 +103,51 @@ router.get("/player-card-test-html", async (req, res) => {
   }
 });
 
-// ── PNG via Puppeteer ───────────────────────────────────────────────────────
-router.get("/player-card-test.png", async (req, res) => {
+// ── JPEG via Puppeteer ──────────────────────────────────────────────────────
+router.get("/player-card-test.jpg", async (req, res) => {
   const playerId = parseInt(req.query.playerId, 10);
   if (isNaN(playerId)) return res.status(400).send("playerId inválido");
 
   const t0 = Date.now();
-  console.log(`[share] Iniciando card PNG — player #${playerId}`);
+  console.log(`[share:player-card] request player #${playerId}`);
 
   // Cache de 1 hora (dados do jogador podem mudar)
   const cacheKey = `player-card-${playerId}`;
   const cached = readCache(cacheKey, 60 * 60 * 1000);
   if (cached) {
-    console.log(`[share] Cache hit — player #${playerId} (${Date.now() - t0}ms)`);
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Disposition", `attachment; filename="player-card-${playerId}.png"`);
-    res.setHeader("Content-Length", cached.length);
-    res.setHeader("Cache-Control", "no-store");
-    return res.end(cached);
+    console.log(`[share:player-card] cache hit player #${playerId} (${Date.now() - t0}ms)`);
+    return sendJpeg(res, cached, `player-card-${playerId}.jpg`);
   }
 
-  return enqueuePngRender(async () => {
-    let browser;
-    try {
+  try {
     // Valida existência do jogador antes de abrir o browser
     const data = await buildShareData(playerId);
     if (!data) return res.status(404).send("Jogador não encontrado");
 
-    // URL do HTML debug — Puppeteer navega para cá e carrega todos os assets via HTTP
     const host = `${req.protocol}://${req.get("host")}`;
     const htmlUrl = `${host}/share/player-card-test-html?playerId=${playerId}`;
-    console.log(`[share] Navegando para: ${htmlUrl}`);
-
-    browser = await launchPngBrowser();
-
-    const page = await browser.newPage();
-    // Viewport generoso para acomodar o card 800px sem clipar
-    await setExportViewport(page, 900, 1100);
-
-    // goto carrega a página completa com todos os assets resolvidos via HTTP
-    await page.goto(htmlUrl, { waitUntil: "networkidle0", timeout: 30000 });
-
-    // Aguarda fontes
-    await page.evaluateHandle(() => document.fonts.ready);
-
-    // Aguarda imagens e loga as que falharam
-    const failedImages = await page.evaluate(async () => {
-      await Promise.all(
-        Array.from(document.images).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve;
-                setTimeout(resolve, 8000);
-              })
-        )
-      );
-      return Array.from(document.images)
-        .filter((img) => img.naturalWidth === 0)
-        .map((img) => img.src);
+    const buf = await renderImageFromUrl({
+      url: htmlUrl,
+      selector: ".pec-card",
+      width: 720,
+      height: 900,
+      type: "jpeg",
+      quality: 88,
+      logPrefix: "[share:player-card]",
     });
 
-    if (failedImages.length) {
-      console.warn(`[share] Imagens que falharam (${failedImages.length}):`, failedImages);
-    }
-
-    // Captura somente o elemento do card, sem fundo externo
-    const cardElement = await page.$(".pec-card");
-    if (!cardElement) throw new Error("Elemento .pec-card não encontrado na página");
-
-    const raw = await cardElement.screenshot({ type: "png", omitBackground: true });
-    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
-
-    console.log(`[share] Buffer: ${buf.length} bytes`);
-    if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
-
     writeCache(cacheKey, buf);
-    console.log(`[share] Concluído em ${Date.now() - t0}ms — player #${playerId} (${data.player.name})`);
+    console.log(`[share:player-card] done player #${playerId} (${data.player.name}) in ${Date.now() - t0}ms`);
+    return sendJpeg(res, buf, `player-card-${playerId}.jpg`);
+  } catch (err) {
+    console.error(`[share:player-card] Erro player #${playerId}:`, err);
+    if (!res.headersSent) return res.status(500).send("Não foi possível gerar o card agora.");
+  }
+});
 
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Disposition", `attachment; filename="player-card-${playerId}.png"`);
-    res.setHeader("Content-Length", buf.length);
-    res.setHeader("Cache-Control", "no-store");
-    return res.end(buf);
-    } catch (err) {
-      console.error(`[share] Erro — player #${playerId}:`, err);
-      if (!res.headersSent) {
-        res.status(500).send(`Erro ao gerar card: ${err.message}`);
-      }
-    } finally {
-      if (browser) await browser.close().catch(() => {});
-    }
-  });
+router.get("/player-card-test.png", (req, res) => {
+  const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+  return res.redirect(302, `/share/player-card-test.jpg${qs}`);
 });
 
 // ── Voting result data builder ─────────────────────────────────────────────
@@ -268,100 +188,59 @@ router.get("/voting-result-html", async (req, res) => {
   }
 });
 
-// ── PNG via Puppeteer — resultado da votação ────────────────────────────────
-router.get("/voting-result.png", async (req, res) => {
+// ── JPEG via Puppeteer — resultado da votação ──────────────────────────────
+router.get("/voting-result.jpg", async (req, res) => {
   const matchId = parseInt(req.query.matchId, 10);
   if (isNaN(matchId)) return res.status(400).send("matchId inválido");
 
   const t0 = Date.now();
-  console.log(`[share] Iniciando voting result PNG — match #${matchId}`);
+  console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache permanente — resultado de votação não muda após encerrado
   const cacheKeyVoting = `voting-result-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
-    console.log(`[share] Cache hit — voting result match #${matchId} (${Date.now() - t0}ms)`);
+    console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
     const data = await buildVotingData(matchId);
     const dateLabel = data
       ? new Date(data.match.playedAt).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }).replace(/\//g, "-")
       : matchId;
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Disposition", `attachment; filename="resultado-votacao-${dateLabel}.png"`);
-    res.setHeader("Content-Length", cachedVoting.length);
-    res.setHeader("Cache-Control", "no-store");
-    return res.end(cachedVoting);
+    return sendJpeg(res, cachedVoting, `resultado-votacao-${dateLabel}.jpg`);
   }
 
-  return enqueuePngRender(async () => {
-    let browser;
-    try {
+  try {
     const data = await buildVotingData(matchId);
     if (!data) return res.status(404).send("Pelada ou dados de votação não encontrados");
 
     const host = `${req.protocol}://${req.get("host")}`;
     const htmlUrl = `${host}/share/voting-result-html?matchId=${matchId}`;
-    console.log(`[share] Navegando para: ${htmlUrl}`);
-
-    browser = await launchPngBrowser();
-
-    const page = await browser.newPage();
-    await setExportViewport(page, 900, 1800);
-
-    await page.goto(htmlUrl, { waitUntil: "networkidle0", timeout: 30000 });
-
-    await page.evaluateHandle(() => document.fonts.ready);
-
-    const failedImages = await page.evaluate(async () => {
-      await Promise.all(
-        Array.from(document.images).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve;
-                setTimeout(resolve, 8000);
-              })
-        )
-      );
-      return Array.from(document.images)
-        .filter((img) => img.naturalWidth === 0)
-        .map((img) => img.src);
+    const buf = await renderImageFromUrl({
+      url: htmlUrl,
+      selector: ".vrc-card",
+      width: 720,
+      height: 1280,
+      type: "jpeg",
+      quality: 88,
+      logPrefix: "[share:voting-result]",
     });
 
-    if (failedImages.length) {
-      console.warn(`[share] Imagens que falharam (${failedImages.length}):`, failedImages);
-    }
-
-    const cardElement = await page.$(".vrc-card");
-    if (!cardElement) throw new Error("Elemento .vrc-card não encontrado na página");
-
-    const raw = await cardElement.screenshot({ type: "png", omitBackground: true });
-    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
-
-    console.log(`[share] Buffer: ${buf.length} bytes`);
-    if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
-
     writeCache(cacheKeyVoting, buf);
-    console.log(`[share] Concluído em ${Date.now() - t0}ms — match #${matchId}`);
+    console.log(`[share:voting-result] done match #${matchId} in ${Date.now() - t0}ms`);
 
     const dateLabel = new Date(data.match.playedAt)
       .toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
       .replace(/\//g, "-");
 
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Disposition", `attachment; filename="resultado-votacao-${dateLabel}.png"`);
-    res.setHeader("Content-Length", buf.length);
-    res.setHeader("Cache-Control", "no-store");
-    return res.end(buf);
-    } catch (err) {
-      console.error(`[share] Erro voting result — match #${matchId}:`, err);
-      if (!res.headersSent) {
-        res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
-      }
-    } finally {
-      if (browser) await browser.close().catch(() => {});
-    }
-  });
+    return sendJpeg(res, buf, `resultado-votacao-${dateLabel}.jpg`);
+  } catch (err) {
+    console.error(`[share:voting-result] Erro match #${matchId}:`, err);
+    if (!res.headersSent) return res.status(500).send("Não foi possível gerar a imagem agora.");
+  }
+});
+
+router.get("/voting-result.png", (req, res) => {
+  const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+  return res.redirect(302, `/share/voting-result.jpg${qs}`);
 });
 
 // ── Monthly craque template ────────────────────────────────────────────────
@@ -416,96 +295,110 @@ router.get("/monthly-craque-html", async (req, res) => {
   }
 });
 
-// ── PNG via Puppeteer — card de craque do mês ──────────────────────────────
-router.get("/monthly-craque.png", async (req, res) => {
+// ── JPEG via Puppeteer — card de craque do mês ─────────────────────────────
+router.get("/monthly-craque.jpg", async (req, res) => {
   const sessionId = parseInt(req.query.sessionId, 10);
   if (isNaN(sessionId)) return res.status(400).send("sessionId inválido");
 
   const t0 = Date.now();
-  console.log(`[share] Iniciando monthly craque PNG — session #${sessionId}`);
+  console.log(`[share:craque-mes] request session #${sessionId}`);
 
   // Cache permanente — vencedor não muda após sessão encerrada
   const cacheKeyCraque = `monthly-craque-${sessionId}`;
   const cachedCraque = readCache(cacheKeyCraque);
   if (cachedCraque) {
-    console.log(`[share] Cache hit — monthly craque session #${sessionId} (${Date.now() - t0}ms)`);
+    console.log(`[share:craque-mes] cache hit session #${sessionId} (${Date.now() - t0}ms)`);
     const data = await buildMonthlyCraqueData(sessionId);
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Disposition", `attachment; filename="craque-do-mes-${data?.mvMonth ?? sessionId}-${data?.mvYear ?? ""}.png"`);
-    res.setHeader("Content-Length", cachedCraque.length);
-    res.setHeader("Cache-Control", "no-store");
-    return res.end(cachedCraque);
+    return sendJpeg(res, cachedCraque, `craque-do-mes-${data?.mvMonth ?? sessionId}-${data?.mvYear ?? ""}.jpg`);
   }
 
-  return enqueuePngRender(async () => {
-    let browser;
-    try {
+  try {
     const data = await buildMonthlyCraqueData(sessionId);
     if (!data) return res.status(404).send("Sessão ou vencedor não encontrado");
 
     const host = `${req.protocol}://${req.get("host")}`;
     const htmlUrl = `${host}/share/monthly-craque-html?sessionId=${sessionId}`;
-    console.log(`[share] Navegando para: ${htmlUrl}`);
-
-    browser = await launchPngBrowser();
-
-    const page = await browser.newPage();
-    await setExportViewport(page, 1000, 800);
-
-    await page.goto(htmlUrl, { waitUntil: "networkidle0", timeout: 30000 });
-    await page.evaluateHandle(() => document.fonts.ready);
-
-    const failedImages = await page.evaluate(async () => {
-      await Promise.all(
-        Array.from(document.images).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve;
-                setTimeout(resolve, 8000);
-              })
-        )
-      );
-      return Array.from(document.images)
-        .filter((img) => img.naturalWidth === 0)
-        .map((img) => img.src);
+    const buf = await renderImageFromUrl({
+      url: htmlUrl,
+      selector: ".mc-card",
+      width: 720,
+      height: 900,
+      type: "jpeg",
+      quality: 88,
+      logPrefix: "[share:craque-mes]",
     });
 
-    if (failedImages.length) {
-      console.warn(`[share] Imagens com falha (${failedImages.length}):`, failedImages);
-    }
-
-    const cardElement = await page.$(".mc-card");
-    if (!cardElement) throw new Error("Elemento .mc-card não encontrado na página");
-
-    const raw = await cardElement.screenshot({ type: "png", omitBackground: true });
-    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
-
-    if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
-
     writeCache(cacheKeyCraque, buf);
-    console.log(`[share] Concluído em ${Date.now() - t0}ms — session #${sessionId} (${data.winner?.name})`);
+    console.log(`[share:craque-mes] done session #${sessionId} (${data.winner?.name}) in ${Date.now() - t0}ms`);
 
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="craque-do-mes-${data.mvMonth}-${data.mvYear}.png"`
-    );
-    res.setHeader("Content-Length", buf.length);
-    res.setHeader("Cache-Control", "no-store");
-    return res.end(buf);
-    } catch (err) {
-      console.error(`[share] Erro monthly craque — session #${sessionId}:`, err);
-      if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
-    } finally {
-      if (browser) await browser.close().catch(() => {});
-    }
-  });
+    return sendJpeg(res, buf, `craque-do-mes-${data.mvMonth}-${data.mvYear}.jpg`);
+  } catch (err) {
+    console.error(`[share:craque-mes] Erro session #${sessionId}:`, err);
+    if (!res.headersSent) return res.status(500).send("Não foi possível gerar a imagem agora.");
+  }
+});
+
+router.get("/monthly-craque.png", (req, res) => {
+  const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+  return res.redirect(302, `/share/monthly-craque.jpg${qs}`);
 });
 
 // ── Lineup card templates ───────────────────────────────────────────────────
 const LINEUP_TEMPLATE = path.join(__dirname, "../views/share/lineup_card.ejs");
+const TIERLIST_TEMPLATE = path.join(__dirname, "../views/share/tierlist_card.ejs");
+const LINEUP_LOGO_SOURCE = path.join(__dirname, "../public/img/logo.jpg");
+const LINEUP_FONT_FILES = [
+  { family: "Bebas Neue", weight: "400", filename: "BebasNeue-Regular.ttf" },
+  { family: "Manrope", weight: "400", filename: "Manrope-Regular.ttf" },
+  { family: "Manrope", weight: "600", filename: "Manrope-SemiBold.ttf" },
+  { family: "Manrope", weight: "700", filename: "Manrope-Bold.ttf" },
+  { family: "Manrope", weight: "800 900", filename: "Manrope-ExtraBold.ttf" },
+];
+let lineupLogoDataUriPromise = null;
+let lineupFontCss = null;
+
+async function getLineupLogoDataUri() {
+  if (!lineupLogoDataUriPromise) {
+    lineupLogoDataUriPromise = (async () => {
+      const sharp = require("sharp");
+      const buffer = await sharp(LINEUP_LOGO_SOURCE)
+        .resize(384, 384, { fit: "cover", position: "center" })
+        .png({ compressionLevel: 9, adaptiveFiltering: true })
+        .toBuffer();
+
+      return `data:image/png;base64,${buffer.toString("base64")}`;
+    })().catch((err) => {
+      lineupLogoDataUriPromise = null;
+      throw err;
+    });
+  }
+
+  return lineupLogoDataUriPromise;
+}
+
+function getLineupFontCss() {
+  if (!lineupFontCss) {
+    lineupFontCss = LINEUP_FONT_FILES.map((font) => {
+      const fontPath = path.join(__dirname, "../public/fonts", font.filename);
+      const data = fs.readFileSync(fontPath).toString("base64");
+      return `
+        @font-face {
+          font-family: "${font.family}";
+          font-style: normal;
+          font-weight: ${font.weight};
+          font-display: block;
+          src: url("data:font/ttf;base64,${data}") format("truetype");
+        }
+      `;
+    }).join("\n");
+  }
+
+  return lineupFontCss;
+}
+
+function getLineupViewport(format = "story") {
+  return viewportFor(format);
+}
 
 // ── Debug: renderiza HTML do card de times ─────────────────────────────────
 router.post("/lineup-html", async (req, res) => {
@@ -514,12 +407,16 @@ router.post("/lineup-html", async (req, res) => {
     if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const logoDataUri = await getLineupLogoDataUri();
     const html = await ejs.renderFile(LINEUP_TEMPLATE, {
       teams,
       goalkeepers: goalkeepers || [],
       matchDate: matchDate || "",
       matchDescription: matchDescription || "Pelada",
       baseUrl,
+      logoMarkUrl: logoDataUri,
+      logoIconUrl: logoDataUri,
+      fontCss: getLineupFontCss(),
     });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -530,86 +427,127 @@ router.post("/lineup-html", async (req, res) => {
   }
 });
 
-// ── PNG via Puppeteer — card de times sorteados ────────────────────────────
-router.post("/lineup.png", async (req, res) => {
+// ── JPEG via Puppeteer — card de times sorteados ───────────────────────────
+router.post("/lineup.jpg", async (req, res) => {
   const t0 = Date.now();
-  return enqueuePngRender(async () => {
-    let browser;
-    try {
-    const { teams, goalkeepers, matchDate, matchDescription } = req.body || {};
-    if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
+  const { teams, goalkeepers, matchDate, matchDescription, format } = req.body || {};
+  if (!Array.isArray(teams) || !teams.length) return res.status(400).send("times inválidos");
 
-    console.log(`[share] Iniciando lineup PNG — ${teams.length} times`);
+  const viewport = getLineupViewport(format);
 
-    browser = await launchPngBrowser();
+  try {
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const logoDataUri = await getLineupLogoDataUri();
+      const html = await ejs.renderFile(LINEUP_TEMPLATE, {
+        teams,
+        goalkeepers: goalkeepers || [],
+        matchDate: matchDate || "",
+        matchDescription: matchDescription || "Pelada",
+        baseUrl,
+        logoMarkUrl: logoDataUri,
+        logoIconUrl: logoDataUri,
+        fontCss: getLineupFontCss(),
+        exporting: true,
+      });
 
-    const page = await browser.newPage();
-    await setExportViewport(page, 1500, 1800);
+      const buf = await renderImageFromHtml({
+        html,
+        selector: ".lc-card",
+        width: viewport.width,
+        height: viewport.height,
+        type: "jpeg",
+        quality: 88,
+        logPrefix: "[share:lineup]",
+      });
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const html = await ejs.renderFile(LINEUP_TEMPLATE, {
-      teams,
-      goalkeepers: goalkeepers || [],
-      matchDate: matchDate || "",
-      matchDescription: matchDescription || "Pelada",
-      baseUrl,
-    });
-
-    // domcontentloaded evita travar esperando Google Fonts CDN fechar conexão
-    // Primeiro navega para a mesma origem dos assets para evitar bloqueio CORP/NotSameOrigin.
-    await page.goto(`${baseUrl}/`, { waitUntil: "domcontentloaded", timeout: 15000 });
-    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 20000 });
-    // Aguarda fontes com timeout de segurança
-    await Promise.race([
-      page.evaluateHandle(() => document.fonts.ready),
-      new Promise((r) => setTimeout(r, 4000)),
-    ]);
-    // Buffer mínimo para renderização
-    await new Promise((r) => setTimeout(r, 200));
-
-    const failedImages = await page.evaluate(async () => {
-      await Promise.all(
-        Array.from(document.images).map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve;
-                setTimeout(resolve, 8000);
-              })
-        )
-      );
-      return Array.from(document.images)
-        .filter((img) => img.naturalWidth === 0)
-        .map((img) => img.src);
-    });
-
-    if (failedImages.length) {
-      console.warn(`[share] Imagens com falha (${failedImages.length}):`, failedImages);
-    }
-
-    const cardEl = await page.$(".lc-card");
-    if (!cardEl) throw new Error("Elemento .lc-card não encontrado");
-
-    const raw = await cardEl.screenshot({ type: "png", omitBackground: true });
-    const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
-
-    if (buf.length === 0) throw new Error("Screenshot retornou 0 bytes");
-
-    console.log(`[share] Lineup PNG — ${buf.length} bytes em ${Date.now() - t0}ms`);
-
-    res.setHeader("Content-Type", "image/png");
-    res.setHeader("Content-Disposition", `attachment; filename="times-sorteio.png"`);
-    res.setHeader("Content-Length", buf.length);
-    res.setHeader("Cache-Control", "no-store");
-    return res.end(buf);
+      console.log(`[share:lineup] done ${viewport.format} in ${Date.now() - t0}ms`);
+      return sendJpeg(res, buf, "times-sorteio.jpg");
     } catch (err) {
-      console.error("[share] Erro lineup PNG:", err);
-      if (!res.headersSent) res.status(500).send(`Erro ao gerar imagem: ${err.message}`);
-    } finally {
-      if (browser) await browser.close().catch(() => {});
+      console.error("[share:lineup] error:", err);
+      if (!res.headersSent) {
+        const detail = process.env.NODE_ENV === "production" ? "" : ` (${err.message})`;
+        return res.status(500).send(`Não foi possível gerar a imagem dos times. Tente novamente.${detail}`);
+      }
     }
-  });
+});
+
+// ── PNG legado — card de times sorteados ───────────────────────────────────
+router.post("/lineup.png", async (req, res) => {
+  console.warn("[share] /lineup.png legado: use /share/lineup.jpg.");
+  res.setHeader("Cache-Control", "no-store");
+  return res
+    .status(410)
+    .send("Atualize a pagina e tente novamente. A imagem dos times agora e gerada em JPG.");
+});
+
+// ── JPEG via Puppeteer — exports de torneio ────────────────────────────────
+router.get("/tournament.jpg", async (req, res) => {
+  const matchId = parseInt(req.query.matchId, 10);
+  if (Number.isNaN(matchId)) return res.status(400).send("matchId inválido");
+
+  const type = req.query.type === "games" ? "games" : "standings";
+  const isAdmin = req.query.admin === "1";
+  const selector = isAdmin
+    ? type === "games" ? "#tournament-games-export-admin" : "#tournament-standings-export-admin"
+    : type === "games" ? "#tournament-games-export" : "#tournament-standings-export";
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const pageUrl = isAdmin
+    ? `${baseUrl}/admin/matches/${matchId}?export=1#tournament`
+    : `${baseUrl}/matches/${matchId}?export=1`;
+  const cookies = isAdmin && req.cookies?.adminToken
+    ? [{ name: "adminToken", value: req.cookies.adminToken, url: baseUrl, httpOnly: true, sameSite: "Lax" }]
+    : [];
+
+  try {
+    const buffer = await renderImageFromUrl({
+      url: pageUrl,
+      selector,
+      width: 720,
+      height: 900,
+      type: "jpeg",
+      quality: 88,
+      logPrefix: `[share:tournament:${type}]`,
+      cookies,
+    });
+
+    return sendJpeg(res, buffer, `tournament-${type}.jpg`);
+  } catch (err) {
+    console.error(`[share:tournament:${type}] error:`, err);
+    return res.status(500).send("Não foi possível gerar a imagem do torneio agora.");
+  }
+});
+
+// ── JPEG via Puppeteer — tierlist ──────────────────────────────────────────
+router.post("/tierlist.jpg", async (req, res) => {
+  const { title, tiers, format } = req.body || {};
+  if (!Array.isArray(tiers) || !tiers.length) return res.status(400).send("tiers inválidos");
+
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const logoDataUri = await getLineupLogoDataUri();
+    const viewport = viewportFor(format || "feed");
+    const html = await ejs.renderFile(TIERLIST_TEMPLATE, {
+      title,
+      tiers,
+      baseUrl,
+      logoUrl: logoDataUri,
+      fontCss: getLineupFontCss(),
+    });
+    const buffer = await renderImageFromHtml({
+      html,
+      selector: ".tl-card",
+      width: viewport.width,
+      height: viewport.height,
+      type: "jpeg",
+      quality: 88,
+      logPrefix: "[share:tierlist]",
+    });
+
+    return sendJpeg(res, buffer, "tierlist-horriver.jpg");
+  } catch (err) {
+    console.error("[share:tierlist] error:", err);
+    return res.status(500).send("Não foi possível gerar a imagem da tierlist agora.");
+  }
 });
 
 module.exports = router;

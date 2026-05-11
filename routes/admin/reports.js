@@ -4,6 +4,7 @@ const path = require("path");
 const ejs = require("ejs");
 const prisma = require("../../utils/db");
 const { formatPlayerLabel, formatPositionShort, formatNumberBR } = require("../../utils/adminFormat");
+const { renderImageFromUrl } = require("../../utils/puppeteer");
 const router = express.Router();
 
 let puppeteer = null;
@@ -359,95 +360,31 @@ function resolveBrowserExecutablePath() {
   return commonPaths.find((candidate) => fs.existsSync(candidate)) || null;
 }
 
-async function captureAwardsCardPng(matchId, adminToken) {
+async function captureAwardsCardJpg(matchId, adminToken) {
   if (!adminToken) {
     throw new Error("Sessao de admin ausente para exportar a imagem.");
   }
 
-  if (!puppeteer) {
-    puppeteer = require("puppeteer");
-  }
-
-  const executablePath = resolveBrowserExecutablePath();
-  const browser = await puppeteer.launch({
-    headless: true,
-    ...(executablePath ? { executablePath } : {}),
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--font-render-hinting=medium",
-      "--force-color-profile=srgb",
-    ],
-  });
-
-  try {
-    const page = await browser.newPage();
-    const baseUrl = `http://127.0.0.1:${process.env.PORT || 3000}`;
-
-    await page.setViewport({
-      width: 1600,
-      height: 2200,
-      deviceScaleFactor: 3,
-    });
-
-    await page.setCookie({
+  const baseUrl = `http://127.0.0.1:${process.env.PORT || 3000}`;
+  return renderImageFromUrl({
+    url: `${baseUrl}/admin/matches/${matchId}/awards?export=1`,
+    selector: "#awards-card",
+    width: 720,
+    height: 1280,
+    type: "jpeg",
+    quality: 88,
+    logPrefix: "[share:awards]",
+    cookies: [{
       name: "adminToken",
       value: adminToken,
       url: baseUrl,
       httpOnly: true,
       sameSite: "Lax",
-    });
-
-    await page.goto(`${baseUrl}/admin/matches/${matchId}/awards`, {
-      waitUntil: "networkidle2",
-      timeout: 60000,
-    });
-
-    await page.emulateMediaType("screen");
-    await page.waitForSelector("#awards-card", { visible: true, timeout: 60000 });
-
-    await page.evaluate(async () => {
-      if (document.fonts && document.fonts.ready) {
-        try {
-          await document.fonts.ready;
-        } catch (err) {}
-      }
-
-      const images = Array.from(document.querySelectorAll("#awards-card img"));
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((resolve) => {
-            let settled = false;
-            const finish = () => {
-              if (settled) return;
-              settled = true;
-              resolve();
-            };
-            img.addEventListener("load", finish, { once: true });
-            img.addEventListener("error", finish, { once: true });
-            setTimeout(finish, 5000);
-          });
-        })
-      );
-
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    });
-
-    const card = await page.$("#awards-card");
-    if (!card) {
-      throw new Error("Card de premios nao encontrado para exportacao.");
-    }
-
-    return await card.screenshot({
-      type: "png",
-      omitBackground: false,
-    });
-  } finally {
-    await browser.close();
-  }
+    }],
+  });
 }
+
+const captureAwardsCardPng = captureAwardsCardJpg;
 
 async function renderPdfBufferFromHtml(html) {
   if (!puppeteer) {
@@ -596,6 +533,7 @@ router.get("/reports/pdf/:reportKey", requireAdmin, async (req, res) => {
 module.exports = {
   router,
   captureAwardsCardPng,
+  captureAwardsCardJpg,
   getAdminPdfReportsList,
   getAdminPdfGeneratorOptions,
   ADMIN_PDF_LIMIT_OPTIONS,

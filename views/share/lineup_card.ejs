@@ -7,8 +7,12 @@
    */
 
   const cleanBaseUrl = String(baseUrl || "").replace(/\/$/, "");
-  const logoMarkUrl = `${cleanBaseUrl}/img/logo-128x128.svg`;
-  const logoIconUrl = `${cleanBaseUrl}/img/logo-32x32.svg`;
+  const logoMarkSrc = typeof logoMarkUrl !== "undefined" && logoMarkUrl
+    ? logoMarkUrl
+    : `${cleanBaseUrl}/img/logo-128x128.svg`;
+  const logoIconSrc = typeof logoIconUrl !== "undefined" && logoIconUrl
+    ? logoIconUrl
+    : `${cleanBaseUrl}/img/logo-32x32.svg`;
 
   const escHtml = (value = "") =>
     String(value)
@@ -117,33 +121,35 @@
     const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
 
     if (columns <= 1) {
-      if (longest >= 24) return 50;
-      if (longest >= 20) return 56;
-      if (longest >= 16) return 62;
-      return 70;
-    }
-
-    if (columns === 2) {
       if (longest >= 24) return 42;
       if (longest >= 20) return 46;
       if (longest >= 16) return 52;
-      if (longest >= 13) return 56;
-      return 62;
+      return 58;
     }
 
-    if (longest >= 24) return 32;
-    if (longest >= 20) return 36;
-    if (longest >= 17) return 40;
-    if (longest >= 14) return 42;
-    if (longest >= 12) return 43;
-    if (longest >= 11) return 47;
-    if (longest >= 10) return 49;
-    return 54;
+    if (columns === 2) {
+      if (longest >= 24) return 34;
+      if (longest >= 20) return 38;
+      if (longest >= 16) return 42;
+      if (longest >= 13) return 46;
+      return 50;
+    }
+
+    if (longest >= 24) return 28;
+    if (longest >= 20) return 31;
+    if (longest >= 17) return 34;
+    if (longest >= 14) return 36;
+    if (longest >= 12) return 38;
+    if (longest >= 11) return 40;
+    if (longest >= 10) return 42;
+    return 46;
   };
 
   const teamCount = Array.isArray(teams) ? teams.length : 0;
   const gridCols = teamCount === 4 ? 2 : Math.min(Math.max(teamCount, 1), 3);
   const gridClass = gridCols === 3 ? "is-three" : gridCols === 2 ? "is-two" : "is-one";
+  const isExporting = typeof exporting === "undefined" ? true : exporting !== false;
+  const embeddedFontCss = typeof fontCss !== "undefined" ? fontCss : "";
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -151,10 +157,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=1500" />
   <title>Times Sorteados</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
+    <% if (embeddedFontCss) { %>
+      <%- embeddedFontCss %>
+    <% } else { %>
+    @font-face {
+      font-family: "Bebas Neue";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src: url("<%= cleanBaseUrl %>/fonts/BebasNeue-Regular.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "Manrope";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src: url("<%= cleanBaseUrl %>/fonts/Manrope-Regular.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "Manrope";
+      font-style: normal;
+      font-weight: 600;
+      font-display: block;
+      src: url("<%= cleanBaseUrl %>/fonts/Manrope-SemiBold.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "Manrope";
+      font-style: normal;
+      font-weight: 700;
+      font-display: block;
+      src: url("<%= cleanBaseUrl %>/fonts/Manrope-Bold.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "Manrope";
+      font-style: normal;
+      font-weight: 800 900;
+      font-display: block;
+      src: url("<%= cleanBaseUrl %>/fonts/Manrope-ExtraBold.ttf") format("truetype");
+    }
+    <% } %>
+
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -165,7 +212,7 @@
     body {
       width: 1500px;
       min-width: 1500px;
-      background: transparent;
+      background: #050509;
       display: inline-block;
       -webkit-font-smoothing: antialiased;
       text-rendering: geometricPrecision;
@@ -251,12 +298,12 @@
 
     .lc-title {
       position: relative;
-      display: inline-block;
-      padding-bottom: 11px;
-      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
-      font-size: 74px;
-      font-weight: 700;
-      line-height: 0.92;
+      display: block;
+      padding: 8px 0 14px;
+      font-family: "Bebas Neue", "Oswald", system-ui, sans-serif;
+      font-size: 78px;
+      font-weight: 400;
+      line-height: 1.02;
       letter-spacing: 0.03em;
       text-transform: uppercase;
       color: #f8fafc;
@@ -266,11 +313,10 @@
 
     .lc-title::after {
       content: "";
-      position: absolute;
-      left: 0;
-      bottom: 0;
+      display: block;
       width: 260px;
       height: 4px;
+      margin-top: 18px;
       border-radius: 999px;
       background: linear-gradient(90deg, #ff7a1a 0%, rgba(255, 122, 26, 0.66) 44%, rgba(255, 122, 26, 0.10) 100%);
     }
@@ -301,11 +347,11 @@
 
     .lc-date {
       display: block;
-      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
-      font-size: 56px;
-      font-weight: 700;
-      line-height: 0.94;
-      letter-spacing: 0.02em;
+      font-family: "Manrope", system-ui, sans-serif;
+      font-size: 44px;
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -0.04em;
       color: #f8fafc;
       white-space: nowrap;
     }
@@ -428,26 +474,26 @@
     }
 
     .lc-team-name {
-      min-height: 98px;
+      min-height: 118px;
       padding-right: 6px;
-      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
+      font-family: "Bebas Neue", "Oswald", system-ui, sans-serif;
       font-size: var(--team-title-size);
-      font-weight: 700;
-      line-height: 0.95;
-      letter-spacing: 0.025em;
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
       color: #f8fafc;
       text-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
       word-break: keep-all;
       overflow-wrap: normal;
       hyphens: none;
-      overflow: hidden;
     }
 
     .lc-team-name span {
       display: block;
       max-width: 100%;
       white-space: nowrap;
+      text-wrap: balance;
       word-break: keep-all;
       overflow-wrap: normal;
       hyphens: none;
@@ -467,8 +513,8 @@
     }
 
     .lc-player {
-      min-height: 76px;
-      padding: 16px 16px;
+      min-height: 82px;
+      padding: 18px 16px;
       border-radius: 18px;
       border: 1px solid var(--row-border);
       background: var(--row-bg);
@@ -483,19 +529,18 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+      padding: 2px 0;
     }
 
     .lc-player-primary {
       display: block;
       min-width: 0;
       max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
       font-size: 19px;
       font-weight: 900;
-      line-height: 1.12;
+      line-height: 1.38;
       letter-spacing: -0.02em;
       color: #f8fafc;
     }
@@ -504,12 +549,10 @@
       display: block;
       min-width: 0;
       max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
       font-size: 13px;
       font-weight: 800;
-      line-height: 1.1;
+      line-height: 1.34;
       color: rgba(226,232,240,0.70);
     }
 
@@ -567,11 +610,11 @@
     }
 
     .lc-gk-title {
-      font-family: "Bebas Neue", "Oswald", "Anton", sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      line-height: 0.95;
-      letter-spacing: 0.06em;
+      font-family: "Bebas Neue", "Oswald", system-ui, sans-serif;
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1.02;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
       color: #f8fafc;
     }
@@ -590,8 +633,8 @@
     }
 
     .lc-gk-row {
-      min-height: 72px;
-      padding: 16px;
+      min-height: 82px;
+      padding: 18px 16px;
       border-radius: 18px;
       border: 1px solid rgba(255,255,255,0.075);
       background: rgba(255,255,255,0.028);
@@ -617,11 +660,25 @@
       text-transform: uppercase;
       color: rgba(226,232,240,0.42);
     }
+
+    body.exporting .lc-card,
+    body.exporting .lc-team,
+    body.exporting .lc-goalkeepers,
+    body.exporting .lc-date-card,
+    body.exporting .lc-player,
+    body.exporting .lc-gk-row {
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.20);
+    }
+
+    body.exporting .lc-watermark {
+      opacity: 0.055;
+      filter: none;
+    }
   </style>
 </head>
-<body>
+<body class="<%= isExporting ? 'exporting' : '' %>">
   <div class="lc-card">
-    <img src="<%= logoMarkUrl %>" alt="" class="lc-watermark" aria-hidden="true" />
+    <img src="<%= logoMarkSrc %>" alt="" class="lc-watermark" aria-hidden="true" />
 
     <div class="lc-inner">
       <header class="lc-header">
@@ -637,7 +694,7 @@
             <span class="lc-count"><%= teamCount %> times</span>
           </div>
           <span class="lc-logo-ring">
-            <img src="<%= logoIconUrl %>" alt="Horriver Plate" />
+            <img src="<%= logoIconSrc %>" alt="Horriver Plate" />
           </span>
         </aside>
       </header>

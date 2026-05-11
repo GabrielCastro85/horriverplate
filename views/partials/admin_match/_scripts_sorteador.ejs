@@ -940,6 +940,17 @@
     }
 
     if (imgBtn) {
+      const downloadBlob = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      };
+
       imgBtn.addEventListener("click", async () => {
         const original = imgBtn.textContent;
         imgBtn.textContent = "Gerando...";
@@ -990,7 +1001,7 @@
           const headers = { "Content-Type": "application/json" };
           if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
 
-          const res = await fetch("/share/lineup.png", {
+          const res = await fetch("/share/lineup.jpg", {
             method: "POST",
             headers,
             body: JSON.stringify({
@@ -998,6 +1009,7 @@
               goalkeepers: goalkeepersPayload,
               matchDate: matchDateLabel,
               matchDescription: matchDescription,
+              format: "story",
             }),
           });
 
@@ -1007,20 +1019,19 @@
           }
 
           const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "times-sorteio.png";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
+          if (!String(blob.type || "").includes("image/jpeg")) {
+            const message = await blob.text().catch(() => "");
+            throw new Error(message || `Resposta inesperada: ${blob.type || "sem tipo"}`);
+          }
+          if (!blob || !blob.size) throw new Error("Servidor retornou uma imagem vazia.");
+          downloadBlob(blob, "times-sorteio.jpg");
 
           if (shareStatus) shareStatus.textContent = "Imagem baixada.";
         } catch (err) {
           console.error(err);
-          if (shareStatus) shareStatus.textContent = "Erro ao gerar imagem.";
-          alert("Não foi possível gerar a imagem. Tente novamente.");
+          const message = err?.message || "Erro ao gerar imagem.";
+          if (shareStatus) shareStatus.textContent = message;
+          alert(`Não foi possível gerar a imagem. Tente novamente.\n\n${message}`);
         } finally {
           imgBtn.textContent = original;
           imgBtn.disabled = false;
@@ -1035,6 +1046,3 @@
   }
   })();
 </script>
-
-
-

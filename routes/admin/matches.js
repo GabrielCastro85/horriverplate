@@ -2,7 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const prisma = require("../../utils/db");
 const { computeMatchRatingsAndAwards } = require("../../utils/match_ratings");
-const { captureAwardsCardPng } = require("./reports");
+const { captureAwardsCardJpg } = require("./reports");
 const { recomputeTotalsForPlayers, updateAllPlayersOverallAfterMatch } = require("./shared");
 const { recalculateOverallForAllPlayers } = require("../../utils/ranking");
 const { ensureFinanceSettings } = require("../../services/financePage.service");
@@ -2166,7 +2166,7 @@ router.get("/matches/:id/awards/export", requireAdmin, async (req, res) => {
     });
     if (!match) return res.redirect("/admin");
 
-    const pngBuffer = await captureAwardsCardPng(matchId, req.cookies?.adminToken);
+    const jpgBuffer = await captureAwardsCardJpg(matchId, req.cookies?.adminToken);
     const dateLabel = new Date(match.playedAt)
       .toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
       .replace(/\//g, "-");
@@ -2177,12 +2177,12 @@ router.get("/matches/:id/awards/export", requireAdmin, async (req, res) => {
       .replace(/^-+|-+$/g, "")
       .toLowerCase();
 
-    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Type", "image/jpeg");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="resultado-votacao-${descLabel || "pelada"}-${dateLabel}.png"`
+      `attachment; filename="resultado-votacao-${descLabel || "pelada"}-${dateLabel}.jpg"`
     );
-    return res.end(pngBuffer);
+    return res.end(jpgBuffer);
   } catch (err) {
     console.error("Erro ao exportar imagem dos premios:", err);
     return res.status(500).send("Nao foi possivel gerar a imagem agora.");

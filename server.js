@@ -98,7 +98,7 @@ app.locals.thumbUrl = (url, width) => {
 // ==============================
 app.use(compression());
 app.use(helmet({
-  contentSecurityPolicy: false,       // CDNs externos (cropperjs, html2canvas, unpkg)
+  contentSecurityPolicy: false,       // CDNs externos usados em telas interativas (cropperjs, unpkg)
   crossOriginEmbedderPolicy: false,   // iframes e recursos cross-origin usados no site
 }));
 app.use(express.urlencoded({ extended: true }));
@@ -406,7 +406,6 @@ if (process.env.NODE_ENV === "production") {
     scheduleBackup({ reason: "auto" });
   }, 24 * 60 * 60 * 1000);
 }
-
 
 
 

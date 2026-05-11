@@ -1,0 +1,165 @@
+<%
+  const cleanBaseUrl = String(baseUrl || "").replace(/\/$/, "");
+  const esc = (value = "") => String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+  const safeTiers = Array.isArray(tiers) ? tiers : [];
+%>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=720" />
+  <title>Tierlist Horriver Plate</title>
+  <style>
+    <%- fontCss || "" %>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 720px;
+      min-height: 900px;
+      background: #050509;
+      color: #f8fafc;
+      font-family: "Manrope", system-ui, sans-serif;
+    }
+    .tl-card {
+      width: 720px;
+      min-height: 900px;
+      padding: 28px;
+      border-radius: 34px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% -8%, rgba(139, 19, 32, 0.42), transparent 34%),
+        radial-gradient(circle at 88% 10%, rgba(255, 122, 26, 0.12), transparent 28%),
+        linear-gradient(180deg, #260308 0%, #0b070d 48%, #050509 100%);
+      border: 1px solid rgba(255, 122, 26, 0.28);
+    }
+    .tl-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .tl-brand {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(255, 179, 106, 0.9);
+      margin-bottom: 18px;
+    }
+    .tl-title {
+      font-family: "Bebas Neue", system-ui, sans-serif;
+      font-size: 58px;
+      line-height: 0.95;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .tl-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 122, 26, 0.9);
+      object-fit: cover;
+    }
+    .tl-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tl-row {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      min-height: 76px;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0, 0, 0, 0.30);
+    }
+    .tl-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      color: #050509;
+      font-size: 26px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .tl-players {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: center;
+      padding: 12px;
+    }
+    .tl-player {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      max-width: 190px;
+      min-height: 34px;
+      padding: 5px 9px 5px 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: rgba(255,255,255,0.045);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .tl-player img {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      object-fit: cover;
+      background: #111827;
+    }
+    .tl-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      color: rgba(226, 232, 240, 0.45);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <main class="tl-card">
+    <header class="tl-header">
+      <div>
+        <div class="tl-brand">Horriver Plate</div>
+        <h1 class="tl-title"><%= esc(title || "Tierlist Horriver Plate") %></h1>
+      </div>
+      <img class="tl-logo" src="<%= logoUrl || `${cleanBaseUrl}/img/logo-128x128.svg` %>" alt="Horriver Plate" />
+    </header>
+
+    <section class="tl-rows">
+      <% safeTiers.forEach((tier) => { %>
+        <article class="tl-row">
+          <div class="tl-label" style="background:<%= esc(tier.color || "#f97316") %>"><%= esc(tier.label || "Tier") %></div>
+          <div class="tl-players">
+            <% (tier.players || []).forEach((player) => { %>
+              <div class="tl-player">
+                <img src="<%= esc(player.photoUrl || `${cleanBaseUrl}/img/logo-32x32.svg`) %>" alt="" />
+                <span><%= esc(player.name || "Jogador") %></span>
+              </div>
+            <% }); %>
+          </div>
+        </article>
+      <% }); %>
+    </section>
+
+    <footer class="tl-footer">
+      <span>horriverplate.onrender.com</span>
+      <span>@_hpfrc</span>
+    </footer>
+  </main>
+</body>
+</html>

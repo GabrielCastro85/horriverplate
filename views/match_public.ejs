@@ -906,83 +906,49 @@
     const buttons = Array.from(document.querySelectorAll('[data-export-target]'));
     if (!buttons.length) return;
 
-    const loadHtml2Canvas = () =>
-      new Promise((resolve, reject) => {
-        if (typeof html2canvas !== 'undefined') return resolve();
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-        s.onload = resolve;
-        s.onerror = () => reject(new Error('Falha ao carregar html2canvas'));
-        document.body.appendChild(s);
-      });
+    const matchId = <%= match.id %>;
 
-    const buildRoundedCanvas = (sourceCanvas, radius) => {
-      const output = document.createElement('canvas');
-      output.width = sourceCanvas.width;
-      output.height = sourceCanvas.height;
-      const ctx = output.getContext('2d');
-      if (!ctx) return sourceCanvas;
-
-      const width = output.width;
-      const height = output.height;
-      const r = Math.max(0, Math.min(radius, width / 2, height / 2));
-
-      ctx.clearRect(0, 0, width, height);
-      ctx.beginPath();
-      ctx.moveTo(r, 0);
-      ctx.lineTo(width - r, 0);
-      ctx.quadraticCurveTo(width, 0, width, r);
-      ctx.lineTo(width, height - r);
-      ctx.quadraticCurveTo(width, height, width - r, height);
-      ctx.lineTo(r, height);
-      ctx.quadraticCurveTo(0, height, 0, height - r);
-      ctx.lineTo(0, r);
-      ctx.quadraticCurveTo(0, 0, r, 0);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(sourceCanvas, 0, 0);
-
-      return output;
+    const downloadBlob = (blob, filename) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     };
 
-    const runExport = async (targetId, name) => {
-      const el = document.getElementById(targetId);
-      if (!el) return;
+    const runExport = async (targetId, name, button) => {
+      const type = targetId.includes('games') ? 'games' : 'standings';
+      const original = button?.textContent;
       try {
-        await loadHtml2Canvas();
-        document.body.classList.add('is-exporting');
-        el.classList.add('is-exporting');
-        await (document.fonts?.ready || Promise.resolve());
-
-        const exportHeight = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height || 0);
-        const canvas = await html2canvas(el, {
-          backgroundColor: null,
-          scale: 2,
-          height: exportHeight,
-          windowHeight: exportHeight,
-        });
-        const roundedCanvas = buildRoundedCanvas(canvas, 44);
-
-        const link = document.createElement('a');
-        link.download = `${name}.png`;
-        link.href = roundedCanvas.toDataURL('image/png');
-        link.click();
+        if (button) {
+          button.textContent = 'Gerando...';
+          button.disabled = true;
+        }
+        const res = await fetch(`/share/tournament.jpg?matchId=${matchId}&type=${type}`);
+        if (!res.ok) throw new Error(await res.text().catch(() => `Erro ${res.status}`));
+        const blob = await res.blob();
+        downloadBlob(blob, `${name}.jpg`);
       } catch (err) {
         console.error(err);
+        alert('Não foi possível gerar a imagem do torneio. Tente novamente.');
       } finally {
-        el.classList.remove('is-exporting');
-        document.body.classList.remove('is-exporting');
+        if (button) {
+          button.textContent = original;
+          button.disabled = false;
+        }
       }
     };
 
     buttons.forEach((btn) => {
       btn.addEventListener('click', () => {
-        runExport(btn.dataset.exportTarget, btn.dataset.exportName || 'tournament');
+        runExport(btn.dataset.exportTarget, btn.dataset.exportName || 'tournament', btn);
       });
     });
   })();
 </script>
-
 
 
 

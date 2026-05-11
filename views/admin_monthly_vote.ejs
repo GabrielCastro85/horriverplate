@@ -304,13 +304,13 @@
       btn.disabled = true;
       btn.textContent = "Gerando...";
       try {
-        const res = await fetch(`/share/monthly-craque.png?sessionId=${sessionId}`);
+        const res = await fetch(`/share/monthly-craque.jpg?sessionId=${sessionId}`);
         if (!res.ok) throw new Error(`Erro ${res.status}`);
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `craque-do-mes-<%= mvMonth %>-<%= mvYear %>.png`;
+        a.download = `craque-do-mes-<%= mvMonth %>-<%= mvYear %>.jpg`;
         document.body.appendChild(a);
         a.click();
         a.remove();

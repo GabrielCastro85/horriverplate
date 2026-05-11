@@ -212,13 +212,13 @@
       btn.textContent = "Gerando...";
       btn.disabled = true;
       try {
-        const res = await fetch(`/share/voting-result.png?matchId=${matchId}`);
+        const res = await fetch(`/share/voting-result.jpg?matchId=${matchId}`);
         if (!res.ok) throw new Error(`Erro ${res.status}`);
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `resultado-votacao-${matchId}.png`;
+        a.download = `resultado-votacao-${matchId}.jpg`;
         document.body.appendChild(a);
         a.click();
         a.remove();

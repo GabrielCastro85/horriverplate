@@ -453,112 +453,48 @@
     const buttons = Array.from(document.querySelectorAll("[data-export-target]"));
     if (!buttons.length) return;
 
-    const loadHtml2Canvas = () =>
-      new Promise((resolve, reject) => {
-        if (typeof html2canvas !== "undefined") return resolve();
-        const s = document.createElement("script");
-        s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-        s.onload = resolve;
-        s.onerror = () => reject(new Error("Falha ao carregar html2canvas"));
-        document.body.appendChild(s);
-      });
+    const matchId = <%= match.id %>;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
 
-    const buildRoundedCanvas = (sourceCanvas, radius) => {
-      const output = document.createElement("canvas");
-      output.width = sourceCanvas.width;
-      output.height = sourceCanvas.height;
-      const ctx = output.getContext("2d");
-      if (!ctx) return sourceCanvas;
-
-      const width = output.width;
-      const height = output.height;
-      const r = Math.max(0, Math.min(radius, width / 2, height / 2));
-
-      ctx.clearRect(0, 0, width, height);
-      ctx.beginPath();
-      ctx.moveTo(r, 0);
-      ctx.lineTo(width - r, 0);
-      ctx.quadraticCurveTo(width, 0, width, r);
-      ctx.lineTo(width, height - r);
-      ctx.quadraticCurveTo(width, height, width - r, height);
-      ctx.lineTo(r, height);
-      ctx.quadraticCurveTo(0, height, 0, height - r);
-      ctx.lineTo(0, r);
-      ctx.quadraticCurveTo(0, 0, r, 0);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(sourceCanvas, 0, 0);
-
-      return output;
+    const downloadBlob = (blob, filename) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     };
 
-    const downloadCanvas = (canvas, filename) =>
-      new Promise((resolve, reject) => {
-        if (!canvas.toBlob) {
-          reject(new Error("Canvas export is not supported."));
-          return;
-        }
-
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error("Could not generate image blob."));
-            return;
-          }
-
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.download = filename;
-          link.href = url;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          setTimeout(() => {
-            URL.revokeObjectURL(url);
-            resolve();
-          }, 1000);
-        }, "image/png");
-      });
-
-    const releaseCanvas = (canvas) => {
-      if (!canvas) return;
-      canvas.width = 0;
-      canvas.height = 0;
-    };
-
-    const runExport = async (targetId, name) => {
-      const el = document.getElementById(targetId);
-      if (!el) return;
-      let canvas = null;
-      let roundedCanvas = null;
+    const runExport = async (targetId, name, button) => {
+      const type = targetId.includes("games") ? "games" : "standings";
+      const original = button?.textContent;
       try {
-        await loadHtml2Canvas();
-        document.body.classList.add("is-exporting");
-        el.classList.add("is-exporting");
-        await (document.fonts?.ready || Promise.resolve());
-
-        const exportHeight = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height || 0);
-        canvas = await html2canvas(el, {
-          backgroundColor: null,
-          scale: Math.min(2, window.devicePixelRatio || 1.5),
-          height: exportHeight,
-          windowHeight: exportHeight,
-          imageTimeout: 15000,
-        });
-        roundedCanvas = buildRoundedCanvas(canvas, 44);
-        await downloadCanvas(roundedCanvas, `${name}.png`);
+        if (button) {
+          button.textContent = "Gerando...";
+          button.disabled = true;
+        }
+        const headers = {};
+        if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+        const res = await fetch(`/share/tournament.jpg?matchId=${matchId}&type=${type}&admin=1`, { headers });
+        if (!res.ok) throw new Error(await res.text().catch(() => `Erro ${res.status}`));
+        const blob = await res.blob();
+        downloadBlob(blob, `${name}.jpg`);
       } catch (err) {
         console.error(err);
+        alert("Não foi possível gerar a imagem do torneio. Tente novamente.");
       } finally {
-        releaseCanvas(roundedCanvas);
-        releaseCanvas(canvas);
-        el.classList.remove("is-exporting");
-        document.body.classList.remove("is-exporting");
+        if (button) {
+          button.textContent = original;
+          button.disabled = false;
+        }
       }
     };
 
     buttons.forEach((btn) => {
       btn.addEventListener("click", () => {
-        runExport(btn.dataset.exportTarget, btn.dataset.exportName || "tournament");
+        runExport(btn.dataset.exportTarget, btn.dataset.exportName || "tournament", btn);
       });
     });
   });
@@ -595,13 +531,13 @@
       btn.textContent = 'Gerando...';
       btn.disabled = true;
       try {
-        const res = await fetch('/share/voting-result.png?matchId=' + matchId);
+        const res = await fetch('/share/voting-result.jpg?matchId=' + matchId);
         if (!res.ok) throw new Error('Erro ' + res.status);
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'resultado-votacao-' + matchId + '.png';
+        a.download = 'resultado-votacao-' + matchId + '.jpg';
         document.body.appendChild(a);
         a.click();
         a.remove();

@@ -344,7 +344,7 @@
     </button>
   </div>
 
-  <!-- O card que será capturado pelo html2canvas -->
+  <!-- Preview do card; o download final é renderizado no servidor via Puppeteer. -->
   <div class="player-export-preview-frame" id="playerExportPreviewFrame">
     <div id="player-export-card" class="mx-auto" style="width:400px;">
       <%- include('partials/player_export_card', { c: {
@@ -426,20 +426,20 @@
           btnPng.disabled = true;
 
           try {
-            const res = await fetch(`/share/player-card-test.png?playerId=${playerId}`);
+            const res = await fetch(`/share/player-card-test.jpg?playerId=${playerId}`);
             if (!res.ok) throw new Error(`Erro ${res.status}`);
             const blob = await res.blob();
             const url  = URL.createObjectURL(blob);
             const a    = document.createElement("a");
             a.href     = url;
-            a.download = `player-card-${playerId}.png`;
+            a.download = `player-card-${playerId}.jpg`;
             document.body.appendChild(a);
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
           } catch (err) {
-            console.error("[export] Falha ao gerar PNG:", err);
-            alert("Não foi possível gerar o PNG. Tente novamente.");
+            console.error("[export] Falha ao gerar JPG:", err);
+            alert("Não foi possível gerar o JPG. Tente novamente.");
           } finally {
             btnPng.textContent = original;
             btnPng.disabled = false;
@@ -454,13 +454,13 @@
           btnDl.textContent = "Gerando...";
           btnDl.disabled = true;
           try {
-            const res = await fetch(`/share/player-card-test.png?playerId=${playerId}`);
+            const res = await fetch(`/share/player-card-test.jpg?playerId=${playerId}`);
             if (!res.ok) throw new Error(`Erro ${res.status}`);
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `player-card-${playerId}.png`;
+            a.download = `player-card-${playerId}.jpg`;
             document.body.appendChild(a);
             a.click();
             a.remove();
