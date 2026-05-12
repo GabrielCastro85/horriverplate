@@ -1,7 +1,7 @@
 <%
-  const introChipLabel = typeof sectionChipLabel === "string" ? sectionChipLabel : "";
-  const introTitle = typeof sectionTitle === "string" ? sectionTitle : "";
-  const introDescription = typeof sectionDescription === "string" ? sectionDescription : "";
+  const introChipLabel = typeof sectionChipLabel === "string" ? sectionChipLabel: "";
+  const introTitle = typeof sectionTitle === "string" ? sectionTitle: "";
+  const introDescription = typeof sectionDescription === "string" ? sectionDescription: "";
   const introBadges = Array.isArray(sectionBadges) ? sectionBadges.filter(Boolean) : [];
   const introChipTone = typeof sectionChipTone === "string" ? sectionChipTone : "";
   const introChipClass = introChipTone === "accent" ? "finance-chip finance-chip--accent" : "finance-chip";

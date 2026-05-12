@@ -2,24 +2,24 @@
   const fmtDateTimeBR = (d) =>
     d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour12: false }) : "-";
   const monthlyVoteStatusClass = monthlyVoteClosed ? "status-danger" : "status-info";
-  const monthlyVoteStatusLabel = monthlyVoteClosed ? "Votacao encerrada" : "Votacao ativa";
+  const monthlyVoteStatusLabel = monthlyVoteClosed ? "Votação encerrada" : "Votação ativa";
 %>
 
 <section class="space-y-4">
   <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
     <div>
       <p class="text-xs text-horriver-gray uppercase tracking-[0.2em]">Painel</p>
-      <h1 class="font-title text-2xl text-horriver-light">Votacao do mes</h1>
-      <p class="text-sm text-horriver-gray">Top 6 (minimo 2 peladas no mes) e links para votar.</p>
+      <h1 class="font-title text-2xl text-horriver-light">Votação do mês</h1>
+      <p class="text-sm text-horriver-gray">Top 6 (minimo 2 peladas no mês) e links para votar.</p>
     </div>
     <div class="flex w-full md:w-auto flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
       <% if (monthlyVoteSession) { %>
-        <form action="/admin/monthly-vote/<%= monthlyVoteSession.id %>/close" method="POST" onsubmit="return confirm('Encerrar a votacao do mes agora? Os links nao vao mais funcionar.');">
+        <form action="/admin/monthly-vote/<%= monthlyVoteSession.id %>/close" method="POST" onsubmit="return confirm('Encerrar a votação do mês agora? Os links não vão mais funcionar.');">
           <button
             type="submit"
             class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-red-600/80 text-white text-xs font-semibold hover:bg-red-500 transition"
           >
-            Encerrar votacao
+            Encerrar votação
           </button>
         </form>
       <% } %>
@@ -34,11 +34,11 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
-      <h3 class="font-semibold text-lg text-horriver-light">Gerar votacao</h3>
-      <form action="/admin/monthly-vote-session" method="POST" class="space-y-3" data-toast="Votacao do mes gerada.">
+      <h3 class="font-semibold text-lg text-horriver-light">Gerar votação</h3>
+      <form action="/admin/monthly-vote-session" method="POST" class="space-y-3" data-toast="Votacao do mês gerada.">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
-            Mes
+            Mês
             <select name="month" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
               <% (monthNames || []).forEach((name, idx) => { const val = idx + 1; %>
                 <option value="<%= val %>" <%= mvMonth === val ? "selected" : "" %>><%= name %></option>
@@ -58,16 +58,16 @@
         <% if (monthlyVoteError) { %>
           <p class="text-xs text-red-400">
             <% if (monthlyVoteError === 'noVoters') { %>
-              Nenhum jogador presente no mes para votar.
+              Nenhum jogador presente no mês para votar.
             <% } else if (monthlyVoteError === 'noCandidates') { %>
-              Nenhum candidato com pelo menos 2 peladas no mes.
+              Nenhum candidato com pelo menos 2 peladas no mês.
             <% } else { %>
-              Erro ao gerar votacao. Tente novamente.
+              Erro ao gerar votação. Tente novamente.
             <% } %>
           </p>
         <% } %>
         <% if (monthlyVoteCreated) { %>
-          <p class="text-xs text-emerald-400">Votacao gerada com sucesso.</p>
+          <p class="text-xs text-emerald-400">Votação gerada com sucesso.</p>
         <% } %>
         <button
           type="submit"
@@ -80,7 +80,7 @@
 
     <div class="lg:col-span-2 bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <h3 class="font-semibold text-lg text-horriver-light">Candidatos do mes</h3>
+        <h3 class="font-semibold text-lg text-horriver-light">Candidatos do mês</h3>
         <% if (monthlyVoteSession) { %>
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-[11px] text-horriver-gray">
@@ -154,7 +154,7 @@
                     </div>
                     <div class="rounded-lg border border-horriver-border/50 bg-black/40 px-2 py-2 text-center">
                       <p class="text-horriver-orange font-semibold"><%= String(c.avgRating).replace('.', ',') %></p>
-                      <p class="text-horriver-gray">Media</p>
+                      <p class="text-horriver-gray">Média</p>
                     </div>
                   </div>
                 </div>
@@ -166,7 +166,7 @@
 
       <% if (monthlyVoteTokens && monthlyVoteTokens.length) { %>
         <div class="pt-2 border-t border-horriver-border/60">
-          <h4 class="text-sm text-horriver-light font-semibold mb-2">Links de votacao</h4>
+          <h4 class="text-sm text-horriver-light font-semibold mb-2">Links de votação</h4>
           <div class="overflow-x-auto text-[11px] pb-1">
             <table class="min-w-[520px] border-collapse">
               <thead>
@@ -211,7 +211,7 @@
                       </td>
                       <td class="py-2 pr-3 whitespace-nowrap">
                         <span class="status-chip <%= t.usedAt ? 'status-ok' : 'status-pending' %>">
-                          <%= t.usedAt ? "Sim" : "Nao" %>
+                          <%= t.usedAt ? "Sim" : "Não" %>
                         </span>
                       </td>
                   </tr>
@@ -228,9 +228,9 @@
     <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <h3 class="font-semibold text-lg text-horriver-light">Votos registrados</h3>
-        <form action="/admin/monthly-vote/<%= monthlyVoteSession.id %>/delete" method="POST" onsubmit="return confirm('Excluir esta votacao e todos os votos?');">
+        <form action="/admin/monthly-vote/<%= monthlyVoteSession.id %>/delete" method="POST" onsubmit="return confirm('Excluir está votação e todos os votos?');">
           <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-full bg-red-600/80 text-white text-xs font-semibold hover:bg-red-500 transition">
-            Excluir votacao
+            Excluir votação
           </button>
         </form>
       </div>
@@ -267,7 +267,7 @@
   <section class="mt-6 bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <h3 class="font-semibold text-lg text-horriver-light">Vencedores registrados</h3>
-      <span class="text-[11px] text-horriver-gray">Apos encerrar a votacao</span>
+      <span class="text-[11px] text-horriver-gray">Apos encerrar a votação</span>
     </div>
     <% if (!winnersHistory || !winnersHistory.length) { %>
       <p class="text-sm text-horriver-gray">Nenhum vencedor registrado ainda.</p>
@@ -295,7 +295,7 @@
 
     btn.addEventListener("click", async () => {
       if (!isMonthlyClosed) {
-        alert("Encerre a votacao antes de exportar o card do vencedor. Clique em 'Encerrar votacao' e tente novamente.");
+        alert("Encerre a votação antes de exportar o card do vencedor. Clique em 'Encerrar votação' e tente novamente.");
         return;
       }
       if (!sessionId) return;
@@ -317,7 +317,7 @@
         URL.revokeObjectURL(url);
       } catch (err) {
         console.error("[export] Falha:", err);
-        alert("Nao foi possivel gerar a imagem. Tente novamente.");
+        alert("Não foi possível gerar a imagem. Tente novamente.");
       } finally {
         btn.textContent = original;
         btn.disabled = false;

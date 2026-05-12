@@ -60,17 +60,17 @@
           { label: monthReferenceLabel, accent: true },
           { label: `${monthFees.length} registro(s)` },
           { label: `${summary.activeFinancePlayers} elegiveis` },
-          competenceResetActive ? { label: "Competencia resetada", accent: true } : null,
+          competenceResetActive ? { label: "Competência resetada", accent: true } : null,
         ],
-        sectionTitle: "Controle do mes em uma leitura so",
+        sectionTitle: "Controle do mês em uma leitura so",
         sectionDescription: competenceResetActive
-          ? "A competencia foi zerada e agora esta pronta para um novo ciclo. Garanta o mes quando quiser recriar a base de cobranca."
-          : "Use esta tela para acompanhar o fechamento da competencia, filtrar a lista operacional e editar cada mensalidade sem sair do fluxo do mes.",
+          ? "A competência foi zerada e agora está pronta para um novo ciclo. Garanta o mês quando quiser recriar a base de cobrança."
+          : "Use está tela para acompanhar o fechamento da competência, filtrar a lista operacional e editar cada mensalidade sem sair do fluxo do mês.",
       }) %>
 
       <div class="finance-monthly-hero__progress">
         <div class="finance-monthly-hero__progress-head">
-          <span>Recebimento da competencia</span>
+          <span>Recebimento da competência</span>
           <strong><%= Math.round(summary.receivedPercentage || 0) %>%</strong>
         </div>
         <div class="finance-progress"><span style="width:<%= Math.min(summary.receivedPercentage || 0, 100) %>%"></span></div>
@@ -98,10 +98,10 @@
 
     <aside class="finance-module-aside-card finance-monthly-hero__action">
       <div class="space-y-3">
-        <div class="finance-kicker">Fechamento do mes</div>
-        <div class="text-2xl font-semibold text-horriver-light">Competencia <%= automation.competenceState?.label || "ativa" %></div>
+        <div class="finance-kicker">Fechamento do mês</div>
+        <div class="text-2xl font-semibold text-horriver-light">Competência <%= automation.competenceState?.label || "ativa" %></div>
         <p class="finance-subtle">
-          Garanta a competencia quando precisar preparar ou revisar a base do mes. O processo continua idempotente e nunca duplica mensalidades.
+          Garanta a competência quando precisar preparar ou revisar a base do mês. O processo continua idempotente e nunca duplica mensalidades.
         </p>
       </div>
 
@@ -129,12 +129,12 @@
           href="<%= buildFinanceQuery({ tab: 'monthly', openDialog: 'competence-plans' }) %>#finance-fees"
           class="finance-cta w-full text-center"
           data-dialog-open="competence-plans"
-        ><%= automation.preparation.prepared ? "Garantir competencia do mes" : "Gerar mensalidades do mes" %></a>
+        ><%= automation.preparation.prepared ? "Garantir competência do mês" : "Gerar mensalidades do mês" %></a>
         <p class="finance-subtle">
           <% if (competenceResetActive) { %>
-            Como o mes foi resetado, este botao recria a base de cobranca usando as regras atuais dos jogadores.
+            Como o mês foi resetado, este botao recria a base de cobrança usando as regras atuais dos jogadores.
           <% } else { %>
-            A janela deixa voce definir quem entra como mensalista, quem fica no avulso do mes e quem sai isento antes de gerar o que falta.
+            A janela deixa você definir quem entra como mensalista, quem fica no avulso do mês e quem sai isento antes de gerar o que falta.
           <% } %>
         </p>
       </div>
@@ -145,12 +145,12 @@
     <article class="finance-module-mini-card finance-module-mini-card--accent">
       <span class="finance-kicker">Previsto</span>
       <strong><%= formatCurrencyBR(summary.totalPredicted) %></strong>
-      <span class="finance-subtle">Base total esperada na competencia.</span>
+      <span class="finance-subtle">Base total esperada na competência.</span>
     </article>
     <article class="finance-module-mini-card">
       <span class="finance-kicker">Recebido</span>
       <strong><%= formatCurrencyBR(summary.totalReceivedFromFees) %></strong>
-      <span class="finance-subtle">Valor pago nas mensalidades do mes.</span>
+      <span class="finance-subtle">Valor pago nas mensalidades do mês.</span>
     </article>
     <article class="finance-module-mini-card finance-module-mini-card--warning">
       <span class="finance-kicker">Saldo pendente</span>
@@ -166,10 +166,10 @@
 
   <% if (!automation.preparation.prepared) { %>
     <div class="finance-priority-alert finance-priority-alert--warning">
-      <div class="finance-priority-alert__title">Competencia ainda nao preparada por completo.</div>
+      <div class="finance-priority-alert__title">Competência ainda não preparada por completo.</div>
       <div class="finance-priority-alert__text">
         Faltam <strong><%= automation.preparation.missingCount %></strong> mensalidade(s) para os jogadores elegiveis deste recorte.
-        Se quiser, abra a selecao do mes e defina quem entra como mensalista, avulso ou isento antes de gerar o que falta.
+        Se quiser, abra a selecao do mês e defina quem entra como mensalista, avulso ou isento antes de gerar o que falta.
       </div>
       <div class="flex flex-wrap gap-2">
         <a
@@ -188,8 +188,8 @@
       detailSectionId: "finance-fees",
       detailKicker: selectedFee ? "Edicao da mensalidade" : "Painel do participante",
       detailTitleEmpty: "Selecione uma linha da lista",
-      detailSelectedCopy: "Revise o valor do mes, registre pagamento parcial ou total e acompanhe o historico recente do participante sem sair desta aba.",
-      detailEmptyCopy: "A lista acima concentra o mes inteiro. Clique em um jogador para abrir aqui a cobranca, o pagamento e as acoes de manutencao daquela mensalidade."
+      detailSelectedCopy: "Revise o valor do mês, registre pagamento parcial ou total e acompanhe o histórico recente do participante sem sair desta aba.",
+      detailEmptyCopy: "A lista acima concentra o mês inteiro. Clique em um jogador para abrir aqui a cobrança, o pagamento e as ações de manutencao daquela mensalidade."
     }) %>
   </div>
 
@@ -198,16 +198,16 @@
     <div class="finance-dialog__panel finance-dialog__panel--wide" role="dialog" aria-modal="true" aria-labelledby="finance-competence-dialog-title">
       <div class="finance-dialog__head">
         <div class="space-y-2">
-          <span class="finance-chip finance-chip--accent">Geracao guiada da competencia</span>
+          <span class="finance-chip finance-chip--accent">Geração guiada da competência</span>
           <h3 id="finance-competence-dialog-title" class="text-2xl font-semibold text-horriver-light">
             Escolha o plano de cada jogador em <%= monthReferenceLabel %>
           </h3>
           <p class="finance-subtle">
-            Todo jogador desta lista entra no mes. O padrao da janela e <strong>Avulso do mes</strong>: marque como
-            <strong>Mensalista</strong> quem fechou o plano mensal e use <strong>Isento</strong> apenas para quem nao vai pagar.
+            Todo jogador desta lista entra no mês. O padrão da janela e <strong>Avulso do mês</strong>: marque como
+            <strong>Mensalista</strong> quem fechou o plano mensal e use <strong>Isento</strong> apenas para quem não vai pagar.
           </p>
         </div>
-        <button type="button" class="finance-dialog__close" data-dialog-close aria-label="Fechar selecao da competencia">&times;</button>
+        <button type="button" class="finance-dialog__close" data-dialog-close aria-label="Fechar selecao da competência">&times;</button>
       </div>
 
       <form method="POST" action="/admin/finance/monthly/ensure" class="finance-competence-dialog" data-competence-plan-form>
@@ -220,7 +220,7 @@
             <input
               type="search"
               class="finance-input"
-              placeholder="Nome, apelido ou posicao"
+              placeholder="Nome, apelido ou posição"
               data-competence-search
             >
           </label>
@@ -231,7 +231,7 @@
               <strong data-competence-count="MONTHLY">0</strong>
             </div>
             <div class="finance-dashboard-mini-stat finance-dashboard-mini-stat--compact">
-              <span>Avulsos do mes</span>
+              <span>Avulsos do mês</span>
               <strong data-competence-count="PER_MATCH">0</strong>
             </div>
             <div class="finance-dashboard-mini-stat finance-dashboard-mini-stat--compact">
@@ -245,7 +245,7 @@
           <button type="button" class="finance-soft-button" data-set-competence-plan="MONTHLY">Marcar todos mensalistas</button>
           <button type="button" class="finance-soft-button" data-set-competence-plan="PER_MATCH">Deixar todos avulsos</button>
           <span class="finance-subtle">
-            Jogadores ja gerados neste mes ficam travados aqui para nao baguncar a competencia atual.
+            Jogadores ja gerados neste mês ficam travados aqui para não baguncar a competência atual.
           </span>
         </div>
 
@@ -255,10 +255,10 @@
               const rowSearch = `${player.name || ""} ${player.nickname || ""} ${player.position || ""}`.toLowerCase();
               const lockedMeta = player.existingFee
                 ? player.selectedPlan === "EXEMPT"
-                  ? "Ja entrou como isento nesta competencia."
+                  ? "Já entrou como isento nesta competência."
                   : player.selectedPlan === "PER_MATCH"
-                    ? "Ja entrou como avulso neste mes."
-                    : "Ja entrou como mensalista nesta competencia."
+                    ? "Já entrou como avulso neste mês."
+                    : "Ja entrou como mensalista nesta competência."
                 : "";
             %>
             <article
@@ -275,7 +275,7 @@
                         <span>"<%= player.nickname %>"</span>
                       <% } %>
                       <span><%= player.position %></span>
-                      <span>Padrao: <%= player.defaultRuleLabel %></span>
+                      <span>Padrão: <%= player.defaultRuleLabel %></span>
                     </div>
                   </div>
 
@@ -288,9 +288,9 @@
 
                 <p class="finance-subtle">
                   <% if (player.isLocked) { %>
-                    <%= lockedMeta %> Voce pode alterar o plano; a mensalidade sera recalculada.
+                    <%= lockedMeta %> Você pode alterar o plano; a mensalidade sera recalculada.
                   <% } else { %>
-                    Se nao mexer nesta linha, o jogador entra automaticamente como avulso do mes.
+                    Se não mexer nesta linha, o jogador entra automaticamente como avulso do mês.
                   <% } %>
                 </p>
               </div>
@@ -306,7 +306,7 @@
                   >
                   <span>
                     <strong>Mensalista</strong>
-                    <small><%= player.monthlyAmountLabel %> no mes</small>
+                    <small><%= player.monthlyAmountLabel %> no mês</small>
                   </span>
                 </label>
 
@@ -319,7 +319,7 @@
                     <%= player.selectedPlan === "PER_MATCH" ? "checked" : "" %>
                   >
                   <span>
-                    <strong>Avulso do mes</strong>
+                    <strong>Avulso do mês</strong>
                     <small><%= perMatchAmountLabel %> por pelada</small>
                   </span>
                 </label>
@@ -334,7 +334,7 @@
                   >
                   <span>
                     <strong>Isento</strong>
-                    <small>Sem cobranca no mes</small>
+                    <small>Sem cobrança no mês</small>
                   </span>
                 </label>
               </fieldset>
@@ -344,7 +344,7 @@
 
         <div class="finance-dialog__footer">
           <button type="button" class="finance-soft-button" data-dialog-close>Cancelar</button>
-          <button type="submit" class="finance-cta">Gerar competencia com esta selecao</button>
+          <button type="submit" class="finance-cta">Gerar competência com esta seleção</button>
         </div>
       </form>
     </div>

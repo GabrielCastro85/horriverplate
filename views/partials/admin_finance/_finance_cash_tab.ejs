@@ -30,11 +30,11 @@
         sectionChipLabel: "Caixa",
         sectionChipTone: "accent",
         sectionBadges: [
-          { label: `${monthTransactions.length} lancamento(s)` },
+          { label: `${monthTransactions.length} lançamento(s)` },
           { label: `${formatCurrencyBR(summary.totalReceivedMonth)} em entradas` },
-          { label: `${formatCurrencyBR(summary.totalExpensesMonth)} em saidas` },
+          { label: `${formatCurrencyBR(summary.totalExpensesMonth)} em saídas` },
         ],
-        sectionTitle: "Extrato do periodo",
+        sectionTitle: "Extrato do período",
         sectionDescription: "A leitura do caixa agora abre com contexto, resumo curto e o extrato como protagonista, enquanto o formulario manual fica ao lado como ferramenta de apoio.",
       }) %>
     </article>
@@ -42,9 +42,9 @@
     <form method="GET" action="/admin/finance" class="finance-module-aside-card">
       <div class="space-y-3">
         <div class="finance-kicker">Filtro do extrato</div>
-        <div class="text-2xl font-semibold text-horriver-light">Movimentacoes do recorte</div>
+        <div class="text-2xl font-semibold text-horriver-light">Movimentações do recorte</div>
         <p class="finance-subtle">
-          Filtre rapidamente o extrato por entradas ou saídas sem sair da competencia atual.
+          Filtre rapidamente o extrato por entradas ou saídas sem sair da competência atual.
         </p>
       </div>
 
@@ -54,18 +54,18 @@
           <strong><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong>
         </div>
         <div class="finance-dashboard-mini-stat">
-          <span>Saidas</span>
+          <span>Saídas</span>
           <strong><%= formatCurrencyBR(summary.totalExpensesMonth) %></strong>
         </div>
       </div>
 
       <div class="space-y-3">
         <%- stateFields({ tab: 'cash' }, { omit: ["cashType"] }) %>
-        <label class="finance-label">Tipo de movimentacao
+        <label class="finance-label">Tipo de movimentação
           <select name="cashType" class="finance-select">
             <option value="ALL" <%= filters.cashType === "ALL" ? "selected" : "" %>>Todas</option>
             <option value="INCOME" <%= filters.cashType === "INCOME" ? "selected" : "" %>>Entradas</option>
-            <option value="EXPENSE" <%= filters.cashType === "EXPENSE" ? "selected" : "" %>>Saidas</option>
+            <option value="EXPENSE" <%= filters.cashType === "EXPENSE" ? "selected" : "" %>>Saídas</option>
           </select>
         </label>
         <div class="flex flex-wrap gap-2">
@@ -80,12 +80,12 @@
     <article class="finance-module-mini-card">
       <span class="finance-kicker">Caixa atual</span>
       <strong><%= formatCurrencyBR(summary.cashBalance) %></strong>
-      <span class="finance-subtle">Saldo consolidado do modulo.</span>
+      <span class="finance-subtle">Saldo consolidado do módulo.</span>
     </article>
     <article class="finance-module-mini-card">
-      <span class="finance-kicker">Resultado do mes</span>
+      <span class="finance-kicker">Resultado do mês</span>
       <strong><%= formatCurrencyBR(summary.currentMonthNet) %></strong>
-      <span class="finance-subtle">Entradas menos saidas no periodo.</span>
+      <span class="finance-subtle">Entradas menos saídas no período.</span>
     </article>
     <article class="finance-module-mini-card finance-module-mini-card--accent">
       <span class="finance-kicker">Entradas automaticas</span>
@@ -93,7 +93,7 @@
       <span class="finance-subtle">Mensalidades e convidados alimentando o caixa.</span>
     </article>
     <article class="finance-module-mini-card">
-      <span class="finance-kicker">Lancamentos</span>
+      <span class="finance-kicker">Lançamentos</span>
       <strong><%= monthTransactions.length %></strong>
       <span class="finance-subtle">Registros visiveis no recorte.</span>
     </article>
@@ -103,16 +103,16 @@
     <div class="finance-panel p-5 space-y-4">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <div class="finance-kicker">Lancamento manual</div>
-          <h3 class="font-title text-xl text-horriver-light"><%= selectedTransaction ? 'Editar lancamento manual' : 'Novo lancamento manual' %></h3>
-          <p class="finance-subtle">Use esta area para entradas extras e saidas operacionais, como quadra, bola, bebida ou acertos fora da mensalidade.</p>
+          <div class="finance-kicker">Lançamento manual</div>
+          <h3 class="font-title text-xl text-horriver-light"><%= selectedTransaction ? 'Editar lancamento manual' : 'Novo lançamento manual' %></h3>
+          <p class="finance-subtle">Use esta área para entradas extras e saídas operacionais, como quadra, bola, bebida ou acertos fora da mensalidade.</p>
         </div>
         <% if (selectedTransaction) { %><a href="<%= buildFinanceQuery({ tab: 'cash' }) %>#finance-cash" class="finance-chip">Novo</a><% } %>
       </div>
 
       <% if (selectedTransaction && !selectedTransactionIsManual) { %>
         <%- include("./_finance_empty_state", {
-          emptyStateMessage: "Esse lancamento foi gerado automaticamente por uma mensalidade ou convidado. Para alterar, edite o registro na origem correspondente.",
+          emptyStateMessage: "Esse lançamento foi gerado automaticamente por uma mensalidade ou convidado. Para alterar, edite o registro na origem correspondente.",
         }) %>
       <% } else { %>
         <form method="POST" action="<%= selectedTransaction ? `/admin/finance/cash-transactions/${selectedTransaction.id}/update` : '/admin/finance/cash-transactions' %>" class="grid grid-cols-1 gap-3" data-finance-category-form>
@@ -130,21 +130,21 @@
           <label class="finance-label">Valor<input type="text" name="amount" value="<%= selectedTransaction ? decimalToNumber(selectedTransaction.amount).toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="0,00"></label>
           <label class="finance-label">Data<input type="date" name="date" value="<%= selectedTransaction ? formatDateInput(selectedTransaction.date) : currentDateInputValue %>" class="finance-input"></label>
           <label class="finance-label">Descricao<input type="text" name="description" value="<%= selectedTransaction?.description || '' %>" class="finance-input" placeholder="Ex.: Quadra de abril"></label>
-          <label class="finance-label">Observacao<textarea name="note" class="finance-textarea" placeholder="Opcional: detalhe util para auditoria futura."><%= selectedTransaction?.note || '' %></textarea></label>
+          <label class="finance-label">Observação<textarea name="note" class="finance-textarea" placeholder="Opcional: detalhe util para auditoria futura."><%= selectedTransaction?.note || '' %></textarea></label>
           <div class="flex items-center justify-between gap-3">
             <% if (selectedTransaction) { %>
               <button
                 type="submit"
                 form="delete-cash-<%= selectedTransaction.id %>"
                 class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
-                data-confirm="Excluir este lancamento manual do extrato?"
+                data-confirm="Excluir este lançamento manual do extrato?"
               >
-                Excluir lancamento
+                Excluir lançamento
               </button>
             <% } else { %>
-              <span class="finance-subtle">Mensalidades e convidados ja alimentam o caixa automaticamente; aqui entram apenas lancamentos extras.</span>
+              <span class="finance-subtle">Mensalidades e convidados ja alimentam o caixa automaticamente; aqui entram apenas lançamentos extras.</span>
             <% } %>
-            <button type="submit" class="finance-cta"><%= selectedTransaction ? 'Salvar alteracoes' : 'Registrar lancamento' %></button>
+            <button type="submit" class="finance-cta"><%= selectedTransaction ? 'Salvar alterações' : 'Registrar lançamento' %></button>
           </div>
         </form>
         <% if (selectedTransaction) { %><form id="delete-cash-<%= selectedTransaction.id %>" method="POST" action="/admin/finance/cash-transactions/<%= selectedTransaction.id %>/delete" class="hidden"><%- stateFields({ tab: 'cash' }) %></form><% } %>
@@ -155,10 +155,10 @@
       <div class="finance-panel-section-head">
         <div class="finance-panel-section-head__copy">
           <div class="finance-kicker">Extrato financeiro</div>
-          <h3 class="font-title text-xl text-horriver-light mt-2">Leitura completa do periodo</h3>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Leitura completa do período</h3>
         </div>
         <div class="finance-panel-section-head__actions">
-          <span class="finance-chip"><%= filters.cashType === "ALL" ? "Tudo" : filters.cashType === "INCOME" ? "Entradas" : "Saidas" %></span>
+          <span class="finance-chip"><%= filters.cashType === "ALL" ? "Tudo" : filters.cashType === "INCOME" ? "Entradas" : "Saídas" %></span>
           <span class="finance-chip"><%= monthTransactions.length %> linha(s)</span>
         </div>
       </div>
@@ -183,14 +183,14 @@
                 <th>Descricao</th>
                 <th>Origem</th>
                 <th class="finance-table__numeric--header">Valor</th>
-                <th class="finance-table__numeric--header">Acoes</th>
+                <th class="finance-table__numeric--header">Ações</th>
               </tr>
             </thead>
             <tbody>
               <% monthTransactions.forEach((transaction) => { %>
                 <tr>
                   <td class="finance-table__date"><%= formatDateBR(transaction.date) %></td>
-                  <td class="finance-table__status"><span class="finance-status <%= transaction.type === 'INCOME' ? 'finance-status--ok' : 'finance-status--warning' %>"><%= transaction.type === 'INCOME' ? 'Entrada' : 'Saida' %></span></td>
+                  <td class="finance-table__status"><span class="finance-status <%= transaction.type === 'INCOME' ? 'finance-status--ok' : 'finance-status--warning' %>"><%= transaction.type === 'INCOME' ? 'Entrada' : 'Saída' %></span></td>
                   <td class="finance-table__cell"><span class="finance-table__subtitle"><%= getTransactionCategoryLabel(transaction.category) %></span></td>
                   <td class="finance-table__cell">
                     <div class="finance-table__stack">
@@ -208,7 +208,7 @@
                           type="submit"
                           form="delete-cash-row-<%= transaction.id %>"
                           class="finance-soft-button text-xs text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
-                          data-confirm="Excluir este lancamento do extrato?"
+                          data-confirm="Excluir este lançamento do extrato?"
                         >
                           Excluir
                         </button>
@@ -230,7 +230,7 @@
         </div>
       <% } else { %>
         <%- include("./_finance_empty_state", {
-          emptyStateMessage: "Nenhum lancamento foi encontrado para esse recorte. Assim que houver pagamentos, convidados ou despesas, o extrato aparece aqui.",
+          emptyStateMessage: "Nenhum lançamento foi encontrado para esse recorte. Assim que houver pagamentos, convidados ou despesas, o extrato aparece aqui.",
         }) %>
       <% } %>
     </div>

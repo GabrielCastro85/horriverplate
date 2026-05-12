@@ -45,14 +45,14 @@
           Todas as peladas
         </h1>
         <p class="max-w-2xl text-sm md:text-base leading-relaxed text-horriver-gray/82">
-          Consulte o historico das peladas com visual de arquivo esportivo: datas, resultados, estatisticas e contexto de cada noite.
+          Consulte o histórico das peladas com visual de arquivo esportivo: datas, resultados, estatísticas e contexto de cada noite.
         </p>
       </div>
 
       <div class="flex flex-wrap gap-2 xl:justify-end xl:self-start">
         <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= safeMatches.length %></strong> peladas</span>
         <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= selYear === "all" ? "geral" : selYear %></strong> ano</span>
-        <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= currentMonthLabel %></strong> mes</span>
+        <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= currentMonthLabel %></strong> mês</span>
       </div>
     </div>
 
@@ -64,7 +64,7 @@
       <div class="page-section__inner">
         <div class="page-toolbar text-[11px] md:text-xs">
           <div class="flex flex-wrap gap-2">
-            <span class="<%= accentPillClass %>">Filtro rapido</span>
+            <span class="<%= accentPillClass %>">Filtro rápido</span>
           </div>
           <div class="flex flex-wrap items-end gap-3">
             <div class="min-w-[130px]">
@@ -84,7 +84,7 @@
             </div>
 
             <div class="min-w-[150px]">
-              <label for="month" class="block text-horriver-gray/80 mb-1">Mes</label>
+              <label for="month" class="block text-horriver-gray/80 mb-1">Mês</label>
               <select
                 id="month"
                 name="month"
@@ -109,7 +109,7 @@
       <span class="<%= emptyEyebrowClass %>">Sem resultado</span>
       <h2 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Nenhuma pelada encontrada nesse filtro</h2>
       <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
-        Tente trocar o ano ou mes para abrir mais resultados. Quando novas peladas forem registradas, elas vao aparecer aqui automaticamente.
+        Tente trocar o ano ou mês para abrir mais resultados. Quando novas peladas forem registradas, elas vão aparecer aqui automaticamente.
       </p>
     </div>
   <% } else { %>
@@ -118,7 +118,7 @@
         <div class="section-heading">
           <div>
             <h2 class="font-title text-2xl text-horriver-light">Arquivo de peladas</h2>
-            <p class="section-heading__meta">Um panorama limpo e cronologico para navegar pelo historico do Horriver Plate.</p>
+            <p class="section-heading__meta">Um panorama limpo e cronologico para navegar pelo histórico do Horriver Plate.</p>
           </div>
           <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= archiveLabel %></strong></span>
         </div>
@@ -147,10 +147,10 @@
                   <div class="space-y-1.5 text-sm text-horriver-gray/86">
                     <p>
                       <span class="text-horriver-light/78 font-medium">Time vencedor:</span>
-                      <%= m.winnerTeam || "Ainda nao definido" %>
+                      <%= m.winnerTeam || "Ainda não definido" %>
                     </p>
                     <p>
-                      <span class="text-horriver-light/78 font-medium">Estatisticas:</span>
+                      <span class="text-horriver-light/78 font-medium">Estatísticas:</span>
                       <span class="text-horriver-orange font-semibold"><%= m._count?.stats || 0 %></span>
                       registros computados
                     </p>
@@ -162,7 +162,7 @@
                     href="/matches/<%= m.id %>"
                     class="inline-flex items-center gap-2 rounded-full bg-horriver-orange px-4 py-2 text-sm font-semibold text-black hover:bg-orange-500 transition"
                   >
-                    Ver estatisticas
+                    Ver estatísticas
                     <span class="text-[13px]">-></span>
                   </a>
                   <span class="text-[11px] uppercase tracking-[0.14em] text-horriver-gray/62">Pelada registrada</span>

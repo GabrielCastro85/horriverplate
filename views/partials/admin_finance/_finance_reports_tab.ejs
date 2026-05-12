@@ -20,7 +20,7 @@
   <section class="finance-module-top">
     <article class="finance-panel p-5 md:p-6 finance-module-top__lead">
       <%- include("./_finance_section_intro", {
-        sectionChipLabel: "Relatorios",
+        sectionChipLabel: "Relatórios",
         sectionChipTone: "accent",
         sectionStatusBadgeMeta: automation.competenceState,
         sectionBadges: [
@@ -28,8 +28,8 @@
           { label: reports.period.label },
           { label: `${reports.executiveSummary.paidPercentageLabel} de adimplencia` },
         ],
-        sectionTitle: "Central avancada de prestacao de contas",
-        sectionDescription: "A prestacao de contas agora abre com cara de area premium: contexto forte, exportacoes claras e leitura executiva antes de chegar no PDF.",
+        sectionTitle: "Central avancada de prestação de contas",
+        sectionDescription: "A prestação de contas agora abre com cara de área premium: contexto forte, exportações claras e leitura executiva antes de chegar no PDF.",
       }) %>
     </article>
 
@@ -38,13 +38,13 @@
         <div class="finance-kicker">Recorte ativo</div>
         <div class="text-2xl font-semibold text-horriver-light"><%= reports.period.label %></div>
         <p class="finance-subtle">
-          Altere o tipo e o escopo sem perder visibilidade do resumo e das exportacoes principais.
+          Altere o tipo e o escopo sem perder visibilidade do resumo e das exportações principais.
         </p>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
         <div class="finance-dashboard-mini-stat">
-          <span>Relatorio</span>
+          <span>Relatório</span>
           <strong><%= reports.reportMeta.label %></strong>
         </div>
         <div class="finance-dashboard-mini-stat">
@@ -54,7 +54,7 @@
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir previa</a>
+        <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir prévia</a>
         <a href="<%= activeExportOption.href %>" target="_blank" rel="noopener" class="finance-cta">Gerar PDF</a>
         <a href="/admin/finance/reports/csv?month=<%= filters.month %>&year=<%= filters.year %>" class="finance-soft-button">Exportar CSV</a>
       </div>
@@ -65,12 +65,12 @@
     <article class="finance-module-mini-card">
       <span class="finance-kicker">Arrecadado</span>
       <strong><%= reports.executiveSummary.totalIncomeLabel %></strong>
-      <span class="finance-subtle">Entradas do periodo selecionado.</span>
+      <span class="finance-subtle">Entradas do período selecionado.</span>
     </article>
     <article class="finance-module-mini-card">
       <span class="finance-kicker">Despesas</span>
       <strong><%= reports.executiveSummary.totalExpensesLabel %></strong>
-      <span class="finance-subtle">Saidas registradas no caixa.</span>
+      <span class="finance-subtle">Saídas registradas no caixa.</span>
     </article>
     <article class="finance-module-mini-card finance-module-mini-card--accent">
       <span class="finance-kicker">Saldo final</span>
@@ -78,7 +78,7 @@
       <span class="finance-subtle">Resultado consolidado do recorte.</span>
     </article>
     <article class="finance-module-mini-card">
-      <span class="finance-kicker">Pendencias</span>
+      <span class="finance-kicker">Pendências</span>
       <strong><%= reports.executiveSummary.totalPendingLabel %></strong>
       <span class="finance-subtle"><%= reports.executiveSummary.pendingCount %> participante(s) em aberto.</span>
     </article>
@@ -93,7 +93,7 @@
     <article class="finance-module-mini-card">
       <span class="finance-kicker">Avulsos</span>
       <strong><%= reports.executiveSummary.participantMix.perMatchCount %></strong>
-      <span class="finance-subtle"><%= reports.executiveSummary.participantMix.perMatchIncomeLabel %> recebido por presenca.</span>
+      <span class="finance-subtle"><%= reports.executiveSummary.participantMix.perMatchIncomeLabel %> recebido por presença.</span>
     </article>
     <article class="finance-module-mini-card">
       <span class="finance-kicker">Convidados</span>
@@ -106,7 +106,7 @@
     <form method="GET" action="/admin/finance" class="finance-card p-4 space-y-4">
       <%- stateFields({ tab: "reports" }, { omit: ["reportType", "reportScope", "reportStart", "reportEnd"] }) %>
       <div class="finance-filter-bar finance-filter-bar--report-advanced">
-        <label class="finance-label">Tipo de relatorio
+        <label class="finance-label">Tipo de relatório
           <select name="reportType" class="finance-select">
             <% reportTypeOptions.forEach((option) => { %>
               <option value="<%= option.value %>" <%= filters.reportType === option.value ? "selected" : "" %>><%= option.label %></option>
@@ -127,7 +127,7 @@
           <input type="date" name="reportEnd" value="<%= filters.reportEnd || '' %>" class="finance-input" />
         </label>
         <div class="flex flex-wrap gap-2">
-          <button type="submit" class="finance-cta">Atualizar relatorio</button>
+          <button type="submit" class="finance-cta">Atualizar relatório</button>
           <a href="<%= buildFinanceQuery({ tab: 'reports', reportType: 'FULL', reportScope: 'MONTHLY', reportStart: '', reportEnd: '' }) %>#finance-reports" class="finance-soft-button">Resetar</a>
         </div>
       </div>
@@ -139,10 +139,10 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div class="finance-kicker">Resumo executivo</div>
-          <h3 class="font-title text-2xl text-horriver-light mt-2">Panorama do periodo</h3>
+          <h3 class="font-title text-2xl text-horriver-light mt-2">Panorama do período</h3>
         </div>
         <div class="flex flex-wrap gap-2">
-          <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir previa</a>
+          <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir prévia</a>
           <a href="<%= activeExportOption.href %>" target="_blank" rel="noopener" class="finance-cta">Gerar PDF atual</a>
         </div>
       </div>
@@ -151,22 +151,22 @@
         <div class="finance-kpi-card">
           <span class="finance-kpi-card__label">Arrecadado</span>
           <strong class="finance-kpi-card__value finance-balance--ok"><%= reports.executiveSummary.totalIncomeLabel %></strong>
-          <p class="finance-kpi-card__text">Entradas do periodo, incluindo mensalidades, convidados e outros creditos.</p>
+          <p class="finance-kpi-card__text">Entradas do período, incluindo mensalidades, convidados e outros creditos.</p>
         </div>
         <div class="finance-kpi-card">
           <span class="finance-kpi-card__label">Despesas</span>
           <strong class="finance-kpi-card__value text-[#fecaca]"><%= reports.executiveSummary.totalExpensesLabel %></strong>
-          <p class="finance-kpi-card__text">Saidas registradas no caixa dentro do recorte escolhido.</p>
+          <p class="finance-kpi-card__text">Saídas registradas no caixa dentro do recorte escolhido.</p>
         </div>
         <div class="finance-kpi-card finance-kpi-card--accent">
           <span class="finance-kpi-card__label">Saldo final</span>
           <strong class="finance-kpi-card__value <%= reports.executiveSummary.netResult >= 0 ? 'text-horriver-orange' : 'text-[#fecaca]' %>"><%= reports.executiveSummary.netResultLabel %></strong>
-          <p class="finance-kpi-card__text">Resultado financeiro do periodo considerando entradas e saidas.</p>
+          <p class="finance-kpi-card__text">Resultado financeiro do período considerando entradas e saídas.</p>
         </div>
         <div class="finance-kpi-card">
           <span class="finance-kpi-card__label">Pendente</span>
           <strong class="finance-kpi-card__value text-horriver-orange"><%= reports.executiveSummary.totalPendingLabel %></strong>
-          <p class="finance-kpi-card__text">Saldo em aberto das mensalidades dentro do periodo.</p>
+          <p class="finance-kpi-card__text">Saldo em aberto das mensalidades dentro do período.</p>
         </div>
         <div class="finance-kpi-card">
           <span class="finance-kpi-card__label">Adimplencia</span>
@@ -220,7 +220,7 @@
 
         <div class="finance-card p-4 space-y-4">
           <div>
-            <div class="finance-kicker">Insights automaticos</div>
+            <div class="finance-kicker">Insights automáticos</div>
             <h4 class="font-semibold text-horriver-light mt-2">Leituras do sistema</h4>
           </div>
           <div class="finance-insight-list">
@@ -234,11 +234,11 @@
           <div class="finance-inline-stats">
             <div class="finance-inline-stat">
               <span class="finance-inline-stat__label">Principal gasto</span>
-              <span class="finance-inline-stat__value"><%= reports.executiveSummary.mainExpenseCategory ? reports.executiveSummary.mainExpenseCategory.label : '-' %></span>
+              <span class="finance-inline-stat__value"><%= reports.executiveSummary.mainExpenseCategory ? reports.executiveSummary.mainExpenseCategory.label: '-' %></span>
             </div>
             <% if (reports.comparison) { %>
               <div class="finance-inline-stat">
-                <span class="finance-inline-stat__label">Comparacao com <%= reports.comparison.periodLabel %></span>
+                <span class="finance-inline-stat__label">Comparação com <%= reports.comparison.periodLabel %></span>
                 <span class="finance-inline-stat__value <%= reports.comparison.deltaNet >= 0 ? 'finance-balance--ok' : 'text-[#fecaca]' %>">
                   <%= reports.comparison.deltaNet >= 0 ? '+' : '-' %><%= reports.comparison.deltaNetLabel %>
                 </span>
@@ -254,8 +254,8 @@
     <div class="finance-panel p-5 md:p-6 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div class="finance-kicker">Exportacoes</div>
-          <h3 class="font-title text-2xl text-horriver-light mt-2">Tipos de relatorio</h3>
+          <div class="finance-kicker">Exportações</div>
+          <h3 class="font-title text-2xl text-horriver-light mt-2">Tipos de relatório</h3>
         </div>
       </div>
       <div class="finance-export-grid">
@@ -267,7 +267,7 @@
               <div class="finance-subtle"><%= option.description %></div>
             </div>
             <div class="flex flex-wrap gap-2">
-              <a href="<%= option.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button text-xs">Previa</a>
+              <a href="<%= option.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button text-xs">Prévia</a>
               <a href="<%= option.href %>" target="_blank" rel="noopener" class="finance-cta text-xs">PDF</a>
             </div>
           </article>
@@ -278,8 +278,8 @@
     <div class="finance-panel p-5 md:p-6 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div class="finance-kicker">Historico</div>
-          <h3 class="font-title text-2xl text-horriver-light mt-2">Ultimos relatorios gerados</h3>
+          <div class="finance-kicker">Histórico</div>
+          <h3 class="font-title text-2xl text-horriver-light mt-2">Últimos relatórios gerados</h3>
         </div>
       </div>
 
@@ -300,7 +300,7 @@
         </div>
       <% } else { %>
         <%- include("./_finance_empty_state", {
-          emptyStateMessage: "Nenhum relatorio financeiro foi gerado ainda. Assim que voce exportar o primeiro PDF, o historico aparece aqui.",
+          emptyStateMessage: "Nenhum relatório financeiro foi gerado ainda. Assim que você exportar o primeiro PDF, o histórico aparece aqui.",
         }) %>
       <% } %>
     </div>
@@ -309,9 +309,9 @@
   <section class="finance-panel p-5 md:p-6 space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <div class="finance-kicker">Previa do relatorio</div>
+        <div class="finance-kicker">Prévia do relatório</div>
         <h3 class="font-title text-2xl text-horriver-light mt-2">Antes de exportar</h3>
-        <p class="finance-subtle">Esta area antecipa os blocos principais que vao para o PDF do tipo selecionado.</p>
+        <p class="finance-subtle">Esta área antecipa os blocos principais que vão para o PDF do tipo selecionado.</p>
       </div>
       <a href="<%= activeExportOption.previewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Abrir pagina de impressao</a>
     </div>
@@ -348,7 +348,7 @@
             </div>
           <% } else { %>
             <%- include("./_finance_empty_state", {
-              emptyStateMessage: "Nenhum registro de mensalidade para exibir nesta previa.",
+              emptyStateMessage: "Nenhum registro de mensalidade para exibir nesta prévia.",
             }) %>
           <% } %>
         </div>
@@ -417,7 +417,7 @@
             </div>
           <% } else { %>
             <%- include("./_finance_empty_state", {
-              emptyStateMessage: "Nao houve movimentacoes de caixa neste recorte.",
+              emptyStateMessage: "Não houve movimentações de caixa neste recorte.",
             }) %>
           <% } %>
         </div>
@@ -436,7 +436,7 @@
           </div>
         <% } else { %>
           <%- include("./_finance_empty_state", {
-            emptyStateMessage: "Sem despesas no periodo para compor a distribuicao.",
+            emptyStateMessage: "Sem despesas no período para compor a distribuicao.",
           }) %>
         <% } %>
       </div>

@@ -515,7 +515,7 @@
 
         <div class="hero-meta">
           <article class="meta-card">
-            <div class="meta-label">Competencia / periodo</div>
+            <div class="meta-label">Competência / período</div>
             <div class="meta-value"><%= period.label %></div>
           </article>
           <article class="meta-card">
@@ -523,7 +523,7 @@
             <div class="meta-value"><%= generatedAt %></div>
           </article>
           <article class="meta-card">
-            <div class="meta-label">Tipo de relatorio</div>
+            <div class="meta-label">Tipo de relatório</div>
             <div class="meta-value"><%= report.label %></div>
           </article>
           <article class="meta-card">
@@ -538,17 +538,17 @@
       <article class="summary-card">
         <div class="summary-card__label">Total arrecadado</div>
         <div class="summary-card__value summary-card__value--ok"><%= executiveSummary.totalIncomeLabel %></div>
-        <div class="summary-card__sub">Entradas totais do periodo.</div>
+        <div class="summary-card__sub">Entradas totais do período.</div>
       </article>
       <article class="summary-card">
         <div class="summary-card__label">Total gasto</div>
         <div class="summary-card__value summary-card__value--danger"><%= executiveSummary.totalExpensesLabel %></div>
-        <div class="summary-card__sub">Saidas registradas no caixa.</div>
+        <div class="summary-card__sub">Saídas registradas no caixa.</div>
       </article>
       <article class="summary-card summary-card--accent">
         <div class="summary-card__label">Saldo final</div>
         <div class="summary-card__value summary-card__value--accent"><%= executiveSummary.netResultLabel %></div>
-        <div class="summary-card__sub">Resultado do periodo.</div>
+        <div class="summary-card__sub">Resultado do período.</div>
       </article>
       <article class="summary-card">
         <div class="summary-card__label">Total pendente</div>
@@ -568,7 +568,7 @@
       <article class="summary-card">
         <div class="summary-card__label">Convidados</div>
         <div class="summary-card__value"><%= executiveSummary.guestCount %></div>
-        <div class="summary-card__sub"><%= executiveSummary.guestIncomeLabel %> no periodo.</div>
+        <div class="summary-card__sub"><%= executiveSummary.guestIncomeLabel %> no período.</div>
       </article>
       <article class="summary-card">
         <div class="summary-card__label">Adimplencia</div>
@@ -582,7 +582,7 @@
         <div class="section-header">
           <div>
             <div class="section-kicker">Resumo executivo</div>
-            <div class="section-title">Narrativa do periodo</div>
+            <div class="section-title">Narrativa do período</div>
           </div>
           <div class="section-copy"><%= narratives.detailed %></div>
         </div>
@@ -603,7 +603,7 @@
         <div class="section-header">
           <div>
             <div class="section-kicker">Distribuicao de gastos</div>
-            <div class="section-title">Categorias que puxaram as saidas</div>
+            <div class="section-title">Categorias que puxaram as saídas</div>
           </div>
           <div class="section-copy">
             <% if (executiveSummary.mainExpenseCategory) { %>
@@ -611,7 +611,7 @@
               com <%= executiveSummary.mainExpenseCategory.amountLabel %> e
               <%= executiveSummary.mainExpenseCategory.percentageLabel %> das despesas.
             <% } else { %>
-              Nao houve despesas neste recorte.
+              Não houve despesas neste recorte.
             <% } %>
           </div>
         </div>
@@ -624,7 +624,7 @@
                 <span class="distribution-card__value"><%= item.amountLabel %></span>
               </div>
               <div class="progress"><span style="width:<%= Math.max(item.percentage, 4) %>%"></span></div>
-              <div class="insight-card__text"><%= item.percentageLabel %> do total de despesas do periodo.</div>
+              <div class="insight-card__text"><%= item.percentageLabel %> do total de despesas do período.</div>
             </article>
           <% }) %>
         </div>
@@ -644,7 +644,7 @@
         <div class="ranking-grid">
           <article class="ranking-card">
             <div class="ranking-head">
-              <div class="ranking-title">Maiores contribuintes do periodo</div>
+              <div class="ranking-title">Maiores contribuintes do período</div>
               <div class="ranking-sub">Jogadores com maior valor efetivamente pago dentro do recorte.</div>
             </div>
             <div class="ranking-list">
@@ -662,7 +662,7 @@
               <% } else { %>
                 <div class="ranking-item">
                   <div></div>
-                  <div class="muted">Sem pagamentos registrados no periodo.</div>
+                  <div class="muted">Sem pagamentos registrados no período.</div>
                   <div></div>
                 </div>
               <% } %>
@@ -671,8 +671,8 @@
 
           <article class="ranking-card">
             <div class="ranking-head">
-              <div class="ranking-title">Pendencias em acompanhamento</div>
-              <div class="ranking-sub">Casos que pedem atencao por saldo em aberto ou mais de uma competencia pendente.</div>
+              <div class="ranking-title">Pendências em acompanhamento</div>
+              <div class="ranking-sub">Casos que pedem atencao por saldo em aberto ou mais de uma competência pendente.</div>
             </div>
             <div class="ranking-list">
               <% if (rankings.followUpRanking.length) { %>
@@ -681,7 +681,7 @@
                     <div class="ranking-item__index"><%= index + 1 %></div>
                     <div>
                       <div class="player"><%= item.playerName %></div>
-                      <span class="subline"><%= item.pendingCompetences %> competencia(s) em acompanhamento</span>
+                      <span class="subline"><%= item.pendingCompetences %> competência(s) em acompanhamento</span>
                     </div>
                     <div class="ranking-item__value"><%= item.totalBalanceLabel %></div>
                   </div>
@@ -689,7 +689,7 @@
               <% } else { %>
                 <div class="ranking-item">
                   <div></div>
-                  <div class="muted">Nao ha pendencias em aberto neste recorte.</div>
+                  <div class="muted">Não ha pendências em aberto neste recorte.</div>
                   <div></div>
                 </div>
               <% } %>
@@ -706,18 +706,18 @@
             <div class="section-kicker">Consolidado anual</div>
             <div class="section-title">Distribuicao mensal do ano</div>
           </div>
-          <div class="section-copy">Tabela preparada para comparacao rapida entre os meses do ano selecionado.</div>
+          <div class="section-copy">Tabela preparada para comparação rapida entre os mêses do ano selecionado.</div>
         </div>
 
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Mes</th>
+                <th>Mês</th>
                 <th class="align-right">Mensalidades</th>
                 <th class="align-right">Convidados</th>
                 <th class="align-right">Despesas</th>
-                <th class="align-right">Pendencias</th>
+                <th class="align-right">Pendências</th>
                 <th class="align-right">Saldo</th>
               </tr>
             </thead>
@@ -743,9 +743,9 @@
         <div class="section-header">
           <div>
             <div class="section-kicker">Mensalidades</div>
-            <div class="section-title">Tabela de cobrancas do periodo</div>
+            <div class="section-title">Tabela de cobranças do período</div>
           </div>
-          <div class="section-copy">Status, plano de cobranca, valores e vencimentos das mensalidades abrangidas pelo relatorio.</div>
+          <div class="section-copy">Status, plano de cobrança, valores e vencimentos das mensalidades abrangidas pelo relatório.</div>
         </div>
 
         <div class="table-wrap">
@@ -796,9 +796,9 @@
         <div class="section-header">
           <div>
             <div class="section-kicker">Convidados</div>
-            <div class="section-title">Entradas avulsas do periodo</div>
+            <div class="section-title">Entradas avulsas do período</div>
           </div>
-          <div class="section-copy">Convidados registrados e sua integracao com o caixa.</div>
+          <div class="section-copy">Convidados registrados e sua integração com o caixa.</div>
         </div>
 
         <div class="table-wrap">
@@ -808,7 +808,7 @@
                 <th style="width: 22%;">Nome</th>
                 <th style="width: 12%;">Data</th>
                 <th class="align-right" style="width: 12%;">Valor</th>
-                <th style="width: 24%;">Observacao</th>
+                <th style="width: 24%;">Observação</th>
                 <th style="width: 16%;">Pelada</th>
                 <th style="width: 14%;">Origem no caixa</th>
               </tr>
@@ -835,9 +835,9 @@
         <div class="section-header">
           <div>
             <div class="section-kicker">Extrato detalhado</div>
-            <div class="section-title">Livro-caixa do periodo</div>
+            <div class="section-title">Livro-caixa do período</div>
           </div>
-          <div class="section-copy">Cada linha mostra categoria, origem, valor e saldo acumulado apos o lancamento.</div>
+          <div class="section-copy">Cada linha mostra categoria, origem, valor e saldo acumulado apos o lançamento.</div>
         </div>
 
         <div class="table-wrap">
@@ -876,7 +876,7 @@
 
     <footer class="footer">
       <span>Horriver Plate</span>
-      <span>Gerado automaticamente pelo modulo financeiro</span>
+      <span>Gerado automaticamente pelo módulo financeiro</span>
       <span><%= generatedAt %></span>
     </footer>
   </main>

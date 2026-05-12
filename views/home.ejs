@@ -3,8 +3,7 @@
   const weeklyCraqueName = weekly && weekly.craque && weekly.craque.name ? weekly.craque.name : "Aguardando destaque";
   const weeklyMatchLabel =
     weekly && weekly.craqueMatch && weekly.craqueMatch.description
-      ? weekly.craqueMatch.description
-      : "Semana atual";
+      ? weekly.craqueMatch.description: "Semana atual";
   const weeklyTeamName = weekly && weekly.teamName ? weekly.teamName : "Time vencedor em breve";
   const weeklyPeriod =
     weekly && weekly.week && weekly.year
@@ -20,12 +19,12 @@
       <div class="space-y-5">
         <span class="hero-badge text-horriver-gray">
           <span class="hero-icon">HP</span>
-          Publicacao oficial da resenha
+          Publicação oficial da resenha
         </span>
 
         <div class="space-y-3">
           <h1 class="font-title text-4xl md:text-6xl leading-none text-horriver-light">
-            Pelada, estatisticas e resenha com cara de clube
+            Pelada, estatísticas e resenha com cara de clube
           </h1>
           <p class="max-w-2xl text-sm md:text-base leading-relaxed text-horriver-gray/85">
             O Horriver Plate organiza os jogos de terça, registra os números da turma e transforma a pelada em um produto esportivo com identidade própria.
@@ -60,7 +59,7 @@
           <div class="section-heading">
             <div>
               <h2 class="font-title text-2xl text-horriver-light">Radar da semana</h2>
-              <p class="section-heading__meta">O que esta puxando a narrativa da rodada agora.</p>
+              <p class="section-heading__meta">O que está puxando a narrativa da rodada agora.</p>
             </div>
             <span class="toolbar-pill"><strong><%= weeklyPeriod %></strong></span>
           </div>
@@ -95,7 +94,7 @@
       <article class="quick-stat">
         <span class="quick-stat__label">Ritmo da casa</span>
         <strong class="quick-stat__value">Toda terça</strong>
-        <span class="quick-stat__sub">Futebol raiz, estatisticas e resenha</span>
+        <span class="quick-stat__sub">Futebol raiz, estatísticas e resenha</span>
       </article>
       <article class="quick-stat">
         <span class="quick-stat__label">Canal oficial</span>
@@ -110,7 +109,7 @@
       <div class="section-heading">
         <div>
           <h2 class="font-title text-2xl text-horriver-light">Top 10 artilheiros</h2>
-          <p class="section-heading__meta">Recorte rapido dos nomes que mais balancam a rede.</p>
+          <p class="section-heading__meta">Recorte rápido dos nomes que mais balancam a rede.</p>
         </div>
         <a
           href="/rankings?tipo=artilheiros"
@@ -126,7 +125,7 @@
             <tr>
               <th class="text-left px-4 py-3">#</th>
               <th class="text-left px-4 py-3">Jogador</th>
-              <th class="text-left px-4 py-3">Posicao</th>
+              <th class="text-left px-4 py-3">Posição</th>
               <th class="text-left px-4 py-3">Gols</th>
             </tr>
           </thead>
@@ -159,7 +158,7 @@
         <div class="section-heading">
           <div>
             <h2 class="font-title text-2xl text-horriver-light">Explore o site</h2>
-            <p class="section-heading__meta">Atalhos para as areas que mais puxam o dia a dia da pelada.</p>
+            <p class="section-heading__meta">Atalhos para as áreas que mais puxam o dia a dia da pelada.</p>
           </div>
         </div>
 
@@ -167,7 +166,7 @@
           <a href="/peladas" class="card-unified p-4 space-y-3">
             <span class="hero-badge text-horriver-gray">
               <span class="hero-icon">PL</span>
-              Historico
+              Histórico
             </span>
             <div>
               <h3 class="font-title text-2xl text-horriver-light">Peladas</h3>
@@ -182,7 +181,7 @@
             </span>
             <div>
               <h3 class="font-title text-2xl text-horriver-light">Rankings</h3>
-              <p class="mt-2 text-sm leading-relaxed text-horriver-gray/85">Veja artilharia, assistencias, media e overall em um so lugar.</p>
+              <p class="mt-2 text-sm leading-relaxed text-horriver-gray/85">Veja artilharia, assistências, média e overall em um só lugar.</p>
             </div>
           </a>
 
@@ -206,7 +205,7 @@
           <img src="/img/logo.png" alt="Horriver Plate" class="h-16 w-16 rounded-2xl border border-horriver-border bg-black/25 p-2 object-contain" />
           <div>
             <h2 class="font-title text-2xl text-horriver-light">Sobre o projeto</h2>
-            <p class="text-sm text-horriver-gray/85">Uma pelada organizada com identidade, memoria e publicacao propria.</p>
+            <p class="text-sm text-horriver-gray/85">Uma pelada organizada com identidade, memoria e publicação propria.</p>
           </div>
         </div>
 

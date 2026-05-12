@@ -53,7 +53,7 @@ async function loadMonthlyVoteContext(tokenValue) {
     : [];
 
   if (!candidates.length) {
-    return { error: "Nenhum candidato disponível para esta votação." };
+    return { error: "Nenhum candidato disponível para está votação." };
   }
 
   const monthLabel = token.session

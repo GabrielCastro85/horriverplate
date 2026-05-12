@@ -395,7 +395,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
       height: 900,
       type: "jpeg",
       quality: 88,
-      logPrefix: "[share:craque-mes]",
+      logPrefix: "[share:craque-mês]",
     });
 
     writeCache(cacheKeyCraque, buf);
@@ -524,8 +524,9 @@ async function generateLineupJpeg(req, res) {
         selector: ".lc-card",
         width: viewport.width,
         height: viewport.height,
+        deviceScaleFactor: 2,
         type: "jpeg",
-        quality: 88,
+        quality: 92,
         logPrefix: "[share:lineup]",
         scaleToWidth: viewport.width,
       });
@@ -533,7 +534,7 @@ async function generateLineupJpeg(req, res) {
       console.log(`[share:lineup] done ${viewport.format} in ${Date.now() - t0}ms`);
       return sendJpeg(res, buf, "times-sorteio.jpg");
     } catch (err) {
-      console.error("[share:lineup] error:", err);
+      console.error("[share:lineup] error: ", err);
       if (!res.headersSent) {
         const detail = process.env.NODE_ENV === "production" ? "" : ` (${err.message})`;
         return res.status(500).send(`Não foi possível gerar a imagem dos times. Tente novamente.${detail}`);
@@ -582,7 +583,7 @@ router.get("/tournament.jpg", async (req, res) => {
 
     return sendJpeg(res, buffer, `tournament-${type}.jpg`);
   } catch (err) {
-    console.error(`[share:tournament:${type}] error:`, err);
+    console.error(`[share:tournament:${type}] error: `, err);
     return res.status(500).send("Não foi possível gerar a imagem do torneio agora.");
   }
 });
@@ -615,7 +616,7 @@ router.post("/tierlist.jpg", async (req, res) => {
 
     return sendJpeg(res, buffer, "tierlist-horriver.jpg");
   } catch (err) {
-    console.error("[share:tierlist] error:", err);
+    console.error("[share:tierlist] error: ", err);
     return res.status(500).send("Não foi possível gerar a imagem da tierlist agora.");
   }
 });

@@ -13,7 +13,7 @@
         String(currentPath).startsWith("/admin/finance");
     %>
     <meta charset="UTF-8" />
-    <title><%= typeof title !== 'undefined' ? title : 'Home' %> | Horriver Plate</title>
+    <title><%= typeof title !== 'undefined' ? title: 'Home' %> | Horriver Plate</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,7 +21,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;600;700&display=swap"
       rel="stylesheet"
     />
-    <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Pelada, stats e resenha do Horriver Plate.' %>" />
+    <meta name="description" content="<%= typeof metaDescription !== 'undefined' ? metaDescription: 'Pelada, stats e resenha do Horriver Plate.' %>" />
     <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '' %>" />
 
     <!-- Favicon / Icones -->
@@ -52,7 +52,7 @@
     <meta property="og:title" content="<%= typeof ogTitle !== 'undefined' ? ogTitle : (typeof title !== 'undefined' ? `${title} | Horriver Plate` : 'Horriver Plate') %>" />
     <meta
       property="og:description"
-      content="<%= typeof metaDescription !== 'undefined' ? metaDescription : 'Pelada, stats e resenha do Horriver Plate.' %>"
+      content="<%= typeof metaDescription !== 'undefined' ? metaDescription: 'Pelada, stats e resenha do Horriver Plate.' %>"
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="<%= typeof metaUrl !== 'undefined' ? metaUrl : 'https://horriverplate.onrender.com/' %>" />
@@ -960,7 +960,7 @@
           class="relative mx-auto mt-2 w-[92%] max-w-sm max-h-[90vh] rounded-2xl overflow-hidden border border-horriver-border bg-horriver-dark shadow-card animate-slideDown flex flex-col"
         >
           <div class="p-3 border-b border-horriver-border/60 flex justify-between items-center">
-            <span class="font-title text-horriver-orange text-sm">Navegacao</span>
+            <span class="font-title text-horriver-orange text-sm">Navegação</span>
             <button
               id="mobileClose"
               class="w-8 h-8 inline-flex items-center justify-center rounded-full border border-horriver-orange/60 text-horriver-orange"
@@ -973,21 +973,21 @@
               <span class="mobile-menu-icon">IN</span>
               <span class="mobile-menu-copy">
                 <strong>Inicio</strong>
-                <span>Resumo, destaques e ultimas atualizacoes</span>
+                <span>Resumo, destaques e ultimas atualizações</span>
               </span>
             </a>
             <a href="/rankings" <%- currentPage==='rankings' ? 'aria-current="page"' : '' %> class="site-mobile-link">
               <span class="mobile-menu-icon">RK</span>
               <span class="mobile-menu-copy">
                 <strong>Rankings</strong>
-                <span>Gols, assistencias, media e desempenho</span>
+                <span>Gols, assistências, média e desempenho</span>
               </span>
             </a>
             <a href="/peladas" <%- currentPage==='peladas' ? 'aria-current="page"' : '' %> class="site-mobile-link">
               <span class="mobile-menu-icon">PJ</span>
               <span class="mobile-menu-copy">
                 <strong>Peladas</strong>
-                <span>Historico dos jogos e placares</span>
+                <span>Histórico dos jogos e placares</span>
               </span>
             </a>
 
@@ -1163,7 +1163,7 @@
       Topo
     </button>
 
-    <nav class="site-bottom-nav md:hidden" aria-label="Navegacao principal mobile">
+    <nav class="site-bottom-nav md:hidden" aria-label="Navegação principal mobile">
       <a href="/" <%- currentPage==='home' ? 'aria-current="page"' : '' %> class="bottom-nav-link">
         <span class="bottom-nav-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">

@@ -90,7 +90,7 @@
             const _ovrDelta = typeof ovrDelta !== 'undefined' ? ovrDelta : 0;
           %>
           <div class="flex flex-wrap gap-2 justify-center md:justify-start">
-            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= player.position || "Sem posicao" %></strong> posicao</span>
+            <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= player.position || "Sem posição" %></strong> posição</span>
             <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= Math.round(latestOverall || 0) %></strong> overall</span>
             <% if (_ovrTrend === 'up') { %>
               <span class="inline-flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1.5 text-[11px] leading-none text-green-400">
@@ -142,7 +142,7 @@
           <span class="text-[11px] uppercase tracking-[0.16em] text-horriver-gray/78">Radar do jogador</span>
           <h2 class="font-title text-2xl text-horriver-light">Fase atual</h2>
           <p class="text-sm leading-relaxed text-horriver-gray/84">
-            Um resumo rapido da presenca, producao e impacto recente de <span class="text-horriver-light font-semibold"><%= player.name %></span>.
+            Um resumo rápido da presença, producao e impacto recente de <span class="text-horriver-light font-semibold"><%= player.name %></span>.
           </p>
           <div class="flex flex-wrap gap-2">
             <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= totals.matches %></strong> jogos</span>
@@ -157,7 +157,7 @@
       <article class="quick-stat quick-stat--accent">
         <span class="quick-stat__label">Jogos</span>
         <strong class="quick-stat__value"><%= totals.matches %></strong>
-        <span class="quick-stat__sub text-horriver-light/90">presencas registradas</span>
+        <span class="quick-stat__sub text-horriver-light/90">presenças registradas</span>
       </article>
       <article class="quick-stat">
         <span class="quick-stat__label">Gols</span>
@@ -165,7 +165,7 @@
         <span class="quick-stat__sub">bolas na rede</span>
       </article>
       <article class="quick-stat">
-        <span class="quick-stat__label">Assistencias</span>
+        <span class="quick-stat__label">Assistências</span>
         <strong class="quick-stat__value"><%= totals.assists %></strong>
         <span class="quick-stat__sub">passes para gol</span>
       </article>
@@ -182,7 +182,7 @@
       <div class="<%= sectionHeadingClass %>">
         <div>
           <h2 class="font-title text-2xl text-horriver-light">Conquistas</h2>
-          <p class="<%= sectionMetaClass %>">Historico de desbloqueios e marcos do jogador.</p>
+          <p class="<%= sectionMetaClass %>">Histórico de desbloqueios e marcos do jogador.</p>
         </div>
         <span class="<%= pillClass %>"><strong class="text-horriver-orange font-semibold"><%= achievements.length %></strong> desbloqueadas</span>
       </div>
@@ -190,9 +190,9 @@
       <% if (!achievements.length) { %>
         <div class="<%= emptyStateClass %>">
           <span class="<%= emptyEyebrowClass %>">Sem conquista</span>
-          <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda nao ha badges liberadas</h3>
+          <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda não ha badges liberadas</h3>
           <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
-            Assim que o jogador atingir os proximos marcos, as conquistas vao aparecer aqui.
+            Assim que o jogador atingir os proximos marcos, as conquistas vão aparecer aqui.
           </p>
         </div>
       <% } else { %>
@@ -225,9 +225,9 @@
         <% if (!ratingsSeries.length) { %>
           <div class="<%= emptyStateClass %>">
             <span class="<%= emptyEyebrowClass %>">Sem notas</span>
-            <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda nao existem avaliacoes suficientes</h3>
+            <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda não existem avaliações suficientes</h3>
             <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
-              As notas das proximas peladas vao desenhar a curva de desempenho aqui.
+              As notas das proximas peladas vão desenhar a curva de desempenho aqui.
             </p>
           </div>
         <% } else { %>
@@ -245,7 +245,7 @@
       <div class="page-section__inner page-section__inner--lg space-y-4">
         <div class="<%= sectionHeadingClass %>">
           <div>
-            <h2 class="font-title text-2xl text-horriver-light">Gols por mes</h2>
+            <h2 class="font-title text-2xl text-horriver-light">Gols por mês</h2>
             <p class="<%= sectionMetaClass %>">Distribuicao de gols ao longo do tempo.</p>
           </div>
         </div>
@@ -255,7 +255,7 @@
             <span class="<%= emptyEyebrowClass %>">Sem gols</span>
             <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Nenhum gol registrado ainda</h3>
             <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
-              Quando os gols entrarem na conta, o historico mensal aparece aqui automaticamente.
+              Quando os gols entrarem na conta, o histórico mensal aparece aqui automaticamente.
             </p>
           </div>
         <% } else { 
@@ -301,9 +301,9 @@
       <% if (!recentMatches.length) { %>
         <div class="<%= emptyStateClass %>">
           <span class="<%= emptyEyebrowClass %>">Sem partidas</span>
-          <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda nao ha historico recente</h3>
+          <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Ainda não ha histórico recente</h3>
           <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
-            Conforme novas peladas forem registradas, os ultimos jogos aparecem aqui com gols, assistencias e nota.
+            Conforme novas peladas forem registradas, os últimos jogos aparecem aqui com gols, assistências e nota.
           </p>
         </div>
       <% } else { %>

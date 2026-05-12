@@ -30,7 +30,7 @@ function buildMonthlyFeeAnalytics(fee) {
         value:
           matchesPlayed > 1
             ? `${formatCurrencyBR(firstMatchAmount)} + ${(matchesPlayed - 1)} x ${formatCurrencyBR(latePerMatchAmount)}`
-            : `${formatCurrencyBR(firstMatchAmount)} na 1a pelada`,
+            : `${formatCurrencyBR(firstMatchAmount)} na 1ª pelada`,
       });
     } else {
       breakdownItems.push({
@@ -50,7 +50,7 @@ function buildMonthlyFeeAnalytics(fee) {
         value:
           matchesPlayed > 1
             ? `${formatCurrencyBR(firstMatchAmount)} + ${(matchesPlayed - 1)} x ${formatCurrencyBR(latePerMatchAmount)}`
-            : `${formatCurrencyBR(firstMatchAmount)} na 1a pelada`,
+            : `${formatCurrencyBR(firstMatchAmount)} na 1ª pelada`,
       });
     } else {
       breakdownItems.push({
@@ -60,7 +60,7 @@ function buildMonthlyFeeAnalytics(fee) {
     }
   } else if (fee?.specialMonthlyTransitionApplied) {
     breakdownItems.push({
-      label: "1a pelada",
+      label: "1ª pelada",
       value: formatCurrencyBR(fee.specialFirstMatchAmount || 0),
     });
     breakdownItems.push({

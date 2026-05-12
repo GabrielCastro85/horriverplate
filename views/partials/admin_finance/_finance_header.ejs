@@ -146,17 +146,17 @@
         <article class="finance-dashboard-toolbar__metric finance-dashboard-toolbar__metric--cash">
           <span class="finance-kicker">Caixa atual</span>
           <strong class="text-horriver-light"><%= formatCurrencyBR(summary.cashBalance) %></strong>
-          <span class="finance-subtle">Saldo consolidado do modulo.</span>
+          <span class="finance-subtle">Saldo consolidado do módulo.</span>
         </article>
 
         <article class="finance-dashboard-toolbar__metric">
           <span class="finance-kicker">Pendente</span>
           <strong class="text-horriver-light"><%= summary.delinquentCount %></strong>
-          <span class="finance-subtle">Participantes que ainda exigem acao.</span>
+          <span class="finance-subtle">Participantes que ainda exigem ação.</span>
         </article>
 
         <article class="finance-dashboard-toolbar__metric">
-          <span class="finance-kicker">Receita do mes</span>
+          <span class="finance-kicker">Receita do mês</span>
           <strong class="text-horriver-light"><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong>
           <span class="finance-subtle">Entradas registradas no recorte atual.</span>
         </article>
@@ -165,14 +165,14 @@
       <div class="finance-dashboard-filters">
         <div class="finance-dashboard-filters__status">
           <div class="min-w-0">
-            <div class="finance-kicker">Competencia ativa</div>
+            <div class="finance-kicker">Competência ativa</div>
             <div class="finance-dashboard-filters__status-value"><%= monthReferenceLabel %></div>
             <p class="finance-subtle"><%= activeTabMeta.description %></p>
           </div>
 
           <div class="space-y-2">
             <div class="flex items-center justify-between gap-3 text-xs text-horriver-gray/76">
-              <span>Recebimento da competencia</span>
+              <span>Recebimento da competência</span>
               <strong class="text-horriver-light"><%= receivedPercentage %>%</strong>
             </div>
             <div class="finance-progress"><span style="width:<%= receivedPercentage %>%"></span></div>
@@ -198,7 +198,7 @@
           <%- stateFields({ tab: activeTab }, { omit: ["month", "year"] }) %>
 
           <div class="finance-dashboard-filters__grid">
-            <label class="finance-label">Mes
+            <label class="finance-label">Mês
               <select name="month" class="finance-select">
                 <% monthOptions.forEach((option) => { %>
                   <option value="<%= option.value %>" <%= Number(option.value) === Number(filters.month) ? "selected" : "" %>><%= option.label %></option>
@@ -216,7 +216,7 @@
           </div>
 
           <div class="finance-dashboard-filters__actions">
-            <button type="submit" class="finance-cta">Atualizar competencia</button>
+            <button type="submit" class="finance-cta">Atualizar competência</button>
             <a href="<%= buildFinanceQuery({ tab: activeTab, status: 'ALL', search: '', cashType: 'ALL', chargeFilter: 'ALL', reportType: 'FULL', reportScope: 'MONTHLY', reportStart: '', reportEnd: '' }) %>" class="finance-soft-button">Limpar filtros</a>
             <a href="/admin" class="finance-soft-button">Voltar ao painel</a>
           </div>

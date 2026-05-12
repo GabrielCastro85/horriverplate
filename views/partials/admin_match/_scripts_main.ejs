@@ -103,7 +103,7 @@
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              reject(new Error("Nao foi possivel gerar o corte da imagem."));
+              reject(new Error("Não foi possível gerar o corte da imagem."));
               return;
             }
 
@@ -390,7 +390,7 @@
         return;
       }
       if (typeof window.Cropper === "undefined") {
-        setCropError("O editor de corte nao carregou agora. Voce ainda pode enviar a imagem original.");
+        setCropError("O editor de corte não carregou agora. Você ainda pode enviar a imagem original.");
         return;
       }
 
@@ -415,7 +415,7 @@
       try {
         await applyCropToInput();
       } catch (error) {
-        setCropError(error?.message || "Nao foi possivel aplicar o corte agora.");
+        setCropError(error?.message || "Não foi possível aplicar o corte agora.");
       }
     });
 
@@ -428,7 +428,7 @@
         submitInFlight = true;
         form.requestSubmit(event.submitter || undefined);
       } catch (error) {
-        setCropError(error?.message || "Nao foi possivel preparar a imagem antes de salvar.");
+        setCropError(error?.message || "Não foi possível preparar a imagem antes de salvar.");
       }
     });
   })();
@@ -544,7 +544,7 @@
         URL.revokeObjectURL(url);
       } catch (err) {
         console.error('[export] Falha ao gerar card:', err);
-        alert('Nao foi possivel gerar o card. Tente novamente.');
+        alert('Não foi possível gerar o card. Tente novamente.');
       } finally {
         btn.textContent = original;
         btn.disabled = false;

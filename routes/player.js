@@ -165,8 +165,8 @@ async function buildPlayerProfileViewModel(req, id) {
   const playerImageUrl = `${baseUrl}${req.app.locals.thumbUrl(playerImagePath, 1200)}`;
   const descParts = [
     `Jogador ${player.name}.`,
-    player.position ? `Posicao ${player.position}.` : null,
-    `Gols ${totals.goals}, assistencias ${totals.assists}, presencas ${totals.matches}.`,
+    player.position ? `Posição ${player.position}.` : null,
+    `Gols ${totals.goals}, assistências ${totals.assists}, presenças ${totals.matches}.`,
   ].filter(Boolean);
 
   return {

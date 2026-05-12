@@ -49,7 +49,7 @@
       ? {
           rank: "01",
           title: topPayer.player.name,
-          subtitle: "Maior valor recebido no mes",
+          subtitle: "Maior valor recebido no mês",
           value: formatCurrencyBR(topPayer.amountPaid),
           meta: topPayer.collectionStatusMeta,
         }
@@ -102,8 +102,8 @@
       textClass: "text-[#fecaca]",
     },
     {
-      label: "Saidas",
-      shortLabel: "Saidas",
+      label: "Saídas",
+      shortLabel: "Saídas",
       value: summary.totalExpensesMonth,
       valueLabel: formatCurrencyBR(summary.totalExpensesMonth),
       barStyle: "background:linear-gradient(180deg, rgba(250,204,21,0.84), rgba(161,98,7,0.48));",
@@ -131,8 +131,8 @@
                 Resumo operacional de <%= monthReferenceLabel %>
               </h2>
               <p class="text-sm leading-relaxed text-horriver-gray/82 max-w-3xl">
-                O foco desta tela e mostrar o essencial primeiro: receita, pendencia, caixa,
-                inadimplencia e os proximos passos do fechamento, sem misturar a operacao inteira no mesmo bloco.
+                O foco desta tela e mostrar o essencial primeiro: receita, pendência, caixa,
+                inadimplência e os próximos passos do fechamento, sem misturar a operação inteira no mesmo bloco.
               </p>
             </div>
           </div>
@@ -150,7 +150,7 @@
         <div class="space-y-3">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <div class="finance-kicker">Pulso da competencia</div>
+              <div class="finance-kicker">Pulso da competência</div>
               <div class="finance-overview-callout__value"><%= automation.competenceState.label %></div>
             </div>
             <span class="finance-chip finance-chip--accent"><%= receivedPercentage %>% recebido</span>
@@ -173,7 +173,7 @@
 
         <div class="flex flex-wrap gap-2">
           <a href="<%= buildFinanceQuery({ tab: 'charge', chargeFilter: summary.overdueCount ? 'OVERDUE' : 'ALL' }) %>#finance-charge" class="finance-cta">Cobrar pendentes</a>
-          <a href="<%= buildFinanceQuery({ tab: 'reports' }) %>#finance-reports" class="finance-soft-button">Abrir relatorios</a>
+          <a href="<%= buildFinanceQuery({ tab: 'reports' }) %>#finance-reports" class="finance-soft-button">Abrir relatórios</a>
         </div>
       </article>
     </section>
@@ -186,13 +186,13 @@
         </div>
         <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.cashBalance) %></strong>
         <p class="finance-overview-kpi__text">
-          Resultado do periodo em <strong><%= formatCurrencyBR(summary.currentMonthNet) %></strong>.
+          Resultado do período em <strong><%= formatCurrencyBR(summary.currentMonthNet) %></strong>.
         </p>
       </article>
 
       <article class="finance-overview-kpi finance-overview-kpi--revenue">
         <div class="flex items-center justify-between gap-3">
-          <span class="finance-overview-kpi__label">Receita do mes</span>
+          <span class="finance-overview-kpi__label">Receita do mês</span>
           <span class="finance-chip"><%= summary.guestsCount %> convidado(s)</span>
         </div>
         <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong>
@@ -203,12 +203,12 @@
 
       <article class="finance-overview-kpi finance-overview-kpi--pending">
         <div class="flex items-center justify-between gap-3">
-          <span class="finance-overview-kpi__label">Pendencias</span>
+          <span class="finance-overview-kpi__label">Pendências</span>
           <span class="finance-chip"><%= summary.overdueCount %> atrasado(s)</span>
         </div>
         <strong class="finance-overview-kpi__value"><%= formatCurrencyBR(summary.totalPending) %></strong>
         <p class="finance-overview-kpi__text">
-          <strong><%= summary.delinquentCount %></strong> cobranca(s) ainda pedem acompanhamento.
+          <strong><%= summary.delinquentCount %></strong> cobrança(s) ainda pedem acompanhamento.
         </p>
       </article>
 
@@ -219,7 +219,7 @@
         </div>
         <strong class="finance-overview-kpi__value"><%= delinquencyRate %>%</strong>
         <p class="finance-overview-kpi__text">
-          <strong><%= summary.delinquentCount %></strong> participante(s) ainda nao fecharam o mes.
+          <strong><%= summary.delinquentCount %></strong> participante(s) ainda não fecharam o mês.
         </p>
       </article>
     </section>
@@ -229,7 +229,7 @@
         <article class="finance-panel p-5 md:p-6 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="finance-kicker">Pendencias recentes</div>
+              <div class="finance-kicker">Pendências recentes</div>
               <h3 class="font-title text-2xl text-horriver-light mt-2">Fila prioritaria</h3>
             </div>
             <a href="<%= buildFinanceQuery({ tab: 'charge' }) %>#finance-charge" class="finance-soft-button">Ver todas</a>
@@ -255,7 +255,7 @@
             </div>
           <% } else { %>
             <%- include("./_finance_empty_state", {
-              emptyStateMessage: "Nenhuma pendencia relevante para esta competencia no momento.",
+              emptyStateMessage: "Nenhuma pendência relevante para está competência no momento.",
             }) %>
           <% } %>
         </article>
@@ -263,8 +263,8 @@
         <article class="finance-panel p-5 md:p-6 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="finance-kicker">Ultimos lancamentos</div>
-              <h3 class="font-title text-2xl text-horriver-light mt-2">Movimentacao recente</h3>
+              <div class="finance-kicker">Últimos lançamentos</div>
+              <h3 class="font-title text-2xl text-horriver-light mt-2">Movimentação recente</h3>
             </div>
             <a href="<%= buildFinanceQuery({ tab: 'cash' }) %>#finance-cash" class="finance-soft-button">Abrir caixa</a>
           </div>
@@ -286,7 +286,7 @@
             </div>
           <% } else { %>
             <%- include("./_finance_empty_state", {
-              emptyStateMessage: "Sem movimentacao recente neste recorte.",
+              emptyStateMessage: "Sem movimentação recente neste recorte.",
             }) %>
           <% } %>
         </article>
@@ -296,9 +296,9 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div class="finance-kicker">Grafico financeiro</div>
-            <h3 class="font-title text-2xl text-horriver-light mt-2">Composicao do mes</h3>
+            <h3 class="font-title text-2xl text-horriver-light mt-2">Composição do mês</h3>
             <p class="finance-subtle">
-              Leitura rapida entre entradas, mensalidades, pendencias e saidas do recorte atual.
+              Leitura rapida entre entradas, mensalidades, pendências e saídas do recorte atual.
             </p>
           </div>
           <span class="finance-chip finance-chip--accent"><%= receivedPercentage %>% recebido</span>
@@ -325,13 +325,13 @@
           <div class="finance-quiet-card finance-overview-chart-metric-card p-4 space-y-2">
             <div class="finance-kicker">Previsto</div>
             <div class="text-lg font-semibold text-horriver-light"><%= formatCurrencyBR(summary.totalPredicted) %></div>
-            <div class="finance-subtle">Base total esperada na competencia.</div>
+            <div class="finance-subtle">Base total esperada na competência.</div>
           </div>
 
           <div class="finance-quiet-card finance-overview-chart-metric-card p-4 space-y-2">
-            <div class="finance-kicker">Resultado do mes</div>
+            <div class="finance-kicker">Resultado do mês</div>
             <div class="text-lg font-semibold <%= summary.currentMonthNet >= 0 ? 'text-horriver-orange' : 'text-[#fecaca]' %>"><%= formatCurrencyBR(summary.currentMonthNet) %></div>
-            <div class="finance-subtle">Entradas menos saidas do periodo.</div>
+            <div class="finance-subtle">Entradas menos saídas do período.</div>
           </div>
 
           <div class="finance-quiet-card finance-overview-chart-metric-card p-4 space-y-2">
@@ -379,14 +379,14 @@
 
         <article class="finance-panel p-5 md:p-6 space-y-4">
           <div>
-            <div class="finance-kicker">Acoes rapidas</div>
+            <div class="finance-kicker">Ações rapidas</div>
             <h3 class="font-title text-2xl text-horriver-light mt-2">Rotina operacional</h3>
-            <p class="finance-subtle">Atalhos para agir no que mais pesa no fechamento do mes.</p>
+            <p class="finance-subtle">Atalhos para agir no que mais pesa no fechamento do mês.</p>
           </div>
 
           <div class="finance-overview-actions">
             <a href="<%= buildFinanceQuery({ tab: 'charge', chargeFilter: summary.overdueCount ? 'OVERDUE' : 'ALL' }) %>#finance-charge" class="finance-cta">Cobrar pendentes</a>
-            <a href="<%= buildFinanceQuery({ tab: 'monthly' }) %>#finance-fees" class="finance-soft-button">Abrir controle do mes</a>
+            <a href="<%= buildFinanceQuery({ tab: 'monthly' }) %>#finance-fees" class="finance-soft-button">Abrir controle do mês</a>
             <a href="<%= buildFinanceQuery({ tab: 'cash' }) %>#finance-cash" class="finance-soft-button">Registrar no caixa</a>
             <a href="<%= buildFinanceQuery({ tab: 'guests' }) %>#finance-guests" class="finance-soft-button">Lancar convidado</a>
             <% if (!automation.preparation.prepared) { %>
@@ -404,9 +404,9 @@
       <article class="finance-panel p-5 md:p-6 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div class="finance-kicker">Relatorios</div>
-            <h3 class="font-title text-2xl text-horriver-light mt-2">Prestacao de contas pronta</h3>
-            <p class="finance-subtle">Resumo executivo do periodo com atalhos para previa e PDF completo.</p>
+            <div class="finance-kicker">Relatórios</div>
+            <h3 class="font-title text-2xl text-horriver-light mt-2">Prestação de contas pronta</h3>
+            <p class="finance-subtle">Resumo executivo do período com atalhos para prévia e PDF completo.</p>
           </div>
           <span class="finance-chip finance-chip--accent"><%= monthReferenceLabel %></span>
         </div>
@@ -414,9 +414,9 @@
         <div class="finance-overview-report">
           <div class="finance-overview-report__copy">
             <div class="finance-subtle">
-              Em <strong class="text-horriver-light"><%= monthReferenceLabel %></strong>, o modulo registra
+              Em <strong class="text-horriver-light"><%= monthReferenceLabel %></strong>, o módulo registra
               <strong class="text-horriver-light"><%= formatCurrencyBR(summary.totalReceivedMonth) %></strong> de entradas,
-              <strong class="text-horriver-light"><%= formatCurrencyBR(summary.totalExpensesMonth) %></strong> em saidas
+              <strong class="text-horriver-light"><%= formatCurrencyBR(summary.totalExpensesMonth) %></strong> em saídas
               e <strong class="<%= summary.currentMonthNet >= 0 ? 'text-horriver-orange' : 'text-[#fecaca]' %>"><%= formatCurrencyBR(summary.currentMonthNet) %></strong> de resultado.
             </div>
 
@@ -426,7 +426,7 @@
                 <span class="finance-inline-stat__value"><%= summary.paidCount %></span>
               </div>
               <div class="finance-inline-stat">
-                <span class="finance-inline-stat__label">Pendencias</span>
+                <span class="finance-inline-stat__label">Pendências</span>
                 <span class="finance-inline-stat__value text-horriver-orange"><%= summary.delinquentCount %></span>
               </div>
               <div class="finance-inline-stat">
@@ -437,8 +437,8 @@
           </div>
 
           <div class="finance-overview-report__actions">
-            <a href="<%= buildFinanceQuery({ tab: 'reports' }) %>#finance-reports" class="finance-cta">Abrir relatorios</a>
-            <a href="<%= reportPreviewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Previa HTML</a>
+            <a href="<%= buildFinanceQuery({ tab: 'reports' }) %>#finance-reports" class="finance-cta">Abrir relatórios</a>
+            <a href="<%= reportPreviewHref %>" target="_blank" rel="noopener" class="finance-soft-button">Prévia HTML</a>
             <a href="<%= reportPdfHref %>" target="_blank" rel="noopener" class="finance-soft-button">PDF completo</a>
           </div>
         </div>
@@ -447,9 +447,9 @@
       <article class="finance-panel p-5 md:p-6 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div class="finance-kicker">Acoes principais</div>
+            <div class="finance-kicker">Ações principais</div>
             <h3 class="font-title text-2xl text-horriver-light mt-2">Alertas e proximos passos</h3>
-            <p class="finance-subtle">O sistema destaca o que merece acao imediata para o fechamento andar sem friccao.</p>
+            <p class="finance-subtle">O sistema destaca o que merece ação imédiata para o fechamento andar sem friccao.</p>
           </div>
           <span class="finance-chip"><%= financeAlerts.length %> alerta(s)</span>
         </div>
@@ -475,7 +475,7 @@
           </div>
         <% } else { %>
           <%- include("./_finance_empty_state", {
-            emptyStateMessage: "Nenhum alerta prioritario neste momento. O modulo esta pronto para seguir a rotina normal.",
+            emptyStateMessage: "Nenhum alerta prioritario neste momento. O módulo está pronto para seguir a rotina normal.",
           }) %>
         <% } %>
       </article>

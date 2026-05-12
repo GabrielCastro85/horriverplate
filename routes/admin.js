@@ -205,13 +205,13 @@ async function buildAuditMetadata(req) {
     const ratingsCount = countBodyKeys(body, "rating_", (v) => String(v || "").trim() !== "");
     const photosCount = countBodyKeys(body, "photo_");
     meta.action = "match.stats.bulk";
-    meta.summary = `Admin atualizou estatisticas da pelada ${formatMatchLabel(match, id)} (presentes: ${presentCount}).`;
+    meta.summary = `Admin atualizou estatísticas da pelada ${formatMatchLabel(match, id)} (presentes: ${presentCount}).`;
     meta.context = {
       matchId: id,
       metrics: {
         presentesMarcados: presentCount,
         golsInformados: goalsCount,
-        assistenciasInformadas: assistsCount,
+        assistênciasInformadas: assistsCount,
         notasInformadas: ratingsCount,
         fotosMarcadas: photosCount,
       },
@@ -257,7 +257,7 @@ async function buildAuditMetadata(req) {
     const craqueId = body.craqueId && String(body.craqueId).trim() !== "" ? Number(body.craqueId) : null;
     const craque = craqueId ? await getPlayer(craqueId) : null;
     meta.action = "monthly_award.upsert";
-    meta.summary = `Admin salvou craque do mes${formatMonthYearBR(month, year) ? ` ${formatMonthYearBR(month, year)}` : ""}${craque ? ` - ${formatPlayerLabel(craque)}` : ""}.`;
+    meta.summary = `Admin salvou craque do mês${formatMonthYearBR(month, year) ? ` ${formatMonthYearBR(month, year)}` : ""}${craque ? ` - ${formatPlayerLabel(craque)}` : ""}.`;
     meta.context = {
       month: Number.isFinite(month) ? month : null,
       year: Number.isFinite(year) ? year : null,
@@ -318,14 +318,14 @@ async function buildAuditMetadata(req) {
     const month = Number(body.month);
     const year = Number(body.year);
     meta.action = "monthly_vote_session.upsert";
-    meta.summary = `Admin gerou votacao do mes${formatMonthYearBR(month, year) ? ` ${formatMonthYearBR(month, year)}` : ""}.`;
+    meta.summary = `Admin gerou votacao do mês${formatMonthYearBR(month, year) ? ` ${formatMonthYearBR(month, year)}` : ""}.`;
     return meta;
   }
 
   m = path.match(/^\/monthly-vote\/(\d+)\/close$/);
   if (m) {
     meta.action = "monthly_vote_session.close";
-    meta.summary = `Admin encerrou votacao do mes #${Number(m[1])}.`;
+    meta.summary = `Admin encerrou votacao do mês #${Number(m[1])}.`;
     meta.includePayload = false;
     return meta;
   }
@@ -333,7 +333,7 @@ async function buildAuditMetadata(req) {
   m = path.match(/^\/monthly-vote\/(\d+)\/delete$/);
   if (m) {
     meta.action = "monthly_vote_session.delete";
-    meta.summary = `Admin excluiu votacao do mes #${Number(m[1])}.`;
+    meta.summary = `Admin excluiu votacao do mês #${Number(m[1])}.`;
     meta.includePayload = false;
     return meta;
   }

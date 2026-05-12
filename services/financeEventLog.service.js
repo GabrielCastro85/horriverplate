@@ -117,7 +117,7 @@ async function recordFinanceEvent(prisma, req, input = {}) {
     await Promise.all(operations);
     return event;
   } catch (error) {
-    console.warn("Finance event log error:", error);
+    console.warn("Finance event log error: ", error);
     return null;
   }
 }
@@ -165,11 +165,11 @@ async function getFinanceCompetenceResetMarker(prisma, { month, year, limit = 50
 
 function buildFinanceReportHistoryDescription(event) {
   const reportType = event.metadata?.reportType;
-  const reportLabel = REPORT_TYPE_META[reportType]?.label || event.metadata?.reportLabel || "Relatorio";
+  const reportLabel = REPORT_TYPE_META[reportType]?.label || event.metadata?.reportLabel || "Relatório";
   const periodLabel = event.metadata?.periodLabel
     || (event.metadata?.month && event.metadata?.year
       ? formatMonthYearLabel(event.metadata.month, event.metadata.year)
-      : "Periodo");
+      : "Período");
 
   return event.summary || `${reportLabel} - ${periodLabel}`;
 }
@@ -192,7 +192,7 @@ async function getFinanceReportHistory(prisma, limit = 8) {
       action: event.action,
       createdAt: event.createdAt,
       createdAtLabel: formatDateTimeBR(event.createdAt),
-      typeLabel: REPORT_TYPE_META[event.metadata?.reportType]?.label || "Relatorio",
+      typeLabel: REPORT_TYPE_META[event.metadata?.reportType]?.label || "Relatório",
       periodLabel: event.metadata?.periodLabel || "-",
       description: buildFinanceReportHistoryDescription(event),
       params: event.metadata || {},

@@ -1293,7 +1293,7 @@ router.post("/matches/:id/presence", requireAdmin, async (req, res) => {
 
     res.redirect(`/admin/matches/${matchId}#stats`);
   } catch (err) {
-    console.error("Erro ao salvar presencas da pelada:", err);
+    console.error("Erro ao salvar presenças da pelada:", err);
     res.redirect(`/admin/matches/${req.params.id}`);
   }
 });
@@ -1312,7 +1312,7 @@ router.post("/matches/:id/stats/bulk", requireAdmin, async (req, res) => {
 
     res.redirect(`/admin/matches/${matchId}`);
   } catch (err) {
-    console.error("Erro ao salvar estatisticas da pelada:", err);
+    console.error("Erro ao salvar estatísticas da pelada:", err);
     res.redirect(`/admin/matches/${req.params.id}`);
   }
 });
@@ -1938,19 +1938,19 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
 
   } catch (err) {
     console.error("Erro no sorteador:", err);
-    return res.status(500).json({ error: err && err.message ? err.message : "Erro ao sortear times" });
+    return res.status(500).json({ error: err && err.message ? err.message: "Erro ao sortear times" });
   }
 });
 
 router.post("/matches/:id/save-lineup", requireAdmin, async (req, res) => {
   try {
     const matchId = Number(req.params.id);
-    if (Number.isNaN(matchId)) return res.status(400).json({ error: "matchId invalido" });
+    if (Number.isNaN(matchId)) return res.status(400).json({ error: "matchId inválido" });
 
     const { teams, bench, source } = req.body || {};
 
     if (!Array.isArray(teams)) {
-      return res.status(400).json({ error: "Times invalidos para salvar." });
+      return res.status(400).json({ error: "Times inválidos para salvar." });
     }
 
     const normalizePlayer = (player, idx) => ({
@@ -2168,7 +2168,7 @@ router.get("/matches/:id/awards/export", requireAdmin, async (req, res) => {
     return res.redirect(302, `/share/voting-result.jpg?matchId=${match.id}`);
   } catch (err) {
     console.error("Erro ao exportar imagem dos premios:", err);
-    return res.status(500).send("Nao foi possivel gerar a imagem agora.");
+    return res.status(500).send("Não foi possível gerar a imagem agora.");
   }
 });
 
@@ -2221,7 +2221,7 @@ router.post(
 
       return res.redirect(`/admin/matches/${matchId}?statsWizardSaved=true#votacao`);
     } catch (err) {
-      console.error("Erro ao salvar estatisticas pelo assistente:", err);
+      console.error("Erro ao salvar estatísticas pelo assistente:", err);
       return res.redirect(`/admin/matches/${req.params.id}?error=statsWizard`);
     }
   }

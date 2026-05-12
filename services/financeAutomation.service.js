@@ -72,7 +72,7 @@ function buildRuleSnapshot(monthlyFee) {
       items.push(
         matchesPlayed > 1
           ? `1a pelada ${formatCurrencyBR(firstMatchAmount)} + ${matchesPlayed - 1} x ${formatCurrencyBR(unitAmount)}`
-          : `1a pelada ${formatCurrencyBR(firstMatchAmount)}`
+          : `1ª pelada ${formatCurrencyBR(firstMatchAmount)}`
       );
     } else {
       items.push(`${matchesPlayed} pelada(s) x ${formatCurrencyBR(monthlyFee.latePerMatchAmount || 25)}`);
@@ -101,12 +101,12 @@ function buildRuleSnapshot(monthlyFee) {
       items.push(
         totalMatchesPlayed > 1
           ? `1a pelada ${formatCurrencyBR(firstMatchAmount)} + ${totalMatchesPlayed - 1} x ${formatCurrencyBR(unitAmount)}`
-          : `1a pelada ${formatCurrencyBR(firstMatchAmount)}`
+          : `1ª pelada ${formatCurrencyBR(firstMatchAmount)}`
       );
     } else {
       items.push(`${lateMatchesPlayed} pelada(s) x ${formatCurrencyBR(monthlyFee.latePerMatchAmount || 25)}`);
     }
-    if (Number(monthlyFee.matchesPlayed || 0) > 0) items.push(`${monthlyFee.matchesPlayed} no mes`);
+    if (Number(monthlyFee.matchesPlayed || 0) > 0) items.push(`${monthlyFee.matchesPlayed} no mês`);
     if (decimalToNumber(monthlyFee.manualDiscountAmount) > 0) items.push("Abat. manual");
     if (decimalToNumber(monthlyFee.autoDiscountAmount) > 0) items.push("Abat. auto");
     return items;

@@ -32,7 +32,7 @@
       <section class="finance-module-top">
         <article class="finance-panel p-5 md:p-6 finance-module-top__lead">
           <%- include("./_finance_section_intro", {
-            sectionChipLabel: "Cobranca",
+            sectionChipLabel: "Cobrança",
             sectionChipTone: "accent",
             sectionStatusBadgeMeta: automation.competenceState,
             sectionBadges: [
@@ -43,15 +43,15 @@
               { label: `${summary.pendingWithoutWhatsappCount} sem WhatsApp` },
               { label: chargeBehaviorOptions.find((option) => option.value === settings.chargeBehavior)?.label || settings.chargeBehavior },
             ],
-            sectionTitle: "Fila de cobranca do mes",
-            sectionDescription: "A aba agora funciona como uma central de cobranca: prioridade clara, acoes diretas e menos distração entre a fila e o painel lateral.",
+            sectionTitle: "Fila de cobrança do mês",
+            sectionDescription: "A aba agora funciona como uma central de cobrança: prioridade clara, ações diretas e menos distração entre a fila e o painel lateral.",
           }) %>
         </article>
 
         <aside class="finance-module-aside-card">
           <div class="space-y-3">
-            <div class="finance-kicker">Acoes em lote</div>
-            <div class="text-2xl font-semibold text-horriver-light">Central de cobranca ativa</div>
+            <div class="finance-kicker">Ações em lote</div>
+            <div class="text-2xl font-semibold text-horriver-light">Central de cobrança ativa</div>
             <p class="finance-subtle">
               Selecione pendentes para copiar mensagens, abrir WhatsApp ou quitar em lote sem sair da fila.
             </p>
@@ -68,7 +68,7 @@
             </div>
           </div>
 
-          <a href="<%= buildFinanceQuery({ tab: 'monthly', editFeeId: selectedFee?.id || '' }) %>#finance-fees" class="finance-soft-button w-full">Abrir controle do mes</a>
+          <a href="<%= buildFinanceQuery({ tab: 'monthly', editFeeId: selectedFee?.id || '' }) %>#finance-fees" class="finance-soft-button w-full">Abrir controle do mês</a>
         </aside>
       </section>
 
@@ -76,12 +76,12 @@
         <article class="finance-module-mini-card finance-module-mini-card--warning">
           <span class="finance-kicker">Total pendente</span>
           <strong><%= formatCurrencyBR(summary.totalPending) %></strong>
-          <span class="finance-subtle">Saldo da fila atual de cobranca.</span>
+          <span class="finance-subtle">Saldo da fila atual de cobrança.</span>
         </article>
         <article class="finance-module-mini-card">
           <span class="finance-kicker">Atrasados</span>
           <strong><%= summary.overdueCount %></strong>
-          <span class="finance-subtle">Cobrancas que merecem prioridade total.</span>
+          <span class="finance-subtle">Cobranças que merecem prioridade total.</span>
         </article>
         <article class="finance-module-mini-card finance-module-mini-card--accent">
           <span class="finance-kicker">Vence hoje</span>
@@ -91,15 +91,15 @@
         <article class="finance-module-mini-card">
           <span class="finance-kicker">WhatsApp pronto</span>
           <strong><%= automation.bulkChargeSummary.chargeableCount %> / <%= automation.bulkChargeSummary.totalCount %></strong>
-          <span class="finance-subtle">Itens com envio imediato disponivel.</span>
+          <span class="finance-subtle">Itens com envio imédiato disponível.</span>
         </article>
       </section>
 
       <% if (!automation.preparation.prepared) { %>
         <div class="finance-priority-alert finance-priority-alert--warning">
-          <div class="finance-priority-alert__title">Competencia ainda nao preparada por completo.</div>
+          <div class="finance-priority-alert__title">Competência ainda não preparada por completo.</div>
           <div class="finance-priority-alert__text">
-            Faltam <strong><%= automation.preparation.missingCount %></strong> mensalidade(s) para a fila de cobranca ficar completa.
+            Faltam <strong><%= automation.preparation.missingCount %></strong> mensalidade(s) para a fila de cobrança ficar completa.
           </div>
           <a
             href="<%= buildFinanceQuery({ tab: 'monthly', openDialog: 'competence-plans' }) %>#finance-fees"
@@ -133,7 +133,7 @@
           <div class="space-y-2">
             <label class="finance-inline-checkbox">
               <input type="checkbox" data-charge-check-all />
-              <span>Selecionar todas as cobrancas visiveis</span>
+              <span>Selecionar todas as cobranças visiveis</span>
             </label>
             <div class="finance-subtle">
               <strong data-charge-selection-count>0 selecionada(s)</strong>
@@ -149,7 +149,7 @@
               <%- stateFields({ tab: 'charge' }) %>
               <input type="hidden" name="paidAt" value="" />
               <input type="hidden" name="paymentMethod" value="PIX" />
-              <input type="hidden" name="note" value="Quitacao em lote pela aba de cobranca" />
+              <input type="hidden" name="note" value="Quitação em lote pela aba de cobrança" />
               <div data-bulk-selected-ids></div>
               <button type="submit" class="finance-cta" data-charge-mark-paid disabled>Marcar selecionados como pagos</button>
             </form>
@@ -188,7 +188,7 @@
                 data-whatsapp-url="<%- escapeAttr(fee.whatsappUrl || '') %>"
                 data-message="<%- escapeAttr(fee.whatsappMessage || '') %>"
               >
-                <input type="checkbox" class="finance-charge-check" data-charge-select aria-label="Selecionar cobranca de <%= fee.player.name %>" />
+                <input type="checkbox" class="finance-charge-check" data-charge-select aria-label="Selecionar cobrança de <%= fee.player.name %>" />
                 <div class="finance-charge-item__body space-y-3">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="space-y-1 min-w-0">
@@ -212,12 +212,12 @@
                     <% } %>
                     <% if (fee.billingMode === 'PER_MATCH') { %>
                       <span class="finance-chip"><%= formatCurrencyBR(fee.latePerMatchAmount || settings.latePerMatchAmount || 25) %> / pelada</span>
-                      <span class="finance-chip">Cobra so quando houver presenca</span>
+                      <span class="finance-chip">Cobra só quando houver presença</span>
                     <% } %>
                     <% if (fee.chargePriorityBucket === 0) { %>
                       <span class="finance-chip finance-chip--accent">Prioridade alta</span>
                     <% } else if (fee.chargePriorityBucket === 1) { %>
-                      <span class="finance-chip finance-chip--accent">Acao hoje</span>
+                      <span class="finance-chip finance-chip--accent">Ação hoje</span>
                     <% } %>
                     <% if (fee.isLatePerMatch) { %>
                       <span class="finance-chip">Virou avulso apos vencimento</span>
@@ -245,7 +245,7 @@
                         data-unit-amount="<%= Number(fee.latePerMatchAmount || settings.latePerMatchAmount || 25).toFixed(2).replace('.', ',') %>"
                         data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
                         data-paid-at="<%= fee.suggestedPaidAtInput || currentDateInputValue %>"
-                        data-note="Recebimento rapido de uma pelada pela aba de cobranca"
+                        data-note="Recebimento rápido de uma pelada pela aba de cobrança"
                         data-success-message="<%= perMatchQuickAmount < fee.balance ? 'Pagamento de 1 pelada registrado.' : 'Pagamento do avulso registrado.' %>"
                         data-hide-on-paid
                       >
@@ -261,8 +261,8 @@
                           data-amount="<%= fee.balance.toFixed(2).replace('.', ',') %>"
                           data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
                           data-paid-at="<%= currentDateInputValue %>"
-                          data-note="Quitacao rapida pela aba de cobranca"
-                          data-success-message="Mensalidade quitada pela fila de cobranca."
+                          data-note="Quitação rapida pela aba de cobrança"
+                          data-success-message="Mensalidade quitada pela fila de cobrança."
                           data-hide-on-paid
                         >
                           Marcar como pago
@@ -277,7 +277,7 @@
         </section>
       <% } else { %>
         <%- include("./_finance_empty_state", {
-          emptyStateMessage: "Nada em aberto neste periodo. Quando surgirem pendencias, esta aba vira sua fila objetiva de cobranca.",
+          emptyStateMessage: "Nada em aberto neste período. Quando surgirem pendências, está aba vira sua fila objetiva de cobrança.",
         }) %>
       <% } %>
     </div>
@@ -285,8 +285,8 @@
     <div class="finance-side-stack">
       <div class="finance-summary-card finance-summary-card--alert p-5 space-y-4">
         <div>
-          <div class="finance-kicker">Pulso da cobranca</div>
-          <h3 class="font-title text-xl text-horriver-light mt-2">Resumo rapido</h3>
+          <div class="finance-kicker">Pulso da cobrança</div>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Resumo rápido</h3>
         </div>
         <div class="finance-inline-stats">
           <div class="finance-inline-stat">
@@ -310,7 +310,7 @@
 
       <div class="finance-panel p-5 space-y-4">
         <div>
-          <div class="finance-kicker">Preview da cobranca</div>
+          <div class="finance-kicker">Preview da cobrança</div>
           <h3 class="font-title text-xl text-horriver-light mt-2">Mensagens prontas</h3>
           <p class="finance-subtle" data-bulk-preview-mode>
             Sem selecao: o preview abaixo considera toda a fila com mensagem pronta.
@@ -328,11 +328,11 @@
                 <a href="<%= href %>" target="_blank" rel="noopener"><%= label %></a>
               <% } }) %>
             <% } else { %>
-              <div class="finance-subtle">Nenhum WhatsApp disponivel neste recorte.</div>
+              <div class="finance-subtle">Nenhum WhatsApp disponível neste recorte.</div>
             <% } %>
           </div>
           <div class="finance-subtle">
-            <strong><%= automation.bulkChargeSummary.withoutWhatsappCount %></strong> cobranca(s) sem WhatsApp seguem com mensagem pronta para copia, mas pedem contato manual.
+            <strong><%= automation.bulkChargeSummary.withoutWhatsappCount %></strong> cobrança(s) sem WhatsApp seguem com mensagem pronta para copia, mas pedem contato manual.
           </div>
         </div>
       </div>
@@ -340,10 +340,10 @@
       <%- include("./_finance_fee_detail", {
         financeView: currentFinanceView,
         detailSectionId: "finance-charge",
-        detailKicker: "Cobranca selecionada",
+        detailKicker: "Cobrança selecionada",
         detailTitleEmpty: "Selecione um pendente",
-        detailSelectedCopy: "Use o painel para acertar vencimento, pagamento, observacoes e status sem sair da fila de cobranca.",
-        detailEmptyCopy: "Clique em um pendente da lista para abrir os detalhes da cobranca e registrar pagamento com menos navegacao."
+        detailSelectedCopy: "Use o painel para acertar vencimento, pagamento, observacoes e status sem sair da fila de cobrança.",
+        detailEmptyCopy: "Clique em um pendente da lista para abrir os detalhes da cobrança e registrar pagamento com menos navegacao."
       }) %>
     </div>
   </section>

@@ -249,10 +249,10 @@ function buildRuleLabel({
     return "Avulso por atraso";
   }
   if (customAmountApplied) return "Valor customizado";
-  if (extraMatches > 0) return `${extraMatches} extra(s) no mes`;
+  if (extraMatches > 0) return `${extraMatches} extra(s) no mês`;
   if (autoDiscountAmount > 0 || manualDiscount > 0) return "Com abatimento";
   if (participantType === "SPECIAL") return "Plano especial";
-  return "Regra padrao";
+  return "Regra padrão";
 }
 
 function calculateMonthlyFeeBreakdown({
@@ -394,7 +394,7 @@ function calculateMonthlyFeeBreakdown({
             ? `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)} + ${matchesAfterFirst} x ${roundCurrency(
                 appliedLatePerMatchAmount
               )}`
-            : `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)}`
+            : `1ª pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)}`
           : buildRuleLabel({
               participantType,
               billingMode,
@@ -447,7 +447,7 @@ function calculateMonthlyFeeBreakdown({
             ? `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)} + ${matchesAfterFirst} x ${roundCurrency(
                 appliedLatePerMatchAmount
               )}`
-            : `1a pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)}`
+            : `1ª pelada ${roundCurrency(specialCompetenceRule.firstMatchAmount)}`
           : buildRuleLabel({
               participantType,
               billingMode,

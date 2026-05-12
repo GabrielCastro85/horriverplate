@@ -33,30 +33,30 @@
     <div class="finance-panel-section-head finance-panel-section-head--stack">
       <div class="finance-panel-section-head__copy">
         <div class="finance-kicker">Lista operacional</div>
-        <h3 class="font-title text-xl text-horriver-light mt-2">Mensalidades da competencia</h3>
+        <h3 class="font-title text-xl text-horriver-light mt-2">Mensalidades da competência</h3>
         <p class="finance-subtle mt-2">
-          Filtre o recorte, selecione jogadores e use esta lista como ponto central para cobrar, quitar, reabrir ou revisar cada participante do mes.
+          Filtre o recorte, selecione jogadores e use esta lista como ponto central para cobrar, quitar, reabrir ou revisar cada participante do mês.
         </p>
       </div>
           <div class="finance-panel-section-head__actions">
             <span class="finance-chip"><%= monthFees.length %> registro(s)</span>
             <span class="finance-chip"><%= visibleWithWhatsappCount %> com WhatsApp</span>
             <% if (hiddenNoChargeCount > 0) { %>
-              <span class="finance-chip"><%= hiddenNoChargeCount %> oculto(s) sem presenca</span>
+              <span class="finance-chip"><%= hiddenNoChargeCount %> oculto(s) sem presença</span>
             <% } %>
           </div>
         </div>
 
     <% if (hiddenCount > 0) { %>
       <div class="finance-subtle">
-        A lista mostra apenas quem ja gerou valor no mes. <strong><%= hiddenCount %></strong> linha(s) sem cobranca ativa ficaram fora desta visualizacao.
+        A lista mostra apenas quem ja gerou valor no mês. <strong><%= hiddenCount %></strong> linha(s) sem cobrança ativa ficaram fora desta visualização.
       </div>
     <% } %>
 
     <form method="GET" action="/admin/finance" class="finance-card p-4 space-y-4">
       <%- stateFields({ tab: "monthly" }, { omit: ["status", "search"] }) %>
       <div class="finance-filter-bar finance-filter-bar--monthly">
-        <label class="finance-label">Status automatico
+        <label class="finance-label">Status automático
           <select name="status" class="finance-select">
             <% monthlyStatusOptions.forEach((option) => { %>
               <option value="<%= option.value %>" <%= activeMonthlyStatus === option.value ? "selected" : "" %>><%= option.label %></option>
@@ -82,7 +82,7 @@
           </label>
           <div class="finance-subtle">
             <strong data-charge-selection-count>0 selecionada(s)</strong>
-            <span data-charge-selection-note>As acoes em massa ajudam a fechar o mes mais rapido sem abrir jogador por jogador.</span>
+            <span data-charge-selection-note>As ações em massa ajudam a fechar o mês mais rápido sem abrir jogador por jogador.</span>
           </div>
         </div>
         <div class="finance-selection-bar__actions">
@@ -103,7 +103,7 @@
               type="submit"
               class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
               data-charge-mark-pending
-              data-confirm="Voltar as mensalidades selecionadas para pendente e remover os lancamentos automaticos de pagamento do caixa?"
+              data-confirm="Voltar as mensalidades selecionadas para pendente e remover os lançamentos automáticos de pagamento do caixa?"
               disabled
             >
               Marcar selecionados como pendentes
@@ -129,7 +129,7 @@
               <th>Status</th>
               <th>Regra</th>
               <th>Financeiro</th>
-              <th class="finance-table__numeric--header">Acoes</th>
+              <th class="finance-table__numeric--header">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -168,7 +168,7 @@
                     <div class="finance-row-tags">
                       <span class="finance-chip"><%= fee.billingModeMeta.label %></span>
                       <span class="finance-chip"><%= fee.participantTypeMeta.label %></span>
-                      <% if (fee.collectionStatus === 'NO_CHARGE') { %><span class="finance-chip finance-chip--accent">Aguardando presenca</span><% } %>
+                      <% if (fee.collectionStatus === 'NO_CHARGE') { %><span class="finance-chip finance-chip--accent">Aguardando presença</span><% } %>
                       <% if (fee.matchesPlayed) { %><span class="finance-chip"><%= fee.matchesPlayed %> jogo(s)</span><% } %>
                       <% if (fee.isLatePerMatch) { %><span class="finance-chip"><%= fee.lateMatchesPlayed || 0 %> pelada(s) cobradas</span><% } %>
                       <% if (fee.paidAt) { %><span class="finance-chip">Pgto <%= formatDateBRShortYear(fee.paidAt) %></span><% } %>
@@ -182,7 +182,7 @@
                 <td class="finance-table__cell">
                   <div class="finance-table__stack">
                     <span class="finance-table__title">
-                      <%= fee.isLatePerMatch ? 'Avulso por atraso no mes' : (fee.ruleSnapshot[1] || fee.ruleSnapshot[0] || 'Regra padrao') %>
+                      <%= fee.isLatePerMatch ? 'Avulso por atraso no mês' : (fee.ruleSnapshot[1] || fee.ruleSnapshot[0] || 'Regra padrão') %>
                     </span>
                   <span class="finance-table__subtitle">
                     <% if (fee.billingMode === 'PER_MATCH') { %>
@@ -194,13 +194,13 @@
                           <strong>1a pelada</strong> por <strong><%= formatCurrencyBR(feeFirstMatchAmount) %></strong>
                           <% if ((fee.matchesPlayed || 0) > 1) { %> + <strong><%= (fee.matchesPlayed || 0) - 1 %></strong> pelada(s) a <strong><%= formatCurrencyBR(feeUnitAmount) %></strong><% } %>.
                         <% } else { %>
-                          <strong><%= fee.matchesPlayed || 0 %></strong> presenca(s) no mes,
+                          <strong><%= fee.matchesPlayed || 0 %></strong> presença(s) no mês,
                           <strong><%= formatCurrencyBR(fee.latePerMatchAmount || 25) %></strong> por pelada.
                         <% } %>
                         <% if (decimalToNumber(fee.autoDiscountAmount) > 0) { %> - Auto <strong><%= formatCurrencyBR(fee.autoDiscountAmount) %></strong><% } %>
                         <% if (decimalToNumber(fee.manualDiscountAmount) > 0) { %> - Manual <strong><%= formatCurrencyBR(fee.manualDiscountAmount) %></strong><% } %>
                       <% } else { %>
-                        Sem presenca no mes ainda. A cobranca so entra quando houver uma pelada marcada para esse jogador.
+                        Sem presença no mês ainda. A cobrança só entra quando houver uma pelada marcada para esse jogador.
                       <% } %>
                     <% } else if (fee.isLatePerMatch) { %>
                       <% const feeBaseAmount = decimalToNumber(fee.baseAmount || fee.amountDue); %>
@@ -211,13 +211,13 @@
                           <strong>1a pelada</strong> por <strong><%= formatCurrencyBR(feeFirstMatchAmount) %></strong>
                           <% if ((fee.matchesPlayed || 0) > 1) { %> + <strong><%= (fee.matchesPlayed || 0) - 1 %></strong> pelada(s) a <strong><%= formatCurrencyBR(feeUnitAmount) %></strong><% } %>.
                         <% } else { %>
-                          <strong><%= fee.lateMatchesPlayed || 0 %></strong> presenca(s) apos o dia <strong><%= dueDay %></strong>,
+                          <strong><%= fee.lateMatchesPlayed || 0 %></strong> presença(s) apos o dia <strong><%= dueDay %></strong>,
                           <strong><%= formatCurrencyBR(fee.latePerMatchAmount || 25) %></strong> por pelada.
                         <% } %>
                         <% if (decimalToNumber(fee.autoDiscountAmount) > 0) { %> - Auto <strong><%= formatCurrencyBR(fee.autoDiscountAmount) %></strong><% } %>
                         <% if (decimalToNumber(fee.manualDiscountAmount) > 0) { %> - Manual <strong><%= formatCurrencyBR(fee.manualDiscountAmount) %></strong><% } %>
                       <% } else { %>
-                        Virou avulso depois do vencimento, mas ainda nao houve presenca apos o dia <strong><%= dueDay %></strong>.
+                        Virou avulso depois do vencimento, mas ainda não houve presença apos o dia <strong><%= dueDay %></strong>.
                       <% } %>
                     <% } else { %>
                       <% if (fee.specialMonthlyTransitionApplied) { %>
@@ -270,7 +270,7 @@
                         data-unit-amount="<%= (fee.latePerMatchAmount || 25).toFixed(2).replace('.', ',') %>"
                         data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
                         data-paid-at="<%= fee.suggestedPaidAtInput || currentDateInputValue %>"
-                        data-note="Recebimento rapido de uma pelada pela tabela de mensalidades"
+                        data-note="Recebimento rápido de uma pelada pela tabela de mensalidades"
                         data-success-message="<%= perMatchQuickAmount < fee.balance ? 'Pagamento de 1 pelada registrado.' : 'Pagamento do avulso registrado.' %>"
                         data-hide-on-paid
                       >
@@ -286,7 +286,7 @@
                         data-amount="<%= fee.balance.toFixed(2).replace('.', ',') %>"
                         data-payment-method="<%= fee.paymentMethod || 'PIX' %>"
                         data-paid-at="<%= currentDateInputValue %>"
-                        data-note="Quitacao rapida pela tabela de mensalidades"
+                        data-note="Quitação rapida pela tabela de mensalidades"
                         data-success-message="<%= fee.balance === fee.amountDue ? 'Mensalidade quitada.' : 'Saldo restante quitado.' %>"
                         data-hide-on-paid
                       >
@@ -308,7 +308,7 @@
     <% } else { %>
       <%- include("./_finance_empty_state", {
         emptyStateClassName: "finance-empty--large",
-        emptyStateMessage: "Nenhum participante com valor gerado apareceu neste recorte. Mensalistas e avulsos com presenca entram aqui automaticamente; linhas sem valor ficam ocultas desta lista.",
+        emptyStateMessage: "Nenhum participante com valor gerado apareceu neste recorte. Mensalistas e avulsos com presença entram aqui automaticamente; linhas sem valor ficam ocultas desta lista.",
       }) %>
     <% } %>
   </section>

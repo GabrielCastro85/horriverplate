@@ -68,7 +68,7 @@ const DEFAULT_LATE_PER_MATCH_AMOUNT = 25;
 const SPECIAL_FINANCE_COMPETENCE_RULES = {
   APRIL_2026_TRANSITION: {
     key: "APRIL_2026_TRANSITION",
-    label: "Transicao abril/2026",
+    label: "Transição abril/2026",
     month: 4,
     year: 2026,
     firstMatchAmount: 15,
@@ -76,7 +76,7 @@ const SPECIAL_FINANCE_COMPETENCE_RULES = {
 };
 
 const MONTHLY_FEE_BILLING_MODE_META = {
-  MONTHLY: { key: "MONTHLY", label: "Mensal do mes", tone: "ok" },
+  MONTHLY: { key: "MONTHLY", label: "Mensal do mês", tone: "ok" },
   PER_MATCH: { key: "PER_MATCH", label: "Avulso mensal", tone: "info" },
   LATE_PER_MATCH: { key: "LATE_PER_MATCH", label: "Virou avulso", tone: "warning" },
   EXEMPT: { key: "EXEMPT", label: "Isento", tone: "pending" },
@@ -86,13 +86,13 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: "PIX", label: "Pix" },
   { value: "CASH", label: "Dinheiro" },
   { value: "TRANSFER", label: "Transferencia" },
-  { value: "CARD", label: "Cartao" },
+  { value: "CARD", label: "Cartão" },
   { value: "OTHER", label: "Outro" },
 ];
 
 const FINANCE_TRANSACTION_TYPE_OPTIONS = [
   { value: "INCOME", label: "Entrada" },
-  { value: "EXPENSE", label: "Saida" },
+  { value: "EXPENSE", label: "Saída" },
 ];
 
 const FINANCE_TRANSACTION_CATEGORY_OPTIONS = {
@@ -110,7 +110,7 @@ const FINANCE_TRANSACTION_CATEGORY_OPTIONS = {
     { value: "REFEREE", label: "Arbitragem" },
     { value: "DRINK", label: "Bebida" },
     { value: "MAINTENANCE", label: "Manutencao" },
-    { value: "PRIZE", label: "Premiacao" },
+    { value: "PRIZE", label: "Premiação" },
     { value: "OTHER_EXPENSE", label: "Outros" },
   ],
 };
@@ -123,7 +123,7 @@ const FINANCE_TRANSACTION_CATEGORY_LABELS = Object.fromEntries(
 
 const COLLECTION_STATUS_META = {
   CURRENT: { key: "CURRENT", label: "Em dia", tone: "pending" },
-  NO_CHARGE: { key: "NO_CHARGE", label: "Aguardando presenca", tone: "pending" },
+  NO_CHARGE: { key: "NO_CHARGE", label: "Aguardando presença", tone: "pending" },
   DUE_TODAY: { key: "DUE_TODAY", label: "Vence hoje", tone: "warning" },
   OVERDUE: { key: "OVERDUE", label: "Atrasado", tone: "danger" },
   PAID: { key: "PAID", label: "Pago", tone: "ok" },
@@ -138,7 +138,7 @@ const MONTHLY_COLLECTION_FILTER_OPTIONS = [
   { value: "OVERDUE", label: "Atrasados" },
   { value: "DUE_TODAY", label: "Vence hoje" },
   { value: "CURRENT", label: "Em dia" },
-  { value: "NO_CHARGE", label: "Aguardando presenca" },
+  { value: "NO_CHARGE", label: "Aguardando presença" },
   { value: "PAID", label: "Pagos" },
   { value: "PARTIAL", label: "Parciais" },
   { value: "EXEMPT", label: "Isentos" },
@@ -188,7 +188,7 @@ const COMPETENCE_STATE_META = {
   OPEN: { key: "OPEN", label: "Aberta", tone: "warning" },
   NEARLY_CLOSED: { key: "NEARLY_CLOSED", label: "Quase fechada", tone: "info" },
   CLOSED: { key: "CLOSED", label: "Fechada", tone: "ok" },
-  NOT_PREPARED: { key: "NOT_PREPARED", label: "Nao preparada", tone: "warning" },
+  NOT_PREPARED: { key: "NOT_PREPARED", label: "Não preparada", tone: "warning" },
 };
 
 const COMPETENCE_STATE_THRESHOLDS = {
@@ -198,11 +198,11 @@ const COMPETENCE_STATE_THRESHOLDS = {
 };
 
 const PARTICIPANT_TYPE_OPTIONS = [
-  { value: "MONTHLY", label: "Mensalista", description: "Segue a regra padrao da mensalidade." },
-  { value: "PER_MATCH", label: "Avulso mensal", description: "Cobra R$ 25,00 por pelada em cada presenca do mes." },
+  { value: "MONTHLY", label: "Mensalista", description: "Segue a regra padrão da mensalidade." },
+  { value: "PER_MATCH", label: "Avulso mensal", description: "Cobra R$ 25,00 por pelada em cada presença do mês." },
   { value: "SPECIAL", label: "Especial", description: "Permite valor customizado e ajustes diferenciados." },
   { value: "EXEMPT", label: "Isento", description: "Gera mensalidade isenta para manter o controle." },
-  { value: "GUEST", label: "Convidado", description: "Fica fora da geracao mensal e entra como avulso." },
+  { value: "GUEST", label: "Convidado", description: "Fica fora da geração mensal e entra como avulso." },
 ];
 
 const PARTICIPANT_TYPE_META = {
@@ -214,17 +214,17 @@ const PARTICIPANT_TYPE_META = {
 };
 
 const CHARGE_BEHAVIOR_OPTIONS = [
-  { value: "ASSISTED", label: "Assistida", description: "Sugere cobranca e automacoes, mas pede confirmacao." },
-  { value: "AUTOMATIC", label: "Automatica", description: "Mantem sugestoes e pode preparar competencia automaticamente." },
-  { value: "MANUAL_ONLY", label: "Manual", description: "Mantem o modulo sob confirmacao manual e evita acao em massa agressiva." },
+  { value: "ASSISTED", label: "Assistida", description: "Sugere cobrança e automações, mas pede confirmação." },
+  { value: "AUTOMATIC", label: "Automática", description: "Mantém sugestões e pode preparar competência automaticamente." },
+  { value: "MANUAL_ONLY", label: "Manual", description: "Mantém o módulo sob confirmação manual e evita ação em massa agressiva." },
 ];
 
 const REPORT_TYPE_META = {
   FULL: {
     key: "FULL",
     label: "PDF completo",
-    title: "Prestacao de Contas",
-    description: "Visao completa com resumo executivo, mensalidades, convidados, extrato e rankings.",
+    title: "Prestação de Contas",
+    description: "Visão completa com resumo executivo, mensalidades, convidados, extrato e rankings.",
     filenameBase: "prestacao-contas-completa",
     sections: {
       executive: true,
@@ -240,8 +240,8 @@ const REPORT_TYPE_META = {
   SUMMARY: {
     key: "SUMMARY",
     label: "PDF resumido",
-    title: "Prestacao de Contas Resumida",
-    description: "Resumo executivo com indicadores, insights e os principais destaques do periodo.",
+    title: "Prestação de Contas Resumida",
+    description: "Resumo executivo com indicadores, insights e os principais destaques do período.",
     filenameBase: "prestacao-contas-resumida",
     sections: {
       executive: true,
@@ -258,7 +258,7 @@ const REPORT_TYPE_META = {
     key: "CASH",
     label: "PDF do caixa",
     title: "Extrato Financeiro",
-    description: "Extrato detalhado do periodo com entradas, saidas, categorias e saldo acumulado.",
+    description: "Extrato detalhado do período com entradas, saídas, categorias e saldo acumulado.",
     filenameBase: "financeiro-caixa",
     sections: {
       executive: true,
@@ -274,8 +274,8 @@ const REPORT_TYPE_META = {
   PENDING: {
     key: "PENDING",
     label: "PDF de pendentes",
-    title: "Pendencias Financeiras",
-    description: "Recorte das mensalidades em aberto, com saldo, vencimento e prioridade de cobranca.",
+    title: "Pendências Financeiras",
+    description: "Recorte das mensalidades em aberto, com saldo, vencimento e prioridade de cobrança.",
     filenameBase: "financeiro-pendentes",
     sections: {
       executive: true,
@@ -291,8 +291,8 @@ const REPORT_TYPE_META = {
   GUESTS: {
     key: "GUESTS",
     label: "PDF de convidados",
-    title: "Convidados do Periodo",
-    description: "Entradas avulsas registradas no periodo com vinculo ao caixa e referencia da pelada.",
+    title: "Convidados do Período",
+    description: "Entradas avulsas registradas no período com vínculo ao caixa e referência da pelada.",
     filenameBase: "financeiro-convidados",
     sections: {
       executive: true,
@@ -325,7 +325,7 @@ const REPORT_TYPE_META = {
 };
 
 const REPORT_SCOPE_OPTIONS = [
-  { value: "MONTHLY", label: "Competencia mensal" },
+  { value: "MONTHLY", label: "Competência mensal" },
   { value: "CUSTOM", label: "Intervalo personalizado" },
   { value: "YEARLY", label: "Ano consolidado" },
 ];

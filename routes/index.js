@@ -541,7 +541,7 @@ router.get("/peladas", async (req, res) => {
     });
 
     const monthOptions = [
-      { value: "all", label: "Todos os meses" },
+      { value: "all", label: "Todos os mêses" },
       ...Array.from(monthsSet)
         .sort((a, b) => b - a)
         .map((mn) => ({
@@ -571,7 +571,7 @@ router.get("/peladas", async (req, res) => {
         ? monthNames[Number(selectedMonth) - 1] || "todos"
         : "todos";
     const yearLabel = selectedYear !== "all" ? selectedYear : "todos";
-    res.locals.metaDescription = `Peladas do mes ${monthLabel} e ano ${yearLabel}.`;
+    res.locals.metaDescription = `Peladas do mês ${monthLabel} e ano ${yearLabel}.`;
 
     res.render("peladas", {
       title: "Peladas",

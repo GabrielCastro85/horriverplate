@@ -194,7 +194,7 @@
         ok: response.ok,
         response: data,
       });
-      throw new Error(data.message || "Nao foi possivel concluir a acao.");
+      throw new Error(data.message || "Não foi possível concluir a ação.");
     }
 
     return data;
@@ -528,7 +528,7 @@
 
         if (selectionNote) {
           selectionNote.textContent = selectedItems.length
-            ? `As acoes em massa vao considerar apenas as linhas selecionadas. ${payableItems.length} podem ser quitadas e ${revertibleItems.length} podem voltar para pendente.`
+            ? `As ações em massa vão considerar apenas as linhas selecionadas. ${payableItems.length} podem ser quitadas e ${revertibleItems.length} podem voltar para pendente.`
             : hasPreview
               ? "Sem selecao: o preview abaixo considera toda a fila com mensagem pronta."
               : "Use a selecao em massa para atualizar o status das mensalidades sem navegar linha por linha.";
@@ -536,7 +536,7 @@
 
         if (previewMode) {
           previewMode.textContent = selectedItems.length
-            ? `Preview atual: ${selectedItems.length} cobranca(s) selecionada(s).`
+            ? `Preview atual: ${selectedItems.length} cobrança(s) selecionada(s).`
             : "Sem selecao: o preview abaixo considera toda a fila com mensagem pronta.";
         }
 
@@ -600,7 +600,7 @@
 
       const maybeConfirmBulkOpen = () => {
         if (root.getAttribute("data-charge-behavior") === "MANUAL_ONLY") {
-          return window.confirm("A cobranca esta em modo manual. Deseja mesmo abrir os links de WhatsApp em lote?");
+          return window.confirm("A cobrança está em modo manual. Deseja mesmo abrir os links de WhatsApp em lote?");
         }
         return true;
       };
@@ -665,7 +665,7 @@
           const selectedItems = getSelectedItems();
           if (!selectedItems.length) {
             event.preventDefault();
-            showToast("Selecione pelo menos uma mensalidade para a acao em lote.", "error");
+            showToast("Selecione pelo menos uma mensalidade para a ação em lote.", "error");
             syncSelection();
             return;
           }

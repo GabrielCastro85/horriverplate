@@ -268,7 +268,7 @@
       try {
         localStorage.setItem(guestsStorageKey, guestsField.value);
       } catch (err) {
-        console.warn("Nao foi possivel salvar convidados no storage.", err);
+        console.warn("Não foi possível salvar convidados no storage.", err);
       }
       guestList.innerHTML = guests
         .map(
@@ -287,7 +287,7 @@
       try {
         raw = localStorage.getItem(guestsStorageKey) || "";
       } catch (err) {
-        console.warn("Nao foi possivel ler convidados do storage.", err);
+        console.warn("Não foi possível ler convidados do storage.", err);
       }
       if (!raw) return;
       raw
@@ -956,6 +956,8 @@
         imgBtn.textContent = "Gerando...";
         imgBtn.disabled = true;
         if (shareStatus) shareStatus.textContent = "Gerando imagem...";
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
         try {
           const normalizeColorLabel = (value) => {
             const raw = value ? String(value).trim().toLowerCase() : "";
@@ -1004,6 +1006,7 @@
           const res = await fetch("/share/lineup.jpg", {
             method: "POST",
             headers,
+            signal: controller.signal,
             body: JSON.stringify({
               teams: teamsPayload,
               goalkeepers: goalkeepersPayload,
@@ -1029,10 +1032,14 @@
           if (shareStatus) shareStatus.textContent = "Imagem baixada.";
         } catch (err) {
           console.error(err);
-          const message = err?.message || "Erro ao gerar imagem.";
+          const message =
+            err?.name === "AbortError"
+              ? "O Render demorou demais para gerar a imagem. Tente novamente em alguns segundos."
+              : err?.message || "Erro ao gerar imagem.";
           if (shareStatus) shareStatus.textContent = message;
           alert(`Não foi possível gerar a imagem. Tente novamente.\n\n${message}`);
         } finally {
+          clearTimeout(timeoutId);
           imgBtn.textContent = original;
           imgBtn.disabled = false;
         }

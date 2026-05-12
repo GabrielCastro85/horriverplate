@@ -119,7 +119,7 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
     }
 
     res.render("admin_monthly_vote", {
-      title: "Votacao do mes",
+      title: "Votação do mês",
       mvMonth,
       mvYear,
       monthNames,
@@ -136,8 +136,8 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
       monthlyVoteCreated: req.query.monthlyVoteCreated === "1",
     });
   } catch (err) {
-    console.error("Erro ao carregar votacao do mes:", err);
-    res.status(500).send("Erro ao carregar votacao do mes.");
+    console.error("Erro ao carregar votação do mês:", err);
+    res.status(500).send("Erro ao carregar votação do mês.");
   }
 });
 
@@ -174,7 +174,7 @@ router.post("/monthly-vote/:id/close", requireAdmin, async (req, res) => {
 
     return res.redirect("/admin/monthly-vote?monthlyVoteClosed=1");
   } catch (err) {
-    console.error("Erro ao encerrar votacao do mes:", err);
+    console.error("Erro ao encerrar votação do mês:", err);
     return res.redirect("/admin/monthly-vote?monthlyVoteError=close");
   }
 });
@@ -197,7 +197,7 @@ router.post("/monthly-vote/:id/delete", requireAdmin, async (req, res) => {
 
     return res.redirect("/admin/monthly-vote");
   } catch (err) {
-    console.error("Erro ao excluir votacao do mes:", err);
+    console.error("Erro ao excluir votação do mês:", err);
     return res.redirect("/admin/monthly-vote");
   }
 });

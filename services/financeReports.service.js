@@ -203,7 +203,7 @@ function buildCashOriginLabel(transaction) {
 }
 
 function getTransactionOriginMode(transaction) {
-  return transaction.origin === "MANUAL" ? "Manual" : "Automatico";
+  return transaction.origin === "MANUAL" ? "Manual" : "Automático";
 }
 
 function formatPercent(value) {
@@ -275,7 +275,7 @@ function buildCashRows(cashTransactions, startingBalance) {
         date: transaction.date,
         dateLabel: formatDateBR(transaction.date),
         type: transaction.type,
-        typeLabel: transaction.type === "INCOME" ? "Entrada" : "Saida",
+        typeLabel: transaction.type === "INCOME" ? "Entrada" : "Saída",
         category: transaction.category,
         categoryLabel: getTransactionCategoryLabel(transaction.category),
         description: transaction.description,
@@ -307,7 +307,7 @@ function buildMonthlyRows(monthlyFees) {
     const planDetail = isPerMatch
       ? `${chargedMatches} ${chargedMatches === 1 ? "pelada" : "peladas"} no avulso`
       : billingMode === "EXEMPT"
-      ? "Sem cobranca no periodo"
+      ? "Sem cobrança no período"
       : "Mensalidade fixa";
 
     return {
@@ -402,20 +402,20 @@ function buildAnnualBreakdown(period, monthlyFees, cashTransactions, guestRows) 
 function buildInsights({ period, summary, previousSummary, expenseDistribution }) {
   const insights = [];
   insights.push({
-    title: "Receita e despesas do periodo",
-    text: `Na competencia ${period.label}, foram arrecadados ${formatCurrencyBR(summary.totalIncome)} e registrados ${formatCurrencyBR(summary.totalExpenses)} em despesas.`,
+    title: "Receita e despesas do período",
+    text: `Na competência ${period.label}, foram arrecadados ${formatCurrencyBR(summary.totalIncome)} e registrados ${formatCurrencyBR(summary.totalExpenses)} em despesas.`,
   });
 
   insights.push({
     title: "Saldo e adimplencia",
-    text: `O saldo final do periodo ficou em ${formatCurrencyBR(summary.netResult)}, com adimplencia de ${formatPercent(summary.paidPercentage)} e pendencia total de ${formatCurrencyBR(summary.totalPending)}.`,
+    text: `O saldo final do período ficou em ${formatCurrencyBR(summary.netResult)}, com adimplencia de ${formatPercent(summary.paidPercentage)} e pendência total de ${formatCurrencyBR(summary.totalPending)}.`,
   });
 
   if (expenseDistribution.length) {
     const mainExpense = expenseDistribution[0];
     insights.push({
       title: "Principal categoria de gasto",
-      text: `${mainExpense.label} liderou as saidas do periodo, somando ${mainExpense.amountLabel} (${mainExpense.percentageLabel} das despesas).`,
+      text: `${mainExpense.label} liderou as saídas do período, somando ${mainExpense.amountLabel} (${mainExpense.percentageLabel} das despesas).`,
     });
   }
 
@@ -423,8 +423,8 @@ function buildInsights({ period, summary, previousSummary, expenseDistribution }
     const delta = roundCurrency(summary.netResult - previousSummary.netResult);
     const direction = delta >= 0 ? "melhorou" : "piorou";
     insights.push({
-      title: "Comparacao com o periodo anterior",
-      text: `Em relacao a ${previousSummary.periodLabel}, o resultado do periodo ${direction} ${formatCurrencyBR(Math.abs(delta))}.`,
+      title: "Comparação com o período anterior",
+      text: `Em relação a ${previousSummary.periodLabel}, o resultado do período ${direction} ${formatCurrencyBR(Math.abs(delta))}.`,
     });
   }
 
@@ -432,8 +432,8 @@ function buildInsights({ period, summary, previousSummary, expenseDistribution }
 }
 
 function buildNarratives({ period, summary, expenseDistribution }) {
-  const intro = `Segue a prestacao de contas de ${period.label}, com resumo de arrecadacao, despesas, pendencias e saldo do periodo.`;
-  const detailed = `Na competencia ${period.label}, o financeiro registrou ${formatCurrencyBR(
+  const intro = `Segue a prestação de contas de ${period.label}, com resumo de arrecadação, despesas, pendências e saldo do período.`;
+  const detailed = `Na competência ${period.label}, o financeiro registrou ${formatCurrencyBR(
     summary.totalIncome
   )} em entradas, ${formatCurrencyBR(summary.totalExpenses)} em despesas e ${formatCurrencyBR(
     summary.netResult

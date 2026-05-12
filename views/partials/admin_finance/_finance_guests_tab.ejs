@@ -33,16 +33,16 @@
         sectionChipTone: "accent",
         sectionBadges: [
           { label: `${guestPayments.length} registro(s)` },
-          { label: `${formatCurrencyBR(guestPayments.reduce((sum, guest) => sum + decimalToNumber(guest.amount), 0))} no periodo` },
+          { label: `${formatCurrencyBR(guestPayments.reduce((sum, guest) => sum + decimalToNumber(guest.amount), 0))} no período` },
         ],
-        sectionTitle: "Entradas avulsas do periodo",
+        sectionTitle: "Entradas avulsas do período",
         sectionDescription: "A aba de convidados agora entra no mesmo fluxo do resto do financeiro: contexto no topo, resumo curto e cadastro lado a lado com a lista.",
       }) %>
     </article>
 
     <aside class="finance-module-aside-card">
       <div class="space-y-3">
-        <div class="finance-kicker">Integracao</div>
+        <div class="finance-kicker">Integração</div>
         <div class="text-2xl font-semibold text-horriver-light">Convidado ja cai no caixa</div>
         <p class="finance-subtle">
           Todo convidado salvo aqui continua criando uma entrada automatica no caixa com referencia cruzada para auditoria.
@@ -71,10 +71,10 @@
     <article class="finance-module-mini-card">
       <span class="finance-kicker">Convidados</span>
       <strong><%= guestPayments.length %></strong>
-      <span class="finance-subtle">Registros avulsos encontrados neste periodo.</span>
+      <span class="finance-subtle">Registros avulsos encontrados neste período.</span>
     </article>
     <article class="finance-module-mini-card finance-module-mini-card--accent">
-      <span class="finance-kicker">Competencia</span>
+      <span class="finance-kicker">Competência</span>
       <strong><%= guestPayments.filter((guest) => guest.month && guest.year).length %></strong>
       <span class="finance-subtle">Entradas com referencia mensal definida.</span>
     </article>
@@ -90,7 +90,7 @@
       <div class="finance-panel-section-head">
         <div class="finance-panel-section-head__copy">
           <div class="finance-kicker">Lista de convidados</div>
-          <h3 class="font-title text-xl text-horriver-light mt-2">Registros do periodo</h3>
+          <h3 class="font-title text-xl text-horriver-light mt-2">Registros do período</h3>
         </div>
         <div class="finance-panel-section-head__actions">
           <span class="finance-chip"><%= guestPayments.length %> item(ns)</span>
@@ -107,7 +107,7 @@
                 <th>Valor</th>
                 <th>Referencia</th>
                 <th>Pelada</th>
-                <th>Acoes</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -126,7 +126,7 @@
         </div>
       <% } else { %>
         <%- include("./_finance_empty_state", {
-          emptyStateMessage: "Nenhum convidado foi registrado neste periodo. Quando houver avulsos pagos, eles aparecerao aqui com a referencia que entrou no caixa.",
+          emptyStateMessage: "Nenhum convidado foi registrado neste período. Quando houver avulsos pagos, eles aparecerao aqui com a referencia que entrou no caixa.",
         }) %>
       <% } %>
     </div>
@@ -146,7 +146,7 @@
         <label class="finance-label md:col-span-2">Nome do convidado<input type="text" name="guestName" value="<%= selectedGuest?.guestName || '' %>" class="finance-input" placeholder="Ex.: Joao da resenha"></label>
         <label class="finance-label">Data<input type="date" name="date" value="<%= selectedGuest ? formatDateInput(selectedGuest.date) : currentDateInputValue %>" class="finance-input"></label>
         <label class="finance-label">Valor pago<input type="text" name="amount" value="<%= selectedGuest ? decimalToNumber(selectedGuest.amount).toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="0,00"></label>
-        <label class="finance-label">Mes de referencia
+        <label class="finance-label">Mês de referencia
           <select name="referenceMonth" class="finance-select">
             <option value="">Sem referencia mensal</option>
             <% monthOptions.forEach((option) => { %><option value="<%= option.value %>" <%= Number(selectedGuest?.month || filters.month) === Number(option.value) ? 'selected' : '' %>><%= option.label %></option><% }) %>
@@ -164,7 +164,7 @@
             <% recentMatches.forEach((match) => { %><option value="<%= match.id %>" <%= Number(selectedGuest?.matchId || 0) === Number(match.id) ? 'selected' : '' %>><%= formatDateBR(match.playedAt) %><%= match.description ? ` · ${match.description}` : '' %></option><% }) %>
           </select>
         </label>
-        <label class="finance-label md:col-span-2">Observacao<textarea name="note" class="finance-textarea" placeholder="Ex.: convidado liberado pela turma, acerto da semana, referencia de quem pagou."><%= selectedGuest?.note || '' %></textarea></label>
+        <label class="finance-label md:col-span-2">Observação<textarea name="note" class="finance-textarea" placeholder="Ex.: convidado liberado pela turma, acerto da semana, referencia de quem pagou."><%= selectedGuest?.note || '' %></textarea></label>
         <div class="md:col-span-2 flex items-center justify-between gap-3">
           <% if (selectedGuest) { %>
             <button type="submit" form="delete-guest-<%= selectedGuest.id %>" class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white">Excluir convidado</button>

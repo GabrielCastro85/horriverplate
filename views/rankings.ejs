@@ -765,7 +765,7 @@
     .rk-scroll table[data-rk-type="assists"] td:nth-child(4)::before { content: "Assist."; }
     .rk-scroll table[data-rk-type="saves"] td:nth-child(4)::before { content: "Defesas"; }
     .rk-scroll table[data-rk-type="ga"] td:nth-child(4)::before { content: "Total"; }
-    .rk-scroll table[data-rk-type="ratings"] td:nth-child(4)::before { content: "Media"; }
+    .rk-scroll table[data-rk-type="ratings"] td:nth-child(4)::before { content: "Média"; }
     .rk-scroll table[data-rk-type="photos"] td:nth-child(4)::before { content: "Fotos"; }
     .rk-scroll table[data-rk-type="matches"] td:nth-child(4)::before { content: "Pres."; }
     .rk-scroll table[data-rk-type="overall"] td:nth-child(4)::before { content: "Overall"; }
@@ -801,18 +801,18 @@
           Rankings completos
         </h1>
         <p class="text-sm text-horriver-gray">
-          Veja os rankings gerais ou filtrados por ano/mes e posicao.
+          Veja os rankings gerais ou filtrados por ano/mês e posição.
         </p>
       </div>
 
       <!-- Resumo do filtro atual -->
       <div class="text-xs text-horriver-gray md:text-right space-y-2">
         <p>
-          Periodo:
+          Período:
           <span class="text-horriver-orange font-medium"><%= periodLabel() %></span>
         </p>
         <p>
-          Posicao:
+          Posição:
           <span class="text-horriver-orange font-medium"><%= posLabel(selPos) %></span>
         </p>
 
@@ -867,7 +867,7 @@
             </div>
 
             <div class="min-w-[120px]">
-              <label class="block text-horriver-gray mb-1">Mes</label>
+              <label class="block text-horriver-gray mb-1">Mês</label>
               <select
                 name="month"
                 class="w-full bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2 text-horriver-light"
@@ -884,7 +884,7 @@
             </div>
 
             <div class="min-w-[130px]">
-              <label class="block text-horriver-gray mb-1">Posicao</label>
+              <label class="block text-horriver-gray mb-1">Posição</label>
               <select
                 name="position"
                 class="w-full bg-horriver-dark border border-horriver-border rounded-xl px-3 py-2 text-horriver-light"
@@ -938,7 +938,7 @@
 
     <article class="quick-stat">
       <span class="quick-stat__label">
-        Lider em assistencias
+        Lider em assistências
       </span>
       <strong class="quick-stat__value">
         <%= topAssist ? topAssist.assists || 0 : 0 %>
@@ -950,7 +950,7 @@
 
     <article class="quick-stat">
       <span class="quick-stat__label">
-        Melhor media
+        Melhor média
       </span>
       <strong class="quick-stat__value">
         <%= topRating ? fmtRating(topRating.rating) : "0,00" %>
@@ -976,16 +976,16 @@
   <nav class="rk-jump-nav" aria-label="Ir para ranking" data-rk-jump-nav>
     <div class="rk-jump-nav__scroller">
       <a href="#ranking-gols" class="is-active">Gols</a>
-      <a href="#ranking-assistencias">Assist.</a>
+      <a href="#ranking-assistências">Assist.</a>
       <a href="#ranking-defesas">Defesas</a>
       <a href="#ranking-ga">G/A</a>
-      <a href="#ranking-medias">Medias</a>
+      <a href="#ranking-medias">Médias</a>
       <a href="#ranking-fotos">Fotos</a>
-      <a href="#ranking-presencas">Presencas</a>
+      <a href="#ranking-presenças">Presenças</a>
       <a href="#ranking-overall">Overall</a>
       <a href="#ranking-ultimos-10">10J</a>
       <a href="#ranking-semana">Semana</a>
-      <a href="#ranking-mes">Mes</a>
+      <a href="#ranking-mes">Mês</a>
     </div>
   </nav>
 
@@ -1020,7 +1020,7 @@
               <span class="<%= emptyEyebrowClass %>">Sem vitorias</span>
               <h3 class="mt-4 text-[1.05rem] font-bold text-horriver-light">Nenhuma cor venceu neste recorte</h3>
               <p class="mt-2 text-sm leading-relaxed text-horriver-gray/90">
-                Ajuste o periodo ou a posicao para comparar outro intervalo.
+                Ajuste o período ou a posição para comparar outro intervalo.
               </p>
             </div>
           <% } else { %>
@@ -1108,7 +1108,7 @@
       </div>
 
       <!-- ================= ASSISTÊNCIAS ================= -->
-      <div id="ranking-assistencias" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+      <div id="ranking-assistências" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -1323,7 +1323,7 @@
               </p>
             <% } else { %>
               <%- renderRankingPodium(ratings, [
-                { label: "Media", value: (row) => fmtRating(row.rating) },
+                { label: "Média", value: (row) => fmtRating(row.rating) },
               ]) %>
               <div class="rk-scroll h-full overflow-y-auto" data-skeleton="list">
                 <table class="table-sticky w-full text-[11px] rk-has-podium" data-rk-type="ratings">
@@ -1426,7 +1426,7 @@
       </div>
 
       <!-- ================= PRESENÇAS ================= -->
-      <div id="ranking-presencas" class="card-highlight rounded-3xl p-[1px] rk-anchor">
+      <div id="ranking-presenças" class="card-highlight rounded-3xl p-[1px] rk-anchor">
         <div class="card-inner p-4 md:p-5 flex flex-col h-full min-h-[380px]">
           <div class="flex items-center justify-between gap-3">
             <div>

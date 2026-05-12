@@ -4,7 +4,7 @@
   const financeTabs = currentFinanceView.navigation.tabs;
 %>
 
-<nav class="finance-tabbar" aria-label="Navegacao do modulo financeiro">
+<nav class="finance-tabbar" aria-label="Navegação do módulo financeiro">
   <% financeTabs.forEach((tab) => { %>
     <a href="<%= tab.href %>" class="finance-tab <%= tab.active ? 'finance-tab--active' : '' %>">
       <span class="finance-tab__top">

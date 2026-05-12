@@ -146,7 +146,7 @@ async function loadContext(tokenValue) {
   });
 
   if (!stats.length) {
-    return { error: "Nenhum jogador presente registrado para esta pelada." };
+    return { error: "Nenhum jogador presente registrado para está pelada." };
   }
 
   const playersRaw = stats.map((s) => {
@@ -170,7 +170,7 @@ async function loadContext(tokenValue) {
     : playersRaw;
   const players = await decoratePlayersWithLineup(token.session.matchId, filteredPlayers);
   if (!players.length) {
-    return { error: "Nenhum jogador disponivel para votar." };
+    return { error: "Nenhum jogador disponível para votar." };
   }
 
   return {
@@ -249,7 +249,7 @@ router.post("/:token", voteLimiter, async (req, res) => {
 
     if (missing || ratings.length !== players.length) {
       return res.render("vote_token", {
-        title: "Votacao",
+        title: "Votação",
         error: "Preencha todas as notas de 1 a 5 para continuar.",
         success: false,
         voteSabotageAlert: null,
@@ -356,7 +356,7 @@ async function loadPublicVoteContext(matchId, token) {
   });
 
   if (!stats.length) {
-    return { error: "Nenhum jogador presente registrado para esta pelada." };
+    return { error: "Nenhum jogador presente registrado para está pelada." };
   }
 
   const normalizePosition = (raw) => {

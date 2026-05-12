@@ -25,8 +25,8 @@
         Elenco completo
       </h1>
       <p class="text-sm text-horriver-gray max-w-xl">
-        Todos os jogadores cadastrados no Horriver Plate. Acompanhe posicao,
-        apelido e um resumo rapido das estatisticas gerais.
+        Todos os jogadores cadastrados no Horriver Plate. Acompanhe posição,
+        apelido e um resumo rápido das estatísticas gerais.
       </p>
     </div>
 
@@ -50,7 +50,7 @@
 
       <div class="w-full sm:w-40">
         <label class="block text-horriver-gray mb-1">
-          Filtrar por posicao
+          Filtrar por posição
         </label>
         <select
           id="player-position-filter"
@@ -183,7 +183,7 @@
                 >
                   <p class="text-horriver-gray flex items-center gap-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
-                    Assistencias
+                    Assistências
                   </p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalAssists || 0 %>
@@ -196,7 +196,7 @@
                 >
                   <p class="text-horriver-gray flex items-center gap-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    Presencas
+                    Presenças
                   </p>
                   <p class="text-horriver-light font-semibold text-sm">
                     <%= p.totalMatches || 0 %>
@@ -271,7 +271,7 @@
       if (posLabel && posLabel.toLowerCase() !== "todas") {
         const chip = document.createElement("span");
         chip.className = "px-2 py-1 rounded-full bg-black/60 border border-horriver-border";
-        chip.textContent = `Posicao: ${posLabel}`;
+        chip.textContent = `Posição: ${posLabel}`;
         chipsEl.appendChild(chip);
       }
     }

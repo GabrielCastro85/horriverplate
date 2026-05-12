@@ -181,54 +181,54 @@ function getMonthlyFeeHash(source = {}) {
 }
 
 const FINANCE_NOTICE_MESSAGES = {
-  "configuracoes-salvas": "Configuracoes financeiras salvas.",
-  "jogador-salvo": "Participacao financeira do jogador atualizada.",
-  "mensalidades-geradas": "Mensalidades do mes geradas com sucesso.",
-  "competencia-preparada": "Competencia preparada com as mensalidades faltantes.",
+  "configuracoes-salvas": "Configurações financeiras salvas.",
+  "jogador-salvo": "Participação financeira do jogador atualizada.",
+  "mensalidades-geradas": "Mensalidades do mês geradas com sucesso.",
+  "competencia-preparada": "Competência preparada com as mensalidades faltantes.",
   "mensalidades-ja-existentes": "Nenhuma nova mensalidade foi criada; os registros ja existiam.",
   "mensalidade-atualizada": "Mensalidade atualizada.",
-  "mensalidade-excluida": "Mensalidade excluida com os lancamentos automaticos vinculados.",
+  "mensalidade-excluida": "Mensalidade excluída com os lançamentos automáticos vinculados.",
   "pagamento-registrado": "Pagamento registrado e lancado no caixa.",
   "mensalidade-isenta": "Mensalidade marcada como isenta.",
   "charge-bulk-paid": "Mensalidades selecionadas marcadas como pagas em lote.",
   "charge-bulk-pending": "Mensalidades selecionadas voltaram para pendente.",
-  "caixa-criado": "Lancamento criado no caixa.",
-  "caixa-atualizado": "Lancamento manual atualizado.",
-  "caixa-excluido": "Lancamento manual excluido.",
+  "caixa-criado": "Lançamento criado no caixa.",
+  "caixa-atualizado": "Lançamento manual atualizado.",
+  "caixa-excluido": "Lançamento manual excluido.",
   "convidado-criado": "Convidado registrado e lancado no caixa.",
   "convidado-atualizado": "Convidado atualizado.",
   "convidado-excluido": "Convidado excluido.",
-  "competencia-resetada": "Os dados financeiros da competencia selecionada foram resetados.",
+  "competencia-resetada": "Os dados financeiros da competência selecionada foram resetados.",
 };
 
 const FINANCE_ERROR_MESSAGES = {
-  configuracoes: "Nao foi possivel salvar as configuracoes agora.",
-  "jogador-invalido": "Jogador invalido para este ajuste.",
-  "jogador-salvo": "Nao foi possivel atualizar a regra financeira deste jogador.",
-  "sem-jogadores-ativos": "Nenhum jogador esta ativo no financeiro para gerar mensalidades.",
-  mensalidades: "Nao foi possivel gerar as mensalidades.",
+  configuracoes: "Não foi possível salvar as configurações agora.",
+  "jogador-invalido": "Jogador inválido para este ajuste.",
+  "jogador-salvo": "Não foi possível atualizar a regra financeira deste jogador.",
+  "sem-jogadores-ativos": "Nenhum jogador está ativo no financeiro para gerar mensalidades.",
+  mensalidades: "Não foi possível gerar as mensalidades.",
   "mensalidade-invalida": "Mensalidade invalida.",
-  "mensalidade-nao-encontrada": "Mensalidade nao encontrada.",
-  "mensalidade-atualizar": "Nao foi possivel atualizar a mensalidade.",
-  "mensalidade-excluir": "Nao foi possivel excluir essa mensalidade.",
+  "mensalidade-nao-encontrada": "Mensalidade não encontrada.",
+  "mensalidade-atualizar": "Não foi possível atualizar a mensalidade.",
+  "mensalidade-excluir": "Não foi possível excluir essa mensalidade.",
   "pagamento-invalido": "Informe um valor de pagamento valido.",
-  pagamento: "Nao foi possivel registrar o pagamento.",
-  "mensalidade-isenta": "Nao foi possivel marcar a mensalidade como isenta.",
-  "charge-bulk-empty": "Selecione pelo menos uma cobranca pendente para a acao em lote.",
-  "charge-bulk-pay": "Nao foi possivel concluir a marcacao em lote das cobrancas.",
-  "categoria-caixa": "Escolha uma categoria compativel com o tipo de lancamento.",
+  pagamento: "Não foi possível registrar o pagamento.",
+  "mensalidade-isenta": "Não foi possível marcar a mensalidade como isenta.",
+  "charge-bulk-empty": "Selecione pelo menos uma cobrança pendente para a ação em lote.",
+  "charge-bulk-pay": "Não foi possível concluir a marcação em lote das cobranças.",
+  "categoria-caixa": "Escolha uma categoria compatível com o tipo de lançamento.",
   "valor-caixa": "Informe um valor valido para o caixa.",
-  "caixa-criado": "Nao foi possivel criar o lancamento no caixa.",
-  "caixa-invalido": "Lancamento invalido.",
-  "caixa-bloqueado": "Esse lancamento e automatico; edite pela origem dele.",
-  "caixa-atualizado": "Nao foi possivel atualizar o lancamento.",
-  "caixa-excluir": "Nao foi possivel excluir esse lancamento.",
+  "caixa-criado": "Não foi possível criar o lançamento no caixa.",
+  "caixa-invalido": "Lançamento inválido.",
+  "caixa-bloqueado": "Esse lançamento e automático; edite pela origem dele.",
+  "caixa-atualizado": "Não foi possível atualizar o lançamento.",
+  "caixa-excluir": "Não foi possível excluir esse lançamento.",
   convidado: "Preencha nome e valor do convidado.",
-  "convidado-invalido": "Convidado invalido.",
-  "convidado-nao-encontrado": "Convidado nao encontrado.",
-  "convidado-atualizado": "Nao foi possivel atualizar o convidado.",
-  "convidado-excluir": "Nao foi possivel excluir o convidado.",
-  "competencia-resetar": "Nao foi possivel resetar os dados financeiros desta competencia.",
+  "convidado-invalido": "Convidado inválido.",
+  "convidado-nao-encontrado": "Convidado não encontrado.",
+  "convidado-atualizado": "Não foi possível atualizar o convidado.",
+  "convidado-excluir": "Não foi possível excluir o convidado.",
+  "competencia-resetar": "Não foi possível resetar os dados financeiros desta competência.",
 };
 
 const FINANCE_STATUS_TONE_CLASSES = {
@@ -261,7 +261,7 @@ function buildFinanceRenderView(financePage) {
   const activeTabMeta = vm.navigation.tabs.find((item) => item.active) || vm.navigation.tabs[0];
   const currentDateInputValue = formatDateInput(getSaoPauloTodayDate());
   const noticeText = filters.notice
-    ? FINANCE_NOTICE_MESSAGES[filters.notice] || "Acao concluida."
+    ? FINANCE_NOTICE_MESSAGES[filters.notice] || "Ação concluída."
     : "";
   const errorText = filters.error
     ? FINANCE_ERROR_MESSAGES[filters.error] || "Algo deu errado."

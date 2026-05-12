@@ -61,7 +61,7 @@
           Painel do Administrador
         </h1>
         <p class="text-[11px] md:text-xs text-horriver-gray/80 mt-1">
-          Gerencie peladas, jogadores, destaques da semana, craque do mes e a premiacao da temporada.
+          Gerencie peladas, jogadores, destaques da semana, craque do mês e a premiação da temporada.
         </p>
       </div>
 
@@ -151,7 +151,7 @@
             type="button"
             class="hidden text-[11px] md:text-xs text-horriver-gray/80 hover:text-horriver-orange"
           >
-            Cancelar edicao
+            Cancelar edição
           </button>
         </div>
 
@@ -195,7 +195,7 @@
 
           <div class="space-y-1">
             <label class="block text-horriver-gray/80">
-              Posicao
+              Posição
             </label>
             <select
               name="position"
@@ -277,8 +277,8 @@
                 <tr class="border-b border-horriver-border/70 text-horriver-gray/80">
                   <th class="py-2 pr-3 text-left font-normal">Jogador</th>
                   <th class="py-2 pr-3 text-left font-normal">Apelido</th>
-                  <th class="py-2 pr-3 text-left font-normal">Posicao</th>
-                  <th class="py-2 pr-3 text-left font-normal">Acoes</th>
+                  <th class="py-2 pr-3 text-left font-normal">Posição</th>
+                  <th class="py-2 pr-3 text-left font-normal">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -325,7 +325,7 @@
                         <form
                           action="/admin/players/<%= p.id %>/delete"
                           method="POST"
-                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estatisticas.');"
+                          onsubmit="return confirm('Excluir o jogador <%= p.name %>? Isso pode afetar estatísticas.');"
                         >
                           <button
                             type="submit"
@@ -392,7 +392,7 @@
                       <th class="py-2 pr-4 text-left font-normal">Data</th>
                       <th class="py-2 pr-4 text-left font-normal">Descricao</th>
                       <th class="py-2 pr-4 text-left font-normal">Vencedor</th>
-                      <th class="py-2 pr-4 text-left font-normal">Acoes</th>
+                      <th class="py-2 pr-4 text-left font-normal">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -415,7 +415,7 @@
                               href="/admin/matches/<%= match.id %>"
                               class="inline-flex items-center min-h-[32px] text-[11px] text-horriver-orange hover:underline"
                             >
-                              Estatisticas
+                              Estatísticas
                             </a>
 
                             <form
@@ -526,7 +526,7 @@
             class="block w-full text-[11px] md:text-xs text-horriver-gray"
           />
           <p class="text-[10px] text-horriver-gray/70">
-            Assim que voce escolher uma imagem, o editor de corte aparece logo abaixo.
+            Assim que você escolher uma imagem, o editor de corte aparece logo abaixo.
           </p>
 
           <!-- Area de crop -->
@@ -543,7 +543,7 @@
               <img
                 id="teamPhotoCropImage"
                 class="max-w-full block"
-                alt="Pre-visualizacao do corte"
+                alt="Pre-visualização do corte"
               />
             </div>
             <button
@@ -573,7 +573,7 @@
       <!-- Lista Ultimos destaques -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          Ultimos destaques
+          Últimos destaques
         </h3>
 
         <% if (!weeklyAwards.length) { %>
@@ -640,7 +640,7 @@
     <div class="card-inner rounded-2xl p-6 md:p-7 space-y-5">
       <div class="flex items-center justify-between">
         <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-          Craque do mes
+          Craque do mês
         </h2>
       </div>
 
@@ -653,7 +653,7 @@
       >
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            mes
+            mês
           </label>
           <select
             id="monthly_month"
@@ -695,7 +695,7 @@
 
         <div class="space-y-1">
           <label class="block text-horriver-gray/80">
-            Craque do mes (opcional)
+            Craque do mês (opcional)
           </label>
           <select
             id="monthly_craque"
@@ -715,19 +715,19 @@
           type="submit"
           class="mt-2 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-xs md:text-sm font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Salvar craque do mes
+          Salvar craque do mês
         </button>
       </form>
 
-      <!-- Lista Ultimos craques do mes -->
+      <!-- Lista Ultimos craques do mês -->
       <div class="pt-4 border-t border-horriver-border/60 space-y-3">
         <h3 class="text-xs md:text-sm font-semibold text-horriver-gray/90">
-          Ultimos craques do mes
+          Últimos craques do mês
         </h3>
 
         <% if (!monthlyAwards.length) { %>
           <p class="text-[11px] text-horriver-gray/70">
-            Nenhum craque do mes cadastrado.
+            Nenhum craque do mês cadastrado.
           </p>
         <% } else { %>
           <ul class="space-y-2 text-[11px] md:text-xs">
@@ -767,7 +767,7 @@
                   <form
                     action="/admin/monthly-awards/<%= m.id %>/delete"
                     method="POST"
-                    onsubmit="return confirm('Remover esse craque do mes?');"
+                    onsubmit="return confirm('Remover esse craque do mês?');"
                   >
                     <button
                       type="submit"
@@ -793,17 +793,17 @@
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 class="text-lg md:text-xl font-semibold text-horriver-light">
-            premiacao da temporada
+            premiação da temporada
           </h2>
           <p class="text-[11px] md:text-xs text-horriver-gray/80">
-            Cadastre os premios de fim de ano (melhor jogador, artilheiro, por posicao, etc).
+            Cadastre os premios de fim de ano (melhor jogador, artilheiro, por posição, etc).
           </p>
         </div>
         <a
           href="/admin/premiacao"
           class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-[11px] md:text-xs font-medium text-black hover:bg-orange-500 transition shadow-card-soft"
         >
-          Gerenciar premiacao da temporada
+          Gerenciar premiação da temporada
         </a>
       </div>
 
@@ -856,7 +856,7 @@
         </div>
       <% } else { %>
         <p class="text-[11px] md:text-xs text-horriver-gray/80">
-          Nenhuma premiacao cadastrada ainda. Clique em "Gerenciar premiacao da temporada" para comecar.
+          Nenhuma premiação cadastrada ainda. Clique em "Gerenciar premiação da temporada" para comecar.
         </p>
       <% } %>
     </div>
@@ -872,7 +872,7 @@
         method="POST"
         action="/admin/recalculate-totals"
         class="inline"
-        onsubmit="if(!confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estatisticas.')) return false; var btn=this.querySelector('[type=submit]'); btn.disabled=true; btn.textContent='Recalculando...';"
+        onsubmit="if(!confirm('Tem CERTEZA que deseja recalcular todos os totais? Use apenas se algo estiver errado nas estatísticas.')) return false; var btn=this.querySelector('[type=submit]'); btn.disabled=true; btn.textContent='Recalculando...';"
       >
         <button
           type="submit"
@@ -930,7 +930,7 @@
       
       playerFormTitle.textContent = "Editar jogador";
       playerFormHint.textContent = "Editando o jogador selecionado. Envie nova foto se quiser trocar; deixe vazio para manter a atual. Clique em \"Cancelar edição\" para voltar ao modo de cadastro.";
-      playerSubmit.textContent = "Salvar alteracoes";
+      playerSubmit.textContent = "Salvar alterações";
       playerCancelEdit.classList.remove("hidden");
       if (playerPhotoBlock) playerPhotoBlock.classList.remove("hidden");
 
@@ -1042,8 +1042,7 @@
           }
 
           if (typeof Cropper === "undefined") {
-            alert(
-              "Ferramenta de corte nao carregou. Verifique sua conexao com a internet."
+            alert("Ferramenta de corte não carregou. Verifique sua conexao com a internet."
             );
             return;
           }

@@ -166,6 +166,7 @@ async function renderImageJob({
   selector = "body",
   width = 720,
   height = 1280,
+  deviceScaleFactor = 1,
   type = "jpeg",
   quality = 88,
   logPrefix = "[share:image]",
@@ -176,7 +177,7 @@ async function renderImageJob({
   timeout = 30000,
 }) {
   const t0 = Date.now();
-  console.log(`${logPrefix} start ${width}x${height} ${type}`);
+  console.log(`${logPrefix} start ${width}x${height} dpr=${deviceScaleFactor} ${type}`);
   console.log(`${logPrefix} memory before ${formatMemoryUsage()}`);
 
   return enqueueImageJob(async () => {
@@ -184,7 +185,7 @@ async function renderImageJob({
     try {
       const browser = await getBrowser();
       page = await browser.newPage();
-      await page.setViewport({ width, height, deviceScaleFactor: 1 });
+      await page.setViewport({ width, height, deviceScaleFactor });
       if (cookies.length) await page.setCookie(...cookies);
       await blockUnneededRequests(page, { allowScripts });
 
