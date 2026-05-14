@@ -4,7 +4,7 @@ const path = require("path");
 const ejs = require("ejs");
 const prisma = require("../../utils/db");
 const { formatPlayerLabel, formatPositionShort, formatNumberBR } = require("../../utils/adminFormat");
-const { renderImageFromUrl } = require("../../utils/puppeteer");
+const { renderImageFromUrl } = require("../../services/imageRenderer");
 const router = express.Router();
 
 let puppeteer = null;
@@ -371,7 +371,6 @@ async function captureAwardsCardJpg(matchId, adminToken) {
     width: 720,
     height: 1280,
     type: "jpeg",
-    quality: 88,
     logPrefix: "[share:awards]",
     cookies: [{
       name: "adminToken",

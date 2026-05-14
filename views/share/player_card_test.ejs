@@ -4,10 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=1080" />
   <title>Card <%= player.name %></title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
+    <%- typeof fontCss !== "undefined" ? fontCss : "" %>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
@@ -27,9 +25,9 @@
       ovrTrend:     ovrTrend,
       ovrDelta:     ovrDelta,
       achievements: achievements,
-      photoUrl:     player.photoUrl ? (baseUrl + player.photoUrl) : null,
-      logoSmall:    baseUrl + '/img/logo-32x32.svg',
-      logoWatermark: baseUrl + '/img/logo-128x128.svg',
+      photoUrl:     player.photoUrl && !/^https?:\/\//i.test(player.photoUrl) ? (baseUrl + player.photoUrl) : null,
+      logoSmall:    typeof logoSmall !== 'undefined' && logoSmall ? logoSmall : baseUrl + '/img/logo-32x32.svg',
+      logoWatermark: typeof logoWatermark !== 'undefined' && logoWatermark ? logoWatermark : baseUrl + '/img/logo-128x128.svg',
       scale: 2,
     }}) %>
 </body>

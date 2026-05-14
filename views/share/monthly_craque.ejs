@@ -8,7 +8,9 @@
     const n = Number(v);
     return Number.isFinite(n) ? n.toFixed(2) : '–';
   };
-  const photoSrc = winner && winner.photoUrl ? (baseUrl + winner.photoUrl) : null;
+  const photoSrc = winner && winner.photoUrl && !/^https?:\/\//i.test(winner.photoUrl)
+    ? (baseUrl + winner.photoUrl)
+    : null;
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -16,10 +18,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=900" />
   <title>Craque do Mês — <%= monthLabel %> <%= mvYear %></title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
+    <%- typeof fontCss !== "undefined" ? fontCss : "" %>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       background: transparent;
@@ -39,7 +39,7 @@
         linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
       border: 1px solid rgba(255,122,26,0.22);
       box-shadow: 0 40px 96px rgba(0,0,0,0.52);
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: 'Manrope', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       text-rendering: geometricPrecision;
     }
@@ -169,11 +169,11 @@
 </head>
 <body>
   <div class="mc-card">
-    <img class="mc-watermark" src="<%= baseUrl %>/img/logo-128x128.svg" alt="" />
+    <img class="mc-watermark" src="<%= typeof logoMarkUrl !== 'undefined' && logoMarkUrl ? logoMarkUrl : baseUrl + '/img/logo-128x128.svg' %>" alt="" />
     <div class="mc-inner">
 
       <div class="mc-branding">
-        <img class="mc-logo" src="<%= baseUrl %>/img/logo-32x32.svg" alt="" />
+        <img class="mc-logo" src="<%= typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.svg' %>" alt="" />
         <span class="mc-brand-name">Horriver Plate</span>
       </div>
 

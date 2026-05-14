@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:lowmem": "node --max-old-space-size=384 server.js",
+    "start:lowmem:gc": "node --expose-gc --max-old-space-size=384 server.js",
     "dev": "nodemon server.js",
+    "dev:lowmem": "node --max-old-space-size=384 ./node_modules/nodemon/bin/nodemon.js server.js",
     "postinstall": "prisma generate && npx puppeteer browsers install chrome",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate",

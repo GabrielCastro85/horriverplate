@@ -294,6 +294,7 @@ app.use((req, res, next) => {
 // Deixa disponível a rota atual (pra menus ativos, etc.)
 app.use((req, res, next) => {
   res.locals.currentPath = req.path;
+  res.locals.isExport = req.query.export === "1";
   next();
 });
 
@@ -406,7 +407,6 @@ if (process.env.NODE_ENV === "production") {
     scheduleBackup({ reason: "auto" });
   }, 24 * 60 * 60 * 1000);
 }
-
 
 
 

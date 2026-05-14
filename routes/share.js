@@ -10,7 +10,7 @@ const {
   renderImageFromHtml,
   renderImageFromUrl,
   viewportFor,
-} = require("../utils/puppeteer");
+} = require("../services/imageRenderer");
 
 // ── Cache em disco para imagens geradas pelo Puppeteer ─────────────────────
 const CACHE_DIR = path.join(os.tmpdir(), "share-image-cache");
@@ -41,6 +41,11 @@ function sendJpeg(res, buffer, filename) {
   res.setHeader("Content-Length", buffer.length);
   res.setHeader("Cache-Control", "no-store");
   return res.end(buffer);
+}
+
+function sendImageError(res, message = "Não foi possível gerar a imagem agora. Tente novamente em alguns segundos.") {
+  if (res.headersSent) return;
+  return res.status(503).send(message);
 }
 
 async function buildShareData(playerId) {
@@ -93,7 +98,14 @@ router.get("/player-card-test-html", async (req, res) => {
 
     // baseUrl derivado do request para que as imagens resolvam corretamente
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const html = await ejs.renderFile(TEMPLATE, { ...data, baseUrl });
+    const logoDataUri = await getLineupLogoDataUri();
+    const html = await ejs.renderFile(TEMPLATE, {
+      ...data,
+      baseUrl,
+      fontCss: getLineupFontCss(),
+      logoSmall: logoDataUri,
+      logoWatermark: logoDataUri,
+    });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(html);
@@ -112,7 +124,7 @@ router.get("/player-card-test.jpg", async (req, res) => {
   console.log(`[share:player-card] request player #${playerId}`);
 
   // Cache de 1 hora (dados do jogador podem mudar)
-  const cacheKey = `player-card-${playerId}`;
+  const cacheKey = `player-card-v2-${playerId}`;
   const cached = readCache(cacheKey, 60 * 60 * 1000);
   if (cached) {
     console.log(`[share:player-card] cache hit player #${playerId} (${Date.now() - t0}ms)`);
@@ -125,15 +137,22 @@ router.get("/player-card-test.jpg", async (req, res) => {
     if (!data) return res.status(404).send("Jogador não encontrado");
 
     const host = `${req.protocol}://${req.get("host")}`;
-    const htmlUrl = `${host}/share/player-card-test-html?playerId=${playerId}`;
-    const buf = await renderImageFromUrl({
-      url: htmlUrl,
+    const logoDataUri = await getLineupLogoDataUri();
+    const html = await ejs.renderFile(TEMPLATE, {
+      ...data,
+      baseUrl: host,
+      fontCss: getLineupFontCss(),
+      logoSmall: logoDataUri,
+      logoWatermark: logoDataUri,
+    });
+    const buf = await renderImageFromHtml({
+      html,
       selector: ".pec-card",
       width: 720,
       height: 900,
       type: "jpeg",
-      quality: 88,
       logPrefix: "[share:player-card]",
+      resourceOrigin: host,
     });
 
     writeCache(cacheKey, buf);
@@ -141,7 +160,7 @@ router.get("/player-card-test.jpg", async (req, res) => {
     return sendJpeg(res, buf, `player-card-${playerId}.jpg`);
   } catch (err) {
     console.error(`[share:player-card] Erro player #${playerId}:`, err);
-    if (!res.headersSent) return res.status(500).send("Não foi possível gerar o card agora.");
+    if (!res.headersSent) return sendImageError(res, "Não foi possível gerar o card agora. Tente novamente em alguns segundos.");
   }
 });
 
@@ -182,13 +201,7 @@ async function buildVotingData(matchId) {
       let sourceBuffer = null;
 
       if (/^https?:\/\//i.test(player.photoUrl)) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 3500);
-        const response = await fetch(player.photoUrl, { signal: controller.signal });
-        clearTimeout(timer);
-        if (response.ok) {
-          sourceBuffer = Buffer.from(await response.arrayBuffer());
-        }
+        sourceBuffer = null;
       } else {
         const rel = player.photoUrl.replace(/^\/+/, "");
         const abs = path.resolve(publicDir, rel);
@@ -242,6 +255,7 @@ router.get("/voting-result-html", async (req, res) => {
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
+      fontCss: getLineupFontCss(),
     });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -261,7 +275,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v5-${matchId}`;
+  const cacheKeyVoting = `voting-result-v6-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -283,6 +297,7 @@ router.get("/voting-result.jpg", async (req, res) => {
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
+      fontCss: getLineupFontCss(),
     });
     const buf = await renderImageFromHtml({
       html,
@@ -290,8 +305,8 @@ router.get("/voting-result.jpg", async (req, res) => {
       width: 720,
       height: 1280,
       type: "jpeg",
-      quality: 88,
       logPrefix: "[share:voting-result]",
+      resourceOrigin: baseUrl,
     });
 
     writeCache(cacheKeyVoting, buf);
@@ -304,7 +319,7 @@ router.get("/voting-result.jpg", async (req, res) => {
     return sendJpeg(res, buf, `resultado-votacao-${dateLabel}.jpg`);
   } catch (err) {
     console.error(`[share:voting-result] Erro match #${matchId}:`, err);
-    if (!res.headersSent) return res.status(500).send("Não foi possível gerar a imagem agora.");
+    if (!res.headersSent) return sendImageError(res);
   }
 });
 
@@ -355,7 +370,14 @@ router.get("/monthly-craque-html", async (req, res) => {
     if (!data) return res.status(404).send("Sessão ou vencedor não encontrado");
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const html = await ejs.renderFile(MONTHLY_CRAQUE_TEMPLATE, { ...data, baseUrl });
+    const logoDataUri = await getLineupLogoDataUri();
+    const html = await ejs.renderFile(MONTHLY_CRAQUE_TEMPLATE, {
+      ...data,
+      baseUrl,
+      fontCss: getLineupFontCss(),
+      logoMarkUrl: logoDataUri,
+      logoIconUrl: logoDataUri,
+    });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(html);
@@ -374,7 +396,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
   console.log(`[share:craque-mes] request session #${sessionId}`);
 
   // Cache permanente — vencedor não muda após sessão encerrada
-  const cacheKeyCraque = `monthly-craque-${sessionId}`;
+  const cacheKeyCraque = `monthly-craque-v2-${sessionId}`;
   const cachedCraque = readCache(cacheKeyCraque);
   if (cachedCraque) {
     console.log(`[share:craque-mes] cache hit session #${sessionId} (${Date.now() - t0}ms)`);
@@ -387,15 +409,22 @@ router.get("/monthly-craque.jpg", async (req, res) => {
     if (!data) return res.status(404).send("Sessão ou vencedor não encontrado");
 
     const host = `${req.protocol}://${req.get("host")}`;
-    const htmlUrl = `${host}/share/monthly-craque-html?sessionId=${sessionId}`;
-    const buf = await renderImageFromUrl({
-      url: htmlUrl,
+    const logoDataUri = await getLineupLogoDataUri();
+    const html = await ejs.renderFile(MONTHLY_CRAQUE_TEMPLATE, {
+      ...data,
+      baseUrl: host,
+      fontCss: getLineupFontCss(),
+      logoMarkUrl: logoDataUri,
+      logoIconUrl: logoDataUri,
+    });
+    const buf = await renderImageFromHtml({
+      html,
       selector: ".mc-card",
       width: 720,
       height: 900,
       type: "jpeg",
-      quality: 88,
       logPrefix: "[share:craque-mês]",
+      resourceOrigin: host,
     });
 
     writeCache(cacheKeyCraque, buf);
@@ -404,7 +433,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
     return sendJpeg(res, buf, `craque-do-mes-${data.mvMonth}-${data.mvYear}.jpg`);
   } catch (err) {
     console.error(`[share:craque-mes] Erro session #${sessionId}:`, err);
-    if (!res.headersSent) return res.status(500).send("Não foi possível gerar a imagem agora.");
+    if (!res.headersSent) return sendImageError(res);
   }
 });
 
@@ -524,11 +553,10 @@ async function generateLineupJpeg(req, res) {
         selector: ".lc-card",
         width: viewport.width,
         height: viewport.height,
-        deviceScaleFactor: 2,
         type: "jpeg",
-        quality: 92,
         logPrefix: "[share:lineup]",
         scaleToWidth: viewport.width,
+        resourceOrigin: baseUrl,
       });
 
       console.log(`[share:lineup] done ${viewport.format} in ${Date.now() - t0}ms`);
@@ -537,7 +565,7 @@ async function generateLineupJpeg(req, res) {
       console.error("[share:lineup] error: ", err);
       if (!res.headersSent) {
         const detail = process.env.NODE_ENV === "production" ? "" : ` (${err.message})`;
-        return res.status(500).send(`Não foi possível gerar a imagem dos times. Tente novamente.${detail}`);
+        return sendImageError(res, `Não foi possível gerar a imagem dos times. Tente novamente.${detail}`);
       }
     }
 }
@@ -576,7 +604,6 @@ router.get("/tournament.jpg", async (req, res) => {
       width: 720,
       height: 900,
       type: "jpeg",
-      quality: 88,
       logPrefix: `[share:tournament:${type}]`,
       cookies,
     });
@@ -584,7 +611,7 @@ router.get("/tournament.jpg", async (req, res) => {
     return sendJpeg(res, buffer, `tournament-${type}.jpg`);
   } catch (err) {
     console.error(`[share:tournament:${type}] error: `, err);
-    return res.status(500).send("Não foi possível gerar a imagem do torneio agora.");
+    return sendImageError(res, "Não foi possível gerar a imagem do torneio agora. Tente novamente em alguns segundos.");
   }
 });
 
@@ -610,14 +637,14 @@ router.post("/tierlist.jpg", async (req, res) => {
       width: viewport.width,
       height: viewport.height,
       type: "jpeg",
-      quality: 88,
       logPrefix: "[share:tierlist]",
+      resourceOrigin: baseUrl,
     });
 
     return sendJpeg(res, buffer, "tierlist-horriver.jpg");
   } catch (err) {
     console.error("[share:tierlist] error: ", err);
-    return res.status(500).send("Não foi possível gerar a imagem da tierlist agora.");
+    return sendImageError(res, "Não foi possível gerar a imagem da tierlist agora. Tente novamente em alguns segundos.");
   }
 });
 
