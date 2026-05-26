@@ -146,6 +146,9 @@ router.post(
       if (status === "retired") {
         data.isHallOfFame = false;
         data.hallReason = "Aposentado";
+        data.financeActive = false;
+        data.isMonthlyMember = false;
+        data.financeParticipantType = "EXEMPT";
       } else {
         data.isHallOfFame = false;
         data.hallReason = hallReasonText || null;
@@ -279,6 +282,27 @@ router.post("/players/:id/delete", requireAdmin, async (req, res) => {
         where: { playerId: id },
       });
       await tx.playerStat.deleteMany({
+        where: { playerId: id },
+      });
+
+      const monthlyFees = await tx.monthlyFee.findMany({
+        where: { playerId: id },
+        select: { id: true },
+      });
+      const monthlyFeeIds = monthlyFees.map((row) => row.id);
+
+      await tx.cashTransaction.deleteMany({
+        where: {
+          OR: [
+            { playerId: id },
+            ...(monthlyFeeIds.length
+              ? [{ monthlyFeeId: { in: monthlyFeeIds } }]
+              : []),
+          ],
+        },
+      });
+
+      await tx.monthlyFee.deleteMany({
         where: { playerId: id },
       });
 

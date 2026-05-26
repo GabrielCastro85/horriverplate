@@ -777,7 +777,7 @@
       <!-- novo jogador -->
       <div class="admin-panel rounded-2xl p-4 space-y-3">
         <h3 class="font-semibold text-lg text-horriver-light">Novo Jogador</h3>
-        <form action="/admin/players" method="POST" enctype="multipart/form-data" class="space-y-3 text-sm text-horriver-gray" data-autosave="true" data-toast="Jogador adicionado.">
+        <form action="/admin/players<%= typeof csrfToken !== 'undefined' && csrfToken ? '?_csrf=' + encodeURIComponent(csrfToken) : '' %>" method="POST" enctype="multipart/form-data" class="space-y-3 text-sm text-horriver-gray" data-autosave="true" data-toast="Jogador adicionado.">
           <label class="flex flex-col gap-1">
             Nome completo
             <input type="text" name="name" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light" />
@@ -844,6 +844,9 @@
                   <span class="text-[11px] px-2 py-1 rounded-full bg-horriver-dark text-horriver-light uppercase" data-player-position="<%= player.position %>"><%= player.position %></span>
                   <a href="/admin/players/<%= player.id %>/edit" class="inline-flex items-center min-h-[34px] text-[12px] text-horriver-orange hover:underline">Editar</a>
                   <form action="/admin/players/<%= player.id %>/delete" method="POST" onsubmit="return confirm('Excluir jogador e todo o histórico?');">
+                    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <% } %>
                     <button type="submit" class="px-2 py-1 rounded-full text-red-500 hover:text-red-300 text-[12px] min-h-[34px]">Excluir</button>
                   </form>
                 </div>

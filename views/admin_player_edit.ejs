@@ -9,7 +9,7 @@
     Editando: <span class="text-horriver-light"><%= player.name %></span>
   </h2>
 
-  <form action="/admin/players/<%= player.id %>/edit" method="POST" enctype="multipart/form-data" class="max-w-lg bg-horriver-gray-dark p-6 rounded-md space-y-4" data-autosave="true" data-toast="Jogador atualizado.">
+  <form action="/admin/players/<%= player.id %>/edit<%= typeof csrfToken !== 'undefined' && csrfToken ? '?_csrf=' + encodeURIComponent(csrfToken) : '' %>" method="POST" enctype="multipart/form-data" class="max-w-lg bg-horriver-gray-dark p-6 rounded-md space-y-4" data-autosave="true" data-toast="Jogador atualizado.">
     
     <div>
       <label for="name" class="block text-xs mb-1">Nome Completo</label>
@@ -79,5 +79,14 @@
     <div class="pt-4">
       <button type="submit" class="w-full bg-horriver-orange text-horriver-dark font-bold py-2 rounded-md hover:bg-opacity-80 transition">Salvar Altera&ccedil;&otilde;es</button>
     </div>
+  </form>
+
+  <form action="/admin/players/<%= player.id %>/delete" method="POST" class="max-w-lg mt-4" onsubmit="return confirm('Excluir jogador e todo o histórico?');">
+    <% if (typeof csrfToken !== 'undefined' && csrfToken) { %>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+    <% } %>
+    <button type="submit" class="w-full border border-red-500/70 text-red-300 font-bold py-2 rounded-md hover:bg-red-500/10 transition">
+      Excluir jogador definitivamente
+    </button>
   </form>
 </div>
