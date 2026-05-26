@@ -829,6 +829,7 @@ router.get("/hall-da-fama", async (req, res) => {
           },
           select: {
             playerId: true,
+            present: true,
             goals: true,
             assists: true,
             appearedInPhoto: true,
@@ -956,6 +957,5 @@ router.get("/achievements", async (req, res) => {
 });
 
 module.exports = router;
-
 
 
