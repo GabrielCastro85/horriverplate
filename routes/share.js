@@ -390,7 +390,11 @@ async function embedMonthlyWinnerPhoto(winner) {
 
     const photoBuffer = await sharp(fs.readFileSync(abs))
       .rotate()
-      .resize(320, 320, { fit: "cover", position: "center" })
+      .resize(320, 320, {
+        fit: "contain",
+        position: "center",
+        background: { r: 12, g: 12, b: 16 },
+      })
       .jpeg({ quality: 86, mozjpeg: true })
       .toBuffer();
 
@@ -437,7 +441,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
   console.log(`[share:craque-mes] request session #${sessionId}`);
 
   // Cache permanente — vencedor não muda após sessão encerrada
-  const cacheKeyCraque = `monthly-craque-v5-${sessionId}`;
+  const cacheKeyCraque = `monthly-craque-v6-${sessionId}`;
   const cachedCraque = readCache(cacheKeyCraque);
   if (cachedCraque) {
     console.log(`[share:craque-mes] cache hit session #${sessionId} (${Date.now() - t0}ms)`);
