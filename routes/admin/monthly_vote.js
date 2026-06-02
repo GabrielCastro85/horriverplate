@@ -1,5 +1,6 @@
 const express = require("express");
 const prisma = require("../../utils/db");
+const { computeMonthlyVoteData } = require("../../utils/monthly_vote");
 const router = express.Router();
 
 function requireAdmin(req, res, next) {
@@ -52,6 +53,7 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
     const monthlyVoteCandidates = Array.isArray(monthlyVoteSession?.candidates)
       ? monthlyVoteSession.candidates
       : [];
+    const { ranking: monthlyVoteRanking } = await computeMonthlyVoteData(prisma, mvMonth, mvYear);
     const voteBaseUrl = `${req.protocol}://${req.get("host")}`;
     const monthlyVoteBallots = monthlyVoteSession
       ? await prisma.monthlyVoteBallot.findMany({
@@ -126,6 +128,7 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
       monthlyVoteSession,
       monthlyVoteTokens,
       monthlyVoteCandidates,
+      monthlyVoteRanking,
       monthlyVoteBallots,
       monthlyVoteCounts,
       monthlyVoteWinner,

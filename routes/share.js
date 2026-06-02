@@ -11,6 +11,7 @@ const {
   renderImageFromUrl,
   viewportFor,
 } = require("../services/imageRenderer");
+const PUBLIC_DIR = path.resolve(__dirname, "../public");
 
 // ── Cache em disco para imagens geradas pelo Puppeteer ─────────────────────
 const CACHE_DIR = path.join(os.tmpdir(), "share-image-cache");
@@ -357,7 +358,47 @@ async function buildMonthlyCraqueData(sessionId) {
       return String(a.name || "").localeCompare(String(b.name || ""));
     })[0];
 
+  const currentPlayer = winner?.id
+    ? await prisma.player.findUnique({
+        where: { id: Number(winner.id) },
+        select: { photoUrl: true, name: true, nickname: true },
+      })
+    : null;
+
+  if (currentPlayer) {
+    winner.photoUrl = currentPlayer.photoUrl || winner.photoUrl || null;
+    winner.name = winner.name || currentPlayer.name;
+    winner.nickname = winner.nickname || currentPlayer.nickname || null;
+  }
+
+  await embedMonthlyWinnerPhoto(winner);
+
   return { winner, mvMonth: session.month, mvYear: session.year };
+}
+
+async function embedMonthlyWinnerPhoto(winner) {
+  if (!winner?.photoUrl || /^https?:\/\//i.test(winner.photoUrl)) return;
+
+  try {
+    const sharp = require("sharp");
+    const rel = String(winner.photoUrl).replace(/^\/+/, "");
+    const abs = path.resolve(PUBLIC_DIR, rel);
+    if (!abs.startsWith(PUBLIC_DIR + path.sep) || !fs.existsSync(abs)) {
+      winner.photoUrl = null;
+      return;
+    }
+
+    const photoBuffer = await sharp(fs.readFileSync(abs))
+      .rotate()
+      .resize(320, 320, { fit: "cover", position: "center" })
+      .jpeg({ quality: 86, mozjpeg: true })
+      .toBuffer();
+
+    winner.photoDataUri = `data:image/jpeg;base64,${photoBuffer.toString("base64")}`;
+  } catch (err) {
+    console.warn(`[share:craque-mes] foto ignorada (${winner.name || winner.id || "vencedor"}):`, err.message);
+    winner.photoUrl = null;
+  }
 }
 
 // ── Debug: renderiza HTML do card de craque do mês ─────────────────────────
@@ -396,7 +437,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
   console.log(`[share:craque-mes] request session #${sessionId}`);
 
   // Cache permanente — vencedor não muda após sessão encerrada
-  const cacheKeyCraque = `monthly-craque-v2-${sessionId}`;
+  const cacheKeyCraque = `monthly-craque-v5-${sessionId}`;
   const cachedCraque = readCache(cacheKeyCraque);
   if (cachedCraque) {
     console.log(`[share:craque-mes] cache hit session #${sessionId} (${Date.now() - t0}ms)`);

@@ -4,13 +4,13 @@
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
   const monthLabel = monthNames[mvMonth] || ('Mês ' + mvMonth);
-  const fmtScore = (v) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n.toFixed(2) : '–';
-  };
-  const photoSrc = winner && winner.photoUrl && !/^https?:\/\//i.test(winner.photoUrl)
-    ? (baseUrl + winner.photoUrl)
-    : null;
+  const photoSrc = winner && winner.photoDataUri
+    ? winner.photoDataUri
+    : winner && winner.photoUrl
+      ? (/^https?:\/\//i.test(winner.photoUrl)
+          ? winner.photoUrl
+          : baseUrl + '/' + String(winner.photoUrl).replace(/^\/+/, ''))
+      : null;
 %>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -101,9 +101,9 @@
       margin-bottom: 32px;
     }
     .mc-divider--subtle { height: 1px; background: rgba(255,255,255,0.06); margin-bottom: 28px; }
-    .mc-winner { display: flex; align-items: center; gap: 32px; margin-bottom: 36px; }
+    .mc-winner { display: flex; align-items: center; gap: 36px; margin-bottom: 36px; }
     .mc-winner-photo {
-      width: 140px; height: 140px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+      width: 150px; height: 150px; border-radius: 28px; overflow: hidden; flex-shrink: 0;
       border: 3px solid rgba(255,122,26,0.85); box-shadow: 0 0 36px rgba(255,122,26,0.30); background: #111;
     }
     .mc-winner-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -126,22 +126,6 @@
       border-radius: 999px; background: rgba(255,122,26,0.10); border: 1px solid rgba(255,122,26,0.32);
       font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em;
       color: #ffb36a; line-height: 1;
-    }
-    .mc-score-box {
-      flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 10px;
-      padding: 22px 30px; border-radius: 20px; border: 1px solid rgba(255,122,26,0.30);
-      background: rgba(255,122,26,0.06);
-    }
-    .mc-score-label {
-      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.26em;
-      color: rgba(255,179,106,0.72); line-height: 1;
-    }
-    .mc-score-line {
-      display: block; width: 40px; height: 3px; border-radius: 999px;
-      background: linear-gradient(90deg, #8b1320, #ff7a1a);
-    }
-    .mc-score-value {
-      font-family: 'Bebas Neue', sans-serif; font-size: 80px; line-height: 0.88; color: #ff7a1a;
     }
     .mc-stats {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 36px;
@@ -209,11 +193,6 @@
           <% } %>
         </div>
 
-        <div class="mc-score-box">
-          <span class="mc-score-label">Score</span>
-          <span class="mc-score-line"></span>
-          <span class="mc-score-value"><%= fmtScore(winner && winner.score) %></span>
-        </div>
       </div>
 
       <div class="mc-divider--subtle"></div>

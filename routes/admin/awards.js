@@ -3,106 +3,15 @@ const crypto = require("crypto");
 const prisma = require("../../utils/db");
 const { uploadWeeklyTeamPhoto, processUploadedImage } = require("../../utils/upload");
 const { deleteCache } = require("../../utils/page_cache");
+const {
+  MONTHLY_VOTE_DEFAULT_CANDIDATES,
+  computeMonthlyVoteData,
+} = require("../../utils/monthly_vote");
 const router = express.Router();
 
 function requireAdmin(req, res, next) {
   if (!req.admin) return res.redirect("/login");
   next();
-}
-
-// ==============================
-// Monthly vote data computation (used by /monthly-vote-session)
-// ==============================
-
-const MONTHLY_VOTE_WEIGHTS = {
-  goals: 0.3,
-  assists: 0.2,
-  rating: 0.5,
-};
-const MONTHLY_VOTE_MIN_MATCHES = 2;
-
-function getMonthRange(year, month) {
-  const start = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month, 1, 3, 0, 0, 0));
-  return { start, end };
-}
-
-async function computeMonthlyVoteData(month, year) {
-  const { start, end } = getMonthRange(year, month);
-  const stats = await prisma.playerStat.findMany({
-    where: {
-      present: true,
-      match: { playedAt: { gte: start, lt: end } },
-    },
-    include: { player: true },
-  });
-
-  const agg = new Map();
-  stats.forEach((stat) => {
-    if (!agg.has(stat.playerId)) {
-      agg.set(stat.playerId, {
-        player: stat.player,
-        matches: 0,
-        goals: 0,
-        assists: 0,
-        ratingSum: 0,
-        ratingCount: 0,
-        photos: 0,
-      });
-    }
-    const row = agg.get(stat.playerId);
-    row.matches += 1;
-    row.goals += stat.goals || 0;
-    row.assists += stat.assists || 0;
-    row.photos += stat.appearedInPhoto ? 1 : 0;
-    if (stat.rating != null) {
-      row.ratingSum += stat.rating;
-      row.ratingCount += 1;
-    }
-  });
-
-  const allRows = Array.from(agg.values()).map((row) => {
-    const avgGoals = row.matches ? row.goals / row.matches : 0;
-    const avgAssists = row.matches ? row.assists / row.matches : 0;
-    const avgRating = row.ratingCount ? row.ratingSum / row.ratingCount : 0;
-    const score =
-      avgGoals * MONTHLY_VOTE_WEIGHTS.goals +
-      avgAssists * MONTHLY_VOTE_WEIGHTS.assists +
-      avgRating * MONTHLY_VOTE_WEIGHTS.rating;
-    return {
-      player: row.player,
-      matches: row.matches,
-      goals: row.goals,
-      assists: row.assists,
-      photos: row.photos,
-      avgGoals,
-      avgAssists,
-      avgRating,
-      score,
-    };
-  });
-
-  const eligibleVoters = allRows.map((r) => r.player.id);
-  const candidates = allRows
-    .filter((r) => r.matches >= MONTHLY_VOTE_MIN_MATCHES)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 6)
-    .map((r) => ({
-      id: r.player.id,
-      name: r.player.name,
-      nickname: r.player.nickname || null,
-      photoUrl: r.player.photoUrl || null,
-      matches: r.matches,
-      goals: r.goals,
-      assists: r.assists,
-      photos: r.photos,
-      avgGoals: Number(r.avgGoals.toFixed(2)),
-      avgAssists: Number(r.avgAssists.toFixed(2)),
-      avgRating: Number(r.avgRating.toFixed(2)),
-      score: Number(r.score.toFixed(4)),
-    }));
-
-  return { candidates, eligibleVoters };
 }
 
 // ==============================
@@ -285,7 +194,22 @@ router.post("/monthly-vote-session", requireAdmin, async (req, res) => {
       return res.redirect("/admin/monthly-vote?monthlyVoteError=invalidDate");
     }
 
-    const { candidates, eligibleVoters } = await computeMonthlyVoteData(month, year);
+    const rawSelected = Array.isArray(req.body.candidateIds)
+      ? req.body.candidateIds
+      : req.body.candidateIds
+        ? [req.body.candidateIds]
+        : null;
+    const selectedCandidateIds = rawSelected
+      ? rawSelected.map((id) => Number(id)).filter(Number.isFinite)
+      : null;
+
+    if (selectedCandidateIds && selectedCandidateIds.length > MONTHLY_VOTE_DEFAULT_CANDIDATES) {
+      return res.redirect(`/admin/monthly-vote?mvMonth=${month}&mvYear=${year}&monthlyVoteError=tooManyCandidates`);
+    }
+
+    const { candidates, eligibleVoters } = await computeMonthlyVoteData(prisma, month, year, {
+      selectedCandidateIds,
+    });
 
     if (!eligibleVoters.length) {
       return res.redirect(`/admin/monthly-vote?mvMonth=${month}&mvYear=${year}&monthlyVoteError=noVoters`);

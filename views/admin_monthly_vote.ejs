@@ -3,6 +3,10 @@
     d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour12: false }) : "-";
   const monthlyVoteStatusClass = monthlyVoteClosed ? "status-danger" : "status-info";
   const monthlyVoteStatusLabel = monthlyVoteClosed ? "Votação encerrada" : "Votação ativa";
+  const rankingRows = Array.isArray(monthlyVoteRanking) ? monthlyVoteRanking : [];
+  const suggestedCandidateIds = new Set(
+    rankingRows.filter((row) => row.eligible).slice(0, 6).map((row) => Number(row.id))
+  );
 %>
 
 <section class="space-y-4">
@@ -10,7 +14,7 @@
     <div>
       <p class="text-xs text-horriver-gray uppercase tracking-[0.2em]">Painel</p>
       <h1 class="font-title text-2xl text-horriver-light">Votação do mês</h1>
-      <p class="text-sm text-horriver-gray">Top 6 (minimo 2 peladas no mês) e links para votar.</p>
+      <p class="text-sm text-horriver-gray">Ranking do mês, candidatos editáveis e links para votar.</p>
     </div>
     <div class="flex w-full md:w-auto flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
       <% if (monthlyVoteSession) { %>
@@ -39,7 +43,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <label class="flex flex-col gap-1 text-sm text-horriver-gray">
             Mês
-            <select name="month" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
+            <select name="month" id="monthlyVoteMonth" class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light">
               <% (monthNames || []).forEach((name, idx) => { const val = idx + 1; %>
                 <option value="<%= val %>" <%= mvMonth === val ? "selected" : "" %>><%= name %></option>
               <% }) %>
@@ -50,6 +54,7 @@
             <input
               type="number"
               name="year"
+              id="monthlyVoteYear"
               value="<%= mvYear %>"
               class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-horriver-light"
             />
@@ -61,6 +66,8 @@
               Nenhum jogador presente no mês para votar.
             <% } else if (monthlyVoteError === 'noCandidates') { %>
               Nenhum candidato com pelo menos 2 peladas no mês.
+            <% } else if (monthlyVoteError === 'tooManyCandidates') { %>
+              Selecione no máximo 6 candidatos.
             <% } else { %>
               Erro ao gerar votação. Tente novamente.
             <% } %>
@@ -69,9 +76,99 @@
         <% if (monthlyVoteCreated) { %>
           <p class="text-xs text-emerald-400">Votação gerada com sucesso.</p>
         <% } %>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            id="openMonthlyCandidateModal"
+            class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+            <%= rankingRows.some((row) => row.eligible) ? "" : "disabled" %>
+          >
+            Revisar classificados
+          </button>
+          <button
+            type="button"
+            id="refreshMonthlyRanking"
+            class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-dark border border-horriver-border text-horriver-light text-xs hover:border-horriver-orange transition"
+          >
+            Ver ranking
+          </button>
+        </div>
+        <div
+          id="monthlyCandidateModal"
+          class="fixed inset-0 z-[80] hidden items-center justify-center bg-black/80 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="monthlyCandidateModalTitle"
+        >
+          <div class="w-full max-w-4xl max-h-[86vh] overflow-hidden rounded-2xl border border-horriver-orange/45 bg-[#09090d] shadow-card-soft">
+            <div class="flex items-start justify-between gap-4 border-b border-horriver-border/60 px-4 py-3">
+              <div>
+                <h4 id="monthlyCandidateModalTitle" class="text-lg font-semibold text-horriver-light">Revisar classificados</h4>
+                <p class="text-[11px] text-horriver-gray">Os 6 sugeridos já vêm marcados. Desmarque e escolha outros elegíveis antes de liberar os links.</p>
+              </div>
+              <button type="button" id="closeMonthlyCandidateModal" class="rounded-full border border-horriver-border px-3 py-1 text-xs text-horriver-light hover:border-horriver-orange">
+                Fechar
+              </button>
+            </div>
+            <div class="max-h-[62vh] overflow-y-auto p-4">
+              <% if (!rankingRows.length) { %>
+                <p class="text-sm text-horriver-gray">Nenhum jogador com presença nesse mês.</p>
+              <% } else { %>
+                <div class="grid md:grid-cols-2 gap-3">
+                  <% rankingRows.forEach((row) => {
+                       const checked = suggestedCandidateIds.has(Number(row.id));
+                  %>
+                    <label class="flex gap-3 rounded-xl border <%= row.eligible ? 'border-horriver-border/60 bg-black/50' : 'border-horriver-border/30 bg-black/25 opacity-55' %> p-3 text-[11px]">
+                      <input
+                        type="checkbox"
+                        name="candidateIds"
+                        value="<%= row.id %>"
+                        class="mt-1 h-4 w-4 accent-horriver-orange"
+                        data-monthly-candidate-checkbox
+                        <%= checked ? "checked" : "" %>
+                        <%= row.eligible ? "" : "disabled" %>
+                      />
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-start justify-between gap-2">
+                          <div class="min-w-0">
+                            <p class="text-horriver-light font-semibold truncate">#<%= row.rank %> <%= row.name %></p>
+                            <% if (row.nickname) { %>
+                              <p class="text-horriver-gray truncate">"<%= row.nickname %>"</p>
+                            <% } %>
+                          </div>
+                          <span class="status-chip <%= row.eligible ? (checked ? 'status-ok' : 'status-info') : 'status-warning' %>">
+                            <%= row.eligible ? (checked ? 'Sugerido' : 'Elegível') : 'Menos de 2 jogos' %>
+                          </span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-4 gap-2 text-center">
+                          <span class="rounded-lg border border-horriver-border/40 bg-black/40 px-2 py-1">Score<br><strong class="text-horriver-orange"><%= row.score.toFixed ? row.score.toFixed(4) : row.score %></strong></span>
+                          <span class="rounded-lg border border-horriver-border/40 bg-black/40 px-2 py-1">Nota<br><strong class="text-horriver-orange"><%= String(row.avgRating).replace('.', ',') %></strong></span>
+                          <span class="rounded-lg border border-horriver-border/40 bg-black/40 px-2 py-1">Jogos<br><strong class="text-horriver-orange"><%= row.matches %></strong></span>
+                          <span class="rounded-lg border border-horriver-border/40 bg-black/40 px-2 py-1">G/A<br><strong class="text-horriver-orange"><%= row.goals %>/<%= row.assists %></strong></span>
+                        </div>
+                      </div>
+                    </label>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-horriver-border/60 px-4 py-3">
+              <p id="monthlyCandidateCount" class="text-[11px] text-horriver-gray">0 selecionados</p>
+              <button
+                type="submit"
+                id="submitMonthlyVoteSession"
+                class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+              >
+                Gerar links com selecionados
+              </button>
+            </div>
+          </div>
+        </div>
         <button
           type="submit"
-          class="w-full px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition"
+          class="hidden"
+          aria-hidden="true"
+          tabindex="-1"
         >
           Gerar links
         </button>
@@ -224,6 +321,61 @@
     </div>
   </div>
 
+  <section class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <h3 class="font-semibold text-lg text-horriver-light">Ranking de classificação</h3>
+        <p class="text-[11px] text-horriver-gray">Score = média de gols x 0,3 + média de assistências x 0,2 + média de nota x 0,5.</p>
+      </div>
+      <span class="text-[11px] text-horriver-gray"><%= monthNames[mvMonth - 1] %> <%= mvYear %></span>
+    </div>
+    <% if (!rankingRows.length) { %>
+      <p class="text-sm text-horriver-gray">Nenhum jogador com presença nesse mês.</p>
+    <% } else { %>
+      <div class="overflow-x-auto text-[11px]">
+        <table class="min-w-[760px] w-full border-collapse">
+          <thead>
+            <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+              <th class="py-2 pr-3 text-left font-normal">#</th>
+              <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+              <th class="py-2 pr-3 text-left font-normal">Status</th>
+              <th class="py-2 pr-3 text-right font-normal">Score</th>
+              <th class="py-2 pr-3 text-right font-normal">Nota</th>
+              <th class="py-2 pr-3 text-right font-normal">Jogos</th>
+              <th class="py-2 pr-3 text-right font-normal">Gols</th>
+              <th class="py-2 pr-3 text-right font-normal">Assist.</th>
+              <th class="py-2 pr-3 text-right font-normal">Fotos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rankingRows.forEach((row) => {
+                 const isSuggested = suggestedCandidateIds.has(Number(row.id));
+            %>
+              <tr class="border-b border-horriver-border/40 last:border-0">
+                <td class="py-2 pr-3 text-horriver-gray"><%= row.rank %></td>
+                <td class="py-2 pr-3 text-horriver-light">
+                  <%= row.name %>
+                  <% if (row.nickname) { %><span class="text-horriver-gray">("<%= row.nickname %>")</span><% } %>
+                </td>
+                <td class="py-2 pr-3">
+                  <span class="status-chip <%= row.eligible ? (isSuggested ? 'status-ok' : 'status-info') : 'status-warning' %>">
+                    <%= row.eligible ? (isSuggested ? 'Top 6 automático' : 'Elegível') : 'Menos de 2 jogos' %>
+                  </span>
+                </td>
+                <td class="py-2 pr-3 text-right text-horriver-orange font-semibold"><%= row.score.toFixed ? row.score.toFixed(4) : row.score %></td>
+                <td class="py-2 pr-3 text-right text-horriver-light"><%= String(row.avgRating).replace('.', ',') %></td>
+                <td class="py-2 pr-3 text-right text-horriver-light"><%= row.matches %></td>
+                <td class="py-2 pr-3 text-right text-horriver-light"><%= row.goals %></td>
+                <td class="py-2 pr-3 text-right text-horriver-light"><%= row.assists %></td>
+                <td class="py-2 pr-3 text-right text-horriver-light"><%= row.photos %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+
   <% if (monthlyVoteSession) { %>
     <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -284,6 +436,80 @@
     <% } %>
   </section>
 <% } %>
+
+<script>
+  (function () {
+    const modal = document.getElementById("monthlyCandidateModal");
+    const openBtn = document.getElementById("openMonthlyCandidateModal");
+    const closeBtn = document.getElementById("closeMonthlyCandidateModal");
+    const submitBtn = document.getElementById("submitMonthlyVoteSession");
+    const countEl = document.getElementById("monthlyCandidateCount");
+    const refreshBtn = document.getElementById("refreshMonthlyRanking");
+    const monthInput = document.getElementById("monthlyVoteMonth");
+    const yearInput = document.getElementById("monthlyVoteYear");
+    const boxes = Array.from(document.querySelectorAll("[data-monthly-candidate-checkbox]"));
+    const maxCandidates = 6;
+
+    const updateCount = () => {
+      const selected = boxes.filter((box) => box.checked).length;
+      if (countEl) {
+        countEl.textContent = `${selected} selecionado${selected === 1 ? "" : "s"} de ${maxCandidates}`;
+        countEl.classList.toggle("text-red-400", selected < 1 || selected > maxCandidates);
+        countEl.classList.toggle("text-horriver-gray", selected >= 1 && selected <= maxCandidates);
+      }
+      if (submitBtn) {
+        submitBtn.disabled = selected < 1 || selected > maxCandidates;
+        submitBtn.classList.toggle("opacity-60", submitBtn.disabled);
+        submitBtn.classList.toggle("cursor-not-allowed", submitBtn.disabled);
+      }
+    };
+
+    const openModal = () => {
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      updateCount();
+    };
+
+    const closeModal = () => {
+      if (!modal) return;
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    };
+
+    boxes.forEach((box) => {
+      box.addEventListener("change", () => {
+        const selected = boxes.filter((item) => item.checked);
+        if (selected.length > maxCandidates) {
+          box.checked = false;
+          alert(`Selecione no máximo ${maxCandidates} candidatos.`);
+        }
+        updateCount();
+      });
+    });
+
+    if (openBtn) openBtn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (modal) {
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) closeModal();
+      });
+    }
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeModal();
+    });
+
+    if (refreshBtn && monthInput && yearInput) {
+      refreshBtn.addEventListener("click", () => {
+        const month = monthInput.value || "<%= mvMonth %>";
+        const year = yearInput.value || "<%= mvYear %>";
+        window.location.href = `/admin/monthly-vote?mvMonth=${encodeURIComponent(month)}&mvYear=${encodeURIComponent(year)}`;
+      });
+    }
+
+    updateCount();
+  })();
+</script>
 
 <script>
   (function () {
