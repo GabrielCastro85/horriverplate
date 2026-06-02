@@ -1,5 +1,5 @@
 const path = require("path");
-const { pathToFileURL } = require("url");
+const fs = require("fs");
 
 const prismaClient = require("../utils/db");
 const {
@@ -25,11 +25,44 @@ const {
   getTrimmedString,
 } = require("../helpers/financeInput.helper");
 const {
+  matchesChargeFilter,
+  normalizeChargeFilter,
+} = require("../helpers/financeStatus.helper");
+const {
   decorateMonthlyFee,
   getSaoPauloTodayDate,
   syncMonthlyCompetenceRules,
 } = require("./financeAutomation.service");
 const { getFinanceReportHistory } = require("./financeEventLog.service");
+
+const FINANCE_REPORT_LOGO_PATH = path.resolve(__dirname, "..", "public", "img", "LogoHPFC.svg");
+let financeReportLogoDataUriPromise = null;
+
+async function getFinanceReportLogoDataUri() {
+  if (!financeReportLogoDataUriPromise) {
+    financeReportLogoDataUriPromise = (async () => {
+      try {
+        const sharp = require("sharp");
+        const logoBuffer = await sharp(FINANCE_REPORT_LOGO_PATH)
+          .resize(320, 320, { fit: "inside", withoutEnlargement: true })
+          .png({ compressionLevel: 9, adaptiveFiltering: true })
+          .toBuffer();
+
+        return `data:image/png;base64,${logoBuffer.toString("base64")}`;
+      } catch (error) {
+        console.warn("[finance-report] logo otimizada indisponivel, usando SVG original", error?.message || error);
+        const logoBuffer = fs.readFileSync(FINANCE_REPORT_LOGO_PATH);
+        return `data:image/svg+xml;base64,${logoBuffer.toString("base64")}`;
+      }
+    })().catch((error) => {
+      financeReportLogoDataUriPromise = null;
+      console.warn("[finance-report] logo indisponivel para PDF", error?.message || error);
+      return "";
+    });
+  }
+
+  return financeReportLogoDataUriPromise;
+}
 
 function normalizeFinanceReportType(value) {
   const normalized = String(value || "FULL").trim().toUpperCase();
@@ -68,10 +101,12 @@ function monthStartUtc(year, month) {
 }
 
 function buildMonthlyPairsBetween(start, endExclusive) {
+  const saoPauloOffsetMs = 3 * 60 * 60 * 1000;
   const pairs = [];
-  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1, 12, 0, 0, 0));
-  const last = new Date(endExclusive.getTime() - 1);
-  const limit = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), 1, 12, 0, 0, 0));
+  const localStart = new Date(start.getTime() - saoPauloOffsetMs);
+  const localLast = new Date(endExclusive.getTime() - saoPauloOffsetMs - 1);
+  const cursor = new Date(Date.UTC(localStart.getUTCFullYear(), localStart.getUTCMonth(), 1, 12, 0, 0, 0));
+  const limit = new Date(Date.UTC(localLast.getUTCFullYear(), localLast.getUTCMonth(), 1, 12, 0, 0, 0));
 
   while (cursor <= limit) {
     pairs.push({
@@ -453,7 +488,7 @@ function buildNarratives({ period, summary, expenseDistribution }) {
   };
 }
 
-async function loadPeriodCollections({ prisma = prismaClient, settings, period }) {
+async function loadPeriodCollections({ prisma = prismaClient, settings, period, chargeFilter = "ALL" }) {
   const feeWhere = buildFeeWhereForPeriod(period);
   const monthlyPairs = buildMonthlyPairsBetween(period.start, period.end);
 
@@ -524,7 +559,12 @@ async function loadPeriodCollections({ prisma = prismaClient, settings, period }
   ]);
 
   const today = getSaoPauloTodayDate();
-  const monthlyFees = monthlyFeesRaw.map((fee) => decorateMonthlyFee(fee, settings, today));
+  const decoratedMonthlyFees = monthlyFeesRaw.map((fee) => decorateMonthlyFee(fee, settings, today));
+  const normalizedChargeFilter = normalizeChargeFilter(chargeFilter);
+  const monthlyFees =
+    normalizedChargeFilter === "ALL"
+      ? decoratedMonthlyFees
+      : decoratedMonthlyFees.filter((fee) => matchesChargeFilter(fee, normalizedChargeFilter));
   const guestRows = buildGuestRows(guestPaymentsRaw);
   const startingBalance = transactionsBeforeStart.reduce((sum, transaction) => {
     const amount = decimalToNumber(transaction.amount);
@@ -677,6 +717,9 @@ function buildExportOptions(params) {
   query.set("reportScope", params.reportScope);
   query.set("reportStart", params.reportStart || "");
   query.set("reportEnd", params.reportEnd || "");
+  if (params.chargeFilter && params.chargeFilter !== "ALL") {
+    query.set("chargeFilter", params.chargeFilter);
+  }
 
   return Object.values(REPORT_TYPE_META).map((meta) => {
     const hrefParams = new URLSearchParams(query.toString());
@@ -709,10 +752,12 @@ function buildFinanceReportFilename(reportMeta, period) {
 function normalizeFinanceReportParams(params = {}) {
   const reportType = normalizeFinanceReportType(params.reportType);
   const reportScope = normalizeFinanceReportScope(params.reportScope, reportType);
+  const chargeFilter = normalizeChargeFilter(params.chargeFilter);
   const { month, year } = parseFinanceCompetence(params);
   return {
     month,
     year,
+    chargeFilter,
     reportType,
     reportScope,
     reportStart: getTrimmedString(params.reportStart, ""),
@@ -732,8 +777,8 @@ async function buildFinanceReportDataset({
   const comparisonPeriod = buildComparisonPeriod(period);
 
   const [currentData, previousData, history] = await Promise.all([
-    loadPeriodCollections({ prisma, settings, period }),
-    loadPeriodCollections({ prisma, settings, period: comparisonPeriod }),
+    loadPeriodCollections({ prisma, settings, period, chargeFilter: normalizedParams.chargeFilter }),
+    loadPeriodCollections({ prisma, settings, period: comparisonPeriod, chargeFilter: normalizedParams.chargeFilter }),
     includeHistory ? getFinanceReportHistory(prisma, historyLimit) : Promise.resolve([]),
   ]);
 
@@ -748,8 +793,8 @@ async function buildFinanceReportDataset({
   };
 }
 
-function buildFinanceReportDocument({ reportMeta, period, currentData, previousData, insights, narratives, filename, settings }) {
-  const logoUrl = pathToFileURL(path.resolve(__dirname, "..", "public", "img", "LogoHPFC.svg")).href;
+async function buildFinanceReportDocument({ reportMeta, period, currentData, previousData, insights, narratives, filename, settings }) {
+  const logoUrl = await getFinanceReportLogoDataUri();
 
   return {
     templateKey: "finance_report",
@@ -779,7 +824,7 @@ function buildFinanceReportDocument({ reportMeta, period, currentData, previousD
   };
 }
 
-function buildFinanceReportResult({ normalizedParams, reportMeta, period, comparisonPeriod, currentData, previousData, history, settings }) {
+async function buildFinanceReportResult({ normalizedParams, reportMeta, period, comparisonPeriod, currentData, previousData, history, settings }) {
   const insights = buildInsights({
     period,
     summary: currentData.summary,
@@ -810,7 +855,7 @@ function buildFinanceReportResult({ normalizedParams, reportMeta, period, compar
   const filteredCashRows = currentData.cashRows;
   const filteredGuestRows = currentData.guestRows;
   const filename = buildFinanceReportFilename(reportMeta, period);
-  const pdf = buildFinanceReportDocument({
+  const pdf = await buildFinanceReportDocument({
     reportMeta,
     period,
     currentData,
