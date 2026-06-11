@@ -234,6 +234,11 @@ function buildCashOriginLabel(transaction) {
     return `Convidado - ${guestName}`;
   }
 
+  if (transaction.origin === "RECURRING_EXPENSE") {
+    const recurringName = transaction.recurringExpenseRun?.recurringExpense?.name || "Despesa fixa";
+    return `Despesa fixa - ${recurringName}`;
+  }
+
   return `Lancamento manual - ${transaction.description}`;
 }
 
@@ -529,6 +534,11 @@ async function loadPeriodCollections({ prisma = prismaClient, settings, period, 
           },
         },
         guestPayment: true,
+        recurringExpenseRun: {
+          include: {
+            recurringExpense: true,
+          },
+        },
       },
       orderBy: [{ date: "asc" }, { id: "asc" }],
     }),

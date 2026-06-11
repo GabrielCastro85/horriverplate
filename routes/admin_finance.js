@@ -83,6 +83,31 @@ router.post(
   adminFinanceController.deleteCashTransaction
 );
 router.post(
+  "/finance/recurring-expenses",
+  adminFinanceController.requireAdmin,
+  adminFinanceController.createRecurringExpense
+);
+router.post(
+  "/finance/recurring-expenses/:id/update",
+  adminFinanceController.requireAdmin,
+  adminFinanceController.updateRecurringExpense
+);
+router.post(
+  "/finance/recurring-expenses/:id/toggle",
+  adminFinanceController.requireAdmin,
+  adminFinanceController.toggleRecurringExpense
+);
+router.post(
+  "/finance/recurring-expenses/:id/generate",
+  adminFinanceController.requireAdmin,
+  adminFinanceController.generateRecurringExpenseNow
+);
+router.post(
+  "/finance/recurring-expenses/:id/delete",
+  adminFinanceController.requireAdmin,
+  adminFinanceController.deleteRecurringExpense
+);
+router.post(
   "/finance/guest-payments",
   adminFinanceController.requireAdmin,
   adminFinanceController.createGuestPayment

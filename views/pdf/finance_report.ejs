@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<%
+  const reportLogoUrl = typeof logoUrl !== "undefined" ? logoUrl : "";
+%>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -317,6 +320,7 @@
       border-bottom: 1px solid #eef1f5;
       vertical-align: top;
       line-height: 1.5;
+      overflow: hidden;
     }
 
     tbody tr:nth-child(even) td {
@@ -358,6 +362,7 @@
       border: 1px solid var(--line-strong);
       background: rgba(15, 23, 42, 0.03);
       white-space: nowrap;
+      max-width: 100%;
     }
 
     .status::before {
@@ -390,6 +395,31 @@
       color: var(--blue);
       border-color: rgba(29, 78, 216, 0.16);
       background: rgba(59, 130, 246, 0.1);
+    }
+
+    .monthly-table thead th {
+      padding-left: 8px;
+      padding-right: 8px;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+    }
+
+    .monthly-table tbody td {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
+    .monthly-table .status {
+      gap: 5px;
+      padding: 4px 7px;
+      font-size: 9px;
+      line-height: 1.15;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .monthly-table .status::before {
+      flex: 0 0 7px;
     }
 
     .distribution-grid {
@@ -520,9 +550,9 @@
   </style>
 </head>
 <body>
-  <% if (logoUrl) { %>
+  <% if (reportLogoUrl) { %>
     <div class="report-watermark" aria-hidden="true">
-      <img src="<%= logoUrl %>" alt="" />
+      <img src="<%= reportLogoUrl %>" alt="" />
     </div>
   <% } %>
   <main>
@@ -530,7 +560,9 @@
       <div class="hero-grid">
         <div>
           <div class="brand">
-            <img src="<%= logoUrl %>" alt="Horriver Plate" />
+            <% if (reportLogoUrl) { %>
+              <img src="<%= reportLogoUrl %>" alt="Horriver Plate" />
+            <% } %>
             <div class="brand-copy">
               <span class="brand-kicker">Horriver Plate</span>
               <strong>Pelada - financeiro oficial</strong>
@@ -776,16 +808,16 @@
         </div>
 
         <div class="table-wrap">
-          <table>
+          <table class="monthly-table">
             <thead>
               <tr>
-                <th style="width: 22%;">Participante</th>
-                <th style="width: 14%;">Plano</th>
+                <th style="width: 21%;">Participante</th>
+                <th style="width: 17%;">Plano</th>
                 <th style="width: 12%;">Status</th>
-                <th class="align-right" style="width: 10%;">Devido</th>
-                <th class="align-right" style="width: 10%;">Pago</th>
-                <th class="align-right" style="width: 10%;">Saldo</th>
-                <th style="width: 10%;">Vencimento</th>
+                <th class="align-right" style="width: 8.5%;">Devido</th>
+                <th class="align-right" style="width: 8.5%;">Pago</th>
+                <th class="align-right" style="width: 8.5%;">Saldo</th>
+                <th style="width: 10.5%;">Vencimento</th>
                 <th style="width: 12%;">Pagamento</th>
               </tr>
             </thead>
@@ -797,11 +829,11 @@
                     <span class="player"><%= row.playerName %></span>
                     <span class="subline"><%= row.playerSubtitle %></span>
                   </td>
-                  <td>
+                  <td class="plan-cell">
                     <span class="status status--<%= row.planTone %>"><%= row.planLabel %></span>
                     <span class="subline"><%= row.planDetail %></span>
                   </td>
-                  <td><span class="status status--<%= tone %>"><%= row.statusLabel %></span></td>
+                  <td class="status-cell"><span class="status status--<%= tone %>"><%= row.statusLabel %></span></td>
                   <td class="align-right"><%= row.dueLabel %></td>
                   <td class="align-right"><%= row.paidLabel %></td>
                   <td class="align-right"><%= row.balanceLabel %></td>

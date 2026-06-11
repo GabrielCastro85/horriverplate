@@ -11,7 +11,13 @@
   } = currentFinanceView;
   const monthTransactions = cash.transactions;
   const selectedTransaction = cash.selectedTransaction;
+  const recurringExpenses = cash.recurringExpenses || {};
+  const recurringRules = Array.isArray(recurringExpenses.rules) ? recurringExpenses.rules : [];
+  const selectedRecurringExpense = recurringExpenses.selectedRecurringExpense || null;
   const transactionTypeOptions = cash.typeOptions;
+  const expenseCategoryOptions = cash.categoryOptions.EXPENSE || [];
+  const monthOptions = currentFinanceView.navigation.monthOptions || [];
+  const yearOptions = currentFinanceView.navigation.yearOptions || [];
   const { selectedTransactionCategories, selectedTransactionIsManual, currentDateInputValue } = ui;
   const {
     formatCurrencyBR,
@@ -97,6 +103,188 @@
       <strong><%= monthTransactions.length %></strong>
       <span class="finance-subtle">Registros visiveis no recorte.</span>
     </article>
+  </section>
+
+  <section class="finance-panel p-5 md:p-6 space-y-5" id="finance-recurring">
+    <div class="finance-panel-section-head">
+      <div class="finance-panel-section-head__copy">
+        <div class="finance-kicker">Despesas fixas</div>
+        <h3 class="font-title text-xl text-horriver-light mt-2">Aluguel da quadra e recorrências</h3>
+        <p class="finance-subtle mt-2">
+          Cadastre uma vez e o sistema lança automaticamente a saída no caixa de cada competência, sem duplicar.
+        </p>
+      </div>
+      <div class="finance-panel-section-head__actions">
+        <span class="finance-chip"><%= recurringExpenses.activeCount || 0 %> ativa(s)</span>
+        <span class="finance-chip"><%= recurringExpenses.generatedThisMonthCount || 0 %> gerada(s) no mês</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-[0.9fr_1.3fr] gap-4">
+      <form
+        method="POST"
+        action="<%= selectedRecurringExpense ? `/admin/finance/recurring-expenses/${selectedRecurringExpense.id}/update` : '/admin/finance/recurring-expenses' %>"
+        class="finance-panel p-4 space-y-3 bg-black/10"
+      >
+        <%- stateFields(selectedRecurringExpense ? { tab: 'cash', editRecurringExpenseId: selectedRecurringExpense.id } : { tab: 'cash' }) %>
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="finance-kicker"><%= selectedRecurringExpense ? 'Editar regra' : 'Nova regra mensal' %></div>
+            <div class="text-lg font-semibold text-horriver-light"><%= selectedRecurringExpense ? selectedRecurringExpense.name : 'Despesa fixa mensal' %></div>
+          </div>
+          <% if (selectedRecurringExpense) { %>
+            <a href="<%= buildFinanceQuery({ tab: 'cash' }) %>#finance-recurring" class="finance-chip">Nova</a>
+          <% } %>
+        </div>
+
+        <label class="finance-label">Nome
+          <input type="text" name="name" value="<%= selectedRecurringExpense?.name || 'Aluguel da quadra' %>" class="finance-input" placeholder="Ex.: Aluguel da quadra">
+        </label>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label class="finance-label">Valor mensal
+            <input type="text" name="amount" value="<%= selectedRecurringExpense ? decimalToNumber(selectedRecurringExpense.amount).toFixed(2).replace('.', ',') : '' %>" class="finance-input" placeholder="0,00">
+          </label>
+          <label class="finance-label">Dia do lançamento
+            <input type="number" min="1" max="31" name="dayOfMonth" value="<%= selectedRecurringExpense?.dayOfMonth || 1 %>" class="finance-input">
+          </label>
+        </div>
+
+        <label class="finance-label">Categoria
+          <select name="category" class="finance-select">
+            <% expenseCategoryOptions.forEach((option) => { %>
+              <option value="<%= option.value %>" <%= (selectedRecurringExpense?.category || 'COURT') === option.value ? 'selected' : '' %>><%= option.label %></option>
+            <% }) %>
+          </select>
+        </label>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="finance-label">Início mês
+            <select name="startMonth" class="finance-select">
+              <% monthOptions.forEach((option) => { %>
+                <option value="<%= option.value %>" <%= (selectedRecurringExpense?.startMonth || filters.month) === option.value ? 'selected' : '' %>><%= option.label %></option>
+              <% }) %>
+            </select>
+          </label>
+          <label class="finance-label">Início ano
+            <select name="startYear" class="finance-select">
+              <% yearOptions.forEach((option) => { %>
+                <option value="<%= option %>" <%= (selectedRecurringExpense?.startYear || filters.year) === option ? 'selected' : '' %>><%= option %></option>
+              <% }) %>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="finance-label">Fim mês
+            <select name="endMonth" class="finance-select">
+              <option value="">Sem fim</option>
+              <% monthOptions.forEach((option) => { %>
+                <option value="<%= option.value %>" <%= selectedRecurringExpense?.endMonth === option.value ? 'selected' : '' %>><%= option.label %></option>
+              <% }) %>
+            </select>
+          </label>
+          <label class="finance-label">Fim ano
+            <select name="endYear" class="finance-select">
+              <option value="">Sem fim</option>
+              <% yearOptions.forEach((option) => { %>
+                <option value="<%= option %>" <%= selectedRecurringExpense?.endYear === option ? 'selected' : '' %>><%= option %></option>
+              <% }) %>
+            </select>
+          </label>
+        </div>
+
+        <label class="finance-label">Descrição no caixa
+          <input type="text" name="description" value="<%= selectedRecurringExpense?.description || 'Aluguel da quadra' %>" class="finance-input" placeholder="Ex.: Aluguel da quadra">
+        </label>
+
+        <label class="finance-label">Observação
+          <textarea name="note" class="finance-textarea" placeholder="Opcional: contrato, local ou referência do pagamento."><%= selectedRecurringExpense?.note || '' %></textarea>
+        </label>
+
+        <label class="inline-flex items-center gap-2 text-sm text-horriver-muted">
+          <input type="checkbox" name="isActive" class="accent-horriver-orange" <%= selectedRecurringExpense?.isActive === false ? '' : 'checked' %>>
+          Regra ativa
+        </label>
+
+        <div class="flex items-center justify-between gap-3">
+          <% if (selectedRecurringExpense) { %>
+            <button
+              type="submit"
+              form="delete-recurring-expense-<%= selectedRecurringExpense.id %>"
+              class="finance-soft-button text-red-200 border-red-400/35 hover:border-red-300 hover:text-white"
+              data-confirm="Excluir esta despesa fixa e todos os lançamentos automáticos já gerados por ela?"
+            >
+              Excluir
+            </button>
+          <% } else { %>
+            <span class="finance-subtle">Ao salvar, se a regra valer para este mês, o débito entra no caixa automaticamente.</span>
+          <% } %>
+          <button type="submit" class="finance-cta"><%= selectedRecurringExpense ? 'Salvar regra' : 'Criar despesa fixa' %></button>
+        </div>
+      </form>
+
+      <% if (selectedRecurringExpense) { %>
+        <form id="delete-recurring-expense-<%= selectedRecurringExpense.id %>" method="POST" action="/admin/finance/recurring-expenses/<%= selectedRecurringExpense.id %>/delete" class="hidden">
+          <%- stateFields({ tab: 'cash' }) %>
+        </form>
+      <% } %>
+
+      <div class="finance-panel p-4 space-y-3 bg-black/10">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="finance-kicker">Regras cadastradas</div>
+            <div class="text-lg font-semibold text-horriver-light">Controle mensal automático</div>
+          </div>
+          <% if (recurringExpenses.pendingThisMonthCount) { %>
+            <span class="finance-status finance-status--warning"><%= recurringExpenses.pendingThisMonthCount %> pendente(s)</span>
+          <% } else { %>
+            <span class="finance-status finance-status--ok">Mês em dia</span>
+          <% } %>
+        </div>
+
+        <% if (recurringRules.length) { %>
+          <div class="space-y-3">
+            <% recurringRules.forEach((rule) => { %>
+              <article class="finance-list-item">
+                <div class="finance-list-item__body">
+                  <div class="finance-list-item__title"><%= rule.name %></div>
+                  <div class="finance-list-item__text">
+                    <%= rule.amountLabel %> - <%= rule.categoryLabel %> - dia <%= rule.dayOfMonth %>
+                  </div>
+                  <div class="flex flex-wrap gap-2 mt-2">
+                    <span class="finance-chip"><%= rule.isActive ? 'Ativa' : 'Pausada' %></span>
+                    <span class="finance-chip">Último: <%= rule.latestRunLabel %></span>
+                    <% if (rule.currentGenerated) { %>
+                      <span class="finance-chip">Gerada em <%= rule.currentTransactionDateLabel %></span>
+                    <% } else if (rule.applicableThisMonth) { %>
+                      <span class="finance-chip">Pendente neste mês</span>
+                    <% } else { %>
+                      <span class="finance-chip">Fora deste mês</span>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="finance-list-item__side">
+                  <a href="<%= buildFinanceQuery({ tab: 'cash', editRecurringExpenseId: rule.id }) %>#finance-recurring" class="finance-soft-button text-xs">Editar</a>
+                  <form method="POST" action="/admin/finance/recurring-expenses/<%= rule.id %>/generate" class="contents">
+                    <%- stateFields({ tab: 'cash' }) %>
+                    <button type="submit" class="finance-soft-button text-xs" <%= rule.currentGenerated || !rule.applicableThisMonth ? 'disabled' : '' %>>Gerar agora</button>
+                  </form>
+                  <form method="POST" action="/admin/finance/recurring-expenses/<%= rule.id %>/toggle" class="contents">
+                    <%- stateFields({ tab: 'cash' }) %>
+                    <button type="submit" class="finance-soft-button text-xs"><%= rule.isActive ? 'Pausar' : 'Ativar' %></button>
+                  </form>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <%- include("./_finance_empty_state", {
+            emptyStateMessage: "Nenhuma despesa fixa cadastrada. Crie a regra do aluguel da quadra para o débito cair sozinho no caixa todo mês.",
+          }) %>
+        <% } %>
+      </div>
+    </div>
   </section>
 
   <section class="finance-cash-grid">

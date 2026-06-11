@@ -77,6 +77,10 @@ const {
   normalizeFinanceReportScope,
   loadFinanceReport,
 } = require("../services/financeReports.service");
+const {
+  ensureRecurringExpensesForMonth,
+  loadRecurringExpensesPanel,
+} = require("../services/financeRecurringExpenses.service");
 
 function normalizeFinanceTab(value) {
   const tab = String(value || "overview").trim().toLowerCase();
@@ -122,6 +126,7 @@ function normalizeFinanceFilters(input = {}) {
     editFeeId: parseOptionalId(input.editFeeId, null),
     editTransactionId: parseOptionalId(input.editTransactionId, null),
     editGuestId: parseOptionalId(input.editGuestId, null),
+    editRecurringExpenseId: parseOptionalId(input.editRecurringExpenseId, null),
     notice,
     error,
     openDialog,
@@ -148,6 +153,7 @@ function buildFinanceRedirectQuery(source = {}) {
   if (filters.editFeeId) params.set("editFeeId", String(filters.editFeeId));
   if (filters.editTransactionId) params.set("editTransactionId", String(filters.editTransactionId));
   if (filters.editGuestId) params.set("editGuestId", String(filters.editGuestId));
+  if (filters.editRecurringExpenseId) params.set("editRecurringExpenseId", String(filters.editRecurringExpenseId));
   return params.toString();
 }
 
@@ -451,6 +457,11 @@ function buildCashOriginLabel(transaction) {
     return `Convidado - ${guestName}`;
   }
 
+  if (transaction.origin === "RECURRING_EXPENSE") {
+    const recurringName = transaction.recurringExpenseRun?.recurringExpense?.name || "Despesa fixa";
+    return `Despesa fixa - ${recurringName}`;
+  }
+
   return `Lancamento manual - ${transaction.description}`;
 }
 
@@ -583,7 +594,8 @@ function enrichDecoratedFeeWithPaymentTiming(fee, fallbackDate = new Date()) {
   };
 }
 
-async function buildFinancePageViewModel(filters) {
+async function buildFinancePageViewModel(inputFilters = {}) {
+  const filters = normalizeFinanceFilters(inputFilters);
   const settings = await ensureFinanceSettings();
   const today = getSaoPauloTodayDate();
   const { start, end } = getMonthDateRange(filters.year, filters.month);
@@ -628,7 +640,13 @@ async function buildFinancePageViewModel(filters) {
     referenceDate: today,
   });
 
-  const [recentMatches, monthFeesRaw, monthTransactionsRaw, guestPayments, allTransactions, recentFinanceEvents, competenceResetMarker] =
+  await ensureRecurringExpensesForMonth({
+    prisma,
+    month: filters.month,
+    year: filters.year,
+  });
+
+  const [recentMatches, monthFeesRaw, monthTransactionsRaw, guestPayments, allTransactions, recentFinanceEvents, competenceResetMarker, recurringExpensesPanel] =
     await Promise.all([
       prisma.match.findMany({
         select: { id: true, playedAt: true, description: true },
@@ -663,6 +681,11 @@ async function buildFinancePageViewModel(filters) {
             },
           },
           guestPayment: true,
+          recurringExpenseRun: {
+            include: {
+              recurringExpense: true,
+            },
+          },
         },
         orderBy: [{ date: "desc" }, { id: "desc" }],
       }),
@@ -689,6 +712,12 @@ async function buildFinancePageViewModel(filters) {
       getFinanceCompetenceResetMarker(prisma, {
         month: filters.month,
         year: filters.year,
+      }),
+      loadRecurringExpensesPanel({
+        prisma,
+        month: filters.month,
+        year: filters.year,
+        selectedId: filters.editRecurringExpenseId,
       }),
     ]);
 
@@ -890,6 +919,11 @@ async function buildFinancePageViewModel(filters) {
             include: { player: true },
           },
           guestPayment: true,
+          recurringExpenseRun: {
+            include: {
+              recurringExpense: true,
+            },
+          },
         },
       })
     : null;
@@ -1079,6 +1113,7 @@ async function buildFinancePageViewModel(filters) {
       transactions: monthTransactions,
       allTransactions: monthTransactionsAll,
       selectedTransaction,
+      recurringExpenses: recurringExpensesPanel,
       typeOptions: FINANCE_TRANSACTION_TYPE_OPTIONS,
       categoryOptions: FINANCE_TRANSACTION_CATEGORY_OPTIONS,
     },

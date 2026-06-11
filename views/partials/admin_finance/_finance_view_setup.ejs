@@ -24,6 +24,8 @@
   const monthTransactions = vm.cash.transactions;
   const monthTransactionsAll = vm.cash.allTransactions;
   const selectedTransaction = vm.cash.selectedTransaction;
+  const recurringExpenses = vm.cash.recurringExpenses;
+  const selectedRecurringExpense = recurringExpenses?.selectedRecurringExpense || null;
   const transactionTypeOptions = vm.cash.typeOptions;
   const transactionCategoryOptions = vm.cash.categoryOptions;
   const guestPayments = vm.guests.payments;
@@ -70,6 +72,13 @@
     "caixa-criado": "Lançamento criado no caixa.",
     "caixa-atualizado": "Lançamento manual atualizado.",
     "caixa-excluido": "Lançamento manual excluido.",
+    "despesa-fixa-criada": "Despesa fixa criada. Ela será lançada automaticamente no mês correspondente.",
+    "despesa-fixa-atualizada": "Despesa fixa atualizada.",
+    "despesa-fixa-pausada": "Despesa fixa pausada.",
+    "despesa-fixa-ativada": "Despesa fixa ativada.",
+    "despesa-fixa-gerada": "Despesa fixa gerada para a competência selecionada.",
+    "despesa-fixa-ja-gerada": "Essa despesa fixa já estava lançada nesta competência.",
+    "despesa-fixa-excluida": "Despesa fixa excluida junto com seus lançamentos automáticos.",
     "convidado-criado": "Convidado registrado e lancado no caixa.",
     "convidado-atualizado": "Convidado atualizado.",
     "convidado-excluido": "Convidado excluido.",
@@ -97,6 +106,14 @@
     "caixa-bloqueado": "Esse lançamento e automático; edite pela origem dele.",
     "caixa-atualizado": "Não foi possível atualizar o lançamento.",
     "caixa-excluir": "Não foi possível excluir esse lançamento.",
+    "despesa-fixa-dados": "Preencha nome e valor da despesa fixa.",
+    "despesa-fixa-categoria": "Escolha uma categoria de saída para a despesa fixa.",
+    "despesa-fixa-periodo": "O fim da despesa fixa não pode ser anterior ao início.",
+    "despesa-fixa-criar": "Não foi possível criar a despesa fixa.",
+    "despesa-fixa-atualizar": "Não foi possível atualizar a despesa fixa.",
+    "despesa-fixa-invalida": "Despesa fixa inválida.",
+    "despesa-fixa-gerar": "Não foi possível gerar essa despesa fixa agora.",
+    "despesa-fixa-excluir": "Não foi possível excluir essa despesa fixa.",
     convidado: "Preencha nome e valor do convidado.",
     "convidado-invalido": "Convidado inválido.",
     "convidado-nao-encontrado": "Convidado não encontrado.",
@@ -249,6 +266,8 @@
     selectedFee,
     selectedTransaction,
     selectedGuest,
+    recurringExpenses,
+    selectedRecurringExpense,
     feeHistory,
     pendingFees,
     allPendingFees,

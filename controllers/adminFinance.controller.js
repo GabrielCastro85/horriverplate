@@ -53,6 +53,9 @@ const {
   renderFinanceReportPdfBuffer,
 } = require("../services/financePdf.service");
 const {
+  ensureRecurringExpensesForMonth,
+} = require("../services/financeRecurringExpenses.service");
+const {
   normalizeFinanceFilters,
   buildFinancePath,
   getFinanceHashByTab,
@@ -67,6 +70,12 @@ const CreateCashTransactionSchema = z.object({
   type: z.string().min(1),
   category: z.string().min(1),
   amount: z.string().min(1),
+});
+
+const RecurringExpenseSchema = z.object({
+  name: z.string().min(1),
+  amount: z.string().min(1),
+  category: z.string().min(1),
 });
 
 const CreateGuestPaymentSchema = z.object({
@@ -1509,6 +1518,252 @@ async function deleteCashTransaction(req, res) {
     return redirectToFinance(res, { ...req.body, error: "caixa-excluir" }, "#finance-cash");
   }
 }
+
+function parseRecurringExpenseForm(body = {}, current = null) {
+  const expenseCategories = (FINANCE_TRANSACTION_CATEGORY_OPTIONS.EXPENSE || []).map((item) => item.value);
+  const name = getTrimmedString(body.name ?? current?.name, "");
+  const amount = parseMoneyInput(body.amount ?? current?.amount, current?.amount || 0);
+  const category = normalizeUppercaseValue(body.category ?? current?.category, current?.category || "COURT");
+  const dayOfMonth = parseClampedInteger(body.dayOfMonth ?? current?.dayOfMonth, {
+    fallback: current?.dayOfMonth || 1,
+    min: 1,
+    max: 31,
+  });
+  const startMonth = parseClampedInteger(body.startMonth ?? current?.startMonth, {
+    fallback: current?.startMonth || body.month,
+    min: 1,
+    max: 12,
+  });
+  const startYear = parseClampedInteger(body.startYear ?? current?.startYear, {
+    fallback: current?.startYear || body.year,
+    min: 2020,
+    max: 2100,
+  });
+  const rawEndMonth = parseOptionalId(body.endMonth, null);
+  const rawEndYear = parseOptionalId(body.endYear, null);
+  const endMonth = rawEndMonth ? Math.max(1, Math.min(rawEndMonth, 12)) : null;
+  const endYear = rawEndYear ? Math.max(2020, Math.min(rawEndYear, 2100)) : null;
+  const hasEnd = Boolean(endMonth && endYear);
+  const startKey = startYear * 100 + startMonth;
+  const endKey = hasEnd ? endYear * 100 + endMonth : null;
+
+  if (!name || amount <= 0) {
+    return { ok: false, error: "despesa-fixa-dados" };
+  }
+
+  if (!expenseCategories.includes(category)) {
+    return { ok: false, error: "despesa-fixa-categoria" };
+  }
+
+  if (hasEnd && endKey < startKey) {
+    return { ok: false, error: "despesa-fixa-periodo" };
+  }
+
+  return {
+    ok: true,
+    data: {
+      name,
+      amount,
+      category,
+      dayOfMonth,
+      startMonth,
+      startYear,
+      endMonth: hasEnd ? endMonth : null,
+      endYear: hasEnd ? endYear : null,
+      description: getOptionalTrimmedString(body.description) || name,
+      note: getOptionalTrimmedString(body.note),
+      isActive: parseCheckbox(body.isActive),
+    },
+  };
+}
+
+async function createRecurringExpense(req, res) {
+  try {
+    if (!RecurringExpenseSchema.safeParse(req.body).success) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-dados", tab: "cash" }, "#finance-recurring");
+    }
+
+    const parsed = parseRecurringExpenseForm(req.body);
+    if (!parsed.ok) {
+      return redirectToFinance(res, { ...req.body, error: parsed.error, tab: "cash" }, "#finance-recurring");
+    }
+
+    const recurringExpense = await prisma.recurringExpense.create({
+      data: {
+        ...parsed.data,
+        createdByAdminId: req.admin?.id || null,
+      },
+    });
+
+    await createFinanceAudit(req, "finance.recurring.create", "Despesa fixa criada", {
+      recurringExpenseId: recurringExpense.id,
+      name: recurringExpense.name,
+      amount: parsed.data.amount,
+      category: parsed.data.category,
+    });
+
+    return redirectToFinance(res, { ...req.body, notice: "despesa-fixa-criada", tab: "cash" }, "#finance-recurring");
+  } catch (err) {
+    console.error("Erro ao criar despesa fixa:", err);
+    return redirectToFinance(res, { ...req.body, error: "despesa-fixa-criar", tab: "cash" }, "#finance-recurring");
+  }
+}
+
+async function updateRecurringExpense(req, res) {
+  try {
+    const id = parseIdParam(req.params.id, null);
+    if (!id) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-invalida", tab: "cash" }, "#finance-recurring");
+    }
+
+    const current = await prisma.recurringExpense.findUnique({ where: { id } });
+    if (!current) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-invalida", tab: "cash" }, "#finance-recurring");
+    }
+
+    const parsed = parseRecurringExpenseForm(req.body, current);
+    if (!parsed.ok) {
+      return redirectToFinance(
+        res,
+        { ...req.body, error: parsed.error, tab: "cash", editRecurringExpenseId: id },
+        "#finance-recurring"
+      );
+    }
+
+    await prisma.recurringExpense.update({
+      where: { id },
+      data: parsed.data,
+    });
+
+    await createFinanceAudit(req, "finance.recurring.update", "Despesa fixa atualizada", {
+      recurringExpenseId: id,
+      name: parsed.data.name,
+      amount: parsed.data.amount,
+      category: parsed.data.category,
+    });
+
+    return redirectToFinance(
+      res,
+      { ...req.body, notice: "despesa-fixa-atualizada", tab: "cash", editRecurringExpenseId: id },
+      "#finance-recurring"
+    );
+  } catch (err) {
+    console.error("Erro ao atualizar despesa fixa:", err);
+    return redirectToFinance(
+      res,
+      { ...req.body, error: "despesa-fixa-atualizar", tab: "cash", editRecurringExpenseId: req.params.id },
+      "#finance-recurring"
+    );
+  }
+}
+
+async function toggleRecurringExpense(req, res) {
+  try {
+    const id = parseIdParam(req.params.id, null);
+    const current = id ? await prisma.recurringExpense.findUnique({ where: { id } }) : null;
+    if (!current) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-invalida", tab: "cash" }, "#finance-recurring");
+    }
+
+    const nextActive = !current.isActive;
+    await prisma.recurringExpense.update({
+      where: { id },
+      data: { isActive: nextActive },
+    });
+
+    await createFinanceAudit(req, "finance.recurring.toggle", nextActive ? "Despesa fixa ativada" : "Despesa fixa pausada", {
+      recurringExpenseId: id,
+      isActive: nextActive,
+    });
+
+    return redirectToFinance(
+      res,
+      { ...req.body, notice: nextActive ? "despesa-fixa-ativada" : "despesa-fixa-pausada", tab: "cash" },
+      "#finance-recurring"
+    );
+  } catch (err) {
+    console.error("Erro ao alternar despesa fixa:", err);
+    return redirectToFinance(res, { ...req.body, error: "despesa-fixa-atualizar", tab: "cash" }, "#finance-recurring");
+  }
+}
+
+async function generateRecurringExpenseNow(req, res) {
+  try {
+    const id = parseIdParam(req.params.id, null);
+    const filters = normalizeFinanceFilters(req.body);
+    if (!id) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-invalida", tab: "cash" }, "#finance-recurring");
+    }
+
+    const result = await ensureRecurringExpensesForMonth({
+      prisma,
+      month: filters.month,
+      year: filters.year,
+      recurringExpenseIds: [id],
+    });
+
+    if (result.errors.length) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-gerar", tab: "cash" }, "#finance-recurring");
+    }
+
+    await createFinanceAudit(req, "finance.recurring.generate", "Despesa fixa gerada manualmente", {
+      recurringExpenseId: id,
+      month: filters.month,
+      year: filters.year,
+      createdCount: result.created.length,
+      existingCount: result.existing.length,
+    });
+
+    return redirectToFinance(
+      res,
+      {
+        ...req.body,
+        notice: result.created.length ? "despesa-fixa-gerada" : "despesa-fixa-ja-gerada",
+        tab: "cash",
+      },
+      "#finance-recurring"
+    );
+  } catch (err) {
+    console.error("Erro ao gerar despesa fixa:", err);
+    return redirectToFinance(res, { ...req.body, error: "despesa-fixa-gerar", tab: "cash" }, "#finance-recurring");
+  }
+}
+
+async function deleteRecurringExpense(req, res) {
+  try {
+    const id = parseIdParam(req.params.id, null);
+    if (!id) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-invalida", tab: "cash" }, "#finance-recurring");
+    }
+
+    const current = await prisma.recurringExpense.findUnique({
+      where: { id },
+      include: { runs: true },
+    });
+    if (!current) {
+      return redirectToFinance(res, { ...req.body, error: "despesa-fixa-invalida", tab: "cash" }, "#finance-recurring");
+    }
+
+    const transactionIds = current.runs.map((run) => run.cashTransactionId).filter(Boolean);
+    await prisma.$transaction(async (tx) => {
+      if (transactionIds.length) {
+        await tx.cashTransaction.deleteMany({ where: { id: { in: transactionIds } } });
+      }
+      await tx.recurringExpense.delete({ where: { id } });
+    });
+
+    await createFinanceAudit(req, "finance.recurring.delete", "Despesa fixa excluida", {
+      recurringExpenseId: id,
+      deletedGeneratedTransactions: transactionIds.length,
+    });
+
+    return redirectToFinance(res, { ...req.body, notice: "despesa-fixa-excluida", tab: "cash" }, "#finance-recurring");
+  } catch (err) {
+    console.error("Erro ao excluir despesa fixa:", err);
+    return redirectToFinance(res, { ...req.body, error: "despesa-fixa-excluir", tab: "cash" }, "#finance-recurring");
+  }
+}
+
 async function createGuestPayment(req, res) {
   try {
     if (!CreateGuestPaymentSchema.safeParse(req.body).success) {
@@ -1800,6 +2055,11 @@ module.exports = {
   createCashTransaction,
   updateCashTransaction,
   deleteCashTransaction,
+  createRecurringExpense,
+  updateRecurringExpense,
+  toggleRecurringExpense,
+  generateRecurringExpenseNow,
+  deleteRecurringExpense,
   createGuestPayment,
   updateGuestPayment,
   deleteGuestPayment,
