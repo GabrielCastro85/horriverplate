@@ -50,6 +50,7 @@ router.get("/:id", async (req, res) => {
 
     // Only show stats for present players; recalculate final ratings if released
     let publicStats = (match.stats || []).filter((s) => s.present);
+    let matchVoteWinner = null;
     if (ratingsReleased) {
       try {
         const result = await computeMatchRatingsAndAwards(id);
@@ -59,6 +60,14 @@ router.get("/:id", async (req, res) => {
             ...stat,
             rating: finalMap.has(stat.playerId) ? finalMap.get(stat.playerId) : stat.rating,
           }));
+          if (result.awards?.craque?.player) {
+            matchVoteWinner = {
+              player: result.awards.craque.player,
+              rating: result.awards.craque.finalRating,
+              goals: result.awards.craque.goals,
+              assists: result.awards.craque.assists,
+            };
+          }
         }
       } catch (calcErr) {
         console.warn("Falha ao calcular nota final pública:", calcErr);
@@ -76,8 +85,17 @@ router.get("/:id", async (req, res) => {
     const weeklyPhoto = await prisma.weeklyAward.findFirst({
       where: { winningMatchId: id, teamPhotoUrl: { not: null } },
       orderBy: { weekStart: "desc" },
-      select: { teamPhotoUrl: true },
+      select: { teamPhotoUrl: true, bestPlayer: true },
     });
+    if (!matchVoteWinner && ratingsReleased && weeklyPhoto?.bestPlayer) {
+      const winnerStat = publicStats.find((stat) => stat.playerId === weeklyPhoto.bestPlayer.id);
+      matchVoteWinner = {
+        player: weeklyPhoto.bestPlayer,
+        rating: winnerStat?.rating ?? null,
+        goals: winnerStat?.goals ?? null,
+        assists: winnerStat?.assists ?? null,
+      };
+    }
     const baseUrl = process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
     const matchDateLabel = formatDateBR(match.playedAt);
     const shareImagePath = weeklyPhoto?.teamPhotoUrl || "/img/logo.jpg";
@@ -93,6 +111,7 @@ router.get("/:id", async (req, res) => {
       match,
       stats: publicStats,
       ratingsReleased,
+      matchVoteWinner,
       tournament,
       tournamentTeams,
       tournamentStandings,

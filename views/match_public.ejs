@@ -39,6 +39,10 @@
           (b.assists || 0) - (a.assists || 0)
         )[0] || null)
     : null;
+  const voteWinner = showRatings && typeof matchVoteWinner !== "undefined" && matchVoteWinner
+    ? matchVoteWinner
+    : null;
+  const summaryRated = voteWinner || topRated;
   const votingOpen = !showRatings;
 %>
 
@@ -259,9 +263,9 @@
         <small><%= playerName(topAssistant) %></small>
       </article>
       <article class="match-summary-card">
-        <span><%= showRatings ? "Melhor nota" : "Fotos" %></span>
-        <strong><%= showRatings && topRated ? fmtRating(topRated.rating) : totalPhotos %></strong>
-        <small><%= showRatings && topRated ? playerName(topRated) : "jogadores em registros" %></small>
+        <span><%= showRatings ? (voteWinner ? "Craque da votação" : "Melhor nota") : "Fotos" %></span>
+        <strong><%= showRatings && summaryRated ? fmtRating(summaryRated.rating) : totalPhotos %></strong>
+        <small><%= showRatings && summaryRated ? playerName(summaryRated) : "jogadores em registros" %></small>
       </article>
     </div>
   </section>
