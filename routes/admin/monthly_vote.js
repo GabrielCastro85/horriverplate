@@ -1,6 +1,9 @@
 const express = require("express");
 const prisma = require("../../utils/db");
-const { computeMonthlyVoteData } = require("../../utils/monthly_vote");
+const {
+  MONTHLY_VOTE_DEFAULT_CANDIDATES,
+  computeMonthlyVoteData,
+} = require("../../utils/monthly_vote");
 const router = express.Router();
 
 function requireAdmin(req, res, next) {
@@ -133,6 +136,7 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
       monthlyVoteCounts,
       monthlyVoteWinner,
       monthlyVoteClosed,
+      monthlyVoteCandidateLimit: MONTHLY_VOTE_DEFAULT_CANDIDATES,
       winnersHistory,
       voteBaseUrl,
       monthlyVoteError: req.query.monthlyVoteError || null,

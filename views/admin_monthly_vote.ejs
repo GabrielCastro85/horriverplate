@@ -4,8 +4,10 @@
   const monthlyVoteStatusClass = monthlyVoteClosed ? "status-danger" : "status-info";
   const monthlyVoteStatusLabel = monthlyVoteClosed ? "Votação encerrada" : "Votação ativa";
   const rankingRows = Array.isArray(monthlyVoteRanking) ? monthlyVoteRanking : [];
+  const candidateLimit =
+    typeof monthlyVoteCandidateLimit !== "undefined" ? Number(monthlyVoteCandidateLimit) || 10 : 10;
   const suggestedCandidateIds = new Set(
-    rankingRows.filter((row) => row.eligible).slice(0, 6).map((row) => Number(row.id))
+    rankingRows.filter((row) => row.eligible).slice(0, candidateLimit).map((row) => Number(row.id))
   );
 %>
 
@@ -67,7 +69,7 @@
             <% } else if (monthlyVoteError === 'noCandidates') { %>
               Nenhum candidato com pelo menos 2 peladas no mês.
             <% } else if (monthlyVoteError === 'tooManyCandidates') { %>
-              Selecione no máximo 6 candidatos.
+              Selecione no máximo <%= candidateLimit %> candidatos.
             <% } else { %>
               Erro ao gerar votação. Tente novamente.
             <% } %>
@@ -104,7 +106,7 @@
             <div class="flex items-start justify-between gap-4 border-b border-horriver-border/60 px-4 py-3">
               <div>
                 <h4 id="monthlyCandidateModalTitle" class="text-lg font-semibold text-horriver-light">Revisar classificados</h4>
-                <p class="text-[11px] text-horriver-gray">Os 6 sugeridos já vêm marcados. Desmarque e escolha outros elegíveis antes de liberar os links.</p>
+                <p class="text-[11px] text-horriver-gray">Os <%= candidateLimit %> sugeridos já vêm marcados. Desmarque e escolha outros elegíveis antes de liberar os links.</p>
               </div>
               <button type="button" id="closeMonthlyCandidateModal" class="rounded-full border border-horriver-border px-3 py-1 text-xs text-horriver-light hover:border-horriver-orange">
                 Fechar
@@ -359,7 +361,7 @@
                 </td>
                 <td class="py-2 pr-3">
                   <span class="status-chip <%= row.eligible ? (isSuggested ? 'status-ok' : 'status-info') : 'status-warning' %>">
-                    <%= row.eligible ? (isSuggested ? 'Top 6 automático' : 'Elegível') : 'Menos de 2 jogos' %>
+                    <%= row.eligible ? (isSuggested ? `Top ${candidateLimit} automático` : 'Elegível') : 'Menos de 2 jogos' %>
                   </span>
                 </td>
                 <td class="py-2 pr-3 text-right text-horriver-orange font-semibold"><%= row.score.toFixed ? row.score.toFixed(4) : row.score %></td>
@@ -448,7 +450,7 @@
     const monthInput = document.getElementById("monthlyVoteMonth");
     const yearInput = document.getElementById("monthlyVoteYear");
     const boxes = Array.from(document.querySelectorAll("[data-monthly-candidate-checkbox]"));
-    const maxCandidates = 6;
+    const maxCandidates = <%= candidateLimit %>;
 
     const updateCount = () => {
       const selected = boxes.filter((box) => box.checked).length;

@@ -5,7 +5,7 @@ const MONTHLY_VOTE_WEIGHTS = {
 };
 
 const MONTHLY_VOTE_MIN_MATCHES = 2;
-const MONTHLY_VOTE_DEFAULT_CANDIDATES = 6;
+const MONTHLY_VOTE_DEFAULT_CANDIDATES = 10;
 
 function getMonthRange(year, month) {
   const start = new Date(Date.UTC(year, month - 1, 1, 3, 0, 0, 0));
