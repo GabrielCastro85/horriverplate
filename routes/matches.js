@@ -55,7 +55,8 @@ router.get("/:id", async (req, res) => {
       try {
         const result = await computeMatchRatingsAndAwards(id);
         if (!result.error && result.scores && typeof result.scores.forEach === "function") {
-          const finalMap = new Map(result.scores.map((s) => [s.player.id, s.finalRating]));
+          const computedScores = Array.from(result.scores.values());
+          const finalMap = new Map(computedScores.map((s) => [s.player.id, s.finalRating]));
           publicStats = publicStats.map((stat) => ({
             ...stat,
             rating: finalMap.has(stat.playerId) ? finalMap.get(stat.playerId) : stat.rating,
