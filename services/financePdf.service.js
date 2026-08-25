@@ -2,6 +2,22 @@ const fs = require("fs");
 const path = require("path");
 const ejs = require("ejs");
 
+process.env.PUPPETEER_CACHE_DIR =
+  process.env.PUPPETEER_CACHE_DIR ||
+  path.resolve(__dirname, "..", ".cache", "puppeteer");
+
+function clearInvalidBrowserPathEnv() {
+  ["PUPPETEER_EXECUTABLE_PATH", "CHROME_PATH"].forEach((key) => {
+    const value = process.env[key];
+    if (!value) return;
+    if (fs.existsSync(value)) return;
+    console.warn(`[finance-pdf] ignoring invalid ${key}: ${value}`);
+    delete process.env[key];
+  });
+}
+
+clearInvalidBrowserPathEnv();
+
 let puppeteer = null;
 
 const VIEW_ROOT = path.resolve(__dirname, "..", "views");

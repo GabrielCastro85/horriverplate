@@ -1,4 +1,22 @@
 const fs = require("fs");
+const path = require("path");
+
+process.env.PUPPETEER_CACHE_DIR =
+  process.env.PUPPETEER_CACHE_DIR ||
+  path.resolve(__dirname, "..", ".cache", "puppeteer");
+
+function clearInvalidBrowserPathEnv() {
+  ["PUPPETEER_EXECUTABLE_PATH", "CHROME_PATH"].forEach((key) => {
+    const value = process.env[key];
+    if (!value) return;
+    if (fs.existsSync(value)) return;
+    console.warn(`[image-renderer] ignoring invalid ${key}: ${value}`);
+    delete process.env[key];
+  });
+}
+
+clearInvalidBrowserPathEnv();
+
 const puppeteer = require("puppeteer");
 
 const PUPPETEER_ARGS = [

@@ -9,6 +9,18 @@ const router = express.Router();
 
 let puppeteer = null;
 
+function clearInvalidBrowserPathEnv() {
+  ["PUPPETEER_EXECUTABLE_PATH", "CHROME_PATH"].forEach((key) => {
+    const value = process.env[key];
+    if (!value) return;
+    if (fs.existsSync(value)) return;
+    console.warn(`[admin-reports] ignoring invalid ${key}: ${value}`);
+    delete process.env[key];
+  });
+}
+
+clearInvalidBrowserPathEnv();
+
 function requireAdmin(req, res, next) {
   if (!req.admin) return res.redirect("/login");
   next();
