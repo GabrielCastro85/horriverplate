@@ -226,8 +226,8 @@ async function buildVotingData(matchId) {
 
       const photoBuffer = await sharp(sourceBuffer)
         .rotate()
-        .resize(180, 180, { fit: "cover", position: "center" })
-        .jpeg({ quality: 82, mozjpeg: true })
+        .resize(220, 220, { fit: "cover", position: "center" })
+        .jpeg({ quality: 88, mozjpeg: true })
         .toBuffer();
       const dataUri = `data:image/jpeg;base64,${photoBuffer.toString("base64")}`;
       photoCache.set(cacheKey, dataUri);
@@ -288,7 +288,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v18-${matchId}`;
+  const cacheKeyVoting = `voting-result-v19-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -319,7 +319,10 @@ router.get("/voting-result.jpg", async (req, res) => {
       selector: ".vrc-card",
       width: 720,
       height: 1280,
+      deviceScaleFactor: 1.6,
       type: "jpeg",
+      quality: 94,
+      timeout: 45000,
       logPrefix: "[share:voting-result]",
       resourceOrigin: baseUrl,
     });
