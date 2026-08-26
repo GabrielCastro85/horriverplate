@@ -1,5 +1,10 @@
 const prisma = require("./db");
 const { isWeeklyVoteBallotValid } = require("../helpers/weeklyVoteValidation.helper");
+const {
+  buildWeeklySelection,
+  normalizePositionGroup,
+  syncMatchGuestsFromLatestLineup,
+} = require("./weekly_selection");
 
 const VOTE_RATING_WEIGHT = 0.85;
 const STATS_RATING_WEIGHT = 0.15;
@@ -33,6 +38,9 @@ async function computeMatchRatingsAndAwards(matchId) {
       },
       include: {
         rankings: true,
+        guestRatings: {
+          include: { matchGuest: true },
+        },
         ratings: true,
         token: {
           include: {
@@ -53,6 +61,8 @@ async function computeMatchRatingsAndAwards(matchId) {
     return { error: "noStats" };
   }
 
+  const matchGuests = await syncMatchGuestsFromLatestLineup(matchId);
+
   const scores = new Map();
   playerStats.forEach((stat) => {
     scores.set(stat.playerId, {
@@ -62,6 +72,27 @@ async function computeMatchRatingsAndAwards(matchId) {
       assists: stat.assists || 0,
       saves: stat.saves,
       appearedInPhoto: !!stat.appearedInPhoto,
+      votesCount: 0,
+      voteRating: 0,
+      statsRating: 0,
+      finalRating: 0,
+    });
+  });
+
+  const guestScores = new Map();
+  matchGuests.forEach((guest) => {
+    guestScores.set(guest.id, {
+      type: "guest",
+      id: guest.id,
+      matchGuest: guest,
+      name: guest.name,
+      nickname: guest.nickname,
+      position: guest.position,
+      photoUrl: guest.photoUrl,
+      goals: 0,
+      assists: 0,
+      saves: null,
+      appearedInPhoto: false,
       votesCount: 0,
       voteRating: 0,
       statsRating: 0,
@@ -81,6 +112,12 @@ async function computeMatchRatingsAndAwards(matchId) {
       ratingCount.set(r.playerId, (ratingCount.get(r.playerId) || 0) + 1);
       totalRatings += 1;
     });
+    (vote.guestRatings || []).forEach((r) => {
+      if (!guestScores.has(r.matchGuestId)) return;
+      ratingSum.set(`guest:${r.matchGuestId}`, (ratingSum.get(`guest:${r.matchGuestId}`) || 0) + r.rating);
+      ratingCount.set(`guest:${r.matchGuestId}`, (ratingCount.get(`guest:${r.matchGuestId}`) || 0) + 1);
+      totalRatings += 1;
+    });
   });
 
   const hasRatings = totalRatings > 0;
@@ -88,6 +125,13 @@ async function computeMatchRatingsAndAwards(matchId) {
     scores.forEach((score, playerId) => {
       const vCount = ratingCount.get(playerId) || 0;
       const avg = vCount ? (ratingSum.get(playerId) || 0) / vCount : 0;
+      score.votesCount = vCount;
+      score.voteRating = Number(Math.max(0, Math.min(10, avg * 2)).toFixed(2));
+    });
+    guestScores.forEach((score, guestId) => {
+      const key = `guest:${guestId}`;
+      const vCount = ratingCount.get(key) || 0;
+      const avg = vCount ? (ratingSum.get(key) || 0) / vCount : 0;
       score.votesCount = vCount;
       score.voteRating = Number(Math.max(0, Math.min(10, avg * 2)).toFixed(2));
     });
@@ -199,6 +243,9 @@ async function computeMatchRatingsAndAwards(matchId) {
       STATS_RATING_WEIGHT * entry.statsRating;
     entry.finalRating = Number(finalRating.toFixed(2));
   });
+  guestScores.forEach((entry) => {
+    entry.finalRating = Number(entry.voteRating.toFixed(2));
+  });
 
   const pickBest = (playerIds) => {
     let best = null;
@@ -253,9 +300,43 @@ async function computeMatchRatingsAndAwards(matchId) {
     melhor_atacante: pickBest(groupedIds.ATA || []),
   };
 
-  return { publicVotes: ballots, playerStats, scores, awards };
+  const playerSelectionScores = Array.from(scores.values()).map((score) => ({
+    type: "player",
+    id: score.player.id,
+    player: score.player,
+    name: score.player.name,
+    nickname: score.player.nickname,
+    position: score.player.position,
+    photoUrl: score.player.photoUrl,
+    goals: score.goals,
+    assists: score.assists,
+    saves: score.saves,
+    votesCount: score.votesCount,
+    finalRating: score.finalRating,
+  }));
+  const guestSelectionScores = Array.from(guestScores.values()).map((score) => ({
+    type: "guest",
+    id: score.matchGuest.id,
+    matchGuest: score.matchGuest,
+    name: score.matchGuest.name,
+    nickname: score.matchGuest.nickname,
+    position: score.matchGuest.position,
+    photoUrl: score.matchGuest.photoUrl,
+    goals: 0,
+    assists: 0,
+    saves: null,
+    votesCount: score.votesCount,
+    finalRating: score.finalRating,
+  }));
+  const weeklySelection = buildWeeklySelection({
+    playerScores: playerSelectionScores,
+    guestScores: guestSelectionScores,
+  });
+
+  return { publicVotes: ballots, playerStats, scores, guestScores, awards, weeklySelection };
 }
 
 module.exports = {
   computeMatchRatingsAndAwards,
+  normalizePositionGroup,
 };

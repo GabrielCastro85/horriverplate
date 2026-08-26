@@ -9,16 +9,34 @@
   const photoUrl = (player) => {
     if (player?.photoDataUri) return player.photoDataUri;
     if (!player?.photoUrl) return baseUrl + '/img/logo-128x128.svg';
+    if (/^data:image\//i.test(player.photoUrl)) return player.photoUrl;
     if (/^https?:\/\//i.test(player.photoUrl)) return player.photoUrl;
     return baseUrl + '/' + String(player.photoUrl).replace(/^\/+/, '');
   };
   const logoMarkSrc = typeof logoMarkUrl !== 'undefined' && logoMarkUrl ? logoMarkUrl : baseUrl + '/img/logo-128x128.svg';
   const logoIconSrc = typeof logoIconUrl !== 'undefined' && logoIconUrl ? logoIconUrl : baseUrl + '/img/logo-32x32.svg';
+  const safeBrand = typeof brand !== 'undefined' && brand ? brand : {
+    name: 'Horriver Plate',
+    url: 'horriverplate.onrender.com',
+  };
   const displayName = (player) => player?.nickname || player?.name || '-';
   const initialOf = (player) => displayName(player).charAt(0).toUpperCase() || '?';
   const craque = awards?.craque || null;
   const positionOf = (item) => item?.player?.position || item?.positionNorm || '';
-  const highlights = [
+  const weeklySelectionGroups = Array.isArray(typeof weeklySelection !== 'undefined' ? weeklySelection : [])
+    ? weeklySelection
+    : [];
+  const hasWeeklySelection = weeklySelectionGroups.some(group => Array.isArray(group.players) && group.players.length);
+  const selectionRows = ['ATA', 'MEI', 'ZAG', 'GOL'].map(key => {
+    const group = weeklySelectionGroups.find(item => item.key === key || item.positionGroup === key);
+    return { key, players: group && Array.isArray(group.players) ? group.players : [] };
+  }).filter(row => row.players.length);
+  const fieldBackgroundSrc = typeof selectionFieldUrl !== 'undefined' && selectionFieldUrl
+    ? selectionFieldUrl
+    : baseUrl + '/img/weekly-selection-field.jpg';
+  const selectionPlayer = (item) => item?.player || item?.matchGuest || item || null;
+  const selectionLabel = (key) => ({ GOL: 'Goleiro', ZAG: 'Zagueiros', MEI: 'Meias', ATA: 'Atacantes' }[key] || key);
+  const highlights = hasWeeklySelection ? [] : [
     { abbr: 'GOL', item: awards?.melhor_goleiro },
     { abbr: 'ZAG', item: awards?.melhor_zagueiro },
     { abbr: 'MEI', item: awards?.melhor_meia },
@@ -51,10 +69,11 @@
       border-radius: 34px;
       overflow: hidden;
       background:
-        radial-gradient(circle at 12% 10%, rgba(139,19,32,0.26) 0%, transparent 38%),
-        radial-gradient(circle at 86% 86%, rgba(255,122,26,0.10) 0%, transparent 34%),
+        radial-gradient(circle at 12% 10%, rgba(139, 19, 32,0.26) 0%, transparent 38%),
+        radial-gradient(circle at 86% 86%, rgba(255, 122, 26,0.10) 0%, transparent 34%),
+        radial-gradient(circle at 50% 100%, rgba(139, 19, 32,0.14) 0%, transparent 36%),
         linear-gradient(155deg, #1e0509 0%, #0d0210 52%, #050509 100%);
-      border: 1px solid rgba(255,122,26,0.22);
+      border: 1px solid rgba(255, 122, 26,0.22);
       box-shadow: 0 18px 42px rgba(0,0,0,0.34);
       font-family: 'Manrope', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -142,7 +161,7 @@
     /* ── Dividers ── */
     .vrc-divider {
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,122,26,0.62), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 122, 26,0.62), transparent);
       margin-bottom: 24px;
     }
     .vrc-divider--subtle {
@@ -174,8 +193,8 @@
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
-      border: 3px solid rgba(255,122,26,0.85);
-      box-shadow: 0 0 28px rgba(255,122,26,0.28);
+      border: 3px solid rgba(255, 122, 26,0.85);
+      box-shadow: 0 0 28px rgba(255, 122, 26,0.28);
       background: #111;
     }
     .vrc-craque-photo img {
@@ -188,7 +207,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,122,26,0.10);
+      background: rgba(255, 122, 26,0.10);
       font-family: 'Bebas Neue', sans-serif;
       font-size: 48px;
       color: #ff7a1a;
@@ -219,8 +238,8 @@
       gap: 10px;
       padding: 16px 20px;
       border-radius: 20px;
-      border: 1px solid rgba(255,122,26,0.30);
-      background: rgba(255,122,26,0.06);
+      border: 1px solid rgba(255, 122, 26,0.30);
+      background: rgba(255, 122, 26,0.06);
     }
     .vrc-craque-score-label {
       font-size: 10px;
@@ -249,7 +268,7 @@
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
-      border: 1.5px solid rgba(255,122,26,0.40);
+      border: 1.5px solid rgba(255, 122, 26,0.40);
       background: #111;
     }
     .vrc-mini-photo img {
@@ -262,7 +281,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,122,26,0.10);
+      background: rgba(255, 122, 26,0.10);
       font-family: 'Bebas Neue', sans-serif;
       font-size: 18px;
       color: #ff7a1a;
@@ -283,7 +302,7 @@
       font-family: 'Bebas Neue', sans-serif;
       font-size: 18px;
       letter-spacing: 0.10em;
-      color: rgba(255,122,26,0.72);
+      color: rgba(255, 122, 26,0.72);
       width: 44px;
       flex-shrink: 0;
       line-height: 1;
@@ -307,7 +326,7 @@
     }
 
     /* ── Top 5 rows ── */
-    .vrc-top5 { margin-bottom: 28px; }
+    .vrc-top5 { margin-bottom: 24px; }
     .vrc-top5-row {
       display: flex;
       align-items: center;
@@ -319,7 +338,7 @@
     .vrc-top5-rank {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 22px;
-      color: rgba(255,122,26,0.52);
+      color: rgba(255, 122, 26,0.52);
       width: 28px;
       flex-shrink: 0;
       text-align: center;
@@ -360,6 +379,117 @@
     }
     .vrc-top5-score--gold { color: #f5c542; }
 
+    /* ── Seleção da semana ── */
+    .vrc-selection { margin-bottom: 24px; }
+    .vrc-field {
+      position: relative;
+      overflow: hidden;
+      height: 560px;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 122, 26,0.22);
+      background:
+        linear-gradient(180deg, rgba(30, 5, 9,0.10), rgba(0,0,0,0.24)),
+        url("<%= fieldBackgroundSrc %>") center center / cover no-repeat;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.035),
+        inset 0 -80px 110px rgba(0,0,0,0.42);
+    }
+    .vrc-field::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 52%, rgba(255, 122, 26,0.10), transparent 34%),
+        linear-gradient(180deg, rgba(0,0,0,0.14), transparent 24%, transparent 70%, rgba(0,0,0,0.32));
+      pointer-events: none;
+    }
+    .vrc-field-row {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 96px;
+      min-height: 112px;
+    }
+    .vrc-field-row--ATA { top: 42px; }
+    .vrc-field-row--MEI { top: 188px; }
+    .vrc-field-row--ZAG { top: 372px; }
+    .vrc-field-row--GOL { top: 445px; }
+    .vrc-field-pos {
+      display: none;
+    }
+    .vrc-field-player {
+      width: 150px;
+      min-height: 116px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 7px;
+      text-align: center;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.36));
+    }
+    .vrc-field-row--ATA .vrc-field-player {
+      transform: scale(0.92);
+    }
+    .vrc-field-row--MEI .vrc-field-player {
+      transform: scale(1);
+    }
+    .vrc-field-row--ZAG .vrc-field-player {
+      transform: scale(1.03);
+    }
+    .vrc-field-row--GOL .vrc-field-player {
+      transform: scale(1.03);
+    }
+    .vrc-field-photo {
+      width: 82px;
+      height: 82px;
+      overflow: hidden;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 122, 26,0.70);
+      background: rgba(0,0,0,0.62);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+    }
+    .vrc-field-photo img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+    .vrc-field-photo-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ff7a1a;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      line-height: 1;
+      background: rgba(255, 122, 26,0.10);
+    }
+    .vrc-field-name {
+      width: 100%;
+      color: #f5f5f5;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.08;
+      overflow-wrap: anywhere;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.88);
+    }
+    .vrc-field-score {
+      color: rgba(255, 122, 26,0.82);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+
     /* ── Footer ── */
     .vrc-footer {
       display: flex;
@@ -385,7 +515,7 @@
       <!-- Branding -->
       <div class="vrc-branding">
         <img class="vrc-logo" src="<%= logoIconSrc %>" alt="" />
-        <span class="vrc-brand-name">Horriver Plate</span>
+        <span class="vrc-brand-name"><%= safeBrand.name || "Horriver Plate" %></span>
       </div>
 
       <!-- Título + info da pelada -->
@@ -465,21 +595,22 @@
                             : i === 1 ? ' vrc-top5-rank--silver'
                             : '';
               const scoreCls = i === 0 ? ' vrc-top5-score--gold' : '';
-              const pos5 = s.player?.position || s.positionNorm || '';
+              const top5Player = selectionPlayer(s);
+              const pos5 = top5Player?.position || s.positionNorm || '';
             %>
             <div class="vrc-top5-row">
               <span class="vrc-top5-rank<%= rankCls %>"><%= i + 1 %></span>
               <div class="vrc-mini-photo">
-                <% if (s.player?.photoUrl || s.player?.photoDataUri) { %>
-                  <img src="<%= photoUrl(s.player) %>" alt="" />
+                <% if (top5Player?.photoUrl || top5Player?.photoDataUri) { %>
+                  <img src="<%= photoUrl(top5Player) %>" alt="" />
                 <% } else { %>
                   <div class="vrc-mini-photo-fallback">
-                    <%= initialOf(s.player) %>
+                    <%= initialOf(top5Player) %>
                   </div>
                 <% } %>
               </div>
               <div class="vrc-top5-info">
-                <span class="vrc-top5-name"><%= displayName(s.player) %></span>
+                <span class="vrc-top5-name"><%= displayName(top5Player) %></span>
                 <% if (pos5) { %><span class="vrc-top5-pos"><%= pos5 %></span><% } %>
               </div>
               <span class="vrc-top5-score<%= scoreCls %>"><%= fmtScore(s.finalRating) %></span>
@@ -488,9 +619,39 @@
         </div>
       <% } %>
 
+      <!-- Seleção da semana -->
+      <% if (hasWeeklySelection) { %>
+        <div class="vrc-divider--subtle"></div>
+        <p class="vrc-section-label">Seleção da Semana</p>
+        <div class="vrc-selection">
+          <div class="vrc-field">
+            <% selectionRows.forEach(function(row) { %>
+              <div class="vrc-field-row vrc-field-row--<%= row.key %>">
+                <span class="vrc-field-pos"><%= selectionLabel(row.key) %></span>
+                <% row.players.forEach(function(item) {
+                  const candidate = selectionPlayer(item);
+                %>
+                  <div class="vrc-field-player">
+                    <div class="vrc-field-photo">
+                      <% if (candidate?.photoUrl || candidate?.photoDataUri) { %>
+                        <img src="<%= photoUrl(candidate) %>" alt="" />
+                      <% } else { %>
+                        <div class="vrc-field-photo-fallback"><%= initialOf(candidate) %></div>
+                      <% } %>
+                    </div>
+                    <span class="vrc-field-name"><%= displayName(candidate) %></span>
+                    <span class="vrc-field-score"><%= fmtScore(item.finalRating) %></span>
+                  </div>
+                <% }); %>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      <% } %>
+
       <!-- Footer -->
       <div class="vrc-footer">
-        <span>horriverplate.onrender.com</span>
+        <span><%= safeBrand.url || "horriverplate.onrender.com" %></span>
         <span>@_hpfrc</span>
       </div>
 
@@ -498,3 +659,4 @@
   </div>
 </body>
 </html>
+

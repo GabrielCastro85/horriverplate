@@ -29,6 +29,7 @@
 
   const weeklyAwards  = safeArr(rankings && rankings.weeklyAwards);
   const monthlyAwards = safeArr(rankings && rankings.monthlyAwards);
+  const weeklySelectionAppearances = safeArr(rankings && rankings.weeklySelectionAppearances);
   const colorWins = safeArr(rankings && rankings.colorWins);
 
   const monthNames = [
@@ -984,6 +985,7 @@
       <a href="#ranking-presenças">Presenças</a>
       <a href="#ranking-overall">Overall</a>
       <a href="#ranking-ultimos-10">10J</a>
+      <a href="#ranking-selecao">Seleção</a>
       <a href="#ranking-semana">Semana</a>
       <a href="#ranking-mes">Mês</a>
     </div>
@@ -1634,7 +1636,54 @@
       Craques da semana e do mês
     </h2>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] md:text-xs">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-[11px] md:text-xs">
+      <!-- Seleção da semana -->
+      <div id="ranking-selecao" class="bg-black/40 border border-horriver-border rounded-2xl p-4 rk-anchor">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-title text-lg text-horriver-light">
+              Seleção da semana
+            </h3>
+            <p class="text-[11px] text-horriver-gray">
+              Quem mais apareceu na escalação ideal.
+            </p>
+          </div>
+        </div>
+
+        <% if (!weeklySelectionAppearances.length) { %>
+          <p class="text-sm text-horriver-gray">
+            Nenhuma seleção registrada ainda.
+          </p>
+        <% } else { %>
+          <table class="table-sticky w-full text-[11px]">
+            <thead class="bg-horriver-red/20">
+              <tr>
+                <th class="text-left px-2 py-1">#</th>
+                <th class="text-left px-2 py-1">Jogador</th>
+                <th class="text-left px-2 py-1">Posição</th>
+                <th class="text-center px-2 py-1 rk-primary-metric">Vezes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% weeklySelectionAppearances.forEach((row, idx) => { %>
+                <tr class="border-t border-horriver-border/40">
+                  <td class="px-2 py-1"><%= idx + 1 %></td>
+                  <td class="px-2 py-1">
+                    <%= row.name || row.player?.name || row.matchGuest?.name || "-" %>
+                  </td>
+                  <td class="px-2 py-1 text-horriver-orange text-[10px]">
+                    <%= row.position || row.player?.position || row.matchGuest?.position || "-" %>
+                  </td>
+                  <td class="px-2 py-1 text-center font-semibold rk-primary-metric">
+                    <%= row.count || 0 %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </div>
+
       <!-- Craques da semana -->
       <div id="ranking-semana" class="bg-black/40 border border-horriver-border rounded-2xl p-4 rk-anchor">
         <div class="flex items-center justify-between mb-3">

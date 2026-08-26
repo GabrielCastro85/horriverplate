@@ -419,6 +419,9 @@
                   <span class="vote-team-pill"><%= p.teamName %></span>
                 <% } %>
                 <p class="text-horriver-light font-semibold text-lg truncate"><%= p.name %></p>
+                <% if (p.isGuest) { %>
+                  <p class="text-[11px] text-horriver-orange font-semibold uppercase tracking-[0.14em]">Convidado</p>
+                <% } %>
                 <% if (p.nickname) { %>
                   <p class="text-[11px] text-horriver-gray">"<%= p.nickname %>"</p>
                 <% } %>
@@ -453,7 +456,7 @@
             <div class="mt-4 flex items-center gap-2 rating-row">
               <% for (let r = 1; r <= 5; r++) { %>
                 <label class="rating-pill">
-                  <input type="radio" name="rating_<%= p.id %>" value="<%= r %>" class="hidden" />
+                  <input type="radio" name="rating_<%= p.voteKey || p.id %>" value="<%= r %>" class="hidden" />
                   <span class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-horriver-border text-horriver-light text-sm font-semibold hover:border-horriver-orange transition leading-none">
                     <%= r %>
                   </span>

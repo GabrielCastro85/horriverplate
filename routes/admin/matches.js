@@ -14,6 +14,10 @@ const { deleteCache } = require("../../utils/page_cache");
 const { getDynamicOverallSnapshot } = require("../../utils/live_overall");
 const { uploadWeeklyTeamPhoto } = require("../../utils/upload");
 const { formatDateBR } = require("../../utils/finance");
+const {
+  persistWeeklySelection,
+  syncMatchGuestsFromLatestLineup,
+} = require("../../utils/weekly_selection");
 const router = express.Router();
 
 function requireAdmin(req, res, next) {
@@ -990,6 +994,11 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
           })
         : prisma.$executeRaw`SELECT 1`,
       ballotIds.length
+        ? prisma.voteGuestRating.deleteMany({
+            where: { voteBallotId: { in: ballotIds } },
+          })
+        : prisma.$executeRaw`SELECT 1`,
+      ballotIds.length
         ? prisma.voteBallot.deleteMany({ where: { id: { in: ballotIds } } })
         : prisma.$executeRaw`SELECT 1`,
       tokenIds.length
@@ -1018,6 +1027,8 @@ router.post("/matches/:id/delete", requireAdmin, async (req, res) => {
         : prisma.$executeRaw`SELECT 1`,
 
       prisma.lineupDraw.deleteMany({ where: { matchId: id } }),
+      prisma.weeklySelectionEntry.deleteMany({ where: { matchId: id } }),
+      prisma.matchGuest.deleteMany({ where: { matchId: id } }),
 
       prisma.weeklyAward.updateMany({
         where: { winningMatchId: id },
@@ -1467,6 +1478,8 @@ router.post("/matches/:id/vote-session", requireAdmin, async (req, res) => {
       return res.redirect(`/admin/matches/${matchId}?error=noPresentPlayers`);
     }
 
+    await syncMatchGuestsFromLatestLineup(matchId);
+
     const tokensData = statsPresent.map((s) => ({
       token: crypto.randomBytes(16).toString("hex"),
       playerId: s.playerId,
@@ -1510,6 +1523,9 @@ router.post("/matches/:id/close-votes", requireAdmin, async (req, res) => {
     });
 
     const result = await computeMatchRatingsAndAwards(matchId);
+    if (!result.error && result.weeklySelection) {
+      await persistWeeklySelection(matchId, result.weeklySelection);
+    }
     if (
       !result.error &&
       result.publicVotes &&
@@ -1930,6 +1946,7 @@ router.post("/matches/:id/sort-teams", requireAdmin, async (req, res) => {
           result: { teams: lineup.teams, bench: lineup.bench },
         },
       });
+      await syncMatchGuestsFromLatestLineup(matchId);
     } catch (persistErr) {
       console.error("Erro ao salvar sorteio (LineupDraw):", persistErr);
     }
@@ -1958,6 +1975,7 @@ router.post("/matches/:id/save-lineup", requireAdmin, async (req, res) => {
       name: player?.name || "Jogador",
       nickname: player?.nickname || null,
       position: player?.position || "",
+      photoUrl: player?.photoUrl || null,
       strength: Number.isFinite(Number(player?.strength)) ? Number(player.strength) : 0,
       guest: !!player?.guest,
     });
@@ -1987,6 +2005,8 @@ router.post("/matches/:id/save-lineup", requireAdmin, async (req, res) => {
         },
       },
     });
+
+    await syncMatchGuestsFromLatestLineup(matchId);
 
     return res.json({ ok: true, lineupId: saved.id });
   } catch (err) {
@@ -2051,6 +2071,10 @@ router.post("/matches/:id/calculate-results", requireAdmin, async (req, res) => 
 
     if (updates.length) {
       await prisma.$transaction(updates);
+    }
+
+    if (result.weeklySelection) {
+      await persistWeeklySelection(matchId, result.weeklySelection);
     }
 
     await prisma.match.update({

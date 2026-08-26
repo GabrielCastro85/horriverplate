@@ -19,6 +19,7 @@ backups/
 backup_extract/
 exports/
 *.sql
+!prisma/migrations/20260825210000_weekly_selection/migration.sql
 *.zip
 *.bak
 *.backup

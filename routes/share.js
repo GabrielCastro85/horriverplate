@@ -182,6 +182,7 @@ async function buildVotingData(matchId) {
   if (result.error) return null;
 
   const topScores = Array.from(result.scores.values())
+    .concat(Array.from(result.guestScores?.values?.() || []))
     .sort((a, b) => b.finalRating - a.finalRating)
     .slice(0, 5);
 
@@ -200,6 +201,12 @@ async function buildVotingData(matchId) {
     try {
       const sharp = require("sharp");
       let sourceBuffer = null;
+
+      if (/^data:image\//i.test(player.photoUrl)) {
+        player.photoDataUri = player.photoUrl;
+        photoCache.set(cacheKey, player.photoUrl);
+        return;
+      }
 
       if (/^https?:\/\//i.test(player.photoUrl)) {
         sourceBuffer = null;
@@ -233,11 +240,14 @@ async function buildVotingData(matchId) {
   };
 
   await Promise.all([
-    ...topScores.map((score) => embedPlayerPhoto(score.player)),
+    ...topScores.map((score) => embedPlayerPhoto(score.player || score.matchGuest)),
     ...Object.values(result.awards || {}).map((award) => embedPlayerPhoto(award?.player)),
+    ...(result.weeklySelection || []).flatMap((group) =>
+      (group.players || []).map((entry) => embedPlayerPhoto(entry.player || entry.matchGuest))
+    ),
   ]);
 
-  return { match, awards: result.awards, topScores };
+  return { match, awards: result.awards, topScores, weeklySelection: result.weeklySelection || [] };
 }
 
 // ── Debug: renderiza o HTML do card de votação no browser ──────────────────
@@ -251,11 +261,13 @@ router.get("/voting-result-html", async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const logoDataUri = await getLineupLogoDataUri();
+    const selectionFieldDataUri = await getWeeklySelectionFieldDataUri();
     const html = await ejs.renderFile(VOTING_TEMPLATE, {
       ...data,
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
+      selectionFieldUrl: selectionFieldDataUri,
       fontCss: getLineupFontCss(),
     });
 
@@ -276,7 +288,7 @@ router.get("/voting-result.jpg", async (req, res) => {
   console.log(`[share:voting-result] request match #${matchId}`);
 
   // Cache versionado para evitar devolver imagens antigas quando o layout muda.
-  const cacheKeyVoting = `voting-result-v6-${matchId}`;
+  const cacheKeyVoting = `voting-result-v17-${matchId}`;
   const cachedVoting = readCache(cacheKeyVoting);
   if (cachedVoting) {
     console.log(`[share:voting-result] cache hit match #${matchId} (${Date.now() - t0}ms)`);
@@ -293,11 +305,13 @@ router.get("/voting-result.jpg", async (req, res) => {
 
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const logoDataUri = await getLineupLogoDataUri();
+    const selectionFieldDataUri = await getWeeklySelectionFieldDataUri();
     const html = await ejs.renderFile(VOTING_TEMPLATE, {
       ...data,
       baseUrl,
       logoMarkUrl: logoDataUri,
       logoIconUrl: logoDataUri,
+      selectionFieldUrl: selectionFieldDataUri,
       fontCss: getLineupFontCss(),
     });
     const buf = await renderImageFromHtml({
@@ -490,6 +504,7 @@ router.get("/monthly-craque.png", (req, res) => {
 const LINEUP_TEMPLATE = path.join(__dirname, "../views/share/lineup_card.ejs");
 const TIERLIST_TEMPLATE = path.join(__dirname, "../views/share/tierlist_card.ejs");
 const LINEUP_LOGO_SOURCE = path.join(__dirname, "../public/img/logo.jpg");
+const WEEKLY_SELECTION_FIELD_SOURCE = path.join(__dirname, "../public/img/weekly-selection-field.jpg");
 const LINEUP_FONT_FILES = [
   { family: "Bebas Neue", weight: "400", filename: "BebasNeue-Regular.ttf" },
   { family: "Manrope", weight: "400", filename: "Manrope-Regular.ttf" },
@@ -498,6 +513,7 @@ const LINEUP_FONT_FILES = [
   { family: "Manrope", weight: "800 900", filename: "Manrope-ExtraBold.ttf" },
 ];
 let lineupLogoDataUriPromise = null;
+let weeklySelectionFieldDataUriPromise = null;
 let lineupFontCss = null;
 
 async function getLineupLogoDataUri() {
@@ -517,6 +533,19 @@ async function getLineupLogoDataUri() {
   }
 
   return lineupLogoDataUriPromise;
+}
+
+async function getWeeklySelectionFieldDataUri() {
+  if (!weeklySelectionFieldDataUriPromise) {
+    weeklySelectionFieldDataUriPromise = fs.promises.readFile(WEEKLY_SELECTION_FIELD_SOURCE)
+      .then((buffer) => `data:image/jpeg;base64,${buffer.toString("base64")}`)
+      .catch((err) => {
+        weeklySelectionFieldDataUriPromise = null;
+        throw err;
+      });
+  }
+
+  return weeklySelectionFieldDataUriPromise;
 }
 
 function getLineupFontCss() {

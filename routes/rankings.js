@@ -534,6 +534,74 @@ router.get("/", async (req, res) => {
       (a, b) => b.count - a.count
     );
 
+    let weeklySelectionAppearances = [];
+    try {
+      const selectionWhere = {};
+      if (from && to) {
+        selectionWhere.match = {
+          playedAt: {
+            gte: from,
+            lt: to,
+          },
+        };
+      }
+      if (selPosition !== "all") {
+        selectionWhere.OR = [
+          { player: { position: selPosition } },
+          { matchGuest: { position: selPosition } },
+        ];
+      }
+
+      const selectionRaw = await prisma.weeklySelectionEntry.findMany({
+        where: selectionWhere,
+        include: {
+          player: true,
+          matchGuest: true,
+        },
+      });
+
+      const selectionMap = new Map();
+      for (const row of selectionRaw) {
+        const person = row.player || row.matchGuest;
+        if (!person) continue;
+        const key = row.playerId ? `player:${row.playerId}` : `guest:${row.matchGuestId}`;
+        if (!selectionMap.has(key)) {
+          selectionMap.set(key, {
+            key,
+            player: row.player,
+            matchGuest: row.matchGuest,
+            name: person.nickname || person.name || "Jogador",
+            position: row.positionGroup || person.position || "-",
+            count: 0,
+            ratingSum: 0,
+            ratingCount: 0,
+          });
+        }
+        const item = selectionMap.get(key);
+        item.count += 1;
+        if (row.finalRating != null) {
+          item.ratingSum += Number(row.finalRating) || 0;
+          item.ratingCount += 1;
+        }
+      }
+
+      weeklySelectionAppearances = Array.from(selectionMap.values())
+        .map((row) => ({
+          ...row,
+          averageRating: row.ratingCount ? row.ratingSum / row.ratingCount : 0,
+        }))
+        .sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          return b.averageRating - a.averageRating;
+        });
+    } catch (err) {
+      if (err?.code === "P2021" || /weeklySelectionEntry/i.test(String(err?.message || ""))) {
+        console.warn("Ranking de seleção da semana indisponível antes da migração.");
+      } else {
+        throw err;
+      }
+    }
+
     const winnerColorWhere = { winnerColor: { not: null } };
     if (from && to) {
       winnerColorWhere.playedAt = { gte: from, lt: to };
@@ -601,6 +669,7 @@ router.get("/", async (req, res) => {
       last10: last10Ranking,
       weeklyAwards,
       monthlyAwards,
+      weeklySelectionAppearances,
       colorWins,
     };
 
