@@ -142,15 +142,35 @@ router.get("/", async (req, res) => {
       });
     });
 
-    const finalRatingsByMatch = new Map();
     const matchIdList = Array.from(matchIds);
+    const closedMatches = matchIdList.length
+      ? await prisma.match.findMany({
+          where: {
+            id: { in: matchIdList },
+            OR: [
+              { votingStatus: "CLOSED" },
+              { voteSessions: { some: { expiresAt: { lte: new Date() } } } },
+            ],
+          },
+          select: { id: true },
+        })
+      : [];
+    const closedMatchIds = new Set(closedMatches.map((match) => match.id));
+
+    const finalRatingsByMatch = new Map();
     const ratingRows = await mapWithConcurrency(
-      matchIdList,
+      matchIdList.filter((matchId) => closedMatchIds.has(matchId)),
       RANKINGS_RATING_CONCURRENCY,
       async (matchId) => {
         try {
           const result = await computeMatchRatingsAndAwards(matchId);
-          if (!result.error && result.scores && typeof result.scores.forEach === "function") {
+          if (
+            !result.error &&
+            result.publicVotes &&
+            result.publicVotes.length > 0 &&
+            result.scores &&
+            typeof result.scores.forEach === "function"
+          ) {
             const map = new Map();
             result.scores.forEach((score) => {
               map.set(score.player.id, score.finalRating);

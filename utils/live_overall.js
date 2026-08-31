@@ -56,6 +56,7 @@ async function getDynamicOverallSnapshot(options = {}) {
     from = null,
     to = null,
     matchWindow = DEFAULT_MATCH_WINDOW,
+    officialOnly = false,
   } = options;
 
   const matchWhere = {};
@@ -64,6 +65,12 @@ async function getDynamicOverallSnapshot(options = {}) {
       gte: from,
       lt: to,
     };
+  }
+  if (officialOnly) {
+    matchWhere.OR = [
+      { votingStatus: "CLOSED" },
+      { voteSessions: { some: { expiresAt: { lte: new Date() } } } },
+    ];
   }
 
   const recentMatches = await prisma.match.findMany({
@@ -115,13 +122,15 @@ async function getDynamicOverallSnapshot(options = {}) {
       (player.stats || []).forEach((stat) => {
         if (!stat.present) return;
 
+        const matchId = stat.match?.id;
+        const finalRating = matchId && finalRatingsByMatch.get(matchId)?.get(stat.playerId);
+        const effectiveRating = finalRating != null ? finalRating : stat.rating;
+        if (officialOnly && effectiveRating == null) return;
+
         goals += stat.goals || 0;
         assists += stat.assists || 0;
         matches += 1;
 
-        const matchId = stat.match?.id;
-        const finalRating = matchId && finalRatingsByMatch.get(matchId)?.get(stat.playerId);
-        const effectiveRating = finalRating != null ? finalRating : stat.rating;
         if (effectiveRating != null) {
           ratingSum += effectiveRating;
           ratingCount += 1;
