@@ -10,7 +10,7 @@ const {
   decorateWeeklyVoteBallot,
   isWeeklyVoteBallotValid,
 } = require("../../helpers/weeklyVoteValidation.helper");
-const { deleteCache } = require("../../utils/page_cache");
+const { deleteCache, clearCache } = require("../../utils/page_cache");
 const { getDynamicOverallSnapshot } = require("../../utils/live_overall");
 const { uploadWeeklyTeamPhoto } = require("../../utils/upload");
 const { formatDateBR } = require("../../utils/finance");
@@ -197,6 +197,7 @@ async function saveMatchStatsFromBody(matchId, body) {
 
     const goalsRaw = body[`goals_${playerId}`];
     const assistsRaw = body[`assists_${playerId}`];
+    const ownGoalsRaw = body[`ownGoals_${playerId}`];
     const savesRaw = body[`saves_${playerId}`];
     const hasSavesField = Object.prototype.hasOwnProperty.call(body, `saves_${playerId}`);
     const hasRatingField = Object.prototype.hasOwnProperty.call(body, `rating_${playerId}`);
@@ -205,7 +206,9 @@ async function saveMatchStatsFromBody(matchId, body) {
 
     let goals = goalsRaw ? parseInt(goalsRaw, 10) || 0 : 0;
     let assists = assistsRaw ? parseInt(assistsRaw, 10) || 0 : 0;
+    let ownGoals = ownGoalsRaw ? parseInt(ownGoalsRaw, 10) || 0 : 0;
     let saves = null;
+    ownGoals = Math.max(0, ownGoals);
     if (isGoalkeeperPosition(player.position) && hasSavesField && String(savesRaw ?? "").trim() !== "") {
       saves = Math.max(0, parseInt(savesRaw, 10) || 0);
     }
@@ -224,6 +227,7 @@ async function saveMatchStatsFromBody(matchId, body) {
     if (!present) {
       goals = 0;
       assists = 0;
+      ownGoals = 0;
       saves = null;
       rating = null;
       appearedInPhoto = false;
@@ -232,7 +236,7 @@ async function saveMatchStatsFromBody(matchId, body) {
     }
 
     const hasAnyData =
-      present || goals > 0 || assists > 0 || saves !== null || rating !== null || appearedInPhoto;
+      present || goals > 0 || assists > 0 || ownGoals > 0 || saves !== null || rating !== null || appearedInPhoto;
 
     const existing = statsByPlayerId.get(playerId);
 
@@ -252,6 +256,7 @@ async function saveMatchStatsFromBody(matchId, body) {
           present,
           goals,
           assists,
+          ownGoals,
           saves,
           rating,
           appearedInPhoto,
@@ -265,6 +270,7 @@ async function saveMatchStatsFromBody(matchId, body) {
           present,
           goals,
           assists,
+          ownGoals,
           saves,
           rating,
           appearedInPhoto,
@@ -406,7 +412,7 @@ router.post("/matches", requireAdmin, async (req, res) => {
 router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { playedAt, playedDate, playedTime, description, winnerTeam, winnerColor } = req.body;
+    const { playedAt, playedDate, playedTime, description, winnerTeam, winnerColor, returnTo } = req.body;
 
     const playedDateValue = parsePlayedAt({ playedAt, playedDate, playedTime });
     if (Number.isNaN(id) || !playedDateValue) {
@@ -423,7 +429,8 @@ router.post("/matches/:id/edit", requireAdmin, async (req, res) => {
       },
     });
 
-    res.redirect("/admin");
+    clearCache();
+    res.redirect(returnTo === "match" ? `/admin/matches/${id}?matchEdited=true` : "/admin?matchEdited=true");
   } catch (err) {
     console.error("Erro ao editar pelada:", err);
     res.redirect("/admin");

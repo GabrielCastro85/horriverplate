@@ -130,6 +130,7 @@
     }
     .vote-card > .flex:first-child,
     .vote-card > .grid,
+    .vote-card > .vote-own-goal,
     .vote-card > .rating-row {
       position: relative;
       z-index: 1;
@@ -183,6 +184,27 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       font-size: 0.62rem;
+    }
+    .vote-own-goal {
+      margin-top: 0.75rem;
+      border: 1px solid rgba(248, 113, 113, 0.48);
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(127, 29, 29, 0.56), rgba(69, 10, 10, 0.34)),
+        rgba(0, 0, 0, 0.24);
+      padding: 0.7rem 0.85rem;
+      color: #fee2e2;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    .vote-own-goal strong {
+      color: #fecaca;
+      font-size: 1rem;
+    }
+    .vote-own-goal span {
+      color: rgba(254, 202, 202, 0.78);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
     .rating-pill span {
       min-width: 38px;
@@ -432,7 +454,8 @@
             </div>
 
             <% const isGoalkeeperCard = String(p.position || p.positionLabel || "").toLowerCase().includes("gol"); %>
-            <div class="mt-4 grid <%= isGoalkeeperCard ? 'grid-cols-4' : 'grid-cols-3' %> gap-2 text-[11px] text-horriver-gray">
+            <% const statColumns = isGoalkeeperCard ? 4 : 3; %>
+            <div class="mt-4 grid gap-2 text-[11px] text-horriver-gray" style="grid-template-columns: repeat(<%= statColumns %>, minmax(0, 1fr));">
               <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
                 <p class="text-horriver-orange font-semibold"><%= p.goals || 0 %></p>
                 <p>Gols</p>
@@ -452,6 +475,15 @@
                 <p>Foto</p>
               </div>
             </div>
+
+            <% if ((p.ownGoals || 0) > 0) { %>
+              <div class="vote-own-goal">
+                <div class="flex items-center justify-between gap-3">
+                  <span>Gol contra</span>
+                  <strong><%= p.ownGoals %></strong>
+                </div>
+              </div>
+            <% } %>
 
             <div class="mt-4 flex items-center gap-2 rating-row">
               <% for (let r = 1; r <= 5; r++) { %>

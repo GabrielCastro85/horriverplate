@@ -158,7 +158,7 @@
     function getStatsFieldValues() {
       const values = {};
       form.querySelectorAll("[name]").forEach((field) => {
-        const match = field.name.match(/^(goals|assists|saves|rating|photo|present)_(.+)$/);
+        const match = field.name.match(/^(goals|assists|ownGoals|saves|rating|photo|present)_(.+)$/);
         if (!match) return;
         const [, key, playerId] = match;
         values[playerId] = values[playerId] || {};
@@ -218,6 +218,10 @@
           <label>
             Assist.
             <input type="number" name="assists_${escapeStatsHtml(player.id)}" min="0" step="1" value="${escapeStatsHtml(values.assists ?? 0)}" />
+          </label>
+          <label class="stats-own-goal-field">
+            Gol contra
+            <input type="number" name="ownGoals_${escapeStatsHtml(player.id)}" min="0" step="1" value="${escapeStatsHtml(values.ownGoals ?? 0)}" />
           </label>
           ${
             isGoalkeeper

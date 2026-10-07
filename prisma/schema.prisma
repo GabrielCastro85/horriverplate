@@ -161,6 +161,7 @@ model PlayerStat {
   present         Boolean  @default(false)
   goals           Int      @default(0)
   assists         Int      @default(0)
+  ownGoals        Int      @default(0)
   saves           Int?
   rating          Float?
   appearedInPhoto Boolean  @default(false)
