@@ -94,10 +94,81 @@
         justify-content: space-between;
       }
     }
+    .selection-group-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .selection-group-count {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .selection-group.is-complete .selection-group-count {
+      color: #34d399;
+    }
+    .selection-option {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.9rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+    .selection-option:hover,
+    .selection-option:focus-within {
+      border-color: rgba(255, 122, 26, 0.55);
+    }
+    .selection-option.is-selected {
+      border-color: rgba(255, 122, 26, 0.85);
+      background: linear-gradient(180deg, rgba(255, 122, 26, 0.14), rgba(0, 0, 0, 0.35));
+    }
+    .selection-option.is-locked {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .selection-option-mark {
+      width: 1.35rem;
+      height: 1.35rem;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      font-size: 11px;
+      font-weight: 800;
+      color: #0b0b0b;
+    }
+    .selection-option.is-selected .selection-option-mark {
+      border-color: #ff7a1a;
+      background: #ff7a1a;
+    }
+    .monthly-vote-submit:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
   </style>
 
+  <%
+    const selectionGroupsList = Array.isArray(typeof selectionGroups !== 'undefined' ? selectionGroups : null) ? selectionGroups : [];
+    const hasSelectionStep = selectionGroupsList.length > 0;
+    const keptCandidateId = typeof selectedCandidateId !== 'undefined' && selectedCandidateId != null ? Number(selectedCandidateId) : null;
+    const keptByGroup = typeof selectedByGroup !== 'undefined' && selectedByGroup ? selectedByGroup : {};
+    const isKeptInGroup = (key, id) => (keptByGroup[key] || []).map(Number).includes(Number(id));
+    const showForm = !success && Array.isArray(candidates) && candidates.length > 0;
+  %>
+
   <header class="text-center space-y-2">
-    <h1 class="font-title text-3xl text-horriver-light">Vota&ccedil;&atilde;o do melhor do m&ecirc;s</h1>
+    <h1 class="font-title text-3xl text-horriver-light">
+      <%= hasSelectionStep ? 'Votação do mês' : 'Votação do melhor do mês' %>
+    </h1>
     <% if (monthLabel) { %>
       <p class="text-sm text-horriver-gray">
         M&ecirc;s: <span class="text-horriver-orange"><%= monthLabel %></span>
@@ -122,93 +193,159 @@
     </div>
   <% } %>
 
-  <% if (!error && !success) { %>
-    <form method="POST" class="space-y-4" id="monthly-vote-form">
-      <div class="rounded-2xl border border-horriver-border/70 bg-black/30 px-4 py-3 text-[12px] text-horriver-gray">
-        Clique ou toque no card do jogador. O escolhido fica destacado em laranja antes do envio.
-      </div>
+  <% if (showForm) { %>
+    <form method="POST" class="space-y-6" id="monthly-vote-form">
+      <section class="space-y-4">
+        <div>
+          <% if (hasSelectionStep) { %>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-orange font-semibold">Etapa 1 de 2</p>
+          <% } %>
+          <h2 class="text-lg font-semibold text-horriver-light">Craque do m&ecirc;s</h2>
+          <p class="text-[12px] text-horriver-gray">Toque no card do jogador. O escolhido fica destacado antes do envio.</p>
+        </div>
 
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <% candidates.forEach((c) => { %>
-          <label
-            class="monthly-vote-card p-4 cursor-pointer"
-            data-vote-card
-            data-candidate-name="<%= c.name %>"
-            tabindex="0"
-          >
-            <input type="radio" name="candidateId" value="<%= c.id %>" class="hidden" required />
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <% candidates.forEach((c) => { %>
+            <label
+              class="monthly-vote-card p-4 cursor-pointer"
+              data-vote-card
+              data-candidate-name="<%= c.name %>"
+              tabindex="0"
+            >
+              <input type="radio" name="candidateId" value="<%= c.id %>" class="hidden" required <%= keptCandidateId === Number(c.id) ? 'checked' : '' %> />
 
-            <div class="flex items-start justify-between gap-3">
-              <div class="flex items-center gap-3 min-w-0">
-                <img
-                  src="<%= thumbUrl(c.photoUrl || '/img/logo-128x128.svg', 96) %>"
-                  alt="<%= c.name %>"
-                  class="w-16 h-16 rounded-full object-cover border border-horriver-orange/60"
-                />
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-horriver-light truncate"><%= c.name %></p>
-                  <% if (c.nickname) { %>
-                    <p class="text-[11px] text-horriver-gray truncate">"<%= c.nickname %>"</p>
-                  <% } %>
-                  <p class="text-[11px] text-horriver-gray">
-                    Peladas no m&ecirc;s:
-                    <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span>
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img
+                    src="<%= thumbUrl(c.photoUrl || '/img/logo-128x128.svg', 96) %>"
+                    alt="<%= c.name %>"
+                    class="w-16 h-16 rounded-full object-cover border border-horriver-orange/60"
+                  />
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-horriver-light truncate"><%= c.name %></p>
+                    <% if (c.nickname) { %>
+                      <p class="text-[11px] text-horriver-gray truncate">"<%= c.nickname %>"</p>
+                    <% } %>
+                    <p class="text-[11px] text-horriver-gray">
+                      Peladas no m&ecirc;s:
+                      <span class="text-horriver-light font-semibold"><%= c.matches || 0 %></span>
+                    </p>
+                  </div>
+                </div>
+
+                <span class="monthly-vote-state shrink-0">
+                  <span class="monthly-vote-check" aria-hidden="true"></span>
+                  <span class="monthly-vote-state-label">Selecionar</span>
+                </span>
+              </div>
+
+              <div class="mt-3 grid grid-cols-4 gap-2 text-[11px] text-horriver-gray">
+                <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                  <p class="text-horriver-orange font-semibold"><%= c.goals ?? c.avgGoals ?? 0 %></p>
+                  <p>Gols</p>
+                </div>
+                <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                  <p class="text-horriver-orange font-semibold"><%= c.assists ?? c.avgAssists ?? 0 %></p>
+                  <p>Assist.</p>
+                </div>
+                <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                  <p class="text-horriver-orange font-semibold">
+                    <%= (c.avgRating ?? 0).toFixed ? c.avgRating.toFixed(2).replace('.', ',') : c.avgRating %>
                   </p>
+                  <p>Nota</p>
+                </div>
+                <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
+                  <p class="text-horriver-orange font-semibold"><%= c.photos ?? 0 %></p>
+                  <p>Fotos</p>
                 </div>
               </div>
 
-              <span class="monthly-vote-state shrink-0">
-                <span class="monthly-vote-check" aria-hidden="true"></span>
-                <span class="monthly-vote-state-label">Selecionar</span>
-              </span>
-            </div>
+              <div class="mt-3 flex items-center justify-between gap-2 text-[11px]">
+                <span class="text-horriver-gray">Confirme o destaque antes de enviar</span>
+                <span class="monthly-vote-badge text-horriver-orange font-semibold uppercase tracking-[0.16em]">
+                  Selecionado
+                </span>
+              </div>
+            </label>
+          <% }) %>
+        </div>
+      </section>
 
-            <div class="mt-3 grid grid-cols-4 gap-2 text-[11px] text-horriver-gray">
-              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= c.goals ?? c.avgGoals ?? 0 %></p>
-                <p>Gols</p>
-              </div>
-              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= c.assists ?? c.avgAssists ?? 0 %></p>
-                <p>Assist.</p>
-              </div>
-              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold">
-                  <%= (c.avgRating ?? 0).toFixed ? c.avgRating.toFixed(2).replace('.', ',') : c.avgRating %>
-                </p>
-                <p>Nota</p>
-              </div>
-              <div class="rounded-xl border border-horriver-border/60 bg-black/40 px-2 py-2 text-center">
-                <p class="text-horriver-orange font-semibold"><%= c.photos ?? 0 %></p>
-                <p>Fotos</p>
-              </div>
-            </div>
+      <% if (hasSelectionStep) { %>
+        <section class="space-y-4">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-orange font-semibold">Etapa 2 de 2</p>
+            <h2 class="text-lg font-semibold text-horriver-light">Sele&ccedil;&atilde;o do m&ecirc;s</h2>
+            <p class="text-[12px] text-horriver-gray">
+              Monte a seleção com os melhores de cada posição. Aparecem os jogadores com pelo menos 2 peladas no mês.
+            </p>
+          </div>
 
-            <div class="mt-3 flex items-center justify-between gap-2 text-[11px]">
-              <span class="text-horriver-gray">Confirme o destaque antes de enviar</span>
-              <span class="monthly-vote-badge text-horriver-orange font-semibold uppercase tracking-[0.16em]">
-                Selecionado
-              </span>
+          <% selectionGroupsList.forEach((group) => { %>
+            <div
+              class="selection-group space-y-2 rounded-2xl border border-horriver-border/60 bg-black/25 p-3 sm:p-4"
+              data-selection-group="<%= group.key %>"
+              data-required="<%= group.required %>"
+              data-label="<%= group.label %>"
+            >
+              <div class="selection-group-head">
+                <h3 class="text-sm font-semibold text-horriver-light">
+                  <%= group.label %>
+                  <span class="text-[11px] font-normal text-horriver-gray">— escolha <%= group.required %></span>
+                </h3>
+                <span class="selection-group-count" data-selection-count>0/<%= group.required %></span>
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-2">
+                <% group.options.forEach((option) => { %>
+                  <label class="selection-option" data-selection-option data-player-name="<%= option.nickname || option.name %>">
+                    <input
+                      type="checkbox"
+                      name="selection_<%= group.key %>"
+                      value="<%= option.id %>"
+                      class="sr-only"
+                      <%= isKeptInGroup(group.key, option.id) ? 'checked' : '' %>
+                    />
+                    <span class="selection-option-mark" aria-hidden="true">&#10003;</span>
+                    <img
+                      src="<%= thumbUrl(option.photoUrl || '/img/logo-128x128.svg', 80) %>"
+                      alt=""
+                      class="w-10 h-10 rounded-full object-cover border border-horriver-border/70 shrink-0"
+                    />
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-sm font-semibold text-horriver-light truncate"><%= option.name %></span>
+                      <span class="block text-[11px] text-horriver-gray truncate">
+                        <%= option.matches || 0 %> jogos · <%= option.goals || 0 %> G · <%= option.assists || 0 %> A ·
+                        nota <%= Number(option.avgRating || 0).toFixed(2).replace('.', ',') %>
+                      </span>
+                    </span>
+                  </label>
+                <% }) %>
+              </div>
             </div>
-          </label>
-        <% }) %>
-      </div>
+          <% }) %>
+        </section>
+      <% } %>
 
       <div id="monthlyVoteSummary" class="monthly-vote-summary">
-        <div class="space-y-1">
+        <div class="space-y-1 min-w-0">
           <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-gray">Seu voto</p>
-          <p id="monthlyVoteSelection" class="text-sm font-semibold text-horriver-light">
-            Nenhum jogador selecionado
+          <p class="text-sm font-semibold text-horriver-light">
+            Craque: <span id="monthlyVoteSelection">nenhum jogador selecionado</span>
           </p>
-          <p class="text-[11px] text-horriver-gray">
-            Revise o card destacado antes de enviar.
-          </p>
+          <% if (hasSelectionStep) { %>
+            <p class="text-[12px] text-horriver-light">
+              Seleção: <span id="monthlySelectionProgress">0/0</span>
+            </p>
+          <% } %>
+          <p id="monthlyVoteHint" class="text-[11px] text-amber-400"></p>
         </div>
 
         <button
           type="submit"
+          id="monthlyVoteSubmit"
           data-submit-label="Enviando..."
-          class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
+          class="monthly-vote-submit w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
         >
           Enviar voto
         </button>
@@ -224,8 +361,49 @@
 
     const cards = Array.from(form.querySelectorAll("[data-vote-card]"));
     const selectionEl = document.getElementById("monthlyVoteSelection");
+    const progressEl = document.getElementById("monthlySelectionProgress");
+    const hintEl = document.getElementById("monthlyVoteHint");
+    const submitBtn = document.getElementById("monthlyVoteSubmit");
+    const groups = Array.from(form.querySelectorAll("[data-selection-group]"));
 
-    const syncSelection = () => {
+    const groupState = (group) => {
+      const required = Number(group.dataset.required) || 0;
+      const boxes = Array.from(group.querySelectorAll('input[type="checkbox"]'));
+      const checked = boxes.filter((box) => box.checked).length;
+      return { required, boxes, checked };
+    };
+
+    const syncGroups = () => {
+      let done = 0;
+      let total = 0;
+      const missing = [];
+
+      groups.forEach((group) => {
+        const { required, boxes, checked } = groupState(group);
+        const full = checked >= required;
+        total += required;
+        done += Math.min(checked, required);
+        if (!full) missing.push(`${required - checked} em ${group.dataset.label}`);
+
+        group.classList.toggle("is-complete", full);
+        const countEl = group.querySelector("[data-selection-count]");
+        if (countEl) countEl.textContent = `${checked}/${required}`;
+
+        boxes.forEach((box) => {
+          const option = box.closest("[data-selection-option]");
+          box.disabled = full && !box.checked;
+          if (option) {
+            option.classList.toggle("is-selected", box.checked);
+            option.classList.toggle("is-locked", box.disabled);
+          }
+        });
+      });
+
+      if (progressEl) progressEl.textContent = `${done}/${total}`;
+      return missing;
+    };
+
+    const syncCraque = () => {
       let selectedCard = null;
 
       cards.forEach((card) => {
@@ -244,17 +422,28 @@
       if (selectionEl) {
         selectionEl.textContent = selectedCard
           ? selectedCard.dataset.candidateName || "Jogador selecionado"
-          : "Nenhum jogador selecionado";
+          : "nenhum jogador selecionado";
         selectionEl.classList.toggle("text-horriver-orange", !!selectedCard);
-        selectionEl.classList.toggle("text-horriver-light", !selectedCard);
       }
+      return !!selectedCard;
+    };
+
+    const sync = () => {
+      const hasCraque = syncCraque();
+      const missing = syncGroups();
+      const pending = [];
+      if (!hasCraque) pending.push("escolha o craque do mês");
+      if (missing.length) pending.push(`na seleção, falta ${missing.join(", ")}`);
+
+      if (hintEl) hintEl.textContent = pending.length ? `Para enviar: ${pending.join("; ")}.` : "";
+      if (submitBtn) submitBtn.disabled = pending.length > 0;
     };
 
     cards.forEach((card) => {
       const input = card.querySelector('input[type="radio"]');
       if (!input) return;
 
-      input.addEventListener("change", syncSelection);
+      input.addEventListener("change", sync);
 
       card.addEventListener("keydown", (event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
@@ -264,6 +453,17 @@
       });
     });
 
-    syncSelection();
+    groups.forEach((group) => {
+      group.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+        box.addEventListener("change", sync);
+      });
+    });
+
+    form.addEventListener("submit", (event) => {
+      sync();
+      if (submitBtn && submitBtn.disabled) event.preventDefault();
+    });
+
+    sync();
   })();
 </script>

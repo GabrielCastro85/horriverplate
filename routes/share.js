@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
+const { computeMonthlySelectionResult } = require("../utils/monthly_selection");
 const {
   renderImageFromHtml,
   renderImageFromUrl,
@@ -501,6 +502,144 @@ router.get("/monthly-craque.jpg", async (req, res) => {
 router.get("/monthly-craque.png", (req, res) => {
   const qs = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
   return res.redirect(302, `/share/monthly-craque.jpg${qs}`);
+});
+
+// ── Seleção do mês ─────────────────────────────────────────────────────────
+const MONTHLY_SELECTION_TEMPLATE = path.join(__dirname, "../views/share/monthly_selection.ejs");
+const SELECTION_MONTH_NAMES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+async function embedSelectionPhoto(player) {
+  if (!player?.photoUrl || /^https?:\/\//i.test(player.photoUrl)) return;
+
+  try {
+    let sourceBuffer = null;
+    const dataMatch = String(player.photoUrl).match(/^data:image\/[a-z0-9.+-]+;base64,(.+)$/i);
+    if (dataMatch) {
+      sourceBuffer = Buffer.from(dataMatch[1], "base64");
+    } else {
+      const rel = String(player.photoUrl).replace(/^\/+/, "");
+      const abs = path.resolve(PUBLIC_DIR, rel);
+      if (abs.startsWith(PUBLIC_DIR + path.sep) && fs.existsSync(abs)) {
+        sourceBuffer = fs.readFileSync(abs);
+      }
+    }
+
+    if (!sourceBuffer) {
+      player.photoUrl = null;
+      return;
+    }
+
+    const sharp = require("sharp");
+    const photoBuffer = await sharp(sourceBuffer)
+      .rotate()
+      .resize(220, 220, { fit: "cover", position: "center" })
+      .jpeg({ quality: 88, mozjpeg: true })
+      .toBuffer();
+    player.photoDataUri = `data:image/jpeg;base64,${photoBuffer.toString("base64")}`;
+  } catch (err) {
+    console.warn(`[share:selecao-mes] foto ignorada (${player.name || player.id || "jogador"}):`, err.message);
+    player.photoUrl = null;
+  }
+}
+
+async function buildMonthlySelectionData(sessionId) {
+  const session = await prisma.monthlyVoteSession.findUnique({ where: { id: sessionId } });
+  if (!session) return null;
+
+  const result = await computeMonthlySelectionResult(prisma, session);
+  if (!result?.hasVotes) return null;
+
+  const selectionGroups = result.groups.map((group) => ({
+    key: group.key,
+    label: group.label,
+    players: group.players.map((player) => ({ ...player })),
+  }));
+  await Promise.all(selectionGroups.flatMap((group) => group.players).map(embedSelectionPhoto));
+
+  // Identifica o estado da apuração para o cache: muda a cada voto e ao encerrar.
+  const signature = selectionGroups
+    .flatMap((group) => group.players.map((player) => `${group.key}${player.id}x${player.votes}`))
+    .join("-");
+
+  return {
+    session,
+    selectionGroups,
+    voters: result.voters,
+    monthLabel: `${SELECTION_MONTH_NAMES[session.month - 1] || session.month} ${session.year}`,
+    cacheKey: `monthly-selection-v1-${sessionId}-${result.voters}-${signature}`,
+  };
+}
+
+async function renderMonthlySelectionHtml(req, res, data) {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const logoDataUri = await getLineupLogoDataUri();
+  const selectionFieldDataUri = await getWeeklySelectionFieldDataUri();
+  const html = await ejs.renderFile(MONTHLY_SELECTION_TEMPLATE, {
+    ...data,
+    brand: res.locals.brand || req.app.locals.brand,
+    baseUrl,
+    logoMarkUrl: logoDataUri,
+    logoIconUrl: logoDataUri,
+    selectionFieldUrl: selectionFieldDataUri,
+    fontCss: getLineupFontCss(),
+  });
+  return { html, baseUrl };
+}
+
+router.get("/monthly-selection-html", async (req, res) => {
+  const sessionId = parseInt(req.query.sessionId, 10);
+  if (isNaN(sessionId)) return res.status(400).send("sessionId inválido");
+
+  try {
+    const data = await buildMonthlySelectionData(sessionId);
+    if (!data) return res.status(404).send("Sessão sem votos na seleção do mês");
+
+    const { html } = await renderMonthlySelectionHtml(req, res, data);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(html);
+  } catch (err) {
+    console.error("[share-monthly-selection-html] Erro:", err);
+    res.status(500).send("Erro ao gerar a seleção do mês.");
+  }
+});
+
+router.get("/monthly-selection.jpg", async (req, res) => {
+  const sessionId = parseInt(req.query.sessionId, 10);
+  if (isNaN(sessionId)) return res.status(400).send("sessionId inválido");
+
+  const t0 = Date.now();
+  try {
+    const data = await buildMonthlySelectionData(sessionId);
+    if (!data) return res.status(404).send("Sessão sem votos na seleção do mês");
+
+    const filename = `selecao-do-mes-${data.session.month}-${data.session.year}.jpg`;
+    const cached = readCache(data.cacheKey);
+    if (cached) return sendJpeg(res, cached, filename);
+
+    const { html, baseUrl } = await renderMonthlySelectionHtml(req, res, data);
+    const buf = await renderImageFromHtml({
+      html,
+      selector: ".vrc-card",
+      width: 720,
+      height: 1280,
+      deviceScaleFactor: 1.6,
+      type: "jpeg",
+      quality: 94,
+      timeout: 45000,
+      logPrefix: "[share:selecao-mes]",
+      resourceOrigin: baseUrl,
+    });
+
+    writeCache(data.cacheKey, buf);
+    console.log(`[share:selecao-mes] done session #${sessionId} in ${Date.now() - t0}ms`);
+    return sendJpeg(res, buf, filename);
+  } catch (err) {
+    console.error(`[share:selecao-mes] Erro session #${sessionId}:`, err);
+    if (!res.headersSent) return sendImageError(res);
+  }
 });
 
 // ── Lineup card templates ───────────────────────────────────────────────────

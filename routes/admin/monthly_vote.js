@@ -4,6 +4,10 @@ const {
   MONTHLY_VOTE_DEFAULT_CANDIDATES,
   computeMonthlyVoteData,
 } = require("../../utils/monthly_vote");
+const {
+  computeMonthlySelectionResult,
+  serializeSelectionResult,
+} = require("../../utils/monthly_selection");
 const router = express.Router();
 
 function requireAdmin(req, res, next) {
@@ -85,6 +89,10 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
         })[0];
     }
 
+    const monthlySelectionResult = monthlyVoteSession
+      ? await computeMonthlySelectionResult(prisma, monthlyVoteSession)
+      : null;
+
     const now = new Date();
     const monthlyVoteClosed =
       !!monthlyVoteSession?.expiresAt &&
@@ -135,6 +143,7 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
       monthlyVoteBallots,
       monthlyVoteCounts,
       monthlyVoteWinner,
+      monthlySelectionResult,
       monthlyVoteClosed,
       monthlyVoteCandidateLimit: MONTHLY_VOTE_DEFAULT_CANDIDATES,
       winnersHistory,
@@ -171,10 +180,16 @@ router.post("/monthly-vote/:id/close", requireAdmin, async (req, res) => {
       }, {});
       const winnerId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
       if (winnerId) {
+        const selection = serializeSelectionResult(await computeMonthlySelectionResult(prisma, session));
         await prisma.monthlyAward.upsert({
           where: { month_year: { month: session.month, year: session.year } },
-          update: { craqueId: Number(winnerId) },
-          create: { month: session.month, year: session.year, craqueId: Number(winnerId) },
+          update: { craqueId: Number(winnerId), selection: selection ?? undefined },
+          create: {
+            month: session.month,
+            year: session.year,
+            craqueId: Number(winnerId),
+            selection: selection ?? undefined,
+          },
         });
       }
     }

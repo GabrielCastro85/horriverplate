@@ -78,6 +78,7 @@ model Player {
   voteTokens                VoteToken[]
   voteRatings               VoteRating[]
   monthlyVoteTokens         MonthlyVoteToken[]
+  monthlySelectionVotes     MonthlySelectionVote[]
   monthlyVoteChoices        MonthlyVoteBallot[]    @relation("MonthlyVoteCandidate")
   weeklyAwards              WeeklyAward[]          @relation("WeeklyBest")
   weeklySelectionEntries    WeeklySelectionEntry[]
@@ -190,6 +191,7 @@ model MonthlyAward {
   month     Int
   year      Int
   craqueId  Int?
+  selection Json?
   createdAt DateTime @default(now())
   craque    Player?  @relation("MonthlyCraque", fields: [craqueId], references: [id])
 
@@ -353,29 +355,31 @@ model VoteLink {
 }
 
 model MonthlyVoteSession {
-  id               Int                @id @default(autoincrement())
-  month            Int
-  year             Int
-  candidates       Json
-  createdAt        DateTime           @default(now())
-  expiresAt        DateTime?
-  createdByAdminId Int?
-  createdByAdmin   Admin?             @relation(fields: [createdByAdminId], references: [id])
-  tokens           MonthlyVoteToken[]
+  id                  Int                @id @default(autoincrement())
+  month               Int
+  year                Int
+  candidates          Json
+  selectionCandidates Json?
+  createdAt           DateTime           @default(now())
+  expiresAt           DateTime?
+  createdByAdminId    Int?
+  createdByAdmin      Admin?             @relation(fields: [createdByAdminId], references: [id])
+  tokens              MonthlyVoteToken[]
 
   @@unique([month, year])
 }
 
 model MonthlyVoteToken {
-  id        Int                @id @default(autoincrement())
-  token     String             @unique
-  sessionId Int
-  playerId  Int
-  usedAt    DateTime?
-  createdAt DateTime           @default(now())
-  ballot    MonthlyVoteBallot?
-  session   MonthlyVoteSession @relation(fields: [sessionId], references: [id])
-  player    Player             @relation(fields: [playerId], references: [id])
+  id             Int                    @id @default(autoincrement())
+  token          String                 @unique
+  sessionId      Int
+  playerId       Int
+  usedAt         DateTime?
+  createdAt      DateTime               @default(now())
+  ballot         MonthlyVoteBallot?
+  selectionVotes MonthlySelectionVote[]
+  session        MonthlyVoteSession     @relation(fields: [sessionId], references: [id])
+  player         Player                 @relation(fields: [playerId], references: [id])
 
   @@unique([sessionId, playerId])
   @@index([playerId])
@@ -390,6 +394,19 @@ model MonthlyVoteBallot {
   candidate   Player           @relation("MonthlyVoteCandidate", fields: [candidateId], references: [id])
 
   @@index([candidateId])
+}
+
+model MonthlySelectionVote {
+  id            Int              @id @default(autoincrement())
+  tokenId       Int
+  positionGroup String
+  playerId      Int
+  createdAt     DateTime         @default(now())
+  token         MonthlyVoteToken @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  player        Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenId, playerId])
+  @@index([playerId])
 }
 
 model VoteChoice {

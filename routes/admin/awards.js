@@ -7,6 +7,7 @@ const {
   MONTHLY_VOTE_DEFAULT_CANDIDATES,
   computeMonthlyVoteData,
 } = require("../../utils/monthly_vote");
+const { buildSelectionCandidates } = require("../../utils/monthly_selection");
 const router = express.Router();
 
 function requireAdmin(req, res, next) {
@@ -207,9 +208,10 @@ router.post("/monthly-vote-session", requireAdmin, async (req, res) => {
       return res.redirect(`/admin/monthly-vote?mvMonth=${month}&mvYear=${year}&monthlyVoteError=tooManyCandidates`);
     }
 
-    const { candidates, eligibleVoters } = await computeMonthlyVoteData(prisma, month, year, {
+    const { candidates, eligibleVoters, ranking } = await computeMonthlyVoteData(prisma, month, year, {
       selectedCandidateIds,
     });
+    const selectionCandidates = buildSelectionCandidates(ranking);
 
     if (!eligibleVoters.length) {
       return res.redirect(`/admin/monthly-vote?mvMonth=${month}&mvYear=${year}&monthlyVoteError=noVoters`);
@@ -246,6 +248,7 @@ router.post("/monthly-vote-session", requireAdmin, async (req, res) => {
             where: { month_year: { month, year } },
             data: {
               candidates,
+              selectionCandidates,
               createdByAdminId: req.admin?.id ?? null,
               createdAt: new Date(),
               expiresAt: null,
@@ -256,6 +259,7 @@ router.post("/monthly-vote-session", requireAdmin, async (req, res) => {
               month,
               year,
               candidates,
+              selectionCandidates,
               createdByAdminId: req.admin?.id ?? null,
             },
           });
