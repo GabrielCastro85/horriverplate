@@ -6,7 +6,13 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
-const { computeMonthlySelectionResult } = require("../utils/monthly_selection");
+const { attachSelectionPhotos, computeMonthlySelectionResult } = require("../utils/monthly_selection");
+const { computeMonthlyVoteData } = require("../utils/monthly_vote");
+const {
+  computeAnnualStatLeaders,
+  computeAnnualVoteResult,
+  getAnnualVoteStatus,
+} = require("../utils/annual_vote");
 const {
   renderImageFromHtml,
   renderImageFromUrl,
@@ -389,9 +395,31 @@ async function buildMonthlyCraqueData(sessionId) {
     winner.nickname = winner.nickname || currentPlayer.nickname || null;
   }
 
+  // Votações antigas salvaram a nota zerada: recalcula só para exibir, sem mexer nos votos.
+  if (!winner.avgRating) {
+    const { ranking } = await computeMonthlyVoteData(prisma, session.month, session.year);
+    const row = ranking.find((item) => item.id === Number(winner.id));
+    if (row) winner.avgRating = row.avgRating;
+  }
+
   await embedMonthlyWinnerPhoto(winner);
 
   return { winner, mvMonth: session.month, mvYear: session.year };
+}
+
+// Lê a foto do disco. No localhost os uploads não existem, então busca no site publicado.
+async function readPlayerPhotoBuffer(photoUrl) {
+  const dataMatch = String(photoUrl).match(/^data:image\/[a-z0-9.+-]+;base64,(.+)$/i);
+  if (dataMatch) return Buffer.from(dataMatch[1], "base64");
+
+  const rel = String(photoUrl).replace(/^\/+/, "");
+  const abs = path.resolve(PUBLIC_DIR, rel);
+  if (!abs.startsWith(PUBLIC_DIR + path.sep)) return null;
+  if (fs.existsSync(abs)) return fs.readFileSync(abs);
+
+  const siteUrl = String(process.env.SITE_URL || "https://horriverplate.onrender.com").replace(/\/+$/, "");
+  const response = await fetch(`${siteUrl}/${rel}`, { signal: AbortSignal.timeout(15000) });
+  return response.ok ? Buffer.from(await response.arrayBuffer()) : null;
 }
 
 async function embedMonthlyWinnerPhoto(winner) {
@@ -399,14 +427,13 @@ async function embedMonthlyWinnerPhoto(winner) {
 
   try {
     const sharp = require("sharp");
-    const rel = String(winner.photoUrl).replace(/^\/+/, "");
-    const abs = path.resolve(PUBLIC_DIR, rel);
-    if (!abs.startsWith(PUBLIC_DIR + path.sep) || !fs.existsSync(abs)) {
+    const sourceBuffer = await readPlayerPhotoBuffer(winner.photoUrl);
+    if (!sourceBuffer) {
       winner.photoUrl = null;
       return;
     }
 
-    const photoBuffer = await sharp(fs.readFileSync(abs))
+    const photoBuffer = await sharp(sourceBuffer)
       .rotate()
       .resize(260, 340, {
         fit: "cover",
@@ -458,7 +485,7 @@ router.get("/monthly-craque.jpg", async (req, res) => {
   console.log(`[share:craque-mes] request session #${sessionId}`);
 
   // Cache permanente — vencedor não muda após sessão encerrada
-  const cacheKeyCraque = `monthly-craque-v7-${sessionId}`;
+  const cacheKeyCraque = `monthly-craque-v8-${sessionId}`;
   const cachedCraque = readCache(cacheKeyCraque);
   if (cachedCraque) {
     console.log(`[share:craque-mes] cache hit session #${sessionId} (${Date.now() - t0}ms)`);
@@ -515,18 +542,7 @@ async function embedSelectionPhoto(player) {
   if (!player?.photoUrl || /^https?:\/\//i.test(player.photoUrl)) return;
 
   try {
-    let sourceBuffer = null;
-    const dataMatch = String(player.photoUrl).match(/^data:image\/[a-z0-9.+-]+;base64,(.+)$/i);
-    if (dataMatch) {
-      sourceBuffer = Buffer.from(dataMatch[1], "base64");
-    } else {
-      const rel = String(player.photoUrl).replace(/^\/+/, "");
-      const abs = path.resolve(PUBLIC_DIR, rel);
-      if (abs.startsWith(PUBLIC_DIR + path.sep) && fs.existsSync(abs)) {
-        sourceBuffer = fs.readFileSync(abs);
-      }
-    }
-
+    const sourceBuffer = await readPlayerPhotoBuffer(player.photoUrl);
     if (!sourceBuffer) {
       player.photoUrl = null;
       return;
@@ -569,7 +585,7 @@ async function buildMonthlySelectionData(sessionId) {
     selectionGroups,
     voters: result.voters,
     monthLabel: `${SELECTION_MONTH_NAMES[session.month - 1] || session.month} ${session.year}`,
-    cacheKey: `monthly-selection-v1-${sessionId}-${result.voters}-${signature}`,
+    cacheKey: `monthly-selection-v2-${sessionId}-${result.voters}-${signature}`,
   };
 }
 
@@ -638,6 +654,132 @@ router.get("/monthly-selection.jpg", async (req, res) => {
     return sendJpeg(res, buf, filename);
   } catch (err) {
     console.error(`[share:selecao-mes] Erro session #${sessionId}:`, err);
+    if (!res.headersSent) return sendImageError(res);
+  }
+});
+
+// ── Melhores do ano ─────────────────────────────────────────────────────────
+const ANNUAL_AWARDS_TEMPLATE = path.join(__dirname, "../views/share/annual_awards.ejs");
+
+// Só depois do encerramento: até a festa, o resultado é segredo do admin.
+async function buildAnnualAwardsData(sessionId) {
+  const session = await prisma.annualVoteSession.findUnique({ where: { id: sessionId } });
+  if (!session || getAnnualVoteStatus(session) !== "closed") return null;
+
+  const [result, statLeaders, voters] = await Promise.all([
+    computeAnnualVoteResult(prisma, session),
+    computeAnnualStatLeaders(prisma, session.year, session.expiresAt),
+    prisma.annualVoteToken.count({ where: { sessionId, usedAt: { not: null } } }),
+  ]);
+  if (!result.hasVotes) return null;
+
+  const bestPlayer = { ...result.best[0] };
+  const selectionGroups = result.positions.map((position) => ({
+    key: position.key,
+    players: position.selection.map((player) => ({ ...player })),
+  }));
+  const statAwards = statLeaders
+    .filter((award) => award.ranked.length)
+    .map((award) => ({
+      label: award.label,
+      unit: award.unit,
+      value: award.ranked[0][award.field],
+      player: { ...award.ranked[0] },
+    }));
+
+  await attachSelectionPhotos(prisma, statAwards.map((award) => award.player));
+  await Promise.all(
+    [
+      bestPlayer,
+      ...selectionGroups.flatMap((group) => group.players),
+      ...statAwards.map((award) => award.player),
+    ].map(embedSelectionPhoto)
+  );
+
+  const signature = [
+    `${bestPlayer.id}x${bestPlayer.votes}`,
+    ...selectionGroups.flatMap((group) => group.players.map((player) => `${player.id}x${player.votes}`)),
+    ...statAwards.map((award) => `${award.player.id}x${award.value}`),
+  ].join("-");
+
+  return {
+    session,
+    year: session.year,
+    voters,
+    bestPlayer,
+    selectionGroups,
+    statAwards,
+    cacheKey: `annual-awards-v1-${sessionId}-${voters}-${signature}`,
+  };
+}
+
+async function renderAnnualAwardsHtml(req, res, data) {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const logoDataUri = await getLineupLogoDataUri();
+  const selectionFieldDataUri = await getWeeklySelectionFieldDataUri();
+  const html = await ejs.renderFile(ANNUAL_AWARDS_TEMPLATE, {
+    ...data,
+    brand: res.locals.brand || req.app.locals.brand,
+    baseUrl,
+    logoMarkUrl: logoDataUri,
+    logoIconUrl: logoDataUri,
+    selectionFieldUrl: selectionFieldDataUri,
+    fontCss: getLineupFontCss(),
+  });
+  return { html, baseUrl };
+}
+
+router.get("/annual-awards-html", async (req, res) => {
+  if (!req.admin) return res.status(403).send("Acesso restrito ao admin.");
+  const sessionId = parseInt(req.query.sessionId, 10);
+  if (isNaN(sessionId)) return res.status(400).send("sessionId inválido");
+
+  try {
+    const data = await buildAnnualAwardsData(sessionId);
+    if (!data) return res.status(404).send("Votação sem resultado disponível");
+
+    const { html } = await renderAnnualAwardsHtml(req, res, data);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(html);
+  } catch (err) {
+    console.error("[share-annual-awards-html] Erro:", err);
+    res.status(500).send("Erro ao gerar a imagem dos melhores do ano.");
+  }
+});
+
+router.get("/annual-awards.jpg", async (req, res) => {
+  if (!req.admin) return res.status(403).send("Acesso restrito ao admin.");
+  const sessionId = parseInt(req.query.sessionId, 10);
+  if (isNaN(sessionId)) return res.status(400).send("sessionId inválido");
+
+  const t0 = Date.now();
+  try {
+    const data = await buildAnnualAwardsData(sessionId);
+    if (!data) return res.status(404).send("Votação sem resultado disponível");
+
+    const filename = `melhores-do-ano-${data.year}.jpg`;
+    const cached = readCache(data.cacheKey);
+    if (cached) return sendJpeg(res, cached, filename);
+
+    const { html, baseUrl } = await renderAnnualAwardsHtml(req, res, data);
+    const buf = await renderImageFromHtml({
+      html,
+      selector: ".vrc-card",
+      width: 720,
+      height: 1400,
+      deviceScaleFactor: 1.6,
+      type: "jpeg",
+      quality: 94,
+      timeout: 45000,
+      logPrefix: "[share:melhores-ano]",
+      resourceOrigin: baseUrl,
+    });
+
+    writeCache(data.cacheKey, buf);
+    console.log(`[share:melhores-ano] done session #${sessionId} in ${Date.now() - t0}ms`);
+    return sendJpeg(res, buf, filename);
+  } catch (err) {
+    console.error(`[share:melhores-ano] Erro session #${sessionId}:`, err);
     if (!res.headersSent) return sendImageError(res);
   }
 });

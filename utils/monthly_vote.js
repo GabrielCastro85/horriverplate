@@ -1,3 +1,8 @@
+const { computeMatchRatingsAndAwards } = require("./match_ratings");
+const { mapWithConcurrency } = require("./live_overall");
+
+const FINAL_RATINGS_CONCURRENCY = 6;
+
 const MONTHLY_VOTE_WEIGHTS = {
   goals: 0.3,
   assists: 0.2,
@@ -32,6 +37,40 @@ function serializeMonthlyVoteRow(row) {
   };
 }
 
+// As notas oficiais vêm da votação encerrada de cada pelada, como nos rankings.
+async function buildFinalRatingsByMatch(prisma, matchIds) {
+  const finalRatingsByMatch = new Map();
+  if (!matchIds.length) return finalRatingsByMatch;
+
+  const closedMatches = await prisma.match.findMany({
+    where: {
+      id: { in: matchIds },
+      OR: [
+        { votingStatus: "CLOSED" },
+        { voteSessions: { some: { expiresAt: { lte: new Date() } } } },
+      ],
+    },
+    select: { id: true },
+  });
+
+  await mapWithConcurrency(closedMatches, FINAL_RATINGS_CONCURRENCY, async ({ id: matchId }) => {
+    try {
+      const result = await computeMatchRatingsAndAwards(matchId);
+      if (!result.error && result.publicVotes && result.publicVotes.length > 0) {
+        const map = new Map();
+        result.scores.forEach((score) => {
+          map.set(score.player.id, score.finalRating);
+        });
+        finalRatingsByMatch.set(matchId, map);
+      }
+    } catch (err) {
+      console.warn("Falha ao calcular notas finais da votação:", err);
+    }
+  });
+
+  return finalRatingsByMatch;
+}
+
 async function computeMonthlyVoteData(prisma, month, year, options = {}) {
   const selectedCandidateIds = Array.isArray(options.selectedCandidateIds)
     ? options.selectedCandidateIds
@@ -44,6 +83,9 @@ async function computeMonthlyVoteData(prisma, month, year, options = {}) {
     },
     include: { player: true },
   });
+
+  const matchIds = Array.from(new Set(stats.map((stat) => stat.matchId)));
+  const finalRatingsByMatch = await buildFinalRatingsByMatch(prisma, matchIds);
 
   const agg = new Map();
   stats.forEach((stat) => {
@@ -63,8 +105,13 @@ async function computeMonthlyVoteData(prisma, month, year, options = {}) {
     row.goals += stat.goals || 0;
     row.assists += stat.assists || 0;
     row.photos += stat.appearedInPhoto ? 1 : 0;
-    if (stat.rating != null) {
-      row.ratingSum += stat.rating;
+    const finalRatings = finalRatingsByMatch.get(stat.matchId);
+    const rating =
+      finalRatings && finalRatings.has(stat.playerId)
+        ? finalRatings.get(stat.playerId)
+        : stat.rating;
+    if (rating != null) {
+      row.ratingSum += rating;
       row.ratingCount += 1;
     }
   });
@@ -125,5 +172,6 @@ module.exports = {
   MONTHLY_VOTE_DEFAULT_CANDIDATES,
   MONTHLY_VOTE_MIN_MATCHES,
   MONTHLY_VOTE_WEIGHTS,
+  buildFinalRatingsByMatch,
   computeMonthlyVoteData,
 };

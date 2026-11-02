@@ -1,6 +1,8 @@
 // Shared admin business-logic helpers — imported by multiple sub-modules
 const prisma = require("../../utils/db");
 const { updatePlayerOverallAfterMatch } = require("../../utils/overall");
+const { computeMatchRatingsAndAwards } = require("../../utils/match_ratings");
+const { recalculateOverallForAllPlayers } = require("../../utils/ranking");
 
 async function recomputeTotalsForPlayers(playerIds) {
   const uniqueIds = Array.from(new Set(playerIds)).filter((id) => !!id);
@@ -75,4 +77,72 @@ async function updateAllPlayersOverallAfterMatch(matchId) {
   if (ops.length) await prisma.$transaction(ops);
 }
 
-module.exports = { recomputeTotalsForPlayers, updateAllPlayersOverallAfterMatch };
+// Peladas com votação encerrada, com votos e com jogador presente ainda sem nota gravada.
+async function findMatchesMissingOfficialRatings({ since = null } = {}) {
+  const now = new Date();
+  return prisma.match.findMany({
+    where: {
+      ...(since ? { playedAt: { gte: since } } : {}),
+      stats: { some: { present: true, rating: null } },
+      voteSessions: {
+        some: { tokens: { some: { ballot: { isNot: null } } } },
+        none: { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+      },
+    },
+    orderBy: { playedAt: "asc" },
+    select: { id: true, playedAt: true },
+  });
+}
+
+// Só preenche nota vazia: nunca substitui uma nota já gravada ou lançada à mão.
+async function computeMissingOfficialRatings(matchId) {
+  const result = await computeMatchRatingsAndAwards(matchId);
+  if (result.error || !result.publicVotes?.length) return [];
+
+  const missing = await prisma.playerStat.findMany({
+    where: { matchId, present: true, rating: null },
+    select: { id: true, playerId: true },
+  });
+  return missing
+    .map((stat) => {
+      const score = result.scores.get(stat.playerId);
+      return score && score.votesCount > 0
+        ? { statId: stat.id, playerId: stat.playerId, matchId, rating: score.finalRating }
+        : null;
+    })
+    .filter(Boolean);
+}
+
+async function applyOfficialRatings(rows) {
+  if (!rows.length) return;
+  await prisma.$transaction(
+    rows.map((row) =>
+      prisma.playerStat.updateMany({
+        where: { id: row.statId, rating: null },
+        data: { rating: row.rating },
+      })
+    )
+  );
+  await recomputeTotalsForPlayers(rows.map((row) => row.playerId));
+  await recalculateOverallForAllPlayers();
+}
+
+// Grava as notas oficiais das votações encerradas, inclusive as que venceram sozinhas pelo prazo.
+async function syncOfficialRatings({ since = null } = {}) {
+  const matches = await findMatchesMissingOfficialRatings({ since });
+  const rows = [];
+  for (const match of matches) {
+    rows.push(...(await computeMissingOfficialRatings(match.id)));
+  }
+  await applyOfficialRatings(rows);
+  return { matches: matches.length, ratings: rows.length };
+}
+
+module.exports = {
+  applyOfficialRatings,
+  computeMissingOfficialRatings,
+  findMatchesMissingOfficialRatings,
+  recomputeTotalsForPlayers,
+  syncOfficialRatings,
+  updateAllPlayersOverallAfterMatch,
+};

@@ -338,6 +338,27 @@ async function buildAuditMetadata(req) {
     return meta;
   }
 
+  if (path === "/annual-vote-session") {
+    meta.action = "annual_vote_session.upsert";
+    meta.summary = `Admin gerou votacao dos melhores do ano ${Number(body.year)}.`;
+    return meta;
+  }
+
+  m = path.match(/^\/annual-vote\/(\d+)\/dates$/);
+  if (m) {
+    meta.action = "annual_vote_session.dates";
+    meta.summary = `Admin ajustou o prazo da votacao dos melhores do ano #${Number(m[1])}.`;
+    return meta;
+  }
+
+  m = path.match(/^\/annual-vote\/(\d+)\/publish$/);
+  if (m) {
+    meta.action = "annual_vote_session.publish";
+    meta.summary = `Admin publicou os melhores do ano da votacao #${Number(m[1])}.`;
+    meta.includePayload = false;
+    return meta;
+  }
+
   m = path.match(/^\/matches\/(\d+)\/votes\/(\d+)\/delete$/);
   if (m) {
     const matchId = Number(m[1]);
@@ -644,6 +665,7 @@ router.get("/", requireAdmin, async (req, res) => {
 router.use("/", require("./admin/auth"));
 router.use("/", require("./admin/players"));
 router.use("/", require("./admin/monthly_vote"));
+router.use("/", require("./admin/annual_vote"));
 router.use("/", require("./admin/awards"));
 router.use("/", require("./admin/matches"));
 router.use("/", require("./admin/restore"));

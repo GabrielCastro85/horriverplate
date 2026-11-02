@@ -16,6 +16,7 @@ model Admin {
   auditLogs           AuditLog[]
   financeEventLogs    FinanceEventLog[]
   monthlyVoteSessions MonthlyVoteSession[]
+  annualVoteSessions  AnnualVoteSession[]
   recurringExpenses   RecurringExpense[]
 }
 
@@ -80,6 +81,8 @@ model Player {
   monthlyVoteTokens         MonthlyVoteToken[]
   monthlySelectionVotes     MonthlySelectionVote[]
   monthlyVoteChoices        MonthlyVoteBallot[]    @relation("MonthlyVoteCandidate")
+  annualVoteTokens          AnnualVoteToken[]
+  annualVotePicks           AnnualVotePick[]
   weeklyAwards              WeeklyAward[]          @relation("WeeklyBest")
   weeklySelectionEntries    WeeklySelectionEntry[]
   monthlyFees               MonthlyFee[]
@@ -406,6 +409,46 @@ model MonthlySelectionVote {
   player        Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([tokenId, playerId])
+  @@index([playerId])
+}
+
+model AnnualVoteSession {
+  id               Int               @id @default(autoincrement())
+  year             Int               @unique
+  candidates       Json
+  opensAt          DateTime
+  expiresAt        DateTime
+  createdAt        DateTime          @default(now())
+  createdByAdminId Int?
+  createdByAdmin   Admin?            @relation(fields: [createdByAdminId], references: [id])
+  tokens           AnnualVoteToken[]
+}
+
+model AnnualVoteToken {
+  id        Int               @id @default(autoincrement())
+  token     String            @unique
+  sessionId Int
+  playerId  Int
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+  session   AnnualVoteSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player    Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  picks     AnnualVotePick[]
+
+  @@unique([sessionId, playerId])
+  @@index([playerId])
+}
+
+model AnnualVotePick {
+  id        Int             @id @default(autoincrement())
+  tokenId   Int
+  category  String
+  playerId  Int
+  createdAt DateTime        @default(now())
+  token     AnnualVoteToken @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  player    Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenId, category])
   @@index([playerId])
 }
 

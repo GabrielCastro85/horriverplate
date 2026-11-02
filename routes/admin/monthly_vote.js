@@ -57,10 +57,16 @@ router.get("/monthly-vote", requireAdmin, async (req, res) => {
           return an.localeCompare(bn);
         })
       : [];
-    const monthlyVoteCandidates = Array.isArray(monthlyVoteSession?.candidates)
-      ? monthlyVoteSession.candidates
-      : [];
     const { ranking: monthlyVoteRanking } = await computeMonthlyVoteData(prisma, mvMonth, mvYear);
+    const rankingById = new Map(monthlyVoteRanking.map((row) => [row.id, row]));
+    // Votações antigas salvaram a nota zerada: mostra a nota calculada no lugar.
+    const monthlyVoteCandidates = (Array.isArray(monthlyVoteSession?.candidates)
+      ? monthlyVoteSession.candidates
+      : []
+    ).map((candidate) => ({
+      ...candidate,
+      avgRating: candidate.avgRating || rankingById.get(Number(candidate.id))?.avgRating || 0,
+    }));
     const voteBaseUrl = `${req.protocol}://${req.get("host")}`;
     const monthlyVoteBallots = monthlyVoteSession
       ? await prisma.monthlyVoteBallot.findMany({

@@ -173,4 +173,5 @@ async function getDynamicOverallSnapshot(options = {}) {
 module.exports = {
   DEFAULT_MATCH_WINDOW,
   getDynamicOverallSnapshot,
+  mapWithConcurrency,
 };

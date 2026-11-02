@@ -140,7 +140,8 @@ async function computeMonthlySelectionResult(prisma, session) {
     };
   });
 
-  await attachSelectionPhotos(prisma, groups.flatMap((group) => group.ranked));
+  // players são cópias de ranked: as duas listas precisam receber a foto.
+  await attachSelectionPhotos(prisma, groups.flatMap((group) => [...group.ranked, ...group.players]));
   return { groups, voters, hasVotes: votes.length > 0 };
 }
 

@@ -4,6 +4,7 @@ const router = express.Router();
 const prisma = require("../utils/db");
 const { getAchievementsStats } = require("../utils/achievements");
 const { computeMatchRatingsAndAwards } = require("../utils/match_ratings");
+const { buildFinalRatingsByMatch } = require("../utils/monthly_vote");
 const { getCache, setCache } = require("../utils/page_cache");
 const { formatDateBR } = require("../utils/finance");
 const CACHE_TTL_MS = 60 * 1000;
@@ -157,6 +158,11 @@ router.get("/", async (req, res) => {
         ratingSum = 0,
         ratingCount = 0;
 
+      const finalRatingsByMatch = await buildFinalRatingsByMatch(
+        prisma,
+        Array.from(new Set(stats.filter((s) => s.present).map((s) => s.matchId)))
+      );
+
       stats.forEach((s) => {
         if (!s.present) return;
 
@@ -164,8 +170,11 @@ router.get("/", async (req, res) => {
         assists += s.assists || 0;
         matches++;
         if (s.appearedInPhoto) photos++;
-        if (s.rating != null) {
-          ratingSum += s.rating;
+        const finalRatings = finalRatingsByMatch.get(s.matchId);
+        const rating =
+          finalRatings && finalRatings.has(s.playerId) ? finalRatings.get(s.playerId) : s.rating;
+        if (rating != null) {
+          ratingSum += rating;
           ratingCount++;
         }
       });

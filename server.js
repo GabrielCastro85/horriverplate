@@ -25,6 +25,7 @@ const playerRouter = require("./routes/player");
 const shareRouter = require("./routes/share");
 const voteRouter = require("./routes/vote");
 const monthlyVoteRouter = require("./routes/monthly_vote");
+const annualVoteRouter = require("./routes/annual_vote");
 const matchesRouter = require("./routes/matches");
 const comparatorRouter = require("./routes/comparator");
 let sharp = null;
@@ -116,6 +117,7 @@ app.use((req, res, next) => {
     req.path.startsWith("/vote") ||
     req.path.startsWith("/votar") ||
     req.path.startsWith("/monthly-vote") ||
+    req.path.startsWith("/annual-vote") ||
     req.path.startsWith("/monitoring/frontend-error")
   ) {
     return next();
@@ -207,6 +209,8 @@ app.use((req, res, next) => {
     req.path.startsWith("/votar") ||
     wantsHtml &&
     req.path.startsWith("/monthly-vote") ||
+    wantsHtml &&
+    req.path.startsWith("/annual-vote") ||
     wantsHtml &&
     req.path.startsWith("/logout")
   ) {
@@ -355,6 +359,7 @@ app.use("/admin", adminRouter);
 app.use("/votar", voteRouter);
 app.use("/vote", voteRouter);
 app.use("/monthly-vote", monthlyVoteRouter);
+app.use("/annual-vote", annualVoteRouter);
 app.use("/matches", matchesRouter);
 app.use("/comparar", comparatorRouter);
 
@@ -406,6 +411,23 @@ if (process.env.NODE_ENV === "production") {
   setInterval(() => {
     scheduleBackup({ reason: "auto" });
   }, 24 * 60 * 60 * 1000);
+}
+
+// ==============================
+// Notas oficiais das votações encerradas (a cada 30 min)
+// ==============================
+if (process.env.NODE_ENV === "production") {
+  const { syncOfficialRatings } = require("./routes/admin/shared");
+  const OFFICIAL_RATINGS_WINDOW_MS = 60 * 24 * 60 * 60 * 1000;
+  const runOfficialRatingsSync = () =>
+    syncOfficialRatings({ since: new Date(Date.now() - OFFICIAL_RATINGS_WINDOW_MS) })
+      .then(({ ratings }) => {
+        if (ratings) console.log(`Notas oficiais gravadas: ${ratings}`);
+      })
+      .catch((err) => console.error("Erro ao gravar notas oficiais:", err));
+
+  runOfficialRatingsSync();
+  setInterval(runOfficialRatingsSync, 30 * 60 * 1000);
 }
 
 

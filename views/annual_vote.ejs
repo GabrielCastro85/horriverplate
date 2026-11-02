@@ -1,0 +1,268 @@
+<section class="space-y-6 max-w-4xl mx-auto animate-fadeIn">
+  <style>
+    .annual-option {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.9rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+    .annual-option:hover,
+    .annual-option:focus-within {
+      border-color: rgba(255, 122, 26, 0.55);
+    }
+    .annual-option.is-selected {
+      border-color: rgba(255, 122, 26, 0.85);
+      background: linear-gradient(180deg, rgba(255, 122, 26, 0.14), rgba(0, 0, 0, 0.35));
+    }
+    .annual-option.is-locked {
+      opacity: 0.45;
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .annual-option-mark {
+      width: 1.35rem;
+      height: 1.35rem;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      font-size: 11px;
+      font-weight: 800;
+      color: #0b0b0b;
+    }
+    .annual-option.is-selected .annual-option-mark {
+      border-color: #ff7a1a;
+      background: #ff7a1a;
+    }
+    .annual-option-note {
+      display: none;
+      color: #ff7a1a;
+    }
+    .annual-option.is-locked .annual-option-note {
+      display: block;
+    }
+    .annual-option.is-locked .annual-option-stats {
+      display: none;
+    }
+    .annual-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.9rem 1rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(11, 11, 15, 0.92);
+    }
+    @media (min-width: 640px) {
+      .annual-summary {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+    .annual-submit:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  </style>
+
+  <%
+    const showForm = !success && groups.length > 0;
+    const isChosen = (category, id) => Number(selectedByCategory[category]) === Number(id);
+    const statsLine = (option) =>
+      `${option.matches || 0} jogos · ${option.goals || 0} G · ${option.assists || 0} A · nota ${Number(option.avgRating || 0).toFixed(2).replace('.', ',')}`;
+  %>
+
+  <header class="text-center space-y-2">
+    <h1 class="font-title text-3xl text-horriver-light">Melhores do ano<%= year ? ` ${year}` : '' %></h1>
+    <% if (voter) { %>
+      <p class="text-xs text-horriver-gray">
+        Link gerado para: <span class="text-horriver-light"><%= voter.name %></span>
+      </p>
+    <% } %>
+    <% if (closesAtLabel && !success) { %>
+      <p class="text-xs text-horriver-gray">Vota&ccedil;&atilde;o aberta at&eacute; <%= closesAtLabel %>.</p>
+    <% } %>
+  </header>
+
+  <% if (error) { %>
+    <div class="bg-red-900/40 border border-red-600/60 text-red-100 rounded-2xl p-4 text-sm">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="bg-emerald-900/40 border border-emerald-600/60 text-emerald-100 rounded-2xl p-4 text-sm">
+      Voto registrado com sucesso. Os vencedores ser&atilde;o revelados na premia&ccedil;&atilde;o!
+    </div>
+  <% } %>
+
+  <% if (showForm) { %>
+    <form method="POST" class="space-y-6" id="annual-vote-form">
+      <section class="space-y-4">
+        <div>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-orange font-semibold">Etapa 1 de 2</p>
+          <h2 class="text-lg font-semibold text-horriver-light">Melhor do ano</h2>
+          <p class="text-[12px] text-horriver-gray">
+            Escolha um jogador. Quem receber esse voto n&atilde;o poder&aacute; receber o seu voto de melhor da posi&ccedil;&atilde;o.
+          </p>
+        </div>
+
+        <% groups.forEach((group) => { %>
+          <div class="space-y-2 rounded-2xl border border-horriver-border/60 bg-black/25 p-3 sm:p-4">
+            <h3 class="text-sm font-semibold text-horriver-light"><%= group.groupLabel %></h3>
+            <div class="grid sm:grid-cols-2 gap-2">
+              <% group.options.forEach((option) => { %>
+                <label class="annual-option" data-annual-option data-player-name="<%= option.name %>">
+                  <input
+                    type="radio"
+                    name="bestPlayerId"
+                    value="<%= option.id %>"
+                    class="sr-only"
+                    required
+                    <%= isChosen('MELHOR_JOGADOR', option.id) ? 'checked' : '' %>
+                  />
+                  <span class="annual-option-mark" aria-hidden="true">&#10003;</span>
+                  <img
+                    src="<%= thumbUrl(option.photoUrl || '/img/logo-128x128.svg', 80) %>"
+                    alt=""
+                    class="w-10 h-10 rounded-full object-cover border border-horriver-border/70 shrink-0"
+                  />
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold text-horriver-light truncate"><%= option.name %></span>
+                    <span class="block text-[11px] text-horriver-gray truncate"><%= statsLine(option) %></span>
+                  </span>
+                </label>
+              <% }) %>
+            </div>
+          </div>
+        <% }) %>
+      </section>
+
+      <section class="space-y-4">
+        <div>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-orange font-semibold">Etapa 2 de 2</p>
+          <h2 class="text-lg font-semibold text-horriver-light">Melhor de cada posi&ccedil;&atilde;o</h2>
+          <p class="text-[12px] text-horriver-gray">
+            Escolha um jogador por posi&ccedil;&atilde;o. Os mais votados tamb&eacute;m formam a sele&ccedil;&atilde;o do ano.
+          </p>
+        </div>
+
+        <% groups.forEach((group) => { %>
+          <div
+            class="space-y-2 rounded-2xl border border-horriver-border/60 bg-black/25 p-3 sm:p-4"
+            data-annual-position
+            data-label="<%= group.label %>"
+          >
+            <h3 class="text-sm font-semibold text-horriver-light"><%= group.label %></h3>
+            <div class="grid sm:grid-cols-2 gap-2">
+              <% group.options.forEach((option) => { %>
+                <label class="annual-option" data-annual-option>
+                  <input
+                    type="radio"
+                    name="position_<%= group.key %>"
+                    value="<%= option.id %>"
+                    class="sr-only"
+                    <%= isChosen(group.key, option.id) ? 'checked' : '' %>
+                  />
+                  <span class="annual-option-mark" aria-hidden="true">&#10003;</span>
+                  <img
+                    src="<%= thumbUrl(option.photoUrl || '/img/logo-128x128.svg', 80) %>"
+                    alt=""
+                    class="w-10 h-10 rounded-full object-cover border border-horriver-border/70 shrink-0"
+                  />
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold text-horriver-light truncate"><%= option.name %></span>
+                    <span class="annual-option-stats block text-[11px] text-horriver-gray truncate"><%= statsLine(option) %></span>
+                    <span class="annual-option-note text-[11px]">J&aacute; &eacute; o seu melhor do ano</span>
+                  </span>
+                </label>
+              <% }) %>
+            </div>
+          </div>
+        <% }) %>
+      </section>
+
+      <div class="annual-summary">
+        <div class="space-y-1 min-w-0">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-horriver-gray">Seu voto</p>
+          <p class="text-sm font-semibold text-horriver-light">
+            Melhor do ano: <span id="annualBestName">nenhum jogador selecionado</span>
+          </p>
+          <p id="annualVoteHint" class="text-[11px] text-amber-400"></p>
+        </div>
+        <button
+          type="submit"
+          id="annualVoteSubmit"
+          data-submit-label="Enviando..."
+          class="annual-submit w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition active:scale-[0.98]"
+        >
+          Enviar voto
+        </button>
+      </div>
+    </form>
+  <% } %>
+</section>
+
+<script>
+  (() => {
+    const form = document.getElementById("annual-vote-form");
+    if (!form) return;
+
+    const bestInputs = Array.from(form.querySelectorAll('input[name="bestPlayerId"]'));
+    const positions = Array.from(form.querySelectorAll("[data-annual-position]"));
+    const nameEl = document.getElementById("annualBestName");
+    const hintEl = document.getElementById("annualVoteHint");
+    const submitBtn = document.getElementById("annualVoteSubmit");
+
+    const sync = () => {
+      const bestInput = bestInputs.find((input) => input.checked) || null;
+      const bestId = bestInput ? bestInput.value : null;
+      const pending = [];
+      if (!bestInput) pending.push("Melhor do ano");
+
+      // Quem é o melhor do ano deste eleitor sai das opções da posição.
+      positions.forEach((position) => {
+        const inputs = Array.from(position.querySelectorAll('input[type="radio"]'));
+        inputs.forEach((input) => {
+          const locked = input.value === bestId;
+          if (locked) input.checked = false;
+          input.disabled = locked;
+          input.closest("[data-annual-option]").classList.toggle("is-locked", locked);
+        });
+        const hasChoice = inputs.some((input) => input.checked);
+        const hasOptions = inputs.some((input) => !input.disabled);
+        if (!hasChoice && hasOptions) pending.push(position.dataset.label);
+      });
+
+      form.querySelectorAll('input[type="radio"]').forEach((input) => {
+        input.closest("[data-annual-option]").classList.toggle("is-selected", input.checked);
+      });
+
+      if (nameEl) {
+        nameEl.textContent = bestInput
+          ? bestInput.closest("[data-annual-option]").dataset.playerName
+          : "nenhum jogador selecionado";
+        nameEl.classList.toggle("text-horriver-orange", !!bestInput);
+      }
+      if (hintEl) hintEl.textContent = pending.length ? `Falta escolher: ${pending.join(", ")}.` : "";
+      if (submitBtn) submitBtn.disabled = pending.length > 0;
+    };
+
+    form.addEventListener("change", sync);
+    form.addEventListener("submit", (event) => {
+      sync();
+      if (submitBtn && submitBtn.disabled) event.preventDefault();
+    });
+
+    sync();
+  })();
+</script>

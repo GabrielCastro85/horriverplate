@@ -1,0 +1,358 @@
+<%
+  const fmtDateTimeBR = (d) =>
+    d ? new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour12: false }) : "-";
+  const statusInfo = {
+    none: { label: "Ainda não gerada", css: "status-pending" },
+    scheduled: { label: "Agendada", css: "status-info" },
+    open: { label: "Votação aberta", css: "status-ok" },
+    closed: { label: "Votação encerrada", css: "status-danger" },
+  }[status];
+  const selectedSet = new Set(selectedIds.map(Number));
+  const errorMessages = {
+    invalidYear: "Ano inválido.",
+    invalidDates: "Confira as datas: o encerramento precisa ser depois da abertura.",
+    overLimit: "Uma das posições passou do limite de candidatos.",
+    noCandidates: "Selecione pelo menos um candidato.",
+    hasVotes: "A votação já tem votos, então a lista não pode mais mudar. O prazo pode ser ajustado.",
+    notClosed: "Os vencedores só podem ser publicados depois do encerramento.",
+    server: "Algo deu errado. Tente novamente.",
+  };
+  const noticeMessages = {
+    created: "Lista salva e links prontos.",
+    dates: "Prazo atualizado.",
+    published: "Vencedores publicados na premiação da temporada.",
+  };
+  const voteChip = (votes) => `${votes} ${votes === 1 ? "voto" : "votos"}`;
+%>
+
+<section class="space-y-4">
+  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <p class="text-xs text-horriver-gray uppercase tracking-[0.2em]">Painel</p>
+      <h1 class="font-title text-2xl text-horriver-light">Melhores do ano <%= year %></h1>
+      <p class="text-sm text-horriver-gray">Lista de candidatos, links de votação e apuração da premiação.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="status-chip <%= statusInfo.css %>"><%= statusInfo.label %></span>
+      <a
+        href="/admin"
+        class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-horriver-dark border border-horriver-border text-horriver-light text-xs hover:border-horriver-orange transition"
+      >
+        Voltar ao painel
+      </a>
+    </div>
+  </header>
+
+  <% if (annualVoteError) { %>
+    <p class="rounded-xl border border-red-600/60 bg-red-900/40 px-4 py-3 text-sm text-red-100">
+      <%= errorMessages[annualVoteError] || errorMessages.server %>
+    </p>
+  <% } %>
+  <% if (annualVoteNotice && noticeMessages[annualVoteNotice]) { %>
+    <p class="rounded-xl border border-emerald-600/60 bg-emerald-900/40 px-4 py-3 text-sm text-emerald-100">
+      <%= noticeMessages[annualVoteNotice] %>
+    </p>
+  <% } %>
+
+  <% if (session) { %>
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-3">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="font-semibold text-lg text-horriver-light">Andamento</h2>
+        <p class="text-sm text-horriver-gray">
+          <span class="text-horriver-orange font-semibold"><%= usedCount %></span> de <%= tokens.length %> já votaram
+        </p>
+      </div>
+      <p class="text-xs text-horriver-gray">
+        Abre em <%= fmtDateTimeBR(session.opensAt) %> e encerra em <%= fmtDateTimeBR(session.expiresAt) %> (horário de Brasília).
+        <% if (status !== 'closed') { %>O resultado fica em segredo até o encerramento, inclusive aqui no painel.<% } %>
+      </p>
+      <form action="/admin/annual-vote/<%= session.id %>/dates" method="POST" class="flex flex-col sm:flex-row sm:items-end gap-2">
+        <input type="hidden" name="year" value="<%= year %>" />
+        <label class="flex flex-col gap-1 text-xs text-horriver-gray">
+          Abertura
+          <input type="datetime-local" name="opensAt" value="<%= opensAtValue %>" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-sm text-horriver-light" />
+        </label>
+        <label class="flex flex-col gap-1 text-xs text-horriver-gray">
+          Encerramento
+          <input type="datetime-local" name="expiresAt" value="<%= expiresAtValue %>" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-sm text-horriver-light" />
+        </label>
+        <button type="submit" class="px-4 py-2 rounded-full bg-horriver-dark border border-horriver-border text-horriver-light text-xs hover:border-horriver-orange transition">
+          Ajustar prazo
+        </button>
+      </form>
+    </div>
+  <% } %>
+
+  <% if (result) { %>
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h2 class="font-semibold text-lg text-horriver-light">Resultado</h2>
+          <p class="text-xs text-horriver-gray">Empate nos votos é decidido pelo score do ano. Confira os avisos antes de mandar fazer os troféus.</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <% if (result.hasVotes) { %>
+            <button
+              type="button"
+              id="exportAnnualAwardsBtn"
+              data-session-id="<%= session.id %>"
+              data-filename="melhores-do-ano-<%= year %>.jpg"
+              class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-dark border border-horriver-border text-horriver-light text-xs hover:border-horriver-orange transition disabled:opacity-60"
+            >
+              Baixar imagem
+            </button>
+          <% } %>
+          <form
+            action="/admin/annual-vote/<%= session.id %>/publish"
+            method="POST"
+            onsubmit="return confirm('Publicar os vencedores na premiação de <%= year %>? Prêmios já cadastrados nessas categorias serão substituídos.');"
+          >
+            <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-black text-xs font-semibold hover:bg-orange-500 transition">
+              <%= publishedCount ? 'Publicar de novo' : 'Publicar na premiação' %>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-horriver-orange/50 bg-black/50 p-3 space-y-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="text-sm font-semibold text-horriver-orange">Melhor do ano</h3>
+          <% if (result.bestTied) { %><span class="status-chip status-warning">Empate decidido pelo score</span><% } %>
+        </div>
+        <ol class="text-sm space-y-1">
+          <% result.best.filter((row) => row.votes > 0).slice(0, 5).forEach((row, index) => { %>
+            <li class="flex justify-between gap-3">
+              <span class="<%= index === 0 ? 'text-horriver-light font-semibold' : 'text-horriver-gray' %>"><%= index + 1 %>. <%= row.name %></span>
+              <span class="text-horriver-orange whitespace-nowrap"><%= voteChip(row.votes) %></span>
+            </li>
+          <% }) %>
+        </ol>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-3">
+        <% result.positions.forEach((position) => { %>
+          <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-sm font-semibold text-horriver-light"><%= position.label %></h3>
+              <% if (position.tied) { %><span class="status-chip status-warning">Empate decidido pelo score</span><% } %>
+            </div>
+            <ol class="text-sm space-y-1">
+              <% position.ranked.filter((row) => row.votes > 0).slice(0, 5).forEach((row, index) => { %>
+                <li class="flex justify-between gap-3">
+                  <span class="<%= index === 0 ? 'text-horriver-light font-semibold' : 'text-horriver-gray' %>"><%= index + 1 %>. <%= row.name %></span>
+                  <span class="text-horriver-orange whitespace-nowrap"><%= voteChip(row.votes) %></span>
+                </li>
+              <% }) %>
+            </ol>
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-2">
+        <h3 class="text-sm font-semibold text-horriver-light">Seleção do ano</h3>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
+          <% result.positions.forEach((position) => { %>
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.16em] text-horriver-gray"><%= position.groupLabel %></p>
+              <% position.selection.forEach((row) => { %>
+                <p class="text-horriver-light"><%= row.name %></p>
+              <% }) %>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-3">
+        <% statLeaders.forEach((award) => { %>
+          <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-sm font-semibold text-horriver-light"><%= award.label %></h3>
+              <% if (award.tied) { %><span class="status-chip status-warning">Empate: decidir</span><% } %>
+            </div>
+            <ol class="text-sm space-y-1">
+              <% award.ranked.forEach((row, index) => { %>
+                <li class="flex justify-between gap-3">
+                  <span class="<%= index === 0 ? 'text-horriver-light font-semibold' : 'text-horriver-gray' %>"><%= index + 1 %>. <%= row.name %></span>
+                  <span class="text-horriver-orange whitespace-nowrap"><%= row[award.field] %> <%= award.unit %></span>
+                </li>
+              <% }) %>
+            </ol>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-4">
+    <div>
+      <h2 class="font-semibold text-lg text-horriver-light">Candidatos</h2>
+      <% if (canEditCandidates) { %>
+        <p class="text-xs text-horriver-gray">
+          Sugestão: os 3 goleiros que mais jogaram e os 10 melhores de cada posição pelo score do ano, com pelo menos <%= minMatches %> jogos.
+          Ajuste à vontade antes de salvar. Gere perto da abertura para a lista incluir as últimas peladas.
+        </p>
+      <% } else { %>
+        <p class="text-xs text-horriver-gray">A votação já recebeu votos, então a lista está travada.</p>
+      <% } %>
+    </div>
+
+    <% if (canEditCandidates) { %>
+      <form action="/admin/annual-vote-session" method="POST" class="space-y-4" id="annualCandidatesForm">
+        <input type="hidden" name="year" value="<%= year %>" />
+        <div class="flex flex-col sm:flex-row sm:items-end gap-2">
+          <label class="flex flex-col gap-1 text-xs text-horriver-gray">
+            Abertura
+            <input type="datetime-local" name="opensAt" value="<%= opensAtValue %>" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-sm text-horriver-light" />
+          </label>
+          <label class="flex flex-col gap-1 text-xs text-horriver-gray">
+            Encerramento
+            <input type="datetime-local" name="expiresAt" value="<%= expiresAtValue %>" required class="bg-horriver-dark border border-horriver-border rounded px-3 py-2 text-sm text-horriver-light" />
+          </label>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-3">
+          <% positions.forEach((position) => {
+               const rows = ranking.filter((row) => row.group === position.key);
+          %>
+            <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-2" data-annual-limit="<%= position.limit %>">
+              <div class="flex items-baseline justify-between gap-2">
+                <h3 class="text-sm font-semibold text-horriver-light"><%= position.groupLabel %></h3>
+                <span class="text-[11px] text-horriver-gray"><span data-annual-count>0</span>/<%= position.limit %></span>
+              </div>
+              <div class="max-h-80 overflow-y-auto space-y-1 pr-1">
+                <% rows.forEach((row) => { %>
+                  <label class="flex items-center gap-2 rounded-lg px-2 py-1 text-[12px] hover:bg-white/5 cursor-pointer">
+                    <input type="checkbox" name="candidateIds" value="<%= row.id %>" <%= selectedSet.has(row.id) ? 'checked' : '' %> />
+                    <span class="flex-1 min-w-0 truncate text-horriver-light"><%= row.name %></span>
+                    <span class="whitespace-nowrap text-horriver-gray"><%= row.matches %> J · <%= row.goals %> G · <%= row.assists %> A · nota <%= String(row.avgRating).replace('.', ',') %></span>
+                    <span class="w-12 text-right text-horriver-orange font-semibold"><%= row.score.toFixed(2).replace('.', ',') %></span>
+                  </label>
+                <% }) %>
+                <% if (!rows.length) { %>
+                  <p class="text-[12px] text-horriver-gray">Nenhum jogador nesta posição em <%= year %>.</p>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-full bg-horriver-orange text-black font-semibold hover:bg-orange-500 transition">
+          <%= session ? 'Atualizar lista' : 'Gerar votação e links' %>
+        </button>
+      </form>
+    <% } else { %>
+      <div class="grid lg:grid-cols-2 gap-3">
+        <% positions.forEach((position) => { %>
+          <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-1">
+            <h3 class="text-sm font-semibold text-horriver-light"><%= position.groupLabel %></h3>
+            <% (session.candidates[position.key] || []).forEach((row) => { %>
+              <div class="flex justify-between gap-2 text-[12px]">
+                <span class="truncate text-horriver-light"><%= row.name %></span>
+                <span class="whitespace-nowrap text-horriver-gray"><%= row.matches %> J · <%= row.goals %> G · <%= row.assists %> A · nota <%= String(row.avgRating).replace('.', ',') %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <% if (tokens.length) { %>
+    <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-2">
+      <h2 class="font-semibold text-lg text-horriver-light">Links de votação</h2>
+      <div class="overflow-x-auto text-[11px] pb-1">
+        <table class="min-w-[520px] w-full border-collapse">
+          <thead>
+            <tr class="border-b border-horriver-border/60 text-horriver-gray/80">
+              <th class="py-2 pr-3 text-left font-normal">Jogador</th>
+              <th class="py-2 pr-3 text-left font-normal">Link</th>
+              <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
+              <th class="py-2 pr-3 text-left font-normal">Votou</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tokens.forEach((t) => {
+                 const link = `${voteBaseUrl}/annual-vote/${t.token}`;
+                 const waDigits = (t.player.whatsapp || "").replace(/[^0-9]/g, "");
+                 const msg = `Fala ${t.player.name}! Seu link para votar nos melhores do ano ${year}: ${link}`;
+                 const waUrl = waDigits ? `https://wa.me/${waDigits}?text=${encodeURIComponent(msg)}` : null;
+            %>
+              <tr class="border-b border-horriver-border/40 last:border-0">
+                <td class="py-2 pr-3 text-horriver-light"><%= t.player.name %></td>
+                <td class="py-2 pr-3">
+                  <a href="<%= link %>" target="_blank" class="text-horriver-orange hover:underline break-all"><%= link %></a>
+                </td>
+                <td class="py-2 pr-3">
+                  <% if (waUrl) { %>
+                    <a href="<%= waUrl %>" target="_blank" class="inline-flex items-center px-3 py-1 rounded-full bg-horriver-red text-white hover:bg-horriver-orange transition">
+                      Mandar link
+                    </a>
+                  <% } else { %>
+                    <span class="status-chip status-warning">Sem numero</span>
+                  <% } %>
+                </td>
+                <td class="py-2 pr-3 whitespace-nowrap">
+                  <span class="status-chip <%= t.usedAt ? 'status-ok' : 'status-pending' %>"><%= t.usedAt ? "Sim" : "Não" %></span>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% } %>
+</section>
+
+<script>
+  (() => {
+    const btn = document.getElementById("exportAnnualAwardsBtn");
+    if (!btn) return;
+
+    btn.addEventListener("click", async () => {
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Gerando...";
+      try {
+        const res = await fetch(`/share/annual-awards.jpg?sessionId=${btn.dataset.sessionId}&v=${Date.now()}`);
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
+        const url = URL.createObjectURL(await res.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = btn.dataset.filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error("[export-melhores-ano] Falha:", err);
+        alert("Não foi possível gerar a imagem. Tente novamente.");
+      } finally {
+        btn.textContent = original;
+        btn.disabled = false;
+      }
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    const form = document.getElementById("annualCandidatesForm");
+    if (!form) return;
+
+    const blocks = Array.from(form.querySelectorAll("[data-annual-limit]"));
+    const sync = () => {
+      blocks.forEach((block) => {
+        const limit = Number(block.dataset.annualLimit);
+        const boxes = Array.from(block.querySelectorAll('input[type="checkbox"]'));
+        const checked = boxes.filter((box) => box.checked).length;
+        block.querySelector("[data-annual-count]").textContent = checked;
+        boxes.forEach((box) => {
+          box.disabled = checked >= limit && !box.checked;
+        });
+      });
+    };
+
+    form.addEventListener("change", sync);
+    sync();
+  })();
+</script>
