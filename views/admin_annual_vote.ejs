@@ -8,11 +8,14 @@
     closed: { label: "Votação encerrada", css: "status-danger" },
   }[status];
   const selectedSet = new Set(selectedIds.map(Number));
+  const bestSet = new Set((typeof selectedBestIds !== 'undefined' ? selectedBestIds : []).map(Number));
+  const candidateSections = [...positions, { key: 'MELHOR_JOGADOR', groupLabel: 'Melhor jogador do ano', limit: 10 }];
   const errorMessages = {
     invalidYear: "Ano inválido.",
     invalidDates: "Confira as datas: o encerramento precisa ser depois da abertura.",
-    overLimit: "Uma das posições passou do limite de candidatos.",
+    overLimit: "Uma das categorias passou do limite de candidatos. Melhor do ano aceita até 10 nomes.",
     noCandidates: "Selecione pelo menos um candidato.",
+    noBestCandidates: "Selecione de 1 a 10 candidatos a melhor jogador do ano.",
     hasVotes: "A votação já tem votos, então a lista não pode mais mudar. O prazo pode ser ajustado.",
     notClosed: "Os vencedores só podem ser publicados depois do encerramento.",
     server: "Algo deu errado. Tente novamente.",
@@ -230,6 +233,10 @@
 
     <% if (canEditCandidates) { %>
       <form action="/admin/annual-vote-session" method="POST" class="space-y-4" id="annualCandidatesForm">
+        <p class="text-sm text-horriver-gray">Melhor do ano tem uma lista própria de até 10 nomes. A sugestão usa o score anual e pelo menos <%= minMatches %> peladas; você pode ajustar os indicados abaixo.</p>
+        <% if (session && !Array.isArray(session.candidates.MELHOR_JOGADOR)) { %>
+          <p class="text-sm text-amber-400">Esta votação foi criada com a lista antiga. Confira os indicados a melhor do ano e clique em “Atualizar lista” para ativar a seleção de até 10 nomes. Os links continuam os mesmos.</p>
+        <% } %>
         <input type="hidden" name="year" value="<%= year %>" />
         <div class="flex flex-col sm:flex-row sm:items-end gap-2">
           <label class="flex flex-col gap-1 text-xs text-horriver-gray">
@@ -243,8 +250,9 @@
         </div>
 
         <div class="grid lg:grid-cols-2 gap-3">
-          <% positions.forEach((position) => {
-               const rows = ranking.filter((row) => row.group === position.key);
+          <% candidateSections.forEach((position) => {
+               const isBest = position.key === 'MELHOR_JOGADOR';
+               const rows = isBest ? ranking : ranking.filter((row) => row.group === position.key);
           %>
             <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-2" data-annual-limit="<%= position.limit %>">
               <div class="flex items-baseline justify-between gap-2">
@@ -254,7 +262,7 @@
               <div class="max-h-80 overflow-y-auto space-y-1 pr-1">
                 <% rows.forEach((row) => { %>
                   <label class="flex items-center gap-2 rounded-lg px-2 py-1 text-[12px] hover:bg-white/5 cursor-pointer">
-                    <input type="checkbox" name="candidateIds" value="<%= row.id %>" <%= selectedSet.has(row.id) ? 'checked' : '' %> />
+                    <input type="checkbox" name="<%= isBest ? 'bestCandidateIds' : 'candidateIds' %>" value="<%= row.id %>" <%= (isBest ? bestSet : selectedSet).has(row.id) ? 'checked' : '' %> />
                     <span class="flex-1 min-w-0 truncate text-horriver-light"><%= row.name %></span>
                     <span class="whitespace-nowrap text-horriver-gray"><%= row.matches %> J · <%= row.goals %> G · <%= row.assists %> A · nota <%= String(row.avgRating).replace('.', ',') %></span>
                     <span class="w-12 text-right text-horriver-orange font-semibold"><%= row.score.toFixed(2).replace('.', ',') %></span>
@@ -274,10 +282,10 @@
       </form>
     <% } else { %>
       <div class="grid lg:grid-cols-2 gap-3">
-        <% positions.forEach((position) => { %>
+        <% candidateSections.forEach((position) => { %>
           <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-1">
             <h3 class="text-sm font-semibold text-horriver-light"><%= position.groupLabel %></h3>
-            <% (session.candidates[position.key] || []).forEach((row) => { %>
+            <% (session.candidates[position.key] || (position.key === 'MELHOR_JOGADOR' ? positions.flatMap(p => session.candidates[p.key] || []) : [])).forEach((row) => { %>
               <div class="flex justify-between gap-2 text-[12px]">
                 <span class="truncate text-horriver-light"><%= row.name %></span>
                 <span class="whitespace-nowrap text-horriver-gray"><%= row.matches %> J · <%= row.goals %> G · <%= row.assists %> A · nota <%= String(row.avgRating).replace('.', ',') %></span>

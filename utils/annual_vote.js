@@ -126,7 +126,7 @@ function suggestCandidateIds(ranking) {
 }
 
 // Retorna o snapshot por posição, ou a posição que passou do limite.
-function buildAnnualCandidates(ranking, selectedIds) {
+function buildAnnualCandidates(ranking, selectedIds, bestIds) {
   const selected = new Set(selectedIds.map(Number));
   const candidates = {};
   let overLimit = null;
@@ -137,7 +137,22 @@ function buildAnnualCandidates(ranking, selectedIds) {
     candidates[position.key] = rows.map(({ group, ...row }) => row);
   });
 
+  if (bestIds !== undefined) {
+    const selectedBest = new Set(bestIds.map(Number));
+    candidates[ANNUAL_BEST_CATEGORY] = ranking.filter(row => selectedBest.has(row.id)).map(({ group, ...row }) => row);
+    if (candidates[ANNUAL_BEST_CATEGORY].length > 10) overLimit = { key: ANNUAL_BEST_CATEGORY };
+  }
   return { candidates, overLimit };
+}
+
+// Sessões antigas conservam a lista original até o admin atualizar os candidatos.
+function getAnnualBestCandidates(candidates = {}, voterId = null) {
+  const rows = candidates[ANNUAL_BEST_CATEGORY] ?? ANNUAL_POSITIONS.flatMap(position => candidates[position.key] || []);
+  return rows.filter(row => Number(row.id) !== Number(voterId));
+}
+
+function suggestAnnualBestIds(ranking) {
+  return ranking.filter(row => row.matches >= ANNUAL_VOTE_MIN_MATCHES).slice(0, 10).map(row => row.id);
 }
 
 function hasAnnualCandidates(candidates) {
@@ -162,9 +177,9 @@ function getAnnualBallotGroups(candidates, voterId) {
 }
 
 // Quem recebeu o voto para melhor do ano não pode receber o voto na posição.
-function parseAnnualBallot(body = {}, groups = []) {
+function parseAnnualBallot(body = {}, groups = [], bestOptions = groups.flatMap(group => group.options)) {
   const bestId = Number(body.bestPlayerId);
-  const allOptions = groups.flatMap((group) => group.options);
+  const allOptions = bestOptions;
   const best = allOptions.find((option) => Number(option.id) === bestId);
   const selectedByCategory = { [ANNUAL_BEST_CATEGORY]: best ? bestId : null };
   const picks = [];
@@ -175,10 +190,8 @@ function parseAnnualBallot(body = {}, groups = []) {
   groups.forEach((group) => {
     const playerId = Number(body[`position_${group.key}`]);
     const isValid = group.options.some((option) => Number(option.id) === playerId);
-    const remaining = group.options.filter((option) => Number(option.id) !== bestId);
     selectedByCategory[group.key] = isValid && playerId !== bestId ? playerId : null;
 
-    if (!remaining.length) return;
     if (best && playerId === bestId) {
       error = error || `${best.name} já recebeu seu voto de melhor do ano. Escolha outro jogador em ${group.label}.`;
       return;
@@ -220,7 +233,7 @@ async function computeAnnualVoteResult(prisma, session) {
 
   const candidates = session.candidates || {};
   const best = rankByVotes(
-    ANNUAL_POSITIONS.flatMap((position) => candidates[position.key] || []),
+    getAnnualBestCandidates(candidates),
     countsFor(ANNUAL_BEST_CATEGORY)
   );
   const positions = ANNUAL_POSITIONS.map((position) => {
@@ -274,6 +287,8 @@ module.exports = {
   computeAnnualStatLeaders,
   computeAnnualVoteResult,
   getAnnualBallotGroups,
+  getAnnualBestCandidates,
+  suggestAnnualBestIds,
   getAnnualVoteStatus,
   hasAnnualCandidates,
   parseAnnualBallot,

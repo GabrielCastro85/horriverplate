@@ -6,6 +6,7 @@ const rateLimit = require("express-rate-limit");
 const { attachSelectionPhotos } = require("../utils/monthly_selection");
 const {
   getAnnualBallotGroups,
+  getAnnualBestCandidates,
   getAnnualVoteStatus,
   parseAnnualBallot,
 } = require("../utils/annual_vote");
@@ -51,13 +52,16 @@ async function loadAnnualVoteContext(tokenValue) {
   if (status === "closed") return { error: "A votação já foi encerrada." };
 
   const groups = getAnnualBallotGroups(token.session.candidates, token.playerId);
+  const bestOptions = getAnnualBestCandidates(token.session.candidates, token.playerId);
   if (!groups.length) return { error: "Nenhum candidato disponível para esta votação." };
-  await attachSelectionPhotos(prisma, groups.flatMap((group) => group.options));
+  if (!bestOptions.length) return { error: "Nenhum candidato a melhor do ano disponível. Fale com o administrador." };
+  await attachSelectionPhotos(prisma, [...bestOptions, ...groups.flatMap((group) => group.options)]);
 
   return {
     token,
     voter: token.player,
     groups,
+    bestOptions,
     year: token.session.year,
     closesAtLabel: formatDateTimeBR(token.session.expiresAt),
   };
@@ -69,6 +73,7 @@ function renderVote(res, ctx, extra = {}) {
     error: null,
     success: false,
     groups: ctx?.groups || [],
+    bestOptions: ctx?.bestOptions || [],
     voter: ctx?.voter || null,
     year: ctx?.year || null,
     closesAtLabel: ctx?.closesAtLabel || null,
@@ -87,7 +92,7 @@ router.post("/:token", voteLimiter, async (req, res) => {
   const ctx = await loadAnnualVoteContext(req.params.token);
   if (ctx.error) return renderVote(res, null, { error: ctx.error });
 
-  const ballot = parseAnnualBallot(req.body, ctx.groups);
+  const ballot = parseAnnualBallot(req.body, ctx.groups, ctx.bestOptions);
   if (ballot.error) {
     return renderVote(res, ctx, { error: ballot.error, selectedByCategory: ballot.selectedByCategory });
   }

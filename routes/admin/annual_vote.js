@@ -14,6 +14,8 @@ const {
   getAnnualVoteStatus,
   hasAnnualCandidates,
   suggestCandidateIds,
+  getAnnualBestCandidates,
+  suggestAnnualBestIds,
 } = require("../../utils/annual_vote");
 const router = express.Router();
 
@@ -95,6 +97,7 @@ router.get("/annual-vote", requireAdmin, async (req, res) => {
       canEditCandidates,
       ranking,
       selectedIds,
+      selectedBestIds: session?.candidates?.[ANNUAL_BEST_CATEGORY] ? getAnnualBestCandidates(session.candidates).map(row => row.id) : suggestAnnualBestIds(ranking),
       positions: ANNUAL_POSITIONS,
       minMatches: ANNUAL_VOTE_MIN_MATCHES,
       opensAtValue: session ? toLocalInputValue(session.opensAt) : `${year}-11-25T00:00`,
@@ -132,9 +135,12 @@ router.post("/annual-vote-session", requireAdmin, async (req, res) => {
       .filter(Number.isFinite);
 
     const ranking = await computeAnnualRanking(prisma, year);
-    const { candidates, overLimit } = buildAnnualCandidates(ranking, selectedIds);
+    const rawBestIds = req.body.bestCandidateIds;
+    const bestIds = (Array.isArray(rawBestIds) ? rawBestIds : rawBestIds ? [rawBestIds] : []).map(Number).filter(Number.isFinite);
+    const { candidates, overLimit } = buildAnnualCandidates(ranking, selectedIds, bestIds);
     if (overLimit) return res.redirect(adminUrl(year, `annualVoteError=overLimit&position=${overLimit.key}`));
     if (!hasAnnualCandidates(candidates)) return res.redirect(adminUrl(year, "annualVoteError=noCandidates"));
+    if (!candidates[ANNUAL_BEST_CATEGORY].length) return res.redirect(adminUrl(year, "annualVoteError=noBestCandidates"));
 
     const voterIds = ranking.map((row) => row.id);
 
