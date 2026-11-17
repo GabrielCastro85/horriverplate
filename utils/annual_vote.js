@@ -14,7 +14,7 @@ const ANNUAL_POSITIONS = [
 ];
 
 // Corte da sugestão de linha, para quem foi a poucas peladas não entrar só pela média.
-const ANNUAL_VOTE_MIN_MATCHES = 8;
+const ANNUAL_VOTE_MIN_MATCHES = 20;
 
 const ANNUAL_STAT_AWARDS = [
   { category: "ARTILHEIRO", label: "Artilheiro", field: "goals", unit: "gols" },
@@ -206,7 +206,7 @@ function isTiedAtTop(ranked, field = "votes") {
 // Apuração: votos decidem; empate vai para o score do ano.
 async function computeAnnualVoteResult(prisma, session) {
   const picks = await prisma.annualVotePick.findMany({
-    where: { token: { sessionId: session.id } },
+    where: { token: { sessionId: session.id, usedAt: { not: null }, excludedAt: null } },
     select: { category: true, playerId: true },
   });
 

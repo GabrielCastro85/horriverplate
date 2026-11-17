@@ -18,6 +18,7 @@
     server: "Algo deu errado. Tente novamente.",
   };
   const noticeMessages = {
+    moderated: "Revisão salva e apuração atualizada. Se os prêmios já foram publicados, publique de novo para atualizar a premiação.",
     created: "Lista salva e links prontos.",
     dates: "Prazo atualizado.",
     published: "Vencedores publicados na premiação da temporada.",
@@ -25,6 +26,12 @@
   const voteChip = (votes) => `${votes} ${votes === 1 ? "voto" : "votos"}`;
 %>
 
+<style>
+  .annual-charts-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .annual-charts-grid > div { min-width:0; padding:12px; }
+  .annual-chart-frame { position:relative; height:300px; width:100%; min-width:0; }
+  @media(max-width:767px) { .annual-charts-grid { grid-template-columns:minmax(0,1fr); } }
+</style>
 <section class="space-y-4">
   <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
     <div>
@@ -59,12 +66,12 @@
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h2 class="font-semibold text-lg text-horriver-light">Andamento</h2>
         <p class="text-sm text-horriver-gray">
-          <span class="text-horriver-orange font-semibold"><%= usedCount %></span> de <%= tokens.length %> já votaram
+          <span class="text-horriver-orange font-semibold"><%= usedCount %></span> de <%= tokens.length %> já votaram · <%= usedCount - excludedCount %> válidos · <%= excludedCount %> desconsiderados
         </p>
       </div>
       <p class="text-xs text-horriver-gray">
         Abre em <%= fmtDateTimeBR(session.opensAt) %> e encerra em <%= fmtDateTimeBR(session.expiresAt) %> (horário de Brasília).
-        <% if (status !== 'closed') { %>O resultado fica em segredo até o encerramento, inclusive aqui no painel.<% } %>
+        <% if (status !== 'closed') { %>A parcial abaixo é exclusiva do admin. Imagem e publicação só ficam disponíveis após o encerramento.<% } %>
       </p>
       <form action="/admin/annual-vote/<%= session.id %>/dates" method="POST" class="flex flex-col sm:flex-row sm:items-end gap-2">
         <input type="hidden" name="year" value="<%= year %>" />
@@ -87,9 +94,10 @@
     <div class="bg-black/40 border border-horriver-border rounded-2xl p-4 space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h2 class="font-semibold text-lg text-horriver-light">Resultado</h2>
+          <h2 class="font-semibold text-lg text-horriver-light"><%= status === "closed" ? "Resultado" : "Parcial — somente admin" %></h2>
           <p class="text-xs text-horriver-gray">Empate nos votos é decidido pelo score do ano. Confira os avisos antes de mandar fazer os troféus.</p>
         </div>
+        <% if (status === "closed") { %>
         <div class="flex flex-col sm:flex-row gap-2">
           <% if (result.hasVotes) { %>
             <button
@@ -112,7 +120,31 @@
             </button>
           </form>
         </div>
+        <% } %>
       </div>
+
+      <% const annualCharts = [{ label: "Melhor do ano", rows: result.best }, ...result.positions.map(p => ({ label: p.label, rows: p.ranked }))]; %>
+      <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-horriver-gray">
+        <span>Atualizado em <%= fmtDateTimeBR(new Date()) %>. Apenas votos válidos entram nos gráficos.</span>
+        <a href="/admin/annual-vote?year=<%= year %>" class="text-horriver-orange hover:underline">Atualizar parcial</a>
+      </div>
+      <div class="annual-charts-grid">
+        <% annualCharts.forEach((chart, index) => {
+          const voted = chart.rows.filter(row => row.votes > 0);
+          const total = voted.reduce((sum, row) => sum + row.votes, 0);
+        %>
+          <div class="rounded-xl border border-horriver-border/60 bg-black/50 p-3 space-y-2">
+            <h3 class="font-semibold text-horriver-light"><%= chart.label %></h3>
+            <% if (total) { %>
+              <div class="annual-chart-frame"><canvas id="annualChart<%= index %>" role="img" aria-label="Gráfico de votos: <%= chart.label %>"></canvas></div>
+              <ul class="text-xs text-horriver-gray space-y-1">
+                <% voted.forEach(row => { %><li><%= row.name %>: <%= row.votes %> votos (<%= (100 * row.votes / total).toFixed(1).replace('.', ',') %>%)</li><% }) %>
+              </ul>
+            <% } else { %><p class="text-sm text-horriver-gray">Nenhum voto válido nesta categoria.</p><% } %>
+          </div>
+        <% }) %>
+      </div>
+      <script type="application/json" id="annualChartData"><%- JSON.stringify(annualCharts.map(chart => ({ label: chart.label, rows: chart.rows.filter(row => row.votes > 0).map(row => ({ name: row.name, votes: row.votes })) }))).replace(/</g, '\\u003c') %></script>
 
       <div class="rounded-xl border border-horriver-orange/50 bg-black/50 p-3 space-y-2">
         <div class="flex flex-wrap items-center gap-2">
@@ -188,7 +220,7 @@
       <h2 class="font-semibold text-lg text-horriver-light">Candidatos</h2>
       <% if (canEditCandidates) { %>
         <p class="text-xs text-horriver-gray">
-          Sugestão: os 3 goleiros que mais jogaram e os 10 melhores de cada posição pelo score do ano, com pelo menos <%= minMatches %> jogos.
+          Sugestão: os 3 goleiros que mais jogaram e os 10 melhores de cada posição de linha pelo score do ano, com pelo menos <%= minMatches %> peladas no ano.
           Ajuste à vontade antes de salvar. Gere perto da abertura para a lista incluir as últimas peladas.
         </p>
       <% } else { %>
@@ -268,6 +300,7 @@
               <th class="py-2 pr-3 text-left font-normal">Link</th>
               <th class="py-2 pr-3 text-left font-normal">WhatsApp</th>
               <th class="py-2 pr-3 text-left font-normal">Votou</th>
+              <th class="py-2 pr-3 text-left font-normal">Revisão do voto</th>
             </tr>
           </thead>
           <tbody>
@@ -293,6 +326,22 @@
                 </td>
                 <td class="py-2 pr-3 whitespace-nowrap">
                   <span class="status-chip <%= t.usedAt ? 'status-ok' : 'status-pending' %>"><%= t.usedAt ? "Sim" : "Não" %></span>
+                </td>
+
+                <td class="py-2 pr-3" style="min-width:240px">
+                  <% if (t.usedAt) { %>
+                    <p class="text-xs <%= t.excludedAt ? 'text-red-300' : 'text-emerald-300' %>"><%= t.excludedAt ? 'Desconsiderado' : 'Válido' %></p>
+                    <% if (t.excludedAt) { %><p class="text-xs text-horriver-gray">Motivo: <%= t.exclusionReason %> · <%= fmtDateTimeBR(t.excludedAt) %></p><% } %>
+                    <details class="my-2"><summary class="cursor-pointer text-horriver-orange">Ver escolhas</summary>
+                      <ul class="space-y-1"><% t.picks.forEach(pick => { %><li><%= pick.category === 'MELHOR_JOGADOR' ? 'Melhor do ano' : (positions.find(p => p.key === pick.category)?.label || pick.category) %>: <%= pick.player.name %></li><% }) %></ul>
+                    </details>
+                    <form method="POST" action="/admin/annual-vote/<%= session.id %>/tokens/<%= t.id %>/moderate" class="space-y-2" onsubmit="return confirm('<%= t.excludedAt ? 'Reativar esta cédula na apuração?' : 'Desconsiderar todas as escolhas desta cédula? O registro será preservado.' %>');">
+                      <% if (typeof csrfToken !== 'undefined' && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
+                      <input type="hidden" name="action" value="<%= t.excludedAt ? 'restore' : 'exclude' %>" />
+                      <% if (!t.excludedAt) { %><label class="block">Motivo<input type="text" name="reason" required maxlength="500" class="block w-full bg-horriver-dark border border-horriver-border rounded px-2 py-1 text-horriver-light" placeholder="Explique o motivo da revisão" /></label><% } %>
+                      <button type="submit" class="px-3 py-1 rounded-full border border-horriver-border text-horriver-orange"><%= t.excludedAt ? 'Reativar voto' : 'Desconsiderar voto' %></button>
+                    </form>
+                  <% } else { %><span class="text-horriver-gray">Aguardando voto</span><% } %>
                 </td>
               </tr>
             <% }) %>
@@ -355,4 +404,25 @@
     form.addEventListener("change", sync);
     sync();
   })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(() => {
+  const source = document.getElementById('annualChartData');
+  if (!source || typeof Chart === 'undefined') return;
+  const colors = ['#ff6b6b','#f4d35e','#4ecdc4','#5dade2','#af7ac5','#f39c12','#2ecc71','#e67e22','#1abc9c','#3498db','#9b59b6','#e74c3c'];
+  JSON.parse(source.textContent).forEach((chart, index) => {
+    const canvas = document.getElementById('annualChart' + index);
+    if (!canvas || !chart.rows.length) return;
+    new Chart(canvas, {
+      type: 'pie',
+      data: { labels: chart.rows.map(r => r.name), datasets: [{ data: chart.rows.map(r => r.votes), backgroundColor: chart.rows.map((_,i) => colors[i % colors.length]), borderColor: 'rgba(15,17,21,0.9)', borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: {
+        legend: { position: 'bottom', labels: { color: 'rgba(245,245,245,0.8)', boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => { const total = ctx.dataset.data.reduce((a,b) => a+b,0); return ctx.label + ': ' + ctx.raw + ' votos (' + (100*ctx.raw/total).toFixed(1) + '%)'; } } }
+      } }
+    });
+  });
+})();
 </script>

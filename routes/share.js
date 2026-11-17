@@ -669,7 +669,7 @@ async function buildAnnualAwardsData(sessionId) {
   const [result, statLeaders, voters] = await Promise.all([
     computeAnnualVoteResult(prisma, session),
     computeAnnualStatLeaders(prisma, session.year, session.expiresAt),
-    prisma.annualVoteToken.count({ where: { sessionId, usedAt: { not: null } } }),
+    prisma.annualVoteToken.count({ where: { sessionId, usedAt: { not: null }, excludedAt: null } }),
   ]);
   if (!result.hasVotes) return null;
 

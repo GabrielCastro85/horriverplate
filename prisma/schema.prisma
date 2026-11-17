@@ -430,6 +430,8 @@ model AnnualVoteToken {
   sessionId Int
   playerId  Int
   usedAt    DateTime?
+  excludedAt DateTime?
+  exclusionReason String?
   createdAt DateTime          @default(now())
   session   AnnualVoteSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   player    Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)

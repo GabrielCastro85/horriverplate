@@ -4,6 +4,7 @@ const prisma = require("../../utils/db");
 const { deleteCache } = require("../../utils/page_cache");
 const {
   ANNUAL_POSITIONS,
+  ANNUAL_BEST_CATEGORY,
   ANNUAL_VOTE_MIN_MATCHES,
   buildAnnualCandidates,
   buildSeasonAwards,
@@ -53,7 +54,7 @@ router.get("/annual-vote", requireAdmin, async (req, res) => {
       where: { year },
       include: {
         tokens: {
-          include: { player: { select: { id: true, name: true, whatsapp: true } } },
+          include: { player: { select: { id: true, name: true, whatsapp: true } }, picks: { include: { player: { select: { name: true } } } } },
         },
       },
     });
@@ -71,13 +72,13 @@ router.get("/annual-vote", requireAdmin, async (req, res) => {
       ? ANNUAL_POSITIONS.flatMap((position) => (session.candidates[position.key] || []).map((row) => row.id))
       : suggestCandidateIds(ranking);
 
-    // O resultado fica em segredo até o encerramento, inclusive no painel.
+    // A parcial é exclusiva do administrador; imagem e publicação continuam fechadas.
     let result = null;
     let statLeaders = [];
     let publishedCount = 0;
+    if (session) result = await computeAnnualVoteResult(prisma, session);
     if (session && status === "closed") {
-      [result, statLeaders, publishedCount] = await Promise.all([
-        computeAnnualVoteResult(prisma, session),
+      [statLeaders, publishedCount] = await Promise.all([
         computeAnnualStatLeaders(prisma, year, session.expiresAt),
         prisma.seasonAward.count({ where: { year } }),
       ]);
@@ -89,6 +90,7 @@ router.get("/annual-vote", requireAdmin, async (req, res) => {
       session,
       tokens,
       usedCount,
+      excludedCount: tokens.filter((token) => token.usedAt && token.excludedAt).length,
       status,
       canEditCandidates,
       ranking,
@@ -96,7 +98,7 @@ router.get("/annual-vote", requireAdmin, async (req, res) => {
       positions: ANNUAL_POSITIONS,
       minMatches: ANNUAL_VOTE_MIN_MATCHES,
       opensAtValue: session ? toLocalInputValue(session.opensAt) : `${year}-11-25T00:00`,
-      expiresAtValue: session ? toLocalInputValue(session.expiresAt) : `${year}-11-27T23:59`,
+      expiresAtValue: session ? toLocalInputValue(session.expiresAt) : `${year}-11-27T12:00`,
       result,
       statLeaders,
       publishedCount,
@@ -193,6 +195,48 @@ router.post("/annual-vote/:id/dates", requireAdmin, async (req, res) => {
   }
 });
 
+// Desconsidera a cédula inteira, preservando escolhas, link usado e trilha de auditoria.
+router.post("/annual-vote/:id/tokens/:tokenId/moderate", requireAdmin, async (req, res) => {
+  let year;
+  try {
+    const id = Number(req.params.id);
+    const tokenId = Number(req.params.tokenId);
+    const action = req.body.action;
+    const reason = String(req.body.reason || "").trim();
+    if (!Number.isInteger(id) || !Number.isInteger(tokenId) || !["exclude", "restore"].includes(action)) {
+      return res.status(400).send("Solicitação inválida.");
+    }
+    if (action === "exclude" && (!reason || reason.length > 500)) {
+      return res.status(400).send("Informe um motivo de até 500 caracteres.");
+    }
+    await prisma.$transaction(async (tx) => {
+      const token = await tx.annualVoteToken.findFirst({
+        where: { id: tokenId, sessionId: id }, include: { session: true },
+      });
+      if (!token || !token.usedAt) throw new Error("INVALID_BALLOT");
+      year = token.session.year;
+      const previousReason = token.exclusionReason;
+      const changed = await tx.annualVoteToken.updateMany({
+        where: { id: tokenId, sessionId: id, usedAt: { not: null }, excludedAt: action === "exclude" ? null : { not: null } },
+        data: action === "exclude" ? { excludedAt: new Date(), exclusionReason: reason } : { excludedAt: null, exclusionReason: null },
+      });
+      if (!changed.count) return;
+      await tx.auditLog.create({ data: {
+        adminId: req.admin.id, adminEmail: req.admin.email,
+        method: "POST", path: req.originalUrl,
+        action: action === "exclude" ? "ANNUAL_VOTE_EXCLUDED" : "ANNUAL_VOTE_RESTORED",
+        summary: action === "exclude" ? "Voto anual desconsiderado" : "Voto anual reativado",
+        details: { sessionId: id, tokenId, playerId: token.playerId, reason: action === "exclude" ? reason : previousReason },
+      } });
+    });
+    return res.redirect(adminUrl(year, "annualVoteNotice=moderated"));
+  } catch (err) {
+    if (err.message === "INVALID_BALLOT") return res.status(400).send("Voto não encontrado nesta votação ou ainda não enviado.");
+    console.error("Erro ao revisar voto anual:", err);
+    return res.redirect(year ? adminUrl(year, "annualVoteError=server") : "/admin/annual-vote?annualVoteError=server");
+  }
+});
+
 // ==============================
 // Publicar vencedores na premiação da temporada
 // ==============================
@@ -211,13 +255,14 @@ router.post("/annual-vote/:id/publish", requireAdmin, async (req, res) => {
     const awards = buildSeasonAwards(result, statLeaders);
 
     await prisma.$transaction(
-      awards.map(({ category, playerId }) =>
+      [prisma.seasonAward.deleteMany({ where: { year: session.year, category: { in: [ANNUAL_BEST_CATEGORY, ...ANNUAL_POSITIONS.map((position) => position.awardCategory)] } } }),
+      ...awards.map(({ category, playerId }) =>
         prisma.seasonAward.upsert({
           where: { year_category: { year: session.year, category } },
           update: { playerId },
           create: { year: session.year, category, playerId },
         })
-      )
+      )]
     );
 
     deleteCache("home");
