@@ -1,7 +1,7 @@
 <link rel="stylesheet" href="/css/annual-vote.css?v=5" />
 <section class="av-shell" id="annualWizard">
   <% const showForm = !success && groups.length > 0;
-     const steps = [...groups, { key: 'MELHOR_JOGADOR', label: 'Melhor do ano', options: bestOptions }];
+     const steps = [{ key: 'MELHOR_JOGADOR', label: 'Melhor do ano', options: bestOptions }, ...groups];
      const categoryEmojis = { GOL: '🧤', ZAG: '🛡️', MEI: '🧠', ATA: '⚽', MELHOR_JOGADOR: '🏆' }; %>
   <% if (error) { %><div class="av-error" role="alert"><%= error %></div><% } %>
   <% if (success) { %>
@@ -35,8 +35,8 @@
         <span class="av-symbol" aria-hidden="true">⚠</span><p class="av-eyebrow">Antes de começar</p>
         <h2 tabindex="-1">Uma regra pra não dar confusão</h2>
         <p>O voto para <strong>melhor do ano não pode ser no mesmo jogador</strong> que você escolheu como melhor da posição.</p>
-        <div class="av-callout">Votou no Joãozinho 123 pra melhor meia? Então ele fica fora da sua escolha de melhor do ano. Espalha essa moral!</div>
-        <p class="av-muted">Primeiro as posições, depois o melhor do ano. E nada de votar em si mesmo, hein.</p>
+        <div class="av-callout">Votou no Joãozinho 123 pra melhor do ano? Então ele fica fora da sua escolha de melhor meia. Espalha essa moral!</div>
+        <p class="av-muted">Primeiro o melhor do ano, depois as posições. E nada de votar em si mesmo, hein.</p>
         <label class="av-agree"><input type="checkbox" id="avUnderstood" /> Entendi!</label>
         <button class="av-button" type="button" id="avStart" data-next disabled>Comece a votar</button>
         <button class="av-back" type="button" data-back>Voltar</button>
@@ -46,14 +46,14 @@
           <p class="av-eyebrow">Escolha <%= index + 1 %> de <%= steps.length %></p>
           <span class="av-symbol" aria-hidden="true"><%= categoryEmojis[group.key] %></span>
           <h2 tabindex="-1">Vote no <%= group.label.toLowerCase() %></h2>
-          <p><%= isBest ? 'Agora é o prêmio principal! Quem foi o nome do ano no Horriver?' : 'Quem mandou bem nessa posição? Dá uma olhada nos números e escolhe seu destaque.' %></p>
+          <p><%= isBest ? 'Vamos começar pelo prêmio principal! Quem foi o nome do ano no Horriver?' : 'Quem mandou bem nessa posição? Dá uma olhada nos números e escolhe seu destaque.' %></p>
           <button class="av-button" type="button" data-next>Continuar</button>
           <button class="av-back" type="button" data-back>Voltar</button>
         </section>
         <section class="av-panel" data-screen="choices" data-step="<%= index %>" data-category="<%= group.key %>" data-label="<%= group.label %>" hidden>
           <p class="av-eyebrow">Números da temporada <%= year %></p>
           <h2 tabindex="-1"><%= group.label %></h2>
-          <p class="av-muted"><%= isBest ? 'Quem já ganhou seu voto na posição aparece bloqueado aqui.' : 'Escolha um jogador. Você confere tudo antes de enviar.' %></p>
+          <p class="av-muted"><%= isBest ? 'Seu escolhido aqui não poderá receber seu voto na posição. Se trocar depois, uma escolha conflitante será limpa para você refazer.' : 'Seu melhor do ano fica bloqueado aqui. Escolha outro destaque para a posição.' %></p>
           <div class="av-cards" role="radiogroup" aria-label="<%= group.label %>">
             <% group.options.forEach(option => { %>
               <label class="av-card" data-player-name="<%= option.name %>">
@@ -71,7 +71,7 @@
               </label>
             <% }) %>
           </div>
-          <p class="av-empty" hidden>Seus votos nas posições bloquearam todos os candidatos a melhor do ano. Volte e altere uma escolha para liberar alguém.</p>
+          <p class="av-empty" hidden>Seu melhor do ano é o único candidato disponível nesta posição. Volte e troque o melhor do ano para continuar.</p>
           <div class="av-actions"><button class="av-back" type="button" data-back>Voltar</button><button class="av-button" type="button" data-next disabled>Votar e continuar</button></div>
           <p class="av-muted av-small">Ainda não envia: a confirmação definitiva vem no final.</p>
         </section>
@@ -88,9 +88,9 @@
         <div class="av-callout"><strong>Agora é definitivo, hein!</strong><br />Depois de confirmar, não dá para mudar o voto nem votar de novo com este link.</div>
         <div class="av-actions"><button class="av-back" type="button" id="avRestart">Votar novamente</button><button class="av-button" type="submit" id="avSubmit">Confirmar votação</button></div>
         <p class="av-muted av-small">“Votar novamente” limpa as escolhas e volta ao começo, sem enviar nada.</p>
-        <button class="av-back" type="button" data-back>Voltar para melhor do ano</button>
+        <button class="av-back" type="button" data-back>Voltar para a última posição</button>
       </section>
     </form>
-    <script src="/js/annual-vote.js?v=5" defer></script>
+    <script src="/js/annual-vote.js?v=6" defer></script>
   <% } %>
 </section>

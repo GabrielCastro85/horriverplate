@@ -24,15 +24,17 @@
     });
   }
   function sync() {
-    const used = new Map(positions.flatMap(s => selected(s) ? [[selected(s).value, s.dataset.label]] : []));
-    best.querySelectorAll('input[type=radio]').forEach(input => {
-      input.disabled = used.has(input.value);
-      if (input.disabled) input.checked = false;
-      const card = input.closest('.av-card');
-      card.classList.toggle('is-locked', input.disabled);
-      card.querySelector('.av-lock-note').textContent = input.disabled ? `Você já votou nele como ${used.get(input.value).toLowerCase()}.` : '';
+    const bestId = selected(best)?.value;
+    positions.forEach(screen => {
+      screen.querySelectorAll('input[type=radio]').forEach(input => {
+        input.disabled = input.value === bestId;
+        if (input.disabled) input.checked = false;
+        const card = input.closest('.av-card');
+        card.classList.toggle('is-locked', input.disabled);
+        card.querySelector('.av-lock-note').textContent = input.disabled ? 'Você já votou nele como melhor do ano.' : '';
+      });
+      screen.querySelector('.av-empty').hidden = !!screen.querySelector('input:not(:disabled)');
     });
-    best.querySelector('.av-empty').hidden = !!best.querySelector('input:not(:disabled)');
     choices.forEach(screen => {
       screen.querySelector('[data-next]').disabled = !selected(screen);
       screen.querySelectorAll('input[type=radio]').forEach(input => input.closest('.av-card').classList.toggle('is-selected', input.checked));
