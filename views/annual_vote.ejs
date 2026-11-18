@@ -1,7 +1,8 @@
 <link rel="stylesheet" href="/css/annual-vote.css?v=3" />
 <section class="av-shell" id="annualWizard">
   <% const showForm = !success && groups.length > 0;
-     const steps = [...groups, { key: 'MELHOR_JOGADOR', label: 'Melhor do ano', options: bestOptions }]; %>
+     const steps = [...groups, { key: 'MELHOR_JOGADOR', label: 'Melhor do ano', options: bestOptions }];
+     const categoryEmojis = { GOL: '🧤', ZAG: '🛡️', MEI: '🧠', ATA: '⚽', MELHOR_JOGADOR: '🏆' }; %>
   <% if (error) { %><div class="av-error" role="alert"><%= error %></div><% } %>
   <% if (success) { %>
     <div class="av-panel av-center av-success">
@@ -37,7 +38,7 @@
       <% steps.forEach((group, index) => { const isBest = group.key === 'MELHOR_JOGADOR'; %>
         <section class="av-panel av-center" data-screen="intro" data-step="<%= index %>" hidden>
           <p class="av-eyebrow">Escolha <%= index + 1 %> de <%= steps.length %></p>
-          <span class="av-symbol" aria-hidden="true"><%= isBest ? '🏆' : '⚽' %></span>
+          <span class="av-symbol" aria-hidden="true"><%= categoryEmojis[group.key] %></span>
           <h2 tabindex="-1">Vote no <%= group.label.toLowerCase() %></h2>
           <p><%= isBest ? 'Agora é o prêmio principal! Quem foi o nome do ano no Horriver?' : 'Quem mandou bem nessa posição? Dá uma olhada nos números e escolhe seu destaque.' %></p>
           <button class="av-button" type="button" data-next>Continuar</button>
