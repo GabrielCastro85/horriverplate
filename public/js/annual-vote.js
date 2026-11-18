@@ -12,6 +12,17 @@
   let sending = false;
   const selected = screen => screen.querySelector('input[type=radio]:checked:not(:disabled)');
   const name = input => input.closest('.av-card').dataset.playerName;
+  function syncProgress() {
+    const step = screens[current].dataset.step;
+    progress.querySelectorAll('[data-progress-category]').forEach((item, index) => {
+      const done = !!selected(choices[index]);
+      const active = step !== undefined && Number(step) === index;
+      item.classList.toggle('is-complete', done);
+      item.classList.toggle('is-current', active);
+      if (active) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
+      item.querySelector('.av-step-state').textContent = done ? 'Escolhido' : active ? 'Agora' : '';
+    });
+  }
   function sync() {
     const used = new Map(positions.flatMap(s => selected(s) ? [[selected(s).value, s.dataset.label]] : []));
     best.querySelectorAll('input[type=radio]').forEach(input => {
@@ -26,6 +37,7 @@
       screen.querySelector('[data-next]').disabled = !selected(screen);
       screen.querySelectorAll('input[type=radio]').forEach(input => input.closest('.av-card').classList.toggle('is-selected', input.checked));
     });
+    syncProgress();
     document.getElementById('avStart').disabled = !agreed.checked;
     submit.disabled = sending || !choices.every(selected);
     const receipt = document.getElementById('avReceipt');
@@ -49,6 +61,7 @@
     current = Math.max(0, Math.min(index, screens.length - 1));
     screens.forEach((screen, i) => { screen.hidden = i !== current; });
     const screen = screens[current];
+    syncProgress();
     progress.hidden = current < 2;
     const step = screen.dataset.step;
     document.getElementById('avProgressLabel').textContent = step !== undefined ? `Escolha ${Number(step) + 1} de ${choices.length} · ${choices[Number(step)].dataset.label}` : 'Revisão · falta só confirmar';

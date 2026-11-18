@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="/css/annual-vote.css?v=3" />
+<link rel="stylesheet" href="/css/annual-vote.css?v=5" />
 <section class="av-shell" id="annualWizard">
   <% const showForm = !success && groups.length > 0;
      const steps = [...groups, { key: 'MELHOR_JOGADOR', label: 'Melhor do ano', options: bestOptions }];
@@ -6,6 +6,7 @@
   <% if (error) { %><div class="av-error" role="alert"><%= error %></div><% } %>
   <% if (success) { %>
     <div class="av-panel av-center av-success">
+      <div class="av-confetti" aria-hidden="true"><% for (let i = 0; i < 32; i++) { %><i style="--x:<%= (i * 37) % 100 %>%;--delay:<%= (i % 8) * .08 %>s;--turn:<%= i % 2 ? 480 : -360 %>deg;--color:<%= ['#ff8a31','#f6e4bf','#ffffff','#dc5a22'][i % 4] %>"></i><% } %></div>
       <div class="av-verified" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28"/><path d="m19 32 9 9 18-19"/></svg></div>
       <p class="av-eyebrow">Tá na conta!</p>
       <h1>Votação computada!</h1>
@@ -15,7 +16,12 @@
     </div>
   <% } else if (showForm) { %>
     <noscript><div class="av-error">Ative o JavaScript do navegador para votar por etapas.</div></noscript>
-    <div class="av-progress" hidden id="avProgress"><span id="avProgressLabel" aria-live="polite"></span><div><span id="avProgressBar"></span></div></div>
+    <div class="av-progress" hidden id="avProgress">
+      <ol class="av-milestones" aria-label="Etapas da votação"><% steps.forEach(group => { %>
+        <li data-progress-category="<%= group.key %>"><span class="av-milestone-icon" aria-hidden="true"><%= categoryEmojis[group.key] %><b>✓</b></span><span><%= group.key === 'MELHOR_JOGADOR' ? 'Do ano' : group.label.replace('Melhor ', '') %></span><span class="av-step-state"></span></li>
+      <% }) %></ol>
+      <span id="avProgressLabel" aria-live="polite"></span><div class="av-progress-track"><span id="avProgressBar"></span></div>
+    </div>
     <form method="POST" id="annual-vote-form" data-no-submit-lock="true" novalidate>
       <section class="av-panel av-center" data-screen="welcome">
         <img class="av-logo" src="/img/logo-192x192.svg" alt="Escudo do Horriver Plate" />
@@ -52,11 +58,13 @@
             <% group.options.forEach(option => { %>
               <label class="av-card" data-player-name="<%= option.name %>">
                 <input type="radio" name="<%= isBest ? 'bestPlayerId' : `position_${group.key}` %>" value="<%= option.id %>" <%= Number(selectedByCategory[group.key]) === Number(option.id) ? 'checked' : '' %> />
-                <img src="<%= thumbUrl(option.photoUrl || '/img/logo-128x128.svg', 160) %>" alt="" loading="lazy" />
+                <span class="av-choice-badge" aria-hidden="true">✓ Meu escolhido</span>
+                <img src="<%= thumbUrl(option.photoUrl || '/img/logo-128x128.svg', 240) %>" alt="" loading="lazy" />
                 <strong><%= option.name %></strong>
+                <% if (option.nickname && option.nickname !== option.name) { %><span class="av-nickname"><%= option.nickname %></span><% } %>
                 <div class="av-stats">
-                  <% [[option.matches,'Peladas'],[option.goals,'Gols'],[option.assists,'Assistências'],[Number(option.avgRating || 0).toFixed(2).replace('.', ','),'Nota média'],[option.photos,'Fotos']].forEach(([value,label]) => { %>
-                    <span><b><%= value ?? 0 %></b><small><%= label %></small></span>
+                  <% [[option.matches,'Peladas','🏟️'],[option.goals,'Gols','⚽'],[option.assists,'Assistências','🎯'],[Number(option.avgRating || 0).toFixed(2).replace('.', ','),'Nota média','⭐'],[option.photos,'Fotos','📷']].forEach(([value,label,icon]) => { %>
+                    <span><small aria-hidden="true"><%= icon %></small><b><%= value ?? 0 %></b><small><%= label %></small></span>
                   <% }) %>
                 </div>
                 <span class="av-lock-note"></span>
@@ -71,13 +79,18 @@
       <section class="av-panel" data-screen="review" hidden>
         <p class="av-eyebrow">Quase lá!</p><h2 tabindex="-1">Confere aí suas escolhas</h2>
         <p>Seu comprovante de escolhas está pronto. <strong>Os votos ainda não foram enviados.</strong></p>
-        <div id="avReceipt" class="av-receipt"></div>
+        <div class="av-ticket">
+          <div class="av-ticket-heading"><img src="/img/logo-64x64.svg" alt="" /><div><span class="av-eyebrow">Resenha Awards · <%= year %></span><h3>Horriver Plate</h3></div><span class="av-ticket-seal" aria-hidden="true">🏆</span></div>
+          <div class="av-ticket-owner"><span>Escolhas de <strong><%= voter.name %></strong></span><span class="av-draft">Prévia · não enviada</span></div>
+          <div id="avReceipt" class="av-receipt"></div>
+          <div class="av-ticket-footer">Feito na resenha. Decidido no voto.</div>
+        </div>
         <div class="av-callout"><strong>Agora é definitivo, hein!</strong><br />Depois de confirmar, não dá para mudar o voto nem votar de novo com este link.</div>
         <div class="av-actions"><button class="av-back" type="button" id="avRestart">Votar novamente</button><button class="av-button" type="submit" id="avSubmit">Confirmar votação</button></div>
         <p class="av-muted av-small">“Votar novamente” limpa as escolhas e volta ao começo, sem enviar nada.</p>
         <button class="av-back" type="button" data-back>Voltar para melhor do ano</button>
       </section>
     </form>
-    <script src="/js/annual-vote.js?v=4" defer></script>
+    <script src="/js/annual-vote.js?v=5" defer></script>
   <% } %>
 </section>

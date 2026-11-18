@@ -76,25 +76,34 @@ test('mobile and desktop wizard: no early writes, edit, restart, receipt, final 
     });
     const dir=path.join(root,'.cache','annual-wizard');fs.mkdirSync(dir,{recursive:true});
     await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'welcome-mobile.png'),fullPage:true});
-    const next=()=>page.click('[data-screen]:not([hidden]) [data-next]');
+    const settle=()=>page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));
+    const choose=async selector=>{await page.$eval(selector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));await page.click(selector);await settle();};
+    const next=async()=>{await page.click('[data-screen]:not([hidden]) [data-next]');await settle();};
     await next();assert.equal(await page.evaluate(()=>window.scrollY),0,'Opening rules must not force a scroll');assert(await page.$eval('#avStart',e=>e.disabled));await page.click('#avUnderstood');await next();
-    for(const [key,id] of [['GOL',1],['ZAG',3],['MEI',5],['ATA',7]]){await next();await page.click(`input[name="position_${key}"][value="${id}"]`);await next();}
+    for(const [key,id] of [['GOL',1],['ZAG',3],['MEI',5],['ATA',7]]){await next();await choose(`input[name="position_${key}"][value="${id}"]`);await next();}
     await next();assert(await page.$eval('input[name=bestPlayerId][value="1"]',e=>e.disabled));
     await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'best-mobile.png'),fullPage:true});
-    await page.click('input[name=bestPlayerId][value="9"]');await next();assert.equal(writes,0);
+    await choose('input[name=bestPlayerId][value="9"]');await next();assert.equal(writes,0);
     assert(await page.evaluate(()=>document.getElementById('annualWizard').getBoundingClientRect().top >= document.querySelector('header').getBoundingClientRect().bottom),'Review must remain below the sticky header after a long list');
     assert.equal(await page.$$eval('.av-receipt-row',e=>e.length),5);
+    assert.equal(await page.$$eval('.av-milestones .is-complete',e=>e.length),5);
+    assert((await page.$eval('.av-ticket',e=>e.textContent)).includes('Prévia · não enviada'));
     await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'review-mobile.png'),fullPage:true});
-    await page.click('[aria-label="Trocar voto: Melhor goleiro"]');await page.click('input[name=position_GOL][value="2"]');
+    await page.click('[aria-label="Trocar voto: Melhor goleiro"]');await settle();await choose('input[name=position_GOL][value="2"]');
     assert.equal(await page.$eval('input[name=bestPlayerId][value="1"]',e=>e.disabled),false);
     while(await page.$eval('[data-screen]:not([hidden])',e=>e.dataset.screen)!=='review')await next();
     await page.click('#avRestart');assert.equal(await page.$$eval('input[type=radio]:checked',e=>e.length),0);assert.equal(writes,0);
-    for(const [key,id] of [['GOL',1],['ZAG',3],['MEI',5],['ATA',7]]){await next();await page.click(`input[name="position_${key}"][value="${id}"]`);await next();}
-    await next();await page.click('input[name=bestPlayerId][value="9"]');await next();
+    assert.equal(await page.$$eval('.av-milestones .is-complete',e=>e.length),0);
+    for(const [key,id] of [['GOL',1],['ZAG',3],['MEI',5],['ATA',7]]){await next();await choose(`input[name="position_${key}"][value="${id}"]`);await next();}
+    await next();await choose('input[name=bestPlayerId][value="9"]');await next();
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await page.setViewport({width:1365,height:900});await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'review-desktop.png'),fullPage:true});
     await Promise.all([page.waitForNavigation(),page.click('#avSubmit')]);
     assert((await page.content()).includes('Votação computada!'));assert.equal(writes,1);assert.equal(stored.length,5);
+    assert.equal(await page.$$eval('.av-confetti i',e=>e.length),32);
+    await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+    assert.equal(await page.$eval('.av-confetti',e=>getComputedStyle(e).display),'none');
+    await page.emulateMediaFeatures([]);
     await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'success-desktop.png'),fullPage:true});
     await page.goto(url);assert((await page.content()).includes('Este link já foi usado'));
     const retry=await fetch(url,{method:'POST',body:new URLSearchParams(body)});assert((await retry.text()).includes('Este link já foi usado'));assert.equal(writes,1);

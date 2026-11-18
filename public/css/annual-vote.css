@@ -65,3 +65,45 @@ to{stroke-dashoffset:0}
 @media(prefers-reduced-motion:reduce){.av-shell *{animation:none!important;transition:none!important}
 }
 
+.av-milestones{display:flex;list-style:none;padding:0;margin:0 0 18px;gap:6px;justify-content:space-between}
+.av-milestones li{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;color:#a8a8b3;text-transform:capitalize;font-size:12px}
+.av-milestone-icon{position:relative;display:grid;place-items:center;width:48px;height:48px;border:1px solid #45454d;border-radius:16px;background:#1a1a20;font-size:25px;transition:border-color .2s,background .2s}
+.av-milestone-icon b{display:none;position:absolute;right:-5px;bottom:-3px;border:2px solid #131316;background:#69e9a4;color:#0b2417;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:16px}
+.av-milestones .is-complete .av-milestone-icon b{display:block}
+.av-milestones .is-current{color:#ffbb87;font-weight:700}
+.av-milestones .is-current .av-milestone-icon{border-color:#ff8a31;background:#392417;box-shadow:0 0 20px #ff8a311c}
+.av-step-state{font-size:10px;min-height:14px;color:#b8b8c2}
+.av-center:not([data-screen="welcome"]){min-height:0;gap:10px;padding:clamp(22px,4vw,36px)}
+.av-center:not([data-screen="welcome"]) h2{margin:4px 0 8px;font-size:clamp(25px,4vw,34px)}
+.av-center:not([data-screen="welcome"]) p{margin:4px 0;line-height:1.5}
+.av-center:not([data-screen="welcome"]) .av-callout{margin:8px 0;padding:14px}
+.av-center:not([data-screen="welcome"]) .av-symbol{font-size:44px;line-height:1.2}
+.av-card{gap:10px;padding-top:44px;background:radial-gradient(ellipse at top,#303039,#1b1b21 70%)}
+.av-card img{width:116px;height:116px;border:3px solid #44444e;box-shadow:0 8px 20px #0005}
+.av-card>strong{font-size:22px;line-height:1.2}
+.av-nickname{font-size:13px;color:#c5b4a7;margin-top:-4px}
+.av-choice-badge{position:absolute;left:12px;top:15px;font-size:11px;font-weight:800;color:#ffd3b0;visibility:hidden}
+.av-card.is-selected .av-choice-badge{visibility:visible}
+.av-card.is-selected{box-shadow:0 0 0 1px #ff8a31,0 8px 30px #ff8a3115;animation:av-pick .22s ease-out}
+.av-card.is-selected img{border-color:#ff8a31}
+.av-stats{border-top:1px solid #ffffff12;padding-top:14px;gap:10px 8px}
+.av-stats b{font-size:17px}
+.av-stats span{min-width:52px}
+.av-ticket{position:relative;margin:24px 0;background:linear-gradient(140deg,#29221c,#19191e 55%);border:1px solid #80603c;border-radius:18px;padding:22px;overflow:hidden}
+.av-ticket-heading{display:flex;gap:12px;align-items:center;padding-bottom:18px;border-bottom:1px dashed #80603c}
+.av-ticket-heading img{width:48px;height:48px}
+.av-ticket-heading h3{font-size:22px;font-weight:800;margin:4px 0 0}
+.av-ticket-heading .av-eyebrow{font-size:10px}
+.av-ticket-seal{margin-left:auto;font-size:32px}
+.av-ticket-owner{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-top:18px;font-size:12px;color:#c8c4c0}
+.av-draft{border:1px solid #80603c;color:#ffd3a1;border-radius:20px;padding:5px 9px;font-size:10px}
+.av-ticket .av-receipt{margin:12px 0 0;border-top:0}
+.av-ticket .av-receipt-row{padding:12px 0;border-bottom-color:#66523c}
+.av-ticket-footer{padding-top:18px;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#b7aa98;text-align:center}
+.av-success{position:relative;overflow:hidden;isolation:isolate}
+.av-confetti{position:absolute;inset:0;pointer-events:none;z-index:-1;overflow:hidden}
+.av-confetti i{position:absolute;left:var(--x);top:-20px;width:7px;height:13px;background:var(--color);border-radius:2px;opacity:0;animation:av-confetti 2.6s var(--delay) ease-in forwards}
+@keyframes av-pick{from{transform:scale(.985)}to{transform:scale(1)}}
+@keyframes av-confetti{0%{opacity:0;transform:translateY(0) rotate(0)}10%{opacity:1}80%{opacity:.85}100%{opacity:0;transform:translateY(600px) rotate(var(--turn))}}
+@media(max-width:520px){.av-milestone-icon{width:40px;height:40px;border-radius:12px;font-size:22px}.av-milestones li{font-size:10px}.av-progress{margin-bottom:12px}.av-ticket{padding:14px}.av-ticket-heading h3{font-size:18px}.av-ticket-seal{font-size:25px}.av-ticket .av-receipt-row{gap:8px}.av-ticket .av-receipt-row button{padding:10px 4px}}
+@media(prefers-reduced-motion:reduce){.av-confetti{display:none}.av-shell *{animation:none!important;transition:none!important}}
