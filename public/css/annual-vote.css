@@ -2,6 +2,9 @@
 .av-shell [hidden]{display:none!important}
 .av-panel{background:radial-gradient(ellipse at top,rgba(255,122,26,.1),transparent 65%),#131316;border:1px solid #343438;border-radius:24px;padding:clamp(20px,5vw,48px);animation:av-enter .32s ease-out}
 .av-center{text-align:center;min-height:440px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.av-panel[data-screen="welcome"]{background:linear-gradient(180deg,rgba(8,8,12,.45),rgba(8,8,12,.78) 60%,rgba(8,8,12,.92)),url('/img/churrasco-2025.png') center 58%/cover no-repeat;text-shadow:0 2px 8px #000}
+.av-panel[data-screen="welcome"] .av-muted{color:#d4d4dc}
+.av-panel[data-screen="welcome"] .av-button{text-shadow:none}
 .av-panel h1,.av-panel h2{font-size:clamp(26px,5vw,42px);font-weight:850;line-height:1.12;max-width:660px;margin:10px 0 18px;letter-spacing:-.025em}
 .av-panel h1{text-transform:uppercase}
 .av-panel p{line-height:1.65;margin:10px 0;max-width:680px}
