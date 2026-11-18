@@ -54,7 +54,15 @@
     document.getElementById('avProgressLabel').textContent = step !== undefined ? `Escolha ${Number(step) + 1} de ${choices.length} · ${choices[Number(step)].dataset.label}` : 'Revisão · falta só confirmar';
     document.getElementById('avProgressBar').style.width = `${step !== undefined ? (Number(step) + 1) / choices.length * 100 : 100}%`;
     screen.querySelector('h1,h2')?.focus({ preventScroll: true });
-    document.getElementById('annualWizard').scrollIntoView({ block: 'start', behavior: 'instant' });
+    // Preserve the viewport between notices. Only return to the beginning when
+    // the voter has scrolled down a long candidate list; leave room for the header.
+    const wizard = document.getElementById('annualWizard');
+    const header = document.querySelector('body > header, body header.sticky');
+    const headerBottom = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+    const top = wizard.getBoundingClientRect().top;
+    if (top < headerBottom) {
+      window.scrollTo({ top: Math.max(0, window.scrollY + top - headerBottom - 16), behavior: 'instant' });
+    }
   }
   form.addEventListener('change', sync);
   form.addEventListener('click', event => {

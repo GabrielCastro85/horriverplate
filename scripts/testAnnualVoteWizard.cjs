@@ -67,14 +67,22 @@ test('mobile and desktop wizard: no early writes, edit, restart, receipt, final 
     browser=await puppeteer.launch({headless:true});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.setViewport({width:390,height:844});const url=`http://127.0.0.1:${server.address().port}/vote/test`;
     await page.goto(url,{waitUntil:'networkidle0'});
+    await page.evaluate(() => {
+      const header = document.createElement('header');
+      header.className = 'sticky';
+      header.style.cssText = 'position:sticky;top:0;height:72px;background:#111;z-index:40';
+      header.textContent = 'Horriver Plate';
+      document.body.prepend(header);
+    });
     const dir=path.join(root,'.cache','annual-wizard');fs.mkdirSync(dir,{recursive:true});
     await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'welcome-mobile.png'),fullPage:true});
     const next=()=>page.click('[data-screen]:not([hidden]) [data-next]');
-    await next();assert(await page.$eval('#avStart',e=>e.disabled));await page.click('#avUnderstood');await next();
+    await next();assert.equal(await page.evaluate(()=>window.scrollY),0,'Opening rules must not force a scroll');assert(await page.$eval('#avStart',e=>e.disabled));await page.click('#avUnderstood');await next();
     for(const [key,id] of [['GOL',1],['ZAG',3],['MEI',5],['ATA',7]]){await next();await page.click(`input[name="position_${key}"][value="${id}"]`);await next();}
     await next();assert(await page.$eval('input[name=bestPlayerId][value="1"]',e=>e.disabled));
     await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'best-mobile.png'),fullPage:true});
     await page.click('input[name=bestPlayerId][value="9"]');await next();assert.equal(writes,0);
+    assert(await page.evaluate(()=>document.getElementById('annualWizard').getBoundingClientRect().top >= document.querySelector('header').getBoundingClientRect().bottom),'Review must remain below the sticky header after a long list');
     assert.equal(await page.$$eval('.av-receipt-row',e=>e.length),5);
     await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));await page.screenshot({path:path.join(dir,'review-mobile.png'),fullPage:true});
     await page.click('[aria-label="Trocar voto: Melhor goleiro"]');await page.click('input[name=position_GOL][value="2"]');
